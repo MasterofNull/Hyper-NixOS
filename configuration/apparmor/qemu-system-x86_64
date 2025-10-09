@@ -9,6 +9,10 @@ profile qemu-system-x86_64 flags=(attach_disconnected) {
   /run/current-system/sw/bin/qemu-system-x86_64 mr,
   /dev/kvm rw,
   /dev/dri/** rw,
+  /dev/video** rw,
+  /dev/snd/** rw,
+  /dev/bus/usb/** rw,
+  /dev/input/** r,
   /var/lib/hypervisor/** rwk,
   /etc/hypervisor/** r,
 

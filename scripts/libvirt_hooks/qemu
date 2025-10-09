@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Libvirt QEMU hook to place domains into systemd slices and apply limits
+# Install to /etc/libvirt/hooks/qemu on the host
+set -euo pipefail
+
+op=${1:-}
+phase=${2:-}
+domain=${3:-}
+
+# Only apply on 'started' lifecycle event
+if [[ "$op" == "lifecycle" && "$phase" == "start" ]]; then
+  # Use systemd-run to create a transient slice and move qemu in
+  # Note: Adjust limits per your hardware
+  systemd-run --unit="vm-${domain}.slice" \
+    --slice=machine.slice \
+    -p CPUAccounting=yes -p MemoryAccounting=yes -p IOAccounting=yes \
+    -p CPUQuota=200% -p MemoryMax=8G \
+    /bin/true
+fi
