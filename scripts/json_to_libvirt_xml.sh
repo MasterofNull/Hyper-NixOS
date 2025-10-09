@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+IFS=$'\n\t'
+umask 077
+PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+trap 'exit $?' EXIT HUP INT TERM
 
 if [[ $# -ne 1 ]]; then
   echo "Usage: $(basename "$0") <vm_profile.json>" >&2

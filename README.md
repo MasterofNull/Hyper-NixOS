@@ -3,10 +3,27 @@
 A NixOS-based, security-focused hypervisor with a boot-time VM menu, ISO download + verification, libvirt management, and optional VFIO passthrough.
 
 ## Quick start
+
+- On an existing NixOS host (guided TUI bootstrap):
+```bash
+sudo nix run .#bootstrap
+```
+
+- One‑shot install from a USB/Git folder (no prompts):
+```bash
+sudo ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --source "$(pwd)"
+```
+
+- Optional rebuild helper (scriptable):
+```bash
+nix run .#rebuild-helper -- --flake /etc/nixos --host $(hostname -s) {build|test|switch}
+```
+
+- Build a bootable ISO:
 ```bash
 nix build .#iso
 ```
-Boot the ISO. On first boot, choose "Setup wizard" to configure networking, download an OS ISO, and create your first VM.
+Boot the ISO. On first boot, the setup wizard runs once to help with networking, ISO download/verification, and creating your first VM.
 
 ## Features
 - Boot-time TUI menu (whiptail)
