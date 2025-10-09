@@ -61,6 +61,8 @@
   environment.etc."hypervisor/config.json".source = ../configuration/config.json;
   environment.etc."hypervisor/docs".source = ../docs;
   environment.etc."hypervisor/vm_profile.schema.json".source = ../configuration/vm_profile.schema.json;
+  # Install libvirt hook for per-VM slice limits
+  environment.etc."libvirt/hooks/qemu".source = ../scripts/libvirt_hooks/qemu;
 
   # Create an unprivileged user that can access KVM
   users.users.hypervisor = {
