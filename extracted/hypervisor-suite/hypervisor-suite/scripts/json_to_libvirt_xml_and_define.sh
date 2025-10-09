@@ -20,6 +20,13 @@ memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
 disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
 iso_path=$(jq -r '.iso_path // empty' "$PROFILE_JSON")
 bridge=$(jq -r '.network.bridge // empty' "$PROFILE_JSON")
+hugepages=$(jq -r '.hugepages // false' "$PROFILE_JSON")
+audio_model=$(jq -r '.audio.model // empty' "$PROFILE_JSON")
+video_heads=$(jq -r '.video.heads // 1' "$PROFILE_JSON")
+looking_glass_enabled=$(jq -r '.looking_glass.enable // false' "$PROFILE_JSON")
+looking_glass_size=$(jq -r '.looking_glass.size_mb // 64' "$PROFILE_JSON")
+# cpu_pinning: array of host cpu ids, sequentially mapped to vcpus
+mapfile -t pin_array < <(jq -r '.cpu_pinning[]? // empty' "$PROFILE_JSON")
 
 # Prepare disk if not present
 qcow="$DISKS_DIR/${name}.qcow2"
@@ -52,6 +59,30 @@ cat > "$xml" <<XML
     <apic/>
   </features>
   <cpu mode='host-passthrough'/>
+XML
+
+# Optional hugepages backing
+if [[ "$hugepages" == "true" || "$hugepages" == "True" ]]; then
+  cat >> "$xml" <<XML
+  <memoryBacking>
+    <hugepages/>
+  </memoryBacking>
+XML
+fi
+
+# Optional CPU pinning
+if (( ${#pin_array[@]} > 0 )); then
+  {
+    echo "  <cputune>"
+    for ((i=0;i<cpus;i++)); do
+      host_cpu=${pin_array[$(( i % ${#pin_array[@]} ))]}
+      echo "    <vcpupin vcpu='${i}' cpuset='${host_cpu}'/>"
+    done
+    echo "  </cputune>"
+  } >> "$xml"
+fi
+
+cat >> "$xml" <<XML
   <devices>
     <emulator>/run/current-system/sw/bin/qemu-system-x86_64</emulator>
     <disk type='file' device='disk'>
@@ -74,10 +105,27 @@ fi
 cat >> "$xml" <<XML
     <graphics type='spice' autoport='yes' listen='127.0.0.1'/>
     <video>
-      <model type='virtio'/>
+      <model type='virtio' heads='${video_heads}'/>
     </video>
     <input type='tablet' bus='usb'/>
 XML
+
+# Optional audio device
+if [[ -n "$audio_model" && "$audio_model" != "null" ]]; then
+  cat >> "$xml" <<XML
+    <sound model='${audio_model}'/>
+XML
+fi
+
+# Optional Looking Glass shared memory
+if [[ "$looking_glass_enabled" == "true" || "$looking_glass_enabled" == "True" ]]; then
+  cat >> "$xml" <<XML
+    <shmem name='looking-glass'>
+      <model type='ivshmem-plain'/>
+      <size unit='M'>${looking_glass_size}</size>
+    </shmem>
+XML
+fi
 
 if [[ -n "${bridge:-}" ]]; then
   cat >> "$xml" <<XML

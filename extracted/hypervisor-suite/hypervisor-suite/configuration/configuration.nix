@@ -12,6 +12,17 @@
   networking.hostName = "hypervisor";
   time.timeZone = "UTC";
 
+  # Hardened kernel and auditing
+  boot.kernelPackages = pkgs.linuxPackages_hardened;
+  services.auditd.enable = true;
+  boot.kernel.sysctl = {
+    "kernel.unprivileged_userns_clone" = 0;
+    "kernel.kptr_restrict" = 2;
+    "kernel.yama.ptrace_scope" = 1;
+    "net.ipv4.conf.all.rp_filter" = 1;
+    "net.ipv4.conf.default.rp_filter" = 1;
+  };
+
   # Minimal packages
   environment.systemPackages = with pkgs; [
     qemu_full
@@ -24,6 +35,8 @@
     nano
     libvirt
     virt-install
+    pciutils
+    looking-glass-client
   ];
 
   # Provide menu and profiles from this repository at runtime
