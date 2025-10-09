@@ -49,4 +49,6 @@ Boot it (USB/IPMI). The first-boot service starts the setup wizard automatically
 ## Notes
 - Logging is in /var/log/hypervisor.
 - Advanced features (VFIO, pinning, hugepages) are toggled per-VM JSON.
+- Linux 6.18 toggles: in a VM profile you can set `cpu_features.shstk`, `cpu_features.ibt`, `cpu_features.avic`, `cpu_features.sev`/`sev_es`/`sev_snp`, and `memory_options.guest_memfd`/`private` where supported by the host.
+- Multi-arch: set `arch` to `x86_64`, `aarch64`, `riscv64`, or `loongarch64` to choose the QEMU machine/firmware. On non‑x86, UEFI firmware may be optional.
  - Scripts are hardened (set -Eeuo pipefail, safe PATH, umask 077). Environment variables are sanitized where relevant.
