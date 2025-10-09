@@ -29,6 +29,7 @@
     OVMF
     jq
     python3
+    python3Packages.jsonschema
     curl
     newt  # provides `whiptail`
     dialog
@@ -45,7 +46,7 @@
   ];
 
   # Provide menu and profiles from this repository at runtime
-  environment.etc."hypervisor/menu.py".source = ../hypervisor_manager/menu.py;
+  # Python TUI not exposed; primary UI is shell menu for reduced surface
   environment.etc."hypervisor/vm_profiles".source = ../vm_profiles;
   environment.etc."hypervisor/isos".source = ../isos;
   environment.etc."hypervisor/scripts".source = ../scripts;
@@ -107,6 +108,31 @@
       MemoryDenyWriteExecute = true;
       RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" ];
       SystemCallFilter = [ "@system-service" "@pkey" "@chown" ];
+      ProtectKernelTunables = true;
+      ProtectKernelModules = true;
+      ProtectControlGroups = true;
+      RestrictNamespaces = true;
+      RestrictSUIDSGID = true;
+      CapabilityBoundingSet = "";
+      AmbientCapabilities = "";
+    };
+  };
+
+  # First-boot wizard (runs once, then marks completion)
+  systemd.services.hypervisor-first-boot = {
+    description = "First-boot Setup Wizard";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'if [ ! -f /var/lib/hypervisor/.first_boot_done ]; then /etc/hypervisor/scripts/setup_wizard.sh || true; touch /var/lib/hypervisor/.first_boot_done; fi'";
+      User = "hypervisor";
+      WorkingDirectory = "/etc/hypervisor";
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
     };
   };
 

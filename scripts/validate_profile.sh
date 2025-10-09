@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+umask 077
 schema="/etc/hypervisor/vm_profile.schema.json"
 profile="$1"
 : "${DIALOG:=whiptail}"
+export DIALOG
 
 require() { for b in jq; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done; }
 require
