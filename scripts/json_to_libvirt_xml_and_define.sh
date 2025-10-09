@@ -46,6 +46,16 @@ looking_glass_enabled=$(jq -r '.looking_glass.enable // false' "$PROFILE_JSON")
 looking_glass_size=$(jq -r '.looking_glass.size_mb // 64' "$PROFILE_JSON")
 # cpu_pinning: array of host cpu ids, sequentially mapped to vcpus
 mapfile -t pin_array < <(jq -r '.cpu_pinning[]? // empty' "$PROFILE_JSON")
+# numatune
+numa_nodeset=$(jq -r '.numa.nodeset // empty' "$PROFILE_JSON")
+# memballoon
+memballoon_disable=$(jq -r '.memballoon.disable // false' "$PROFILE_JSON")
+# tpm
+tpm_enable=$(jq -r '.tpm.enable // false' "$PROFILE_JSON")
+# vhost-net
+vhost_net=$(jq -r '.network.vhost // false' "$PROFILE_JSON")
+# autostart
+autostart=$(jq -r '.autostart // false' "$PROFILE_JSON")
 
 # Prepare disk if not present
 qcow="$DISKS_DIR/${name}.qcow2"
@@ -102,6 +112,14 @@ if (( ${#pin_array[@]} > 0 )); then
   } >> "$xml"
 fi
 
+if [[ -n "$numa_nodeset" && "$numa_nodeset" != "null" ]]; then
+  cat >> "$xml" <<XML
+  <numatune>
+    <memory mode='strict' nodeset='$(printf '%s' "$numa_nodeset" | xml_escape)'/>
+  </numatune>
+XML
+fi
+
 cat >> "$xml" <<XML
   <devices>
     <emulator>/run/current-system/sw/bin/qemu-system-x86_64</emulator>
@@ -153,6 +171,7 @@ if [[ -n "${bridge:-}" ]]; then
     <interface type='bridge'>
       <source bridge='$(printf '%s' "$bridge" | xml_escape)'/>
       <model type='virtio'/>
+      $( [[ "$vhost_net" == "true" || "$vhost_net" == "True" ]] && echo "<driver name='vhost'/>" )
     </interface>
 XML
 else
@@ -179,6 +198,22 @@ for bdf in "${hostdevs[@]:-}"; do
 XML
 done
 
+# Optional memballoon (enabled by default unless disabled)
+if [[ "$memballoon_disable" != "true" && "$memballoon_disable" != "True" ]]; then
+  cat >> "$xml" <<XML
+    <memballoon model='virtio'/>
+XML
+fi
+
+# Optional TPM 2.0 emulator
+if [[ "$tpm_enable" == "true" || "$tpm_enable" == "True" ]]; then
+  cat >> "$xml" <<XML
+    <tpm model='tpm-tis'>
+      <backend type='emulator' version='2.0'/>
+    </tpm>
+XML
+fi
+
 cat >> "$xml" <<XML
   </devices>
 </domain>
@@ -194,3 +229,6 @@ virsh destroy "$name" >/dev/null 2>&1 || true
 virsh undefine "$name" --remove-all-storage >/dev/null 2>&1 || true
 virsh define "$xml"
 virsh start "$name"
+if [[ "$autostart" == "true" || "$autostart" == "True" ]]; then
+  virsh autostart "$name" || true
+fi
