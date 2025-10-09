@@ -71,10 +71,15 @@ if [[ -n "$iso_path" && ! -f "$iso_path" ]]; then
   fi
 fi
 
-# Build XML
+# Build XML (prefer vmctl when available)
 v_name=$(printf '%s' "$name" | xml_escape)
 xml="$XML_DIR/${name}.xml"
-cat > "$xml" <<XML
+if command -v vmctl >/dev/null 2>&1; then
+  tmp_xml="$XML_DIR/.tmp-${name}.xml"
+  vmctl gen-xml --profile "$PROFILE_JSON" --out "$tmp_xml" || { echo "vmctl failed" >&2; exit 1; }
+  mv "$tmp_xml" "$xml"
+else
+  cat > "$xml" <<XML
 <domain type='kvm'>
   <name>${v_name}</name>
   <memory unit='MiB'>${memory_mb}</memory>
@@ -90,6 +95,7 @@ cat > "$xml" <<XML
   </features>
   <cpu mode='host-passthrough'/>
 XML
+fi
 
 # Optional hugepages backing
 if [[ "$hugepages" == "true" || "$hugepages" == "True" ]]; then

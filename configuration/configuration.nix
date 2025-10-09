@@ -4,6 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ../scripts/vfio-boot.nix
+    ./security.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
