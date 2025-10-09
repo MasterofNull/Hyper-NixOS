@@ -40,6 +40,8 @@
     gnupg
     swtpm
     openssh
+    genisoimage
+    nfs-utils
   ];
 
   # Provide menu and profiles from this repository at runtime
@@ -49,6 +51,7 @@
   environment.etc."hypervisor/scripts".source = ../scripts;
   environment.etc."hypervisor/config.json".source = ../configuration/config.json;
   environment.etc."hypervisor/docs".source = ../docs;
+  environment.etc."hypervisor/vm_profile.schema.json".source = ../configuration/vm_profile.schema.json;
 
   # Create an unprivileged user that can access KVM
   users.users.hypervisor = {

@@ -149,6 +149,7 @@ while true; do
       ;;
     7)
       p=$(select_profile || true) || continue
+      "$SCRIPTS_DIR/validate_profile.sh" "$p" || true
       "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true
       ;;
     8)
