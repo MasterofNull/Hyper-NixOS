@@ -19,6 +19,9 @@
               ct state established,related accept
               iifname "lo" accept
               tcp dport { 22 } accept
+              # libvirt bridge services (DNS/DHCP)
+              iifname "virbr0" udp dport { 53, 67 } accept
+              iifname "virbr0" tcp dport { 53 } accept
             }
             input add rule inet filter input jump allow_in
           }
