@@ -1,0 +1,12 @@
+{
+  "name": "example-aarch64",
+  "cpus": 4,
+  "memory_mb": 4096,
+  "disk_gb": 20,
+  "arch": "aarch64",
+  "iso_path": "isos/PLACEHOLDER_AARCH64.iso",
+  "network": { "bridge": "virbr0" },
+  "hugepages": false,
+  "cpu_features": {},
+  "memory_options": { "guest_memfd": true }
+}
