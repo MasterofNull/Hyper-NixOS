@@ -1,1 +1,186 @@
-# Placeholder content for hypervisor_manager/menu.py
+#!/usr/bin/env python3
+import curses
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PROFILES_DIR = (REPO_ROOT / "vm_profiles").resolve()
+DEFAULT_ISOS_DIR = (REPO_ROOT / "isos").resolve()
+STATE_DIR = Path("/var/lib/hypervisor").resolve()
+
+
+def ensure_state_dirs() -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def list_vm_profiles(profiles_dir: Path) -> list[Path]:
+    if not profiles_dir.exists():
+        return []
+    return sorted(p for p in profiles_dir.glob("*.json") if p.is_file())
+
+
+def read_profile(profile_path: Path) -> dict:
+    with profile_path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    required = ["name", "cpus", "memory_mb"]
+    for key in required:
+        if key not in data:
+            raise ValueError(f"Missing required field '{key}' in {profile_path}")
+    return data
+
+
+def find_ovmf_paths() -> tuple[Path | None, Path | None]:
+    """Best-effort find OVMF code/vars files on NixOS when pkgs.OVMF is installed."""
+    candidates = [
+        Path("/run/current-system/sw/share/OVMF/OVMF_CODE.fd"),
+        Path("/run/current-system/sw/share/edk2-ovmf/x64/OVMF_CODE.fd"),
+    ]
+    code = next((p for p in candidates if p.exists()), None)
+
+    var_candidates = [
+        Path("/run/current-system/sw/share/OVMF/OVMF_VARS.fd"),
+        Path("/run/current-system/sw/share/edk2-ovmf/x64/OVMF_VARS.fd"),
+    ]
+    vars_ = next((p for p in var_candidates if p.exists()), None)
+    return code, vars_
+
+
+def build_qemu_command(profile: dict) -> list[str]:
+    name = profile.get("name", "vm")
+    cpus = int(profile.get("cpus", 2))
+    memory_mb = int(profile.get("memory_mb", 2048))
+    iso_path = profile.get("iso_path")
+    disk_path = profile.get("disk_path")
+    efi = bool(profile.get("efi", True))
+    network = profile.get("network", {}) or {}
+
+    cmd: list[str] = [
+        shutil.which("qemu-system-x86_64") or "qemu-system-x86_64",
+        "-name", name,
+        "-enable-kvm",
+        "-cpu", "host",
+        "-smp", str(cpus),
+        "-m", str(memory_mb),
+        "-machine", "type=q35,accel=kvm",
+        # Display: prefer SDL for simple fullscreen flag
+        "-display", "sdl,gl=on",
+        "-full-screen",
+        # Reasonable defaults
+        "-device", "virtio-vga-gl",
+        "-usb",
+        "-device", "usb-tablet",
+    ]
+
+    if efi:
+        code, vars_ = find_ovmf_paths()
+        if code and vars_:
+            vars_copy = STATE_DIR / f"{name}.OVMF_VARS.fd"
+            if not vars_copy.exists():
+                vars_copy.write_bytes(vars_.read_bytes())
+            cmd += [
+                "-drive", f"if=pflash,format=raw,readonly=on,file={code}",
+                "-drive", f"if=pflash,format=raw,file={vars_copy}",
+            ]
+
+    # Storage
+    if disk_path:
+        cmd += [
+            "-drive", f"file={disk_path},if=virtio,cache=none,discard=unmap,format=qcow2",
+        ]
+    if iso_path:
+        iso_resolved = str((DEFAULT_ISOS_DIR / iso_path).resolve()) if not os.path.isabs(iso_path) else iso_path
+        cmd += ["-cdrom", iso_resolved]
+
+    # Network
+    bridge = network.get("bridge")
+    if bridge:
+        # Requires qemu-bridge-helper configured system-wide; fallback to user if it fails
+        cmd += [
+            "-netdev", f"bridge,id=net0,br={bridge}",
+            "-device", "virtio-net-pci,netdev=net0",
+        ]
+    else:
+        cmd += [
+            "-netdev", "user,id=net0", "-device", "virtio-net-pci,netdev=net0",
+        ]
+
+    return cmd
+
+
+def launch_vm(profile: dict) -> int:
+    ensure_state_dirs()
+    cmd = build_qemu_command(profile)
+    os.environ.setdefault("SDL_VIDEO_FULLSCREEN_DISPLAY", "0")
+    try:
+        proc = subprocess.Popen(cmd)
+        return proc.wait()
+    except FileNotFoundError as e:
+        print(f"Failed to start QEMU: {e}", file=sys.stderr)
+        return 1
+
+
+def draw_menu(stdscr, items: list[Path]) -> Path | None:
+    curses.curs_set(0)
+    current = 0
+
+    while True:
+        stdscr.erase()
+        h, w = stdscr.getmaxyx()
+        title = "Select a VM profile (Enter to boot, q to quit)"
+        stdscr.addstr(1, max(0, (w - len(title)) // 2), title, curses.A_BOLD)
+
+        for idx, item in enumerate(items):
+            text = item.stem
+            x = 4
+            y = 3 + idx
+            if y >= h - 1:
+                break
+            if idx == current:
+                stdscr.attron(curses.A_REVERSE)
+                stdscr.addstr(y, x, text)
+                stdscr.attroff(curses.A_REVERSE)
+            else:
+                stdscr.addstr(y, x, text)
+
+        key = stdscr.getch()
+        if key in (curses.KEY_UP, ord('k')):
+            current = (current - 1) % len(items)
+        elif key in (curses.KEY_DOWN, ord('j')):
+            current = (current + 1) % len(items)
+        elif key in (curses.KEY_ENTER, ord('\n')):
+            return items[current]
+        elif key in (ord('q'), 27):
+            return None
+
+
+def main(argv: list[str]) -> int:
+    profiles_dir = DEFAULT_PROFILES_DIR
+    if len(argv) > 1:
+        profiles_dir = Path(argv[1]).resolve()
+
+    profiles = list_vm_profiles(profiles_dir)
+    if not profiles:
+        print(f"No VM profiles found in {profiles_dir}", file=sys.stderr)
+        return 2
+
+    selected: Path | None = curses.wrapper(lambda scr: draw_menu(scr, profiles))
+    if selected is None:
+        return 0
+
+    try:
+        profile = read_profile(selected)
+    except Exception as e:
+        print(f"Failed to read profile {selected}: {e}", file=sys.stderr)
+        return 2
+
+    return launch_vm(profile)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))
+
