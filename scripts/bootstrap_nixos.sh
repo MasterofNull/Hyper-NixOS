@@ -3,6 +3,7 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
 PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+export NIX_CONFIG="experimental-features = nix-command flakes"
 
 cleanup() {
   local ec=$?
@@ -14,7 +15,7 @@ TMPDIR=$(mktemp -d -t hypervisor-bootstrap.XXXXXX)
 
 HOSTNAME_OVERRIDE=""
 ACTION=""   # build|test|switch
-FORCE=false
+FORCE=true
 SRC_OVERRIDE=""
 
 usage() {
@@ -35,8 +36,13 @@ USAGE
 
 require_root() {
   if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
-    echo "This script must be run as root (use sudo)." >&2
-    exit 1
+    if command -v sudo >/dev/null 2>&1; then
+      echo "Elevating privileges with sudo..."
+      exec sudo -E "$0" "$@"
+    else
+      echo "This script must be run as root (use sudo)." >&2
+      exit 1
+    fi
   fi
 }
 
@@ -153,8 +159,25 @@ rebuild_menu() {
   esac
 }
 
+ask_yes_no() {
+  local prompt="$1"; local default_answer="${2:-yes}"
+  if [[ -n "$DIALOG" ]]; then
+    if "$DIALOG" --yesno "$prompt" 10 70; then return 0; else return 1; fi
+  fi
+  if [[ -t 0 ]]; then
+    local suffix="[Y/n]"; [[ "$default_answer" == "no" ]] && suffix="[y/N]"
+    read -r -p "$prompt $suffix " ans || true
+    if [[ -z "$ans" ]]; then [[ "$default_answer" == "yes" ]]; return $?; fi
+    [[ "$ans" =~ ^[Yy]$ ]]
+    return $?
+  else
+    [[ "$default_answer" == "yes" ]]
+    return $?
+  fi
+}
+
 main() {
-  require_root
+  require_root "$@"
   DIALOG="$(use_dialog)"
 
   # Parse CLI flags early for non-interactive one-shot installs
@@ -206,12 +229,25 @@ main() {
       *) echo "Invalid --action: $ACTION" >&2; exit 1;;
     esac
   else
-    if [[ -n "$DIALOG" ]]; then
-      "$DIALOG" --msgbox "Bootstrap complete. You can now build, test, or switch to the new configuration." 10 70 || true
+    # Automated flow with minimal prompts: offer test first, then optional switch
+    if ask_yes_no "Run a test activation (nixos-rebuild test) before full switch?" yes; then
+      if ! nixos-rebuild test --flake "/etc/nixos#$hostname"; then
+        if [[ -n "$DIALOG" ]]; then "$DIALOG" --msgbox "Test activation failed. Review configuration and retry." 10 70 || true; fi
+        echo "Test activation failed." >&2
+        exit 1
+      fi
+      if ask_yes_no "Test succeeded. Proceed with full switch now?" yes; then
+        nixos-rebuild switch --flake "/etc/nixos#$hostname"
+      else
+        msg "Switch skipped per user choice."
+      fi
     else
-      msg "Bootstrap complete."
+      if ask_yes_no "Proceed directly to full switch now?" yes; then
+        nixos-rebuild switch --flake "/etc/nixos#$hostname"
+      else
+        msg "No rebuild performed."
+      fi
     fi
-    rebuild_menu "$hostname"
   fi
 }
 
