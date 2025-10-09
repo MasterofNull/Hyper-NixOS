@@ -21,6 +21,12 @@
     "kernel.yama.ptrace_scope" = 1;
     "net.ipv4.conf.all.rp_filter" = 1;
     "net.ipv4.conf.default.rp_filter" = 1;
+    "fs.protected_hardlinks" = 1;
+    "fs.protected_symlinks" = 1;
+    "fs.protected_fifos" = 2;
+    "kernel.kexec_load_disabled" = 1;
+    "kernel.dmesg_restrict" = 1;
+    "kernel.unprivileged_bpf_disabled" = 1;
   };
 
   # Minimal packages
@@ -76,6 +82,13 @@
   # Enable libvirt for virsh/XML workflows
   virtualisation.libvirtd.enable = true;
   virtualisation.libvirtd.qemuRunAsRoot = false;
+  virtualisation.libvirtd.extraConfig = ''
+    security_driver = "apparmor"
+    dynamic_ownership = 1
+    clear_emulator_capabilities = 1
+    seccomp_sandbox = 1
+    namespaces = [ "mount", "uts", "ipc", "pid", "net" ]
+  '';
 
   # Start the VM selection menu at boot on the console
   systemd.services.hypervisor-menu = {
