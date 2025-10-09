@@ -37,6 +37,7 @@
     virt-install
     pciutils
     looking-glass-client
+    gnupg
   ];
 
   # Provide menu and profiles from this repository at runtime
@@ -60,6 +61,8 @@
     "d /var/lib/hypervisor/disks 0750 hypervisor hypervisor - -"
     "d /var/lib/hypervisor/xml 0750 hypervisor hypervisor - -"
     "d /var/lib/hypervisor/vm_profiles 0750 hypervisor hypervisor - -"
+    "d /var/lib/hypervisor/gnupg 0700 hypervisor hypervisor - -"
+    "d /var/lib/hypervisor/backups 0750 hypervisor hypervisor - -"
     "d /var/log/hypervisor 0750 hypervisor hypervisor - -"
   ];
 

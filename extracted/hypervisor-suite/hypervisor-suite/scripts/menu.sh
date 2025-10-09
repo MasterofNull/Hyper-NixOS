@@ -48,7 +48,8 @@ menu_main() {
     7 "Edit VM profile"
     8 "Delete VM"
     9 "Bridge helper"
-    10 "Exit"
+    10 "Snapshots & backups"
+    11 "Exit"
   )
   $DIALOG --title "Hypervisor Menu" --menu "Choose an option" 20 78 10 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -152,7 +153,10 @@ while true; do
     9)
       "$SCRIPTS_DIR/bridge_helper.sh" || true
       ;;
-    10|*)
+    10)
+      "$SCRIPTS_DIR/snapshots_backups.sh" || true
+      ;;
+    11|*)
       exit 0
       ;;
   esac

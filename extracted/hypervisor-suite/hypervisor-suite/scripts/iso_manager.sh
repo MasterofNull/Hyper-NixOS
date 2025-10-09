@@ -11,7 +11,7 @@ require() {
     command -v "$bin" >/dev/null 2>&1 || { echo "Missing: $bin" >&2; exit 1; }
   done
 }
-require "$DIALOG" curl sha256sum jq awk sed
+require "$DIALOG" curl sha256sum jq awk sed gpg
 
 mkdir -p "$ISOS_DIR" "$USER_PROFILES_DIR"
 
@@ -120,6 +120,26 @@ validate_iso() {
   echo "$checksum  $iso" | sha256sum -c - && $DIALOG --msgbox "Checksum OK" 8 30 || $DIALOG --msgbox "Checksum FAILED" 8 40
 }
 
+verify_gpg() {
+  local url asc_url iso asc tmpdir
+  iso=$(choose_iso || true) || return 1
+  asc_url=$($DIALOG --inputbox "Signature URL (.asc or CHECKSUMS.sig)" 10 70 3>&1 1>&2 2>&3) || return 1
+  tmpdir=$(mktemp -d)
+  asc="$tmpdir/$(basename "$asc_url")"
+  curl -fsSL "$asc_url" -o "$asc" || { $DIALOG --msgbox "Failed to download signature" 8 50; rm -rf "$tmpdir"; return 1; }
+  GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$asc" "$iso" && $DIALOG --msgbox "GPG signature VERIFIED" 8 40 || $DIALOG --msgbox "GPG verification FAILED" 8 40
+  rm -rf "$tmpdir"
+}
+
+import_gpg_key() {
+  local key_url tmp
+  key_url=$($DIALOG --inputbox "GPG public key URL" 10 70 3>&1 1>&2 2>&3) || return 1
+  tmp=$(mktemp)
+  curl -fsSL "$key_url" -o "$tmp" || { $DIALOG --msgbox "Failed to fetch key" 8 40; rm -f "$tmp"; return 1; }
+  GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --import "$tmp" && $DIALOG --msgbox "Key imported" 8 30 || $DIALOG --msgbox "Key import FAILED" 8 40
+  rm -f "$tmp"
+}
+
 import_local_iso() {
   local path
   path=$($DIALOG --inputbox "Path to local ISO (pre-mounted)" 10 70 3>&1 1>&2 2>&3) || return 1
@@ -147,14 +167,18 @@ while true; do
     2 "Validate ISO checksum" \
     3 "Import ISO from local path" \
     4 "Attach ISO to a VM profile" \
-    5 "List ISOs" \
-    6 "Exit" 3>&1 1>&2 2>&3) || exit 0
+    5 "GPG: Import key" \
+    6 "GPG: Verify ISO signature" \
+    7 "List ISOs" \
+    8 "Exit" 3>&1 1>&2 2>&3) || exit 0
   case "$choice" in
     1) download_iso ;;
     2) validate_iso ;;
     3) import_local_iso ;;
     4) attach_iso_to_profile ;;
-    5) list_isos | ${PAGER:-less} ;;
-    6) exit 0 ;;
+    5) import_gpg_key ;;
+    6) verify_gpg ;;
+    7) list_isos | ${PAGER:-less} ;;
+    8) exit 0 ;;
   esac
 done
