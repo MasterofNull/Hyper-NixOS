@@ -24,7 +24,7 @@ fi
 
 # Security toggles (recommended enabled)
 if $DIALOG --yesno "Enable strict firewall (default-deny) and allow SSH + libvirt network?\n\nYou can widen rules later." 14 80 ; then
-  $DIALOG --msgbox "To enable: set hypervisor.security.strictFirewall = true in configuration.nix" 10 70
+  $DIALOG --msgbox "To enable: set hypervisor.security.strictFirewall = true in configuration.nix\nOptionally open migration ports: hypervisor.security.migrationTcp = true" 12 80
 fi
 
 # Performance trade-offs (optional)

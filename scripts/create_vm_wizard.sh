@@ -41,7 +41,8 @@ cat > "$profile_json" <<JSON
   "memory_mb": ${mem},
   "disk_gb": ${disk},
   "iso_path": "${iso_path}",
-  "network": { "bridge": "" }
+  "network": { "bridge": "" },
+  "limits": { "cpu_quota_percent": 200, "memory_max_mb": ${mem} }
 }
 JSON
 

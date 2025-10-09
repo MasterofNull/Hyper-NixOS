@@ -5,7 +5,10 @@
     ./hardware-configuration.nix
     ../scripts/vfio-boot.nix
     ./security.nix
-  ] ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix;
+  ]
+  ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix
+  ++ lib.optional (builtins.pathExists ./perf-local.nix) ./perf-local.nix
+  ++ lib.optional (builtins.pathExists ./security-local.nix) ./security-local.nix;
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
