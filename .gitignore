@@ -1,0 +1,11 @@
+result/
+result-*/*
+.direnv/
+.envrc
+.nix-result
+*.swp
+*.swo
+__pycache__/
+*.pyc
+isos/*.iso
+isos/*.sha256

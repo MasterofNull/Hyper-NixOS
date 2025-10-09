@@ -1,0 +1,11 @@
+{
+  "name": "example-windows",
+  "os": "windows",
+  "cpus": 2,
+  "memory_mb": 4096,
+  "disk_gb": 40,
+  "iso_path": "isos/PLACEHOLDER.iso",
+  "network": {
+    "bridge": "virbr0"
+  }
+}

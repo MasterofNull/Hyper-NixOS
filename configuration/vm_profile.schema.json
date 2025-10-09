@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Hypervisor VM Profile",
+  "type": "object",
+  "required": ["name", "cpus", "memory_mb"],
+  "properties": {
+    "name": {"type": "string"},
+    "cpus": {"type": "integer", "minimum": 1},
+    "memory_mb": {"type": "integer", "minimum": 256},
+    "disk_gb": {"type": "integer", "minimum": 1},
+    "iso_path": {"type": "string"},
+    "network": {
+      "type": "object",
+      "properties": {
+        "bridge": {"type": "string"}
+      }
+    },
+    "cpu_pinning": {"type": "array", "items": {"type": "integer"}},
+    "hugepages": {"type": "boolean"},
+    "audio": {"type": "object", "properties": {"model": {"type": "string"}}},
+    "video": {"type": "object", "properties": {"heads": {"type": "integer", "minimum": 1}}},
+    "looking_glass": {
+      "type": "object",
+      "properties": {"enable": {"type": "boolean"}, "size_mb": {"type": "integer", "minimum": 32}}
+    },
+    "hostdevs": {"type": "array", "items": {"type": "string"}}
+  }
+}
