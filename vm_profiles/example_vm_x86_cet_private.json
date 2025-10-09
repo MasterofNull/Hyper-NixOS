@@ -1,0 +1,12 @@
+{
+  "name": "example-x86-cet-private",
+  "cpus": 4,
+  "memory_mb": 8192,
+  "disk_gb": 40,
+  "arch": "x86_64",
+  "iso_path": "isos/PLACEHOLDER.iso",
+  "network": { "bridge": "virbr0" },
+  "hugepages": true,
+  "cpu_features": { "shstk": true, "ibt": true, "avic": true },
+  "memory_options": { "guest_memfd": true, "private": true }
+}
