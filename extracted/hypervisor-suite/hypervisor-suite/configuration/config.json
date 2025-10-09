@@ -11,8 +11,40 @@
     "autostart_timeout_sec": 5
   },
   "iso_presets": [
-    {"name": "Ubuntu 24.04 LTS", "url": "https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso"},
-    {"name": "Fedora 40 Workstation", "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/40/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-40-1.14.iso"},
-    {"name": "Debian 12 netinst", "url": "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.6.0-amd64-netinst.iso"}
+    {
+      "name": "Ubuntu 24.04 LTS",
+      "url": "https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso",
+      "checksum_url": "https://releases.ubuntu.com/24.04/SHA256SUMS",
+      "signature_url": "https://releases.ubuntu.com/24.04/SHA256SUMS.gpg",
+      "gpg_key_url": "https://ubuntu.com/security/ubuntu-keyring.gpg"
+    },
+    {
+      "name": "Fedora 40 Workstation",
+      "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/40/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-40-1.14.iso",
+      "checksum_url": "https://getfedora.org/static/checksums/40/Workstation/x86_64/CHECKSUM",
+      "signature_url": "https://getfedora.org/static/checksums/40/Workstation/x86_64/CHECKSUM.sig",
+      "gpg_key_url": "https://getfedora.org/static/fedora.gpg"
+    },
+    {
+      "name": "Debian 12 netinst",
+      "url": "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.6.0-amd64-netinst.iso",
+      "checksum_url": "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/SHA256SUMS",
+      "signature_url": "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/SHA256SUMS.sign",
+      "gpg_key_url": "https://ftp-master.debian.org/keys/archive-key-12.asc"
+    },
+    {
+      "name": "Arch Linux latest",
+      "url": "https://mirror.rackspace.com/archlinux/iso/latest/archlinux-x86_64.iso",
+      "checksum_url": "https://mirror.rackspace.com/archlinux/iso/latest/sha256sums.txt",
+      "signature_url": "https://mirror.rackspace.com/archlinux/iso/latest/sha256sums.txt.sig",
+      "gpg_key_url": "https://archlinux.org/static/pgp/archlinux-keyring.gpg"
+    },
+    {
+      "name": "NixOS 24.05 graphical",
+      "url": "https://channels.nixos.org/nixos-24.05/latest-nixos-gnome-x86_64-linux.iso",
+      "checksum_url": "https://channels.nixos.org/nixos-24.05/latest-nixos-gnome-x86_64-linux.iso.sha256",
+      "signature_url": "",
+      "gpg_key_url": ""
+    }
   ]
 }

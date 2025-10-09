@@ -36,3 +36,8 @@ if $DIALOG --yesno "Attempt to unbind current drivers and bind vfio-pci NOW?" 12
   # This typically needs echoing into /sys/bus/pci/drivers/vfio-pci/new_id and unbind from current; left as manual due to safety.
   $DIALOG --msgbox "For safety, live binding is not automated. Reboot after rebuild." 10 70
 fi
+
+# Offer to append to configuration.nix and rebuild
+if $DIALOG --yesno "Append to configuration.nix and attempt nixos-rebuild switch now?" 12 70 ; then
+  "$(dirname "$0")/merge_vfio_into_config.sh"
+fi

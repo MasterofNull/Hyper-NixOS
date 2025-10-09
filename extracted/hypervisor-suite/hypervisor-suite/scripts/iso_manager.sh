@@ -71,19 +71,53 @@ download_iso() {
     # Build preset menu
     mapfile -t names < <(jq -r '.iso_presets[]?.name' "$CONFIG_JSON")
     mapfile -t urls < <(jq -r '.iso_presets[]?.url' "$CONFIG_JSON")
+    mapfile -t preset_checksum_urls < <(jq -r '.iso_presets[]?.checksum_url // empty' "$CONFIG_JSON")
+    mapfile -t preset_signature_urls < <(jq -r '.iso_presets[]?.signature_url // empty' "$CONFIG_JSON")
+    mapfile -t preset_gpg_keys < <(jq -r '.iso_presets[]?.gpg_key_url // empty' "$CONFIG_JSON")
     if (( ${#names[@]} > 0 )); then
       local items=()
       for i in "${!names[@]}"; do items+=("$i" "${names[$i]}"); done
       preset_choice=$($DIALOG --menu "ISO presets (or Cancel for manual URL)" 20 70 10 "${items[@]}" 3>&1 1>&2 2>&3 || true)
       if [[ -n "${preset_choice:-}" ]]; then
         url="${urls[$preset_choice]}"
+        preset_checksum_url="${preset_checksum_urls[$preset_choice]:-}"
+        preset_signature_url="${preset_signature_urls[$preset_choice]:-}"
+        preset_gpg_key_url="${preset_gpg_keys[$preset_choice]:-}"
       fi
     fi
   fi
   if [[ -z "${url:-}" ]]; then
     url=$($DIALOG --inputbox "ISO URL" 10 70 3>&1 1>&2 2>&3) || return 1
   fi
-  auto=$(try_fetch_checksum "$url" || true)
+  # Attempt to obtain checksum from preset sources
+  auto=""
+  filename=$(basename "$url")
+  tmpdir=$(mktemp -d)
+  if [[ -n "${preset_checksum_url:-}" ]]; then
+    checks_file="$tmpdir/checksums.txt"
+    curl -fsSL "$preset_checksum_url" -o "$checks_file" || true
+    if [[ -s "$checks_file" ]]; then
+      if [[ -n "${preset_signature_url:-}" ]]; then
+        sig_file="$tmpdir/checksums.sig"
+        curl -fsSL "$preset_signature_url" -o "$sig_file" || true
+        if [[ -s "$sig_file" ]]; then
+          if [[ -n "${preset_gpg_key_url:-}" ]]; then
+            if $DIALOG --yesno "Import vendor GPG key?\n$preset_gpg_key_url" 12 70 ; then
+              GNUPGHOME=/var/lib/hypervisor/gnupg curl -fsSL "$preset_gpg_key_url" | gpg --batch --import || true
+            fi
+          fi
+          GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$sig_file" "$checks_file" || $DIALOG --msgbox "WARNING: Signature verification failed" 8 60
+        fi
+      fi
+      # Parse checksum line for our filename (support common formats)
+      auto=$(awk -v fn="$filename" 'BEGIN{IGNORECASE=1}
+        $1 ~ /^[a-f0-9]{64}$/ && index($0, fn){print $1; exit}
+        match($0, /SHA256 \(([^)]+)\) = ([a-f0-9]{64})/, m){ if (m[1]==fn){print m[2]; exit} }
+      ' "$checks_file")
+    fi
+  fi
+  # Fallback to heuristic from URL base
+  [[ -z "$auto" ]] && auto=$(try_fetch_checksum "$url" || true)
   if [[ -n "$auto" ]]; then
     checksum="$auto"
   else
