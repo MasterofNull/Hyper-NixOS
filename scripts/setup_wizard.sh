@@ -46,4 +46,40 @@ fi
 
 $DIALOG --msgbox "Setup complete. You can revisit any step via the main menu.\n\nDocs: /etc/hypervisor/docs" 12 78
 
+# Advanced mode (optional)
+if $DIALOG --yesno "Advanced mode: write secure/performance toggles now and optionally rebuild?\n\nRecommended for power users." 12 78 ; then
+  # Gather choices
+  sf=1; mt=0; hp=1; smt=0
+  $DIALOG --yesno "Enable strict firewall (default-deny)?" 8 60 && sf=1 || sf=0
+  $DIALOG --yesno "Open migration TCP ports (libvirt TCP migrations)?" 8 60 && mt=1 || mt=0
+  $DIALOG --yesno "Enable Hugepages (perf up, flexibility down)?" 8 60 && hp=1 || hp=0
+  $DIALOG --yesno "Disable SMT/Hyper-Threading (mitigation, perf down)?" 8 60 && smt=1 || smt=0
+
+  mkdir -p /etc/hypervisor/configuration
+  # Write security-local.nix
+  cat > /etc/hypervisor/configuration/security-local.nix <<NIX
+{ config, lib, pkgs, ... }:
+{
+  hypervisor.security.strictFirewall = ${sf:+true}${sf:0:0}${sf/1/true}${sf/0/false};
+  hypervisor.security.migrationTcp = ${mt:+true}${mt:0:0}${mt/1/true}${mt/0/false};
+}
+NIX
+  # Write perf-local.nix
+  cat > /etc/hypervisor/configuration/perf-local.nix <<NIX
+{ config, lib, pkgs, ... }:
+{
+  hypervisor.performance.enableHugepages = ${hp:+true}${hp:0:0}${hp/1/true}${hp/0/false};
+  hypervisor.performance.disableSMT = ${smt:+true}${smt:0:0}${smt/1/true}${smt/0/false};
+}
+NIX
+
+  if $DIALOG --yesno "Attempt to rebuild now (nixos-rebuild switch)?" 10 70 ; then
+    if ! sudo nixos-rebuild switch; then
+      $DIALOG --msgbox "Rebuild failed. Please review /etc/hypervisor/configuration/*.nix and try again." 10 70
+    fi
+  else
+    $DIALOG --msgbox "Written: /etc/hypervisor/configuration/security-local.nix and perf-local.nix. Rebuild when ready." 10 78
+  fi
+fi
+
 $DIALOG --msgbox "Setup complete. See /etc/hypervisor/docs for guides and warnings." 10 70
