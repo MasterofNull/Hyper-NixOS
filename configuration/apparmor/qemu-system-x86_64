@@ -1,0 +1,28 @@
+# Minimal AppArmor profile for qemu-system-x86_64; adjust as needed
+#include <tunables/global>
+
+profile qemu-system-x86_64 flags=(attach_disconnected) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+  #include <abstractions/user-tmp>
+
+  /run/current-system/sw/bin/qemu-system-x86_64 mr,
+  /dev/kvm rw,
+  /dev/dri/** rw,
+  /dev/video** rw,
+  /dev/snd/** rw,
+  /dev/bus/usb/** rw,
+  /dev/input/** rw,
+  /dev/hidraw* rw,
+  /dev/uinput rw,
+  /dev/vfio/** rw,
+  /dev/net/tun rw,
+  /dev/vhost-net rw,
+  /dev/tpm* rw,
+  /var/lib/hypervisor/** rwk,
+  /etc/hypervisor/** r,
+
+  # Deny dangerous mounts or module loads
+  deny mount,
+  deny /sbin/modprobe x,
+}

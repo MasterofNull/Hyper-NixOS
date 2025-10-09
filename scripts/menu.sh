@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+umask 077
 
 ROOT="/etc/hypervisor"
 CONFIG_JSON="$ROOT/config.json"
@@ -11,6 +13,7 @@ SCRIPTS_DIR="$ROOT/scripts"
 LAST_VM_FILE="$STATE_DIR/last_vm"
 
 : "${DIALOG:=whiptail}"
+export DIALOG
 LOG_DIR="/var/log/hypervisor"
 LOG_FILE="$LOG_DIR/menu.log"
 AUTOSTART_SECS=5
@@ -52,7 +55,11 @@ menu_main() {
     10 "Bridge helper"
     11 "Snapshots & backups"
     12 "Docs & Help"
-    13 "Exit"
+    13 "Preflight check"
+    14 "SSH setup (for migration)"
+    15 "Live migration"
+    16 "Detect & adjust (devices/security)"
+    17 "Exit"
   )
   $DIALOG --title "Hypervisor Menu" --menu "Choose an option" 20 78 10 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -169,7 +176,19 @@ while true; do
     12)
       "$SCRIPTS_DIR/docs_viewer.sh" || true
       ;;
-    13|*)
+    13)
+      "$SCRIPTS_DIR/preflight_check.sh" || true
+      ;;
+    14)
+      "$SCRIPTS_DIR/ssh_setup.sh" || true
+      ;;
+    15)
+      "$SCRIPTS_DIR/migrate_vm.sh" || true
+      ;;
+    16)
+      "$SCRIPTS_DIR/detect_and_adjust.sh" || true
+      ;;
+    17|*)
       exit 0
       ;;
   esac

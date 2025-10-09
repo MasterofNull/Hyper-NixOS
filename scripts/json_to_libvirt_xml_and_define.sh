@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+umask 077
 
 PROFILE_JSON="$1"
 STATE_DIR="/var/lib/hypervisor"
@@ -12,9 +14,24 @@ mkdir -p "$XML_DIR" "$DISKS_DIR"
 require() {
   for b in jq virsh; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done
 }
+
+xml_escape() {
+  # Escapes &, <, >, ' and " for XML text nodes/attributes
+  sed -e 's/&/\&amp;/g' \
+      -e 's/</\&lt;/g' \
+      -e 's/>/\&gt;/g' \
+      -e 's/"/\&quot;/g' \
+      -e "s/'/\&apos;/g"
+}
 require
 
-name=$(jq -r '.name' "$PROFILE_JSON")
+raw_name=$(jq -r '.name' "$PROFILE_JSON")
+# Constrain name to safe subset for domain names (defense-in-depth)
+if [[ ! "$raw_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  name=$(echo "$raw_name" | tr -cs 'A-Za-z0-9._-' '-' | sed 's/^-*//; s/-*$//')
+else
+  name="$raw_name"
+fi
 cpus=$(jq -r '.cpus' "$PROFILE_JSON")
 memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
 disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
@@ -29,6 +46,16 @@ looking_glass_enabled=$(jq -r '.looking_glass.enable // false' "$PROFILE_JSON")
 looking_glass_size=$(jq -r '.looking_glass.size_mb // 64' "$PROFILE_JSON")
 # cpu_pinning: array of host cpu ids, sequentially mapped to vcpus
 mapfile -t pin_array < <(jq -r '.cpu_pinning[]? // empty' "$PROFILE_JSON")
+# numatune
+numa_nodeset=$(jq -r '.numa.nodeset // empty' "$PROFILE_JSON")
+# memballoon
+memballoon_disable=$(jq -r '.memballoon.disable // false' "$PROFILE_JSON")
+# tpm
+tpm_enable=$(jq -r '.tpm.enable // false' "$PROFILE_JSON")
+# vhost-net
+vhost_net=$(jq -r '.network.vhost // false' "$PROFILE_JSON")
+# autostart
+autostart=$(jq -r '.autostart // false' "$PROFILE_JSON")
 
 # Prepare disk if not present
 qcow="$DISKS_DIR/${name}.qcow2"
@@ -44,11 +71,17 @@ if [[ -n "$iso_path" && ! -f "$iso_path" ]]; then
   fi
 fi
 
-# Build XML
+# Build XML (prefer vmctl when available)
+v_name=$(printf '%s' "$name" | xml_escape)
 xml="$XML_DIR/${name}.xml"
-cat > "$xml" <<XML
+if command -v vmctl >/dev/null 2>&1; then
+  tmp_xml="$XML_DIR/.tmp-${name}.xml"
+  vmctl gen-xml --profile "$PROFILE_JSON" --out "$tmp_xml" || { echo "vmctl failed" >&2; exit 1; }
+  mv "$tmp_xml" "$xml"
+else
+  cat > "$xml" <<XML
 <domain type='kvm'>
-  <name>${name}</name>
+  <name>${v_name}</name>
   <memory unit='MiB'>${memory_mb}</memory>
   <vcpu placement='static'>${cpus}</vcpu>
   <os>
@@ -62,6 +95,7 @@ cat > "$xml" <<XML
   </features>
   <cpu mode='host-passthrough'/>
 XML
+fi
 
 # Optional hugepages backing
 if [[ "$hugepages" == "true" || "$hugepages" == "True" ]]; then
@@ -84,20 +118,29 @@ if (( ${#pin_array[@]} > 0 )); then
   } >> "$xml"
 fi
 
+if [[ -n "$numa_nodeset" && "$numa_nodeset" != "null" ]]; then
+  cat >> "$xml" <<XML
+  <numatune>
+    <memory mode='strict' nodeset='$(printf '%s' "$numa_nodeset" | xml_escape)'/>
+  </numatune>
+XML
+fi
+
 cat >> "$xml" <<XML
   <devices>
     <emulator>/run/current-system/sw/bin/qemu-system-x86_64</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='${qcow}'/>
+      <source file='$(printf '%s' "$qcow" | xml_escape)'/>
       <target dev='vda' bus='virtio'/>
     </disk>
 XML
 
 if [[ -n "${iso_path:-}" ]]; then
+  v_iso=$(printf '%s' "$iso_path" | xml_escape)
   cat >> "$xml" <<XML
     <disk type='file' device='cdrom'>
-      <source file='${iso_path}'/>
+      <source file='${v_iso}'/>
       <target dev='sda' bus='sata'/>
       <readonly/>
     </disk>
@@ -132,8 +175,9 @@ fi
 if [[ -n "${bridge:-}" ]]; then
   cat >> "$xml" <<XML
     <interface type='bridge'>
-      <source bridge='${bridge}'/>
+      <source bridge='$(printf '%s' "$bridge" | xml_escape)'/>
       <model type='virtio'/>
+      $( [[ "$vhost_net" == "true" || "$vhost_net" == "True" ]] && echo "<driver name='vhost'/>" )
     </interface>
 XML
 else
@@ -147,6 +191,10 @@ fi
 # Optional PCI passthrough devices
 for bdf in "${hostdevs[@]:-}"; do
   [[ -z "$bdf" ]] && continue
+  if [[ ! "$bdf" =~ ^[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]$ ]]; then
+    echo "Skipping invalid PCI BDF: $bdf" >&2
+    continue
+  fi
   cat >> "$xml" <<XML
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <source>
@@ -155,6 +203,22 @@ for bdf in "${hostdevs[@]:-}"; do
     </hostdev>
 XML
 done
+
+# Optional memballoon (enabled by default unless disabled)
+if [[ "$memballoon_disable" != "true" && "$memballoon_disable" != "True" ]]; then
+  cat >> "$xml" <<XML
+    <memballoon model='virtio'/>
+XML
+fi
+
+# Optional TPM 2.0 emulator
+if [[ "$tpm_enable" == "true" || "$tpm_enable" == "True" ]]; then
+  cat >> "$xml" <<XML
+    <tpm model='tpm-tis'>
+      <backend type='emulator' version='2.0'/>
+    </tpm>
+XML
+fi
 
 cat >> "$xml" <<XML
   </devices>
@@ -171,3 +235,6 @@ virsh destroy "$name" >/dev/null 2>&1 || true
 virsh undefine "$name" --remove-all-storage >/dev/null 2>&1 || true
 virsh define "$xml"
 virsh start "$name"
+if [[ "$autostart" == "true" || "$autostart" == "True" ]]; then
+  virsh autostart "$name" || true
+fi

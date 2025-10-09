@@ -2,6 +2,7 @@
 import curses
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -117,7 +118,9 @@ def launch_vm(profile: dict) -> int:
     cmd = build_qemu_command(profile)
     os.environ.setdefault("SDL_VIDEO_FULLSCREEN_DISPLAY", "0")
     try:
-        proc = subprocess.Popen(cmd)
+        # Use a minimal environment and safe args
+        safe_env = {k: v for k, v in os.environ.items() if k in ("PATH", "SDL_VIDEO_FULLSCREEN_DISPLAY", "SDL_VIDEODRIVER", "SDL_AUDIODRIVER")}
+        proc = subprocess.Popen(cmd, env=safe_env)
         return proc.wait()
     except FileNotFoundError as e:
         print(f"Failed to start QEMU: {e}", file=sys.stderr)

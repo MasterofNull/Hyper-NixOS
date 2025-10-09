@@ -4,7 +4,11 @@
   imports = [
     ./hardware-configuration.nix
     ../scripts/vfio-boot.nix
-  ];
+    ./security.nix
+  ]
+  ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix
+  ++ lib.optional (builtins.pathExists ./perf-local.nix) ./perf-local.nix
+  ++ lib.optional (builtins.pathExists ./security-local.nix) ./security-local.nix;
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -21,6 +25,12 @@
     "kernel.yama.ptrace_scope" = 1;
     "net.ipv4.conf.all.rp_filter" = 1;
     "net.ipv4.conf.default.rp_filter" = 1;
+    "fs.protected_hardlinks" = 1;
+    "fs.protected_symlinks" = 1;
+    "fs.protected_fifos" = 2;
+    "kernel.kexec_load_disabled" = 1;
+    "kernel.dmesg_restrict" = 1;
+    "kernel.unprivileged_bpf_disabled" = 1;
   };
 
   # Minimal packages
@@ -29,6 +39,7 @@
     OVMF
     jq
     python3
+    python3Packages.jsonschema
     curl
     newt  # provides `whiptail`
     dialog
@@ -42,16 +53,19 @@
     openssh
     genisoimage
     nfs-utils
+    openssh
   ];
 
   # Provide menu and profiles from this repository at runtime
-  environment.etc."hypervisor/menu.py".source = ../hypervisor_manager/menu.py;
+  # Python TUI not exposed; primary UI is shell menu for reduced surface
   environment.etc."hypervisor/vm_profiles".source = ../vm_profiles;
   environment.etc."hypervisor/isos".source = ../isos;
   environment.etc."hypervisor/scripts".source = ../scripts;
   environment.etc."hypervisor/config.json".source = ../configuration/config.json;
   environment.etc."hypervisor/docs".source = ../docs;
   environment.etc."hypervisor/vm_profile.schema.json".source = ../configuration/vm_profile.schema.json;
+  # Install libvirt hook for per-VM slice limits
+  environment.etc."libvirt/hooks/qemu".source = ../scripts/libvirt_hooks/qemu;
 
   # Create an unprivileged user that can access KVM
   users.users.hypervisor = {
@@ -75,6 +89,13 @@
   # Enable libvirt for virsh/XML workflows
   virtualisation.libvirtd.enable = true;
   virtualisation.libvirtd.qemuRunAsRoot = false;
+  virtualisation.libvirtd.extraConfig = ''
+    security_driver = "apparmor"
+    dynamic_ownership = 1
+    clear_emulator_capabilities = 1
+    seccomp_sandbox = 1
+    namespaces = [ "mount", "uts", "ipc", "pid", "net" ]
+  '';
 
   # Start the VM selection menu at boot on the console
   systemd.services.hypervisor-menu = {
@@ -107,6 +128,31 @@
       MemoryDenyWriteExecute = true;
       RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" ];
       SystemCallFilter = [ "@system-service" "@pkey" "@chown" ];
+      ProtectKernelTunables = true;
+      ProtectKernelModules = true;
+      ProtectControlGroups = true;
+      RestrictNamespaces = true;
+      RestrictSUIDSGID = true;
+      CapabilityBoundingSet = "";
+      AmbientCapabilities = "";
+    };
+  };
+
+  # First-boot wizard (runs once, then marks completion)
+  systemd.services.hypervisor-first-boot = {
+    description = "First-boot Setup Wizard";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'if [ ! -f /var/lib/hypervisor/.first_boot_done ]; then /etc/hypervisor/scripts/setup_wizard.sh || true; touch /var/lib/hypervisor/.first_boot_done; fi'";
+      User = "hypervisor";
+      WorkingDirectory = "/etc/hypervisor";
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
     };
   };
 
@@ -122,6 +168,9 @@
     };
   };
   security.apparmor.enable = true;
+  security.apparmor.policies = {
+    "qemu-system-x86_64".profile = builtins.readFile ../configuration/apparmor/qemu-system-x86_64;
+  };
   boot.kernelParams = [ "apparmor=1" "security=apparmor" ];
 
   # Avoid starting unnecessary daemons
