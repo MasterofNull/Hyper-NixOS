@@ -18,24 +18,38 @@
     OVMF
     jq
     python3
+    curl
+    newt  # provides `whiptail`
+    dialog
+    nano
+    libvirt
+    virt-install
   ];
 
   # Provide menu and profiles from this repository at runtime
   environment.etc."hypervisor/menu.py".source = ../hypervisor_manager/menu.py;
   environment.etc."hypervisor/vm_profiles".source = ../vm_profiles;
   environment.etc."hypervisor/isos".source = ../isos;
+  environment.etc."hypervisor/scripts".source = ../scripts;
 
   # Create an unprivileged user that can access KVM
   users.users.hypervisor = {
     isNormalUser = true;
-    extraGroups = [ "kvm" "video" ];
+    extraGroups = [ "kvm" "libvirtd" "video" ];
     createHome = false;
   };
 
-  # Create state dir for OVMF vars and disks
+  # Create state dirs for OVMF vars, disks, XML, profiles, ISOs
   systemd.tmpfiles.rules = [
     "d /var/lib/hypervisor 0750 hypervisor hypervisor - -"
+    "d /var/lib/hypervisor/isos 0750 hypervisor hypervisor - -"
+    "d /var/lib/hypervisor/disks 0750 hypervisor hypervisor - -"
+    "d /var/lib/hypervisor/xml 0750 hypervisor hypervisor - -"
+    "d /var/lib/hypervisor/vm_profiles 0750 hypervisor hypervisor - -"
   ];
+
+  # Enable libvirt for virsh/XML workflows
+  virtualisation.libvirtd.enable = true;
 
   # Start the VM selection menu at boot on the console
   systemd.services.hypervisor-menu = {
@@ -45,11 +59,12 @@
     wants = [ "getty@tty1.service" "network-online.target" ];
     serviceConfig = {
       Type = "simple";
-      ExecStart = "${pkgs.setxkbmap}/bin/setxkbmap -layout us; ${pkgs.python3}/bin/python3 /etc/hypervisor/menu.py /etc/hypervisor/vm_profiles";
+      ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/menu.sh";
       WorkingDirectory = "/etc/hypervisor";
       User = "hypervisor";
       SupplementaryGroups = [ "kvm" "video" ];
-      Restart = "on-failure";
+      Restart = "always";
+      RestartSec = 2;
       Environment = [
         "SDL_VIDEODRIVER=kmsdrm"
         "SDL_AUDIODRIVER=alsa"
