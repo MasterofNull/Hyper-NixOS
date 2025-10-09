@@ -36,6 +36,22 @@ fi
 if lsmod | grep -q vhost_net; then
   report+=$'[✓] vhost_net loaded; allowed by AppArmor (/dev/vhost-net)\n'
 fi
+# CET / AMD / guest_memfd summaries
+if grep -qE ' shstk | cet_ss ' /proc/cpuinfo 2>/dev/null; then
+  report+=$'[✓] CET Shadow Stack supported by CPU\n'
+fi
+if grep -qE ' ibt | cet_ib ' /proc/cpuinfo 2>/dev/null; then
+  report+=$'[✓] CET IBT supported by CPU\n'
+fi
+if grep -qi amd /proc/cpuinfo; then
+  if dmesg | grep -qi 'x2avic'; then report+=$'[✓] AMD x2AVIC available\n'; fi
+  if dmesg | grep -qi 'Secure AVIC'; then report+=$'[✓] AMD Secure AVIC available\n'; fi
+  if [[ -d /sys/firmware/sev ]]; then report+=$'[✓] SEV platform present\n'; fi
+  if [[ -f /sys/firmware/sev/snp ]]; then report+=$'[✓] SEV-SNP present\n'; fi
+fi
+if [[ -f /sys/module/kvm/parameters/guest_memfd ]]; then
+  report+=$'[✓] guest_memfd parameter detected\n'
+fi
 # TPM
 if ls /dev/tpm* >/dev/null 2>&1; then
   report+=$'[✓] TPM devices present; allowed by AppArmor (/dev/tpm*)\n'
