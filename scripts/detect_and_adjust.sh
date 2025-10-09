@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Detect common host devices and adjust AppArmor and firewall guidance
-set -euo pipefail
-: "${DIALOG:=whiptail}"
+set -Eeuo pipefail
+IFS=$'\n\t'
+umask 077
+PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+trap 'exit $?' EXIT HUP INT TERM
+:
+"${DIALOG:=whiptail}"
 export DIALOG
 
 has() { command -v "$1" >/dev/null 2>&1; }
