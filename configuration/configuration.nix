@@ -50,6 +50,7 @@
     openssh
     genisoimage
     nfs-utils
+    openssh
   ];
 
   # Provide menu and profiles from this repository at runtime
@@ -162,6 +163,9 @@
     };
   };
   security.apparmor.enable = true;
+  security.apparmor.policies = {
+    "qemu-system-x86_64".profile = builtins.readFile ../configuration/apparmor/qemu-system-x86_64;
+  };
   boot.kernelParams = [ "apparmor=1" "security=apparmor" ];
 
   # Avoid starting unnecessary daemons

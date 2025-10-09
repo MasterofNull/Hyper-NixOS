@@ -56,7 +56,9 @@ menu_main() {
     11 "Snapshots & backups"
     12 "Docs & Help"
     13 "Preflight check"
-    14 "Exit"
+    14 "SSH setup (for migration)"
+    15 "Live migration"
+    16 "Exit"
   )
   $DIALOG --title "Hypervisor Menu" --menu "Choose an option" 20 78 10 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -176,7 +178,13 @@ while true; do
     13)
       "$SCRIPTS_DIR/preflight_check.sh" || true
       ;;
-    14|*)
+    14)
+      "$SCRIPTS_DIR/ssh_setup.sh" || true
+      ;;
+    15)
+      "$SCRIPTS_DIR/migrate_vm.sh" || true
+      ;;
+    16|*)
       exit 0
       ;;
   esac
