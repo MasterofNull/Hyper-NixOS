@@ -15,6 +15,41 @@ require "$DIALOG" curl sha256sum jq awk sed gpg
 
 mkdir -p "$ISOS_DIR" "$USER_PROFILES_DIR"
 
+# Import a GPG key URL into the hypervisor keyring (non-interactive)
+import_key_url() {
+  local url="$1"
+  [[ -z "$url" ]] && return 1
+  tmp=$(mktemp)
+  if curl -fsSL "$url" -o "$tmp"; then
+    GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --import "$tmp" >/dev/null 2>&1 || true
+    rm -f "$tmp"
+    return 0
+  fi
+  rm -f "$tmp"; return 1
+}
+
+# Try to automatically find and import a vendor GPG key
+auto_import_vendor_key() {
+  local signature_url="$1" checksum_url="$2" iso_url="$3" preset_key_url="$4"
+  # Prefer explicit preset key
+  if [[ -n "$preset_key_url" ]]; then
+    import_key_url "$preset_key_url" && return 0
+  fi
+  # Heuristic: try common key filenames in the directory of signature/checksum/ISO
+  local base dir candidates c
+  base="${signature_url%/*}"
+  [[ -z "$base" || "$base" == "$signature_url" ]] && base="${checksum_url%/*}"
+  [[ -z "$base" || "$base" == "$checksum_url" ]] && base="${iso_url%/*}"
+  dir="$base"
+  candidates=(
+    "$dir/KEYS" "$dir/KEYS.txt" "$dir/KEYS.gpg" "$dir/keyring.gpg" "$dir/gpg.key" "$dir/Release.key" "$dir/GPG-KEY" "$dir/GPG-KEYS" "$dir/pubkey.gpg"
+  )
+  for c in "${candidates[@]}"; do
+    import_key_url "$c" && return 0
+  done
+  return 1
+}
+
 choose_iso() {
   local files=()
   shopt -s nullglob
@@ -101,12 +136,17 @@ download_iso() {
         sig_file="$tmpdir/checksums.sig"
         curl -fsSL "$preset_signature_url" -o "$sig_file" || true
         if [[ -s "$sig_file" ]]; then
-          if [[ -n "${preset_gpg_key_url:-}" ]]; then
-            if $DIALOG --yesno "Import vendor GPG key?\n$preset_gpg_key_url" 12 70 ; then
-              GNUPGHOME=/var/lib/hypervisor/gnupg curl -fsSL "$preset_gpg_key_url" | gpg --batch --import || true
+          # Auto-import vendor key if possible, then verify
+          auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "${preset_gpg_key_url:-}" || true
+          if ! GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$sig_file" "$checks_file"; then
+            # If verification failed (likely missing key), ask user to provide key URL
+            if $DIALOG --yesno "Signature verification failed. Provide a GPG key URL to import?" 10 70; then
+              import_gpg_key || true
+              GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$sig_file" "$checks_file" || $DIALOG --msgbox "WARNING: Signature still not verified" 8 60
+            else
+              $DIALOG --msgbox "WARNING: Signature verification not completed" 8 60
             fi
           fi
-          GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$sig_file" "$checks_file" || $DIALOG --msgbox "WARNING: Signature verification failed" 8 60
         fi
       fi
       # Parse checksum line for our filename (support common formats)
