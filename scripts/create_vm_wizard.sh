@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+umask 077
 
 PROFILES_DIR="${1:-/var/lib/hypervisor/vm_profiles}"
 ISOS_DIR="${2:-/var/lib/hypervisor/isos}"
 : "${DIALOG:=whiptail}"
+export DIALOG
 
 require() { for b in jq $DIALOG; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done; }
 require

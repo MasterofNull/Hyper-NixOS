@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+umask 077
 
 PROFILE_JSON="$1"
 STATE_DIR="/var/lib/hypervisor"
@@ -12,9 +14,24 @@ mkdir -p "$XML_DIR" "$DISKS_DIR"
 require() {
   for b in jq virsh; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done
 }
+
+xml_escape() {
+  # Escapes &, <, >, ' and " for XML text nodes/attributes
+  sed -e 's/&/\&amp;/g' \
+      -e 's/</\&lt;/g' \
+      -e 's/>/\&gt;/g' \
+      -e 's/"/\&quot;/g' \
+      -e "s/'/\&apos;/g"
+}
 require
 
-name=$(jq -r '.name' "$PROFILE_JSON")
+raw_name=$(jq -r '.name' "$PROFILE_JSON")
+# Constrain name to safe subset for domain names (defense-in-depth)
+if [[ ! "$raw_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  name=$(echo "$raw_name" | tr -cs 'A-Za-z0-9._-' '-' | sed 's/^-*//; s/-*$//')
+else
+  name="$raw_name"
+fi
 cpus=$(jq -r '.cpus' "$PROFILE_JSON")
 memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
 disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
@@ -45,10 +62,11 @@ if [[ -n "$iso_path" && ! -f "$iso_path" ]]; then
 fi
 
 # Build XML
+v_name=$(printf '%s' "$name" | xml_escape)
 xml="$XML_DIR/${name}.xml"
 cat > "$xml" <<XML
 <domain type='kvm'>
-  <name>${name}</name>
+  <name>${v_name}</name>
   <memory unit='MiB'>${memory_mb}</memory>
   <vcpu placement='static'>${cpus}</vcpu>
   <os>
@@ -89,15 +107,16 @@ cat >> "$xml" <<XML
     <emulator>/run/current-system/sw/bin/qemu-system-x86_64</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='${qcow}'/>
+      <source file='$(printf '%s' "$qcow" | xml_escape)'/>
       <target dev='vda' bus='virtio'/>
     </disk>
 XML
 
 if [[ -n "${iso_path:-}" ]]; then
+  v_iso=$(printf '%s' "$iso_path" | xml_escape)
   cat >> "$xml" <<XML
     <disk type='file' device='cdrom'>
-      <source file='${iso_path}'/>
+      <source file='${v_iso}'/>
       <target dev='sda' bus='sata'/>
       <readonly/>
     </disk>
@@ -132,7 +151,7 @@ fi
 if [[ -n "${bridge:-}" ]]; then
   cat >> "$xml" <<XML
     <interface type='bridge'>
-      <source bridge='${bridge}'/>
+      <source bridge='$(printf '%s' "$bridge" | xml_escape)'/>
       <model type='virtio'/>
     </interface>
 XML
@@ -147,6 +166,10 @@ fi
 # Optional PCI passthrough devices
 for bdf in "${hostdevs[@]:-}"; do
   [[ -z "$bdf" ]] && continue
+  if [[ ! "$bdf" =~ ^[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]$ ]]; then
+    echo "Skipping invalid PCI BDF: $bdf" >&2
+    continue
+  fi
   cat >> "$xml" <<XML
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <source>

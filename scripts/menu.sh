@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+umask 077
 
 ROOT="/etc/hypervisor"
 CONFIG_JSON="$ROOT/config.json"
@@ -11,6 +13,7 @@ SCRIPTS_DIR="$ROOT/scripts"
 LAST_VM_FILE="$STATE_DIR/last_vm"
 
 : "${DIALOG:=whiptail}"
+export DIALOG
 LOG_DIR="/var/log/hypervisor"
 LOG_FILE="$LOG_DIR/menu.log"
 AUTOSTART_SECS=5
