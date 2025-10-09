@@ -20,6 +20,8 @@ memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
 disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
 iso_path=$(jq -r '.iso_path // empty' "$PROFILE_JSON")
 bridge=$(jq -r '.network.bridge // empty' "$PROFILE_JSON")
+# hostdev passthrough list e.g. ["0000:01:00.0","0000:01:00.1"]
+mapfile -t hostdevs < <(jq -r '.hostdevs[]? // empty' "$PROFILE_JSON")
 hugepages=$(jq -r '.hugepages // false' "$PROFILE_JSON")
 audio_model=$(jq -r '.audio.model // empty' "$PROFILE_JSON")
 video_heads=$(jq -r '.video.heads // 1' "$PROFILE_JSON")
@@ -141,6 +143,18 @@ else
     </interface>
 XML
 fi
+
+# Optional PCI passthrough devices
+for bdf in "${hostdevs[@]:-}"; do
+  [[ -z "$bdf" ]] && continue
+  cat >> "$xml" <<XML
+    <hostdev mode='subsystem' type='pci' managed='yes'>
+      <source>
+        <address domain='0x${bdf:0:4}' bus='0x${bdf:5:2}' slot='0x${bdf:8:2}' function='0x${bdf:11:1}'/>
+      </source>
+    </hostdev>
+XML
+done
 
 cat >> "$xml" <<XML
   </devices>

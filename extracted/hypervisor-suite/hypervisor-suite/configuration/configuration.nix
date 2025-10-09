@@ -44,6 +44,7 @@
   environment.etc."hypervisor/vm_profiles".source = ../vm_profiles;
   environment.etc."hypervisor/isos".source = ../isos;
   environment.etc."hypervisor/scripts".source = ../scripts;
+  environment.etc."hypervisor/config.json".source = ../configuration/config.json;
 
   # Create an unprivileged user that can access KVM
   users.users.hypervisor = {
@@ -59,6 +60,7 @@
     "d /var/lib/hypervisor/disks 0750 hypervisor hypervisor - -"
     "d /var/lib/hypervisor/xml 0750 hypervisor hypervisor - -"
     "d /var/lib/hypervisor/vm_profiles 0750 hypervisor hypervisor - -"
+    "d /var/log/hypervisor 0750 hypervisor hypervisor - -"
   ];
 
   # Enable libvirt for virsh/XML workflows

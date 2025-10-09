@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="/etc/hypervisor"
+CONFIG_JSON="$ROOT/config.json"
 STATE_DIR="/var/lib/hypervisor"
 TEMPLATE_PROFILES_DIR="$ROOT/vm_profiles"   # read-only templates
 USER_PROFILES_DIR="$STATE_DIR/vm_profiles"  # user-created profiles
@@ -10,6 +11,18 @@ SCRIPTS_DIR="$ROOT/scripts"
 LAST_VM_FILE="$STATE_DIR/last_vm"
 
 : "${DIALOG:=whiptail}"
+LOG_DIR="/var/log/hypervisor"
+LOG_FILE="$LOG_DIR/menu.log"
+AUTOSTART_SECS=5
+LOG_ENABLED=true
+if [[ -f "$CONFIG_JSON" ]]; then
+  AUTOSTART_SECS=$(jq -r '.features.autostart_timeout_sec // 5' "$CONFIG_JSON" 2>/dev/null || echo 5)
+  LOG_ENABLED=$(jq -r '.logging.enabled // true' "$CONFIG_JSON" 2>/dev/null || echo true)
+  LOG_DIR=$(jq -r '.logging.dir // "/var/log/hypervisor"' "$CONFIG_JSON" 2>/dev/null || echo "/var/log/hypervisor")
+  LOG_FILE="$LOG_DIR/menu.log"
+fi
+mkdir -p "$LOG_DIR"
+log() { $LOG_ENABLED && printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG_FILE" || true; }
 
 require() {
   for bin in "$@"; do
@@ -30,10 +43,12 @@ menu_main() {
     2 "Quick-start last VM"
     3 "Create VM (wizard)"
     4 "ISO manager (download/validate/attach)"
-    5 "Define/Start from JSON"
-    6 "Edit VM profile"
-    7 "Delete VM"
-    8 "Exit"
+    5 "Hardware detect & VFIO suggestions"
+    6 "Define/Start from JSON"
+    7 "Edit VM profile"
+    8 "Delete VM"
+    9 "Bridge helper"
+    10 "Exit"
   )
   $DIALOG --title "Hypervisor Menu" --menu "Choose an option" 20 78 10 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -90,7 +105,7 @@ create_vm_wizard() {
 }
 
 autostart_countdown() {
-  local seconds="${1:-5}"
+  local seconds="${1:-$AUTOSTART_SECS}"
   local vm
   vm=$(quick_start_last || true) || return 0
   for ((i=seconds;i>0;i--)); do
@@ -120,18 +135,24 @@ while true; do
       iso_manager || true
       ;;
     5)
-      p=$(select_profile || true) || continue
-      "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true
+      "$SCRIPTS_DIR/hardware_detect.sh" | ${PAGER:-less}
       ;;
     6)
       p=$(select_profile || true) || continue
-      edit_profile "$p"
+      "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true
       ;;
     7)
       p=$(select_profile || true) || continue
+      edit_profile "$p"
+      ;;
+    8)
+      p=$(select_profile || true) || continue
       delete_vm "$p"
       ;;
-    8|*)
+    9)
+      "$SCRIPTS_DIR/bridge_helper.sh" || true
+      ;;
+    10|*)
       exit 0
       ;;
   esac

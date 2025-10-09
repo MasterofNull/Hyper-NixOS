@@ -3,6 +3,7 @@ set -euo pipefail
 
 ISOS_DIR="${1:-/var/lib/hypervisor/isos}"
 USER_PROFILES_DIR="${2:-/var/lib/hypervisor/vm_profiles}"
+CONFIG_JSON="/etc/hypervisor/config.json"
 : "${DIALOG:=whiptail}"
 
 require() {
@@ -10,7 +11,7 @@ require() {
     command -v "$bin" >/dev/null 2>&1 || { echo "Missing: $bin" >&2; exit 1; }
   done
 }
-require "$DIALOG" curl sha256sum jq
+require "$DIALOG" curl sha256sum jq awk sed
 
 mkdir -p "$ISOS_DIR" "$USER_PROFILES_DIR"
 
@@ -65,7 +66,23 @@ try_fetch_checksum() {
 
 download_iso() {
   local url checksum filename tmp auto
-  url=$($DIALOG --inputbox "ISO URL" 10 70 3>&1 1>&2 2>&3) || return 1
+  local preset_choice
+  if [[ -f "$CONFIG_JSON" ]]; then
+    # Build preset menu
+    mapfile -t names < <(jq -r '.iso_presets[]?.name' "$CONFIG_JSON")
+    mapfile -t urls < <(jq -r '.iso_presets[]?.url' "$CONFIG_JSON")
+    if (( ${#names[@]} > 0 )); then
+      local items=()
+      for i in "${!names[@]}"; do items+=("$i" "${names[$i]}"); done
+      preset_choice=$($DIALOG --menu "ISO presets (or Cancel for manual URL)" 20 70 10 "${items[@]}" 3>&1 1>&2 2>&3 || true)
+      if [[ -n "${preset_choice:-}" ]]; then
+        url="${urls[$preset_choice]}"
+      fi
+    fi
+  fi
+  if [[ -z "${url:-}" ]]; then
+    url=$($DIALOG --inputbox "ISO URL" 10 70 3>&1 1>&2 2>&3) || return 1
+  fi
   auto=$(try_fetch_checksum "$url" || true)
   if [[ -n "$auto" ]]; then
     checksum="$auto"
