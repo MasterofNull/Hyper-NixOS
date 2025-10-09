@@ -47,13 +47,13 @@ fi
 $DIALOG --msgbox "Setup complete. You can revisit any step via the main menu.\n\nDocs: /etc/hypervisor/docs" 12 78
 
 # Advanced mode (optional)
-if $DIALOG --yesno "Advanced mode: write secure/performance toggles now and optionally rebuild?\n\nRecommended for power users." 12 78 ; then
+if $DIALOG --yesno "Advanced mode: apply best‑practice secure/performance settings now and optionally rebuild?\n\nDefaults favor security and robustness; you can override each choice." 14 78 ; then
   # Gather choices
-  sf=1; mt=0; hp=1; smt=0
-  $DIALOG --yesno "Enable strict firewall (default-deny)?" 8 60 && sf=1 || sf=0
-  $DIALOG --yesno "Open migration TCP ports (libvirt TCP migrations)?" 8 60 && mt=1 || mt=0
-  $DIALOG --yesno "Enable Hugepages (perf up, flexibility down)?" 8 60 && hp=1 || hp=0
-  $DIALOG --yesno "Disable SMT/Hyper-Threading (mitigation, perf down)?" 8 60 && smt=1 || smt=0
+  sf=1; mt=0; hp=1; smt=1
+  $DIALOG --yesno "Enable strict firewall (default‑deny)?\nRecommended: Yes (secure)." 10 70 && sf=1 || sf=0
+  $DIALOG --yesno "Open migration TCP ports (libvirt TCP migrations)?\nRecommended: No (keep closed unless needed)." 10 78 && mt=1 || mt=0
+  $DIALOG --yesno "Enable Hugepages (can improve performance; reduces flexibility)?\nRecommended: Yes (most hosts)." 10 78 && hp=1 || hp=0
+  $DIALOG --yesno "Disable SMT/Hyper‑Threading (mitigates side‑channels; may reduce throughput)?\nRecommended: Yes (secure); No (throughput)." 12 78 && smt=1 || smt=0
 
   mkdir -p /etc/hypervisor/configuration
   # Write security-local.nix
