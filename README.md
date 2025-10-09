@@ -1,6 +1,6 @@
 # Hyper-NixOS (Hypervisor Suite)
 
-A NixOS-based, security-focused hypervisor with a boot-time VM menu, ISO download + verification, libvirt management, and optional VFIO passthrough.
+A NixOS-based, security and performance focused hypervisor with a boot-time VM menu, ISO download + verification, libvirt management, and optional VFIO passthrough.
 
 ## Quick start
 
