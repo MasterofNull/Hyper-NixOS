@@ -5,7 +5,7 @@
     ./hardware-configuration.nix
     ../scripts/vfio-boot.nix
     ./security.nix
-  ];
+  ] ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix;
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;

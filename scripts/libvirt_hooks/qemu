@@ -9,11 +9,18 @@ domain=${3:-}
 
 # Only apply on 'started' lifecycle event
 if [[ "$op" == "lifecycle" && "$phase" == "start" ]]; then
-  # Use systemd-run to create a transient slice and move qemu in
-  # Note: Adjust limits per your hardware
+  # Read profile limits if available
+  profile="/var/lib/hypervisor/vm_profiles/${domain}.json"
+  cpuq="200%"; memmax="8G"
+  if [[ -f "$profile" ]]; then
+    cpu_val=$(jq -r '.limits.cpu_quota_percent // empty' "$profile" 2>/dev/null || true)
+    mem_val=$(jq -r '.limits.memory_max_mb // empty' "$profile" 2>/dev/null || true)
+    [[ -n "${cpu_val:-}" ]] && cpuq="${cpu_val}%"
+    [[ -n "${mem_val:-}" ]] && memmax="${mem_val}M"
+  fi
   systemd-run --unit="vm-${domain}.slice" \
     --slice=machine.slice \
     -p CPUAccounting=yes -p MemoryAccounting=yes -p IOAccounting=yes \
-    -p CPUQuota=200% -p MemoryMax=8G \
+    -p CPUQuota=${cpuq} -p MemoryMax=${memmax} \
     /bin/true
 fi

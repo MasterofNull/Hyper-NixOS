@@ -27,6 +27,14 @@ if $DIALOG --yesno "Enable strict firewall (default-deny) and allow SSH + libvir
   $DIALOG --msgbox "To enable: set hypervisor.security.strictFirewall = true in configuration.nix" 10 70
 fi
 
+# Performance trade-offs (optional)
+if $DIALOG --yesno "Enable Hugepages (can improve performance, reduces flexibility)?" 10 78 ; then
+  $DIALOG --msgbox "Set hypervisor.performance.enableHugepages = true in performance.nix" 10 78
+fi
+if $DIALOG --yesno "Disable SMT/Hyper-Threading (mitigation, may reduce throughput)?" 10 78 ; then
+  $DIALOG --msgbox "Set hypervisor.performance.disableSMT = true in performance.nix" 10 78
+fi
+
 # VFIO and hardware detection
 if $DIALOG --yesno "Detect hardware and prepare VFIO passthrough (optional)?\n\nWe will propose GPU/audio IDs and write a Nix snippet." 14 80 ; then
   /etc/hypervisor/scripts/vfio_workflow.sh || true
