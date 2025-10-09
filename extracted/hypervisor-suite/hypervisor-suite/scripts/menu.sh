@@ -39,6 +39,7 @@ mkdir -p "$USER_PROFILES_DIR" "$ISOS_DIR"
 
 menu_main() {
   local choices=(
+    0 "Setup wizard (recommended)"
     1 "Start VM"
     2 "Quick-start last VM"
     3 "Create VM (wizard)"
@@ -122,6 +123,9 @@ autostart_countdown 5
 while true; do
   choice=$(menu_main || true)
   case "$choice" in
+    0)
+      "$SCRIPTS_DIR/setup_wizard.sh" || true
+      ;;
     1)
       p=$(select_profile || true) || continue
       start_vm "$p" || true

@@ -38,6 +38,8 @@
     pciutils
     looking-glass-client
     gnupg
+    swtpm
+    openssh
   ];
 
   # Provide menu and profiles from this repository at runtime
@@ -46,6 +48,7 @@
   environment.etc."hypervisor/isos".source = ../isos;
   environment.etc."hypervisor/scripts".source = ../scripts;
   environment.etc."hypervisor/config.json".source = ../configuration/config.json;
+  environment.etc."hypervisor/docs".source = ../docs;
 
   # Create an unprivileged user that can access KVM
   users.users.hypervisor = {
@@ -68,6 +71,7 @@
 
   # Enable libvirt for virsh/XML workflows
   virtualisation.libvirtd.enable = true;
+  virtualisation.libvirtd.qemuRunAsRoot = false;
 
   # Start the VM selection menu at boot on the console
   systemd.services.hypervisor-menu = {
@@ -105,7 +109,15 @@
 
   # Security hardening
   networking.firewall.enable = true;
-  services.openssh.enable = false;
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      PermitRootLogin = "no";
+      X11Forwarding = false;
+      KbdInteractiveAuthentication = false;
+    };
+  };
   security.apparmor.enable = true;
   boot.kernelParams = [ "apparmor=1" "security=apparmor" ];
 
