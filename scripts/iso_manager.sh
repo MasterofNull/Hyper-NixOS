@@ -168,7 +168,11 @@ download_iso() {
   fi
   filename=$(basename "$url")
   tmp="$ISOS_DIR/.partial-$filename"
-  curl -L -C - "$url" -o "$tmp"
+  if command -v isoctl >/dev/null 2>&1; then
+    isoctl download --url "$url" --out "$tmp" || { $DIALOG --msgbox "isoctl download failed" 8 50; return 1; }
+  else
+    curl -L -C - "$url" -o "$tmp"
+  fi
   mv "$tmp" "$ISOS_DIR/$filename"
   if [[ -n "${checksum:-}" ]]; then
     if echo "$checksum  $ISOS_DIR/$filename" | sha256sum -c -; then
