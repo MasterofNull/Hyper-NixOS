@@ -23,14 +23,14 @@
         apps.bootstrap = {
           type = "app";
           program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-bootstrap" ''
-            exec ${pkgs.bash}/bin/bash ${self}/scripts/bootstrap_nixos.sh "$@"
+            exec ${pkgs.bash}/bin/bash ${./scripts/bootstrap_nixos.sh} "$@"
           '');
         };
 
         apps.rebuild-helper = {
           type = "app";
           program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-rebuild" ''
-            exec ${pkgs.bash}/bin/bash ${self}/scripts/rebuild_helper.sh "$@"
+            exec ${pkgs.bash}/bin/bash ${./scripts/rebuild_helper.sh} "$@"
           '');
         };
 

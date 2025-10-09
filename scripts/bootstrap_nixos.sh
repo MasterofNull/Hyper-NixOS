@@ -12,6 +12,27 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 TMPDIR=$(mktemp -d -t hypervisor-bootstrap.XXXXXX)
 
+HOSTNAME_OVERRIDE=""
+ACTION=""   # build|test|switch
+FORCE=false
+SRC_OVERRIDE=""
+
+usage() {
+  cat <<USAGE
+Usage: sudo $(basename "$0") [--hostname NAME] [--action build|test|switch] [--force] [--source PATH]
+
+Install Hyper‑NixOS from the current folder (USB checkout) into /etc/hypervisor,
+write /etc/nixos/flake.nix, and optionally perform a one-shot rebuild.
+
+Options:
+  --hostname NAME     Host attribute and system hostname (default: current hostname)
+  --action MODE       One of: build, test, switch. If omitted, show TUI menu.
+  --force             Overwrite existing /etc/hypervisor without prompting
+  --source PATH       Use PATH as source folder instead of auto-detect
+  -h, --help          Show this help
+USAGE
+}
+
 require_root() {
   if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
     echo "This script must be run as root (use sudo)." >&2
@@ -50,12 +71,14 @@ copy_repo_to_etc() {
   local src_root="$1"
   local dst_root="/etc/hypervisor"
   if [[ -d "$dst_root" ]]; then
-    if [[ -n "$DIALOG" ]]; then
+    if $FORCE; then
+      :
+    elif [[ -n "$DIALOG" ]]; then
       "$DIALOG" --yesno "/etc/hypervisor exists. Overwrite with current repo contents?" 10 70 || return 0
     else
       read -r -p "/etc/hypervisor exists. Overwrite? [y/N] " ans
       [[ "$ans" =~ ^[Yy]$ ]] || return 0
-    fi>
+    fi
     rm -rf -- "$dst_root"
   fi
   mkdir -p "$dst_root"
@@ -133,23 +156,40 @@ rebuild_menu() {
 main() {
   require_root
   DIALOG="$(use_dialog)"
+
+  # Parse CLI flags early for non-interactive one-shot installs
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --hostname) HOSTNAME_OVERRIDE="$2"; shift 2;;
+      --action) ACTION="$2"; shift 2;;
+      --force) FORCE=true; shift;;
+      --source) SRC_OVERRIDE="$2"; shift 2;;
+      -h|--help) usage; exit 0;;
+      *) echo "Unknown option: $1" >&2; usage; exit 1;;
+    esac
+  done
+
   local system; system=$(detect_system)
   local default_hostname; default_hostname=$(hostname -s 2>/dev/null || echo hypervisor)
 
   # Determine source root when run via nix run (store) or from a checkout
   local src_root
-  if [[ "$0" == /nix/store/* ]]; then
+  if [[ -n "$SRC_OVERRIDE" ]]; then
+    src_root="$SRC_OVERRIDE"
+  elif [[ "$0" == /nix/store/* ]]; then
     src_root="$(dirname "$(dirname "$0")")"
   else
     src_root="$(cd "$(dirname "$0")/.." && pwd)"
   fi
 
-  local hostname="$default_hostname"
-  if [[ -n "$DIALOG" ]]; then
+  local hostname
+  if [[ -n "$HOSTNAME_OVERRIDE" ]]; then
+    hostname="$HOSTNAME_OVERRIDE"
+  elif [[ -n "$DIALOG" && -z "$ACTION" ]]; then
     hostname=$("$DIALOG" --inputbox "Hostname for this hypervisor" 10 60 "$default_hostname" 3>&1 1>&2 2>&3 || echo "$default_hostname")
     "$DIALOG" --msgbox "We will copy Hyper‑NixOS files to /etc/hypervisor and generate /etc/nixos/flake.nix for '$hostname' on $system." 12 70 || true
   else
-    read -r -p "Hostname [$default_hostname]: " ans
+    read -r -p "Hostname [$default_hostname]: " ans || true
     hostname=${ans:-$default_hostname}
   fi
 
@@ -157,12 +197,22 @@ main() {
   copy_repo_to_etc "$src_root"
   write_host_flake "$system" "$hostname"
 
-  if [[ -n "$DIALOG" ]]; then
-    "$DIALOG" --msgbox "Bootstrap complete. You can now build, test, or switch to the new configuration." 10 70 || true
+  if [[ -n "$ACTION" ]]; then
+    export NIX_CONFIG="experimental-features = nix-command flakes"
+    case "$ACTION" in
+      build) nixos-rebuild build --flake "/etc/nixos#$hostname" ;;
+      test) nixos-rebuild test --flake "/etc/nixos#$hostname" ;;
+      switch) nixos-rebuild switch --flake "/etc/nixos#$hostname" ;;
+      *) echo "Invalid --action: $ACTION" >&2; exit 1;;
+    esac
   else
-    msg "Bootstrap complete."
+    if [[ -n "$DIALOG" ]]; then
+      "$DIALOG" --msgbox "Bootstrap complete. You can now build, test, or switch to the new configuration." 10 70 || true
+    else
+      msg "Bootstrap complete."
+    fi
+    rebuild_menu "$hostname"
   fi
-  rebuild_menu "$hostname"
 }
 
 main "$@"

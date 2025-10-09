@@ -4,8 +4,7 @@ IFS=$'\n\t'
 umask 077
 PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 trap 'exit $?' EXIT HUP INT TERM
-:
-"${DIALOG:=whiptail}"
+: "${DIALOG:=whiptail}"
 
 require() { for b in $DIALOG jq; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done; }
 require
