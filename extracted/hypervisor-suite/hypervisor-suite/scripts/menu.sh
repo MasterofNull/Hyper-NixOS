@@ -44,12 +44,13 @@ menu_main() {
     3 "Create VM (wizard)"
     4 "ISO manager (download/validate/attach)"
     5 "Hardware detect & VFIO suggestions"
-    6 "Define/Start from JSON"
-    7 "Edit VM profile"
-    8 "Delete VM"
-    9 "Bridge helper"
-    10 "Snapshots & backups"
-    11 "Exit"
+    6 "VFIO configure (bind & Nix)"
+    7 "Define/Start from JSON"
+    8 "Edit VM profile"
+    9 "Delete VM"
+    10 "Bridge helper"
+    11 "Snapshots & backups"
+    12 "Exit"
   )
   $DIALOG --title "Hypervisor Menu" --menu "Choose an option" 20 78 10 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -139,24 +140,27 @@ while true; do
       "$SCRIPTS_DIR/hardware_detect.sh" | ${PAGER:-less}
       ;;
     6)
-      p=$(select_profile || true) || continue
-      "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true
+      "$SCRIPTS_DIR/vfio_workflow.sh" || true
       ;;
     7)
       p=$(select_profile || true) || continue
-      edit_profile "$p"
+      "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true
       ;;
     8)
       p=$(select_profile || true) || continue
-      delete_vm "$p"
+      edit_profile "$p"
       ;;
     9)
-      "$SCRIPTS_DIR/bridge_helper.sh" || true
+      p=$(select_profile || true) || continue
+      delete_vm "$p"
       ;;
     10)
+      "$SCRIPTS_DIR/bridge_helper.sh" || true
+      ;;
+    11)
       "$SCRIPTS_DIR/snapshots_backups.sh" || true
       ;;
-    11|*)
+    12|*)
       exit 0
       ;;
   esac
