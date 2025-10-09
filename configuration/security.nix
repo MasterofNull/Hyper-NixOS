@@ -3,6 +3,7 @@
   options.hypervisor.security = {
     strictFirewall = lib.mkEnableOption "Enable default-deny nftables for hypervisor";
     perVmSlices = lib.mkEnableOption "Run each VM in systemd slice with limits";
+    migrationTcp = lib.mkEnableOption "Allow libvirt TCP migration ports (16514, 49152-49216)";
   };
 
   config = lib.mkMerge [
@@ -22,6 +23,11 @@
               # libvirt bridge services (DNS/DHCP)
               iifname "virbr0" udp dport { 53, 67 } accept
               iifname "virbr0" tcp dport { 53 } accept
+              # Optional: libvirt TCP migration and TLS if enabled
+'' + (lib.optionalString config.hypervisor.security.migrationTcp ''
+              tcp dport { 16514 } accept
+              tcp dport 49152-49216 accept
+'') + ''
             }
             input add rule inet filter input jump allow_in
           }
