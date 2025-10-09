@@ -4,6 +4,11 @@
   "type": "object",
   "required": ["name", "cpus", "memory_mb"],
   "properties": {
+    "arch": {
+      "type": "string",
+      "enum": ["x86_64", "aarch64", "riscv64", "loongarch64"],
+      "description": "Target guest architecture (defaults to x86_64)"
+    },
     "name": {"type": "string"},
     "cpus": {"type": "integer", "minimum": 1},
     "memory_mb": {"type": "integer", "minimum": 256},
@@ -24,6 +29,31 @@
       "properties": {"enable": {"type": "boolean"}, "size_mb": {"type": "integer", "minimum": 32}}
     },
     "hostdevs": {"type": "array", "items": {"type": "string"}},
+    "cpu_features": {
+      "type": "object",
+      "description": "Optional CPU/KVM feature toggles (applied when supported)",
+      "properties": {
+        "shstk": {"type": "boolean", "description": "Enable CET Shadow Stack (x86)"},
+        "ibt": {"type": "boolean", "description": "Enable CET Indirect Branch Tracking (Intel x86)"},
+        "avic": {"type": "boolean", "description": "Require AMD AVIC (Zen4+ x2AVIC) if available"},
+        "secure_avic": {"type": "boolean", "description": "Request AMD Secure AVIC (host/kernel support required)"},
+        "sev": {"type": "boolean", "description": "Enable AMD SEV memory encryption for the VM"},
+        "sev_es": {"type": "boolean", "description": "Enable AMD SEV-ES encrypted state"},
+        "sev_snp": {"type": "boolean", "description": "Enable AMD SEV-SNP (requires host support)"},
+        "ciphertext_hiding": {"type": "boolean", "description": "SEV-SNP: CipherText Hiding"},
+        "secure_tsc": {"type": "boolean", "description": "SEV-SNP: Secure TSC"},
+        "fred": {"type": "boolean", "description": "Intel FRED (future placeholder)"},
+        "zhaoxin_centaur_leaves": {"type": "boolean", "description": "Expose Zhaoxin/Centaur CPUID leaves when supported"}
+      }
+    },
+    "memory_options": {
+      "type": "object",
+      "description": "Optional memory backing options",
+      "properties": {
+        "guest_memfd": {"type": "boolean", "description": "Back memory by guest_memfd when supported"},
+        "private": {"type": "boolean", "description": "Request private memory (KVM confidential memory) when supported"}
+      }
+    },
     "limits": {
       "type": "object",
       "properties": {

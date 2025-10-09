@@ -61,6 +61,24 @@ vhost_net=$(jq -r '.network.vhost // false' "$PROFILE_JSON")
 # autostart
 autostart=$(jq -r '.autostart // false' "$PROFILE_JSON")
 
+# Architecture and advanced CPU/memory options
+arch=$(jq -r '.arch // "x86_64"' "$PROFILE_JSON")
+# CPU features (x86-centric where applicable)
+cf_shstk=$(jq -r '.cpu_features.shstk // false' "$PROFILE_JSON")
+cf_ibt=$(jq -r '.cpu_features.ibt // false' "$PROFILE_JSON")
+cf_avic=$(jq -r '.cpu_features.avic // false' "$PROFILE_JSON")
+cf_secure_avic=$(jq -r '.cpu_features.secure_avic // false' "$PROFILE_JSON")
+cf_sev=$(jq -r '.cpu_features.sev // false' "$PROFILE_JSON")
+cf_sev_es=$(jq -r '.cpu_features.sev_es // false' "$PROFILE_JSON")
+cf_sev_snp=$(jq -r '.cpu_features.sev_snp // false' "$PROFILE_JSON")
+cf_ciphertext_hiding=$(jq -r '.cpu_features.ciphertext_hiding // false' "$PROFILE_JSON")
+cf_secure_tsc=$(jq -r '.cpu_features.secure_tsc // false' "$PROFILE_JSON")
+cf_fred=$(jq -r '.cpu_features.fred // false' "$PROFILE_JSON")
+cf_zx_leaves=$(jq -r '.cpu_features.zhaoxin_centaur_leaves // false' "$PROFILE_JSON")
+# memory options
+mem_guest_memfd=$(jq -r '.memory_options.guest_memfd // false' "$PROFILE_JSON")
+mem_private=$(jq -r '.memory_options.private // false' "$PROFILE_JSON")
+
 # Prepare disk if not present
 qcow="$DISKS_DIR/${name}.qcow2"
 if [[ ! -f "$qcow" ]]; then
@@ -74,6 +92,36 @@ if [[ -n "$iso_path" && ! -f "$iso_path" ]]; then
     iso_path="$ISOS_DIR/$iso_path"
   fi
 fi
+
+# Determine emulator/machine/firmware based on arch
+emulator="/run/current-system/sw/bin/qemu-system-x86_64"
+machine="q35"
+os_type_arch="x86_64"
+loader_line="<loader readonly='yes' type='pflash'>/run/current-system/sw/share/OVMF/OVMF_CODE.fd</loader>"
+nvram_line="<nvram>/var/lib/hypervisor/${name}.OVMF_VARS.fd</nvram>"
+vars_src="/run/current-system/sw/share/OVMF/OVMF_VARS.fd"
+case "$arch" in
+  x86_64)
+    emulator="/run/current-system/sw/bin/qemu-system-x86_64" ; machine="q35" ; os_type_arch="x86_64" ;;
+  aarch64)
+    emulator="/run/current-system/sw/bin/qemu-system-aarch64" ; machine="virt" ; os_type_arch="aarch64"
+    if [[ -f /run/current-system/sw/share/AAVMF/AAVMF_CODE.fd ]]; then
+      loader_line="<loader readonly='yes' type='pflash'>/run/current-system/sw/share/AAVMF/AAVMF_CODE.fd</loader>"
+      nvram_line="<nvram>/var/lib/hypervisor/${name}.AAVMF_VARS.fd</nvram>"
+      vars_src="/run/current-system/sw/share/AAVMF/AAVMF_VARS.fd"
+    elif [[ -f /run/current-system/sw/share/edk2-armvirt/AAVMF_CODE.fd ]]; then
+      loader_line="<loader readonly='yes' type='pflash'>/run/current-system/sw/share/edk2-armvirt/AAVMF_CODE.fd</loader>"
+      nvram_line="<nvram>/var/lib/hypervisor/${name}.AAVMF_VARS.fd</nvram>"
+      vars_src="/run/current-system/sw/share/edk2-armvirt/AAVMF_VARS.fd"
+    else
+      loader_line="" ; nvram_line="" ; vars_src=""
+    fi
+    ;;
+  riscv64)
+    emulator="/run/current-system/sw/bin/qemu-system-riscv64" ; machine="virt" ; os_type_arch="riscv64" ; loader_line="" ; nvram_line="" ; vars_src="" ;;
+  loongarch64)
+    emulator="/run/current-system/sw/bin/qemu-system-loongarch64" ; machine="virt" ; os_type_arch="loongarch64" ; loader_line="" ; nvram_line="" ; vars_src="" ;;
+esac
 
 # Build XML (prefer vmctl when available)
 v_name=$(printf '%s' "$name" | xml_escape)
@@ -89,24 +137,45 @@ else
   <memory unit='MiB'>${memory_mb}</memory>
   <vcpu placement='static'>${cpus}</vcpu>
   <os>
-    <type arch='x86_64' machine='q35'>hvm</type>
-    <loader readonly='yes' type='pflash'>/run/current-system/sw/share/OVMF/OVMF_CODE.fd</loader>
-    <nvram>/var/lib/hypervisor/${name}.OVMF_VARS.fd</nvram>
+    <type arch='${os_type_arch}' machine='${machine}'>hvm</type>
+    ${loader_line}
+    ${nvram_line}
   </os>
   <features>
     <acpi/>
     <apic/>
   </features>
-  <cpu mode='host-passthrough'/>
+  <cpu mode='host-passthrough' check='partial'>
+$( if [[ "$arch" == "x86_64" ]]; then
+     [[ "$cf_shstk" == "true" || "$cf_shstk" == "True" ]] && echo "    <feature policy='require' name='shstk'/>"
+     [[ "$cf_ibt" == "true" || "$cf_ibt" == "True" ]] && echo "    <feature policy='require' name='ibt'/>"
+     [[ "$cf_avic" == "true" || "$cf_avic" == "True" ]] && echo "    <feature policy='require' name='avic'/>"
+   fi )
+  </cpu>
 XML
 fi
 
-# Optional hugepages backing
-if [[ "$hugepages" == "true" || "$hugepages" == "True" ]]; then
+# Optional memory backing (hugepages, memfd, private)
+if [[ "$hugepages" == "true" || "$hugepages" == "True" || "$mem_guest_memfd" == "true" || "$mem_guest_memfd" == "True" || "$mem_private" == "true" || "$mem_private" == "True" ]]; then
+  {
+    echo "  <memoryBacking>"
+    if [[ "$hugepages" == "true" || "$hugepages" == "True" ]]; then
+      echo "    <hugepages/>"
+    fi
+    if [[ "$mem_guest_memfd" == "true" || "$mem_guest_memfd" == "True" ]]; then
+      echo "    <source type='memfd'/>"
+    fi
+    if [[ "$mem_private" == "true" || "$mem_private" == "True" ]]; then
+      echo "    <access mode='private'/>"
+    fi
+    echo "  </memoryBacking>"
+  } >> "$xml"
+fi
+
+# Optional AMD SEV/SEV-ES/SEV-SNP (basic enable)
+if [[ "$arch" == "x86_64" && ( "$cf_sev" == "true" || "$cf_sev" == "True" || "$cf_sev_es" == "true" || "$cf_sev_es" == "True" || "$cf_sev_snp" == "true" || "$cf_sev_snp" == "True" ) ]]; then
   cat >> "$xml" <<XML
-  <memoryBacking>
-    <hugepages/>
-  </memoryBacking>
+  <launchSecurity type='sev'/>
 XML
 fi
 
@@ -132,7 +201,7 @@ fi
 
 cat >> "$xml" <<XML
   <devices>
-    <emulator>/run/current-system/sw/bin/qemu-system-x86_64</emulator>
+    <emulator>${emulator}</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
       <source file='$(printf '%s' "$qcow" | xml_escape)'/>
@@ -230,8 +299,12 @@ cat >> "$xml" <<XML
 XML
 
 # Ensure OVMF VARS exists per-VM
-if [[ ! -f "$STATE_DIR/${name}.OVMF_VARS.fd" ]]; then
-  cp /run/current-system/sw/share/OVMF/OVMF_VARS.fd "$STATE_DIR/${name}.OVMF_VARS.fd" || true
+if [[ -n "$vars_src" && -n "$nvram_line" ]]; then
+  # Ensure per-VM firmware VARS exists for architectures that use it
+  vm_vars_path=$(sed -n "s#.*<nvram>\(.*\)</nvram>.*#\1#p" "$xml" | head -n1 || true)
+  if [[ -n "$vm_vars_path" && ! -f "$vm_vars_path" && -f "$vars_src" ]]; then
+    cp "$vars_src" "$vm_vars_path" || true
+  fi
 fi
 
 # Define and start

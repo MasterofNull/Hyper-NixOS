@@ -59,15 +59,26 @@ def build_qemu_command(profile: dict) -> list[str]:
     disk_path = profile.get("disk_path")
     efi = bool(profile.get("efi", True))
     network = profile.get("network", {}) or {}
+    arch = profile.get("arch", "x86_64")
+
+    # Select emulator by arch
+    emulator = {
+        "x86_64": shutil.which("qemu-system-x86_64") or "qemu-system-x86_64",
+        "aarch64": shutil.which("qemu-system-aarch64") or "qemu-system-aarch64",
+        "riscv64": shutil.which("qemu-system-riscv64") or "qemu-system-riscv64",
+        "loongarch64": shutil.which("qemu-system-loongarch64") or "qemu-system-loongarch64",
+    }.get(arch, shutil.which("qemu-system-x86_64") or "qemu-system-x86_64")
+
+    machine = "q35" if arch == "x86_64" else "virt"
 
     cmd: list[str] = [
-        shutil.which("qemu-system-x86_64") or "qemu-system-x86_64",
+        emulator,
         "-name", name,
         "-enable-kvm",
         "-cpu", "host",
         "-smp", str(cpus),
         "-m", str(memory_mb),
-        "-machine", "type=q35,accel=kvm",
+        "-machine", f"type={machine},accel=kvm",
         # Display: prefer SDL for simple fullscreen flag
         "-display", "sdl,gl=on",
         "-full-screen",
@@ -79,7 +90,7 @@ def build_qemu_command(profile: dict) -> list[str]:
 
     if efi:
         code, vars_ = find_ovmf_paths()
-        if code and vars_:
+        if code and vars_ and arch == "x86_64":
             vars_copy = STATE_DIR / f"{name}.OVMF_VARS.fd"
             if not vars_copy.exists():
                 vars_copy.write_bytes(vars_.read_bytes())

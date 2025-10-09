@@ -34,6 +34,12 @@ Boot the ISO. On first boot, the setup wizard runs once to help with networking,
 - Snapshots, backups, bridge helper, hardware detection
 - Hardened kernel, non-root qemu, auditd, SSH (keys only)
 
+### Linux 6.18 highlights supported
+- x86 CET virtualization toggles: Shadow Stack (`cpu_features.shstk`), IBT (`cpu_features.ibt` on Intel)
+- AMD virtualization: AVIC (`cpu_features.avic`), SEV/SEV-ES/SEV-SNP and related toggles
+- Guest memory options groundwork: `memory_options.guest_memfd`, `memory_options.private`
+- Multi-arch guests: set `arch` to `x86_64`, `aarch64`, `riscv64`, or `loongarch64`
+
 ## Layout
 - `configuration/` NixOS config and modules
 - `hypervisor_manager/` TUI launcher (Python)

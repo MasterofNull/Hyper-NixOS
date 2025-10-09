@@ -28,6 +28,20 @@ run_checks() {
   if ip link show type bridge >/dev/null 2>&1; then out+="$(ok 'Bridge support present')\n"; else out+="$(warn 'No bridges found')\n"; fi
   # Hugepages
   if [[ -f /proc/meminfo ]] && grep -q 'HugePages_Total' /proc/meminfo; then out+="$(ok 'Hugepages supported')\n"; fi
+  # x86 CET (Shadow Stack / IBT)
+  if grep -qE ' shstk | cet_ss ' /proc/cpuinfo 2>/dev/null; then out+="$(ok 'CPU supports CET Shadow Stack')\n"; fi
+  if grep -qE ' ibt | cet_ib ' /proc/cpuinfo 2>/dev/null; then out+="$(ok 'CPU supports CET IBT')\n"; fi
+  # AMD AVIC/x2AVIC
+  if grep -qi amd /proc/cpuinfo && lsmod | grep -q kvm_amd; then
+    if dmesg | grep -qi 'x2avic'; then out+="$(ok 'AMD x2AVIC present (Zen4+)')\n"; fi
+    if dmesg | grep -qi 'Secure AVIC'; then out+="$(ok 'AMD Secure AVIC supported')\n"; fi
+  fi
+  # AMD SEV/SEV-ES/SEV-SNP
+  if [[ -e /sys/module/kvm_amd/parameters/sev ]]; then out+="$(ok 'Kernel has SEV parameter')\n"; fi
+  if [[ -d /sys/firmware/sev ]]; then out+="$(ok 'SEV platform firmware present')\n"; fi
+  if [[ -f /sys/firmware/sev/snp ]]; then out+="$(ok 'SEV-SNP present')\n"; fi
+  # guest_memfd / private memory
+  if [[ -f /sys/module/kvm/parameters/guest_memfd ]]; then out+="$(ok 'guest_memfd parameter present')\n"; fi
   printf "%b" "$out"
 }
 
