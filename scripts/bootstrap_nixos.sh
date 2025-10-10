@@ -18,6 +18,7 @@ ACTION=""   # build|test|switch
 FORCE=true
 SRC_OVERRIDE=""
 RB_OPTS=(--refresh --option tarball-ttl 0 --option narinfo-cache-positive-ttl 0 --option narinfo-cache-negative-ttl 0)
+REBOOT=false
 
 # Wrapper: use a flake-capable nixos-rebuild even on older hosts
 supports_flakes_flag() {
@@ -34,7 +35,7 @@ nr() {
 
 usage() {
   cat <<USAGE
-Usage: sudo $(basename "$0") [--hostname NAME] [--action build|test|switch] [--force] [--source PATH]
+Usage: sudo $(basename "$0") [--hostname NAME] [--action build|test|switch] [--force] [--source PATH] [--reboot]
 
 Install Hyper‑NixOS from the current folder (USB checkout) into /etc/hypervisor,
 write /etc/nixos/flake.nix, and optionally perform a one-shot rebuild.
@@ -44,6 +45,7 @@ Options:
   --action MODE       One of: build, test, switch. If omitted, show TUI menu.
   --force             Overwrite existing /etc/hypervisor without prompting
   --source PATH       Use PATH as source folder instead of auto-detect
+  --reboot            Reboot after successful switch (recommended on fresh installs)
   -h, --help          Show this help
 USAGE
 }
@@ -311,7 +313,16 @@ rebuild_menu() {
   case "${choice:-quit}" in
     build) nr build --flake "$attr" "${RB_OPTS[@]}" ;;
     test) nr test --flake "$attr" "${RB_OPTS[@]}" ;;
-    switch) nr switch --flake "$attr" "${RB_OPTS[@]}" ;;
+    switch)
+      nr switch --flake "$attr" "${RB_OPTS[@]}"
+      if $REBOOT; then
+        systemctl reboot
+      else
+        systemctl daemon-reload || true
+        systemctl enable --now hypervisor-menu.service || true
+        command -v chvt >/dev/null 2>&1 && chvt 1 || true
+      fi
+      ;;
     shell) ${SHELL:-/bin/bash} -l ;;
     *) : ;;
   esac
@@ -345,6 +356,7 @@ main() {
       --action) ACTION="$2"; shift 2;;
       --force) FORCE=true; shift;;
       --source) SRC_OVERRIDE="$2"; shift 2;;
+      --reboot) REBOOT=true; shift;;
       -h|--help) usage; exit 0;;
       *) echo "Unknown option: $1" >&2; usage; exit 1;;
     esac
@@ -391,7 +403,16 @@ main() {
     case "$ACTION" in
       build) nr build --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
       test) nr test --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
-      switch) nr switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
+      switch)
+        nr switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"
+        if $REBOOT; then
+          systemctl reboot
+        else
+          systemctl daemon-reload || true
+          systemctl enable --now hypervisor-menu.service || true
+          command -v chvt >/dev/null 2>&1 && chvt 1 || true
+        fi
+        ;;
       *) echo "Invalid --action: $ACTION" >&2; exit 1;;
     esac
   else
@@ -404,12 +425,26 @@ main() {
       fi
       if ask_yes_no "Test succeeded. Proceed with full switch now?" yes; then
         nr switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"
+        if $REBOOT; then
+          systemctl reboot
+        else
+          systemctl daemon-reload || true
+          systemctl enable --now hypervisor-menu.service || true
+          command -v chvt >/dev/null 2>&1 && chvt 1 || true
+        fi
       else
         msg "Switch skipped per user choice."
       fi
     else
       if ask_yes_no "Proceed directly to full switch now?" yes; then
         nr switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"
+        if $REBOOT; then
+          systemctl reboot
+        else
+          systemctl daemon-reload || true
+          systemctl enable --now hypervisor-menu.service || true
+          command -v chvt >/dev/null 2>&1 && chvt 1 || true
+        fi
       else
         msg "No rebuild performed."
       fi
