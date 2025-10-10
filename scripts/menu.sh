@@ -18,16 +18,20 @@ LAST_VM_FILE="$STATE_DIR/last_vm"
 
 : "${DIALOG:=whiptail}"
 export DIALOG
-LOG_DIR="/var/log/hypervisor"
-LOG_FILE="$LOG_DIR/menu.log"
+# Allow LOG_DIR override via environment; prefer /var/lib for write access under sandboxed service
+LOG_DIR="${LOG_DIR:-}"
+LOG_FILE=""
 AUTOSTART_SECS=5
 LOG_ENABLED=true
 if [[ -f "$CONFIG_JSON" ]]; then
   AUTOSTART_SECS=$(jq -r '.features.autostart_timeout_sec // 5' "$CONFIG_JSON" 2>/dev/null || echo 5)
   LOG_ENABLED=$(jq -r '.logging.enabled // true' "$CONFIG_JSON" 2>/dev/null || echo true)
-  LOG_DIR=$(jq -r '.logging.dir // "/var/log/hypervisor"' "$CONFIG_JSON" 2>/dev/null || echo "/var/log/hypervisor")
-  LOG_FILE="$LOG_DIR/menu.log"
+  if [[ -z "$LOG_DIR" ]]; then
+    LOG_DIR=$(jq -r '.logging.dir // "/var/lib/hypervisor/logs"' "$CONFIG_JSON" 2>/dev/null || echo "/var/lib/hypervisor/logs")
+  fi
 fi
+[[ -z "$LOG_DIR" ]] && LOG_DIR="/var/lib/hypervisor/logs"
+LOG_FILE="$LOG_DIR/menu.log"
 mkdir -p "$LOG_DIR"
 log() { $LOG_ENABLED && printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG_FILE" || true; }
 
