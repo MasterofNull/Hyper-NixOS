@@ -105,13 +105,22 @@ write_host_flake() {
   local flake_path="/etc/nixos/flake.nix"
   msg "Writing $flake_path for $hostname ($system)"
   install -m 0644 /dev/null "$flake_path"
+  # Determine hypervisor input: prefer pinned Git commit from source if available; fall back to repo head
+  local repo_url="github:MasterofNull/Hyper-NixOS"
+  local pinned_url="$repo_url"
+  if command -v git >/dev/null 2>&1 && [[ -n "${SRC_OVERRIDE:-}" ]] && git -C "$SRC_OVERRIDE" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    local rev
+    rev=$(git -C "$SRC_OVERRIDE" rev-parse HEAD 2>/dev/null || true)
+    if [[ -n "$rev" ]]; then pinned_url="$repo_url/$rev"; fi
+  fi
   cat > "$flake_path" <<'FLAKE'
 {
   description = "Hyper‑NixOS Host";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-    hypervisor.url = "path:/etc/hypervisor";
+    # Use a Git input to avoid path narHash issues; host overrides live under /var/lib/hypervisor/configuration
+    hypervisor.url = "__HYP_URL__";
   };
 
   outputs = { self, nixpkgs, hypervisor }:
@@ -130,8 +139,9 @@ write_host_flake() {
   nixConfig = { experimental-features = [ "nix-command" "flakes" ]; };
 }
 FLAKE
-  sed -i "s/__SYSTEM__/$system/" "$flake_path"
-  sed -i "s/__HOST__/$hostname/" "$flake_path"
+  sed -i "s|__SYSTEM__|$system|" "$flake_path"
+  sed -i "s|__HOST__|$hostname|" "$flake_path"
+  sed -i "s|__HYP_URL__|$pinned_url|" "$flake_path"
 }
 
 escape_nix_string() {
