@@ -138,13 +138,13 @@ copy_repo_to_etc() {
       shopt -u dotglob
     fi
   fi
-  # Secure but usable perms: root:wheel can read; others denied. Ensure scripts remain executable.
-  chown -R root:wheel "$dst_root" || true
-  find "$dst_root" -type d -exec chmod 0750 {} + 2>/dev/null || true
-  find "$dst_root" -type f -exec chmod 0640 {} + 2>/dev/null || true
-  # Keep executable bits for shell scripts and helper binaries in scripts/
+  # Permissive defaults for build/rebuild usability; optional hardening provided separately
+  chown -R root:root "$dst_root" || true
+  find "$dst_root" -type d -exec chmod 0755 {} + 2>/dev/null || true
+  find "$dst_root" -type f -exec chmod 0644 {} + 2>/dev/null || true
+  # Ensure scripts remain executable
   if [[ -d "$dst_root/scripts" ]]; then
-    find "$dst_root/scripts" -type f -exec chmod 0750 {} + 2>/dev/null || true
+    find "$dst_root/scripts" -type f -exec chmod 0755 {} + 2>/dev/null || true
   fi
 
   # Sanitize shebang typos that may exist in contributed scripts
