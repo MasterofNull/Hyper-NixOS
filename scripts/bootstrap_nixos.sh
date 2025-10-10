@@ -320,20 +320,25 @@ write_system_local_nix() {
     fi
   fi
 
-  local host tz locale keymap swap_uuid
+  local host tz locale keymap swap_device resume_device swap_uuid
   host=$(hostname -s 2>/dev/null || echo hypervisor)
   # Prefer nixos-option for accuracy; fall back if missing
   if command -v nixos-option >/dev/null 2>&1; then
     tz=$(nixos-option time.timeZone 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     locale=$(nixos-option i18n.defaultLocale 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     keymap=$(nixos-option console.keyMap 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+    swap_device=$(nixos-option swapDevices 2>/dev/null | sed -n 's/.*\"\(\/dev[^\"\n]*\)\".*/\1/p' | head -n1 || true)
+    resume_device=$(nixos-option boot.resumeDevice 2>/dev/null | sed -n 's/^[^=]*= \"\(\/dev[^\"\n]*\)\".*/\1/p' | head -n1 || true)
   fi
   # Fallbacks
   if [[ -z "$tz" && -L /etc/localtime ]]; then
     tz=$(readlink -f /etc/localtime | sed -n 's#^.*/zoneinfo/\(.*\)$#\1#p')
   fi
-  # Try to discover swap by label/uuid
-  swap_uuid=$(blkid -t TYPE=swap -o value -s UUID 2>/dev/null | head -n1 || true)
+  # Discover swap by label/uuid only if not provided by nixos-option
+  if [[ -z "$swap_device" ]]; then
+    swap_uuid=$(blkid -t TYPE=swap -o value -s UUID 2>/dev/null | head -n1 || true)
+    [[ -n "$swap_uuid" ]] && swap_device="/dev/disk/by-uuid/$swap_uuid"
+  fi
 
   {
     echo '{ config, lib, pkgs, ... }:'
@@ -344,13 +349,15 @@ write_system_local_nix() {
     if [[ -n "$keymap" ]]; then echo "  console.keyMap = lib.mkForce \"$(escape_nix_string "$keymap")\";"; fi
     # Enable time synchronization by default for reliability during builds
     echo '  services.timesyncd.enable = true;'
-    if [[ -n "$swap_uuid" ]]; then
-      echo '  swapDevices = lib.mkIf (builtins.length config.swapDevices == 0) ['
+    if [[ -n "$swap_device" ]]; then
+      echo '  swapDevices = ['
       echo '    {'
-      echo "      device = \"/dev/disk/by-uuid/$swap_uuid\";"
-      echo '    }
-      ];'
-      echo "  boot.resumeDevice = lib.mkDefault \"/dev/disk/by-uuid/$swap_uuid\";"
+      echo "      device = \"$swap_device\";"
+      echo '    }'
+      echo '  ];'
+    fi
+    if [[ -n "$resume_device" ]]; then
+      echo "  boot.resumeDevice = lib.mkDefault \"$resume_device\";"
     fi
     echo '}'
   } >"$dest_file"
