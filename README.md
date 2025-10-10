@@ -2,6 +2,11 @@
 
 A NixOS-based, security and performance focused hypervisor with a boot-time VM menu, ISO download + verification, libvirt management, and optional VFIO passthrough.
 
+Enable flakes on fresh NixOS (first time only):
+```bash
+sudo bash -lc 'set -euo pipefail; if ! nixos-rebuild --help 2>&1 | grep -q -- --flake; then cat >/tmp/enable-flakes.nix <<"NIX"; { config, pkgs, lib, ... }: { imports = [ /etc/nixos/configuration.nix ]; nix.settings.experimental-features = [ "nix-command" "flakes" ]; nix.package = pkgs.nixVersions.stable; }; NIX; nixos-rebuild switch -I nixos-config=/tmp/enable-flakes.nix; fi'
+```
+
 Quick install (one‑liner):
 ```bash
 bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; rev=$(git rev-parse HEAD); sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --source "$tmp/hyper"'
