@@ -44,28 +44,43 @@ require "$DIALOG" jq curl virsh sha256sum
 
 mkdir -p "$USER_PROFILES_DIR" "$ISOS_DIR"
 
-menu_main() {
+menu_vm_main() {
+  local entries=()
+  shopt -s nullglob
+  for f in "$USER_PROFILES_DIR"/*.json; do
+    local name
+    name=$(jq -r '.name // empty' "$f" 2>/dev/null || true)
+    [[ -z "$name" ]] && name=$(basename "$f")
+    entries+=("$f" "VM: $name")
+  done
+  shopt -u nullglob
+  entries+=("__GNOME__" "Start GNOME management session (fallback GUI)")
+  entries+=("__MORE__" "More Options (setup, ISO, VFIO, tools)")
+  entries+=("__EXIT__" "Exit")
+  $DIALOG --title "Hypervisor - VMs" --menu "Select a VM to start, or choose an action" 22 90 14 "${entries[@]}" 3>&1 1>&2 2>&3
+}
+
+menu_more() {
   local choices=(
     0 "Setup wizard (recommended)"
-    1 "Start VM"
-    2 "Quick-start last VM"
-    3 "Create VM (wizard)"
-    4 "ISO manager (download/validate/attach)"
-    5 "Hardware detect & VFIO suggestions"
-    6 "VFIO configure (bind & Nix)"
-    7 "Define/Start from JSON"
-    8 "Edit VM profile"
-    9 "Delete VM"
-    10 "Bridge helper"
-    11 "Snapshots & backups"
-    12 "Docs & Help"
-    13 "Preflight check"
-    14 "SSH setup (for migration)"
-    15 "Live migration"
-    16 "Detect & adjust (devices/security)"
-    17 "Exit"
+    1 "Create VM (wizard)"
+    2 "ISO manager (download/validate/attach)"
+    3 "Hardware detect & VFIO suggestions"
+    4 "VFIO configure (bind & Nix)"
+    5 "Define/Start from JSON"
+    6 "Edit VM profile"
+    7 "Delete VM"
+    8 "Bridge helper"
+    9 "Snapshots & backups"
+    10 "Docs & Help"
+    11 "Preflight check"
+    12 "SSH setup (for migration)"
+    13 "Live migration"
+    14 "Detect & adjust (devices/security)"
+    15 "Quick-start last VM"
+    16 "Back"
   )
-  $DIALOG --title "Hypervisor Menu" --menu "Choose an option" 20 78 10 "${choices[@]}" 3>&1 1>&2 2>&3
+  $DIALOG --title "Hypervisor - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
 }
 
 select_profile() {
@@ -130,70 +145,55 @@ autostart_countdown() {
   start_vm "$vm" || true
 }
 
-autostart_countdown 5
+autostart_countdown
 
 while true; do
-  choice=$(menu_main || true)
+  choice=$(menu_vm_main || true)
   case "$choice" in
-    0)
-      "$SCRIPTS_DIR/setup_wizard.sh" || true
+    "__GNOME__")
+      if systemctl is-enabled gdm.service >/dev/null 2>&1; then
+        $DIALOG --msgbox "Starting GNOME (graphical target for this session)." 10 70
+        sudo systemctl start gdm.service || $DIALOG --msgbox "Failed to start GDM" 8 50
+        sudo systemctl isolate graphical.target || true
+      else
+        $DIALOG --yesno "GDM is not enabled. Enable and start GNOME now?" 10 70 && {
+          sudo systemctl enable gdm.service || true
+          sudo systemctl start gdm.service || $DIALOG --msgbox "Failed to start GDM" 8 50
+          sudo systemctl isolate graphical.target || true
+        }
+      fi
       ;;
-    1)
-      p=$(select_profile || true) || continue
-      start_vm "$p" || true
+    "__MORE__")
+      while true; do
+        mchoice=$(menu_more || true)
+        case "$mchoice" in
+          0) "$SCRIPTS_DIR/setup_wizard.sh" || true;;
+          1) create_vm_wizard || true;;
+          2) iso_manager || true;;
+          3) "$SCRIPTS_DIR/hardware_detect.sh" | ${PAGER:-less};;
+          4) "$SCRIPTS_DIR/vfio_workflow.sh" || true;;
+          5) p=$(select_profile || true) || continue; "$SCRIPTS_DIR/validate_profile.sh" "$p" || true; "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true;;
+          6) p=$(select_profile || true) || continue; edit_profile "$p";;
+          7) p=$(select_profile || true) || continue; delete_vm "$p";;
+          8) "$SCRIPTS_DIR/bridge_helper.sh" || true;;
+          9) "$SCRIPTS_DIR/snapshots_backups.sh" || true;;
+          10) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
+          11) "$SCRIPTS_DIR/preflight_check.sh" || true;;
+          12) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
+          13) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
+          14) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
+          15) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
+          16|*) break;;
+        esac
+      done
       ;;
-    2)
-      p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }
-      start_vm "$p" || true
-      ;;
-    3)
-      create_vm_wizard || true
-      ;;
-    4)
-      iso_manager || true
-      ;;
-    5)
-      "$SCRIPTS_DIR/hardware_detect.sh" | ${PAGER:-less}
-      ;;
-    6)
-      "$SCRIPTS_DIR/vfio_workflow.sh" || true
-      ;;
-    7)
-      p=$(select_profile || true) || continue
-      "$SCRIPTS_DIR/validate_profile.sh" "$p" || true
-      "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true
-      ;;
-    8)
-      p=$(select_profile || true) || continue
-      edit_profile "$p"
-      ;;
-    9)
-      p=$(select_profile || true) || continue
-      delete_vm "$p"
-      ;;
-    10)
-      "$SCRIPTS_DIR/bridge_helper.sh" || true
-      ;;
-    11)
-      "$SCRIPTS_DIR/snapshots_backups.sh" || true
-      ;;
-    12)
-      "$SCRIPTS_DIR/docs_viewer.sh" || true
-      ;;
-    13)
-      "$SCRIPTS_DIR/preflight_check.sh" || true
-      ;;
-    14)
-      "$SCRIPTS_DIR/ssh_setup.sh" || true
-      ;;
-    15)
-      "$SCRIPTS_DIR/migrate_vm.sh" || true
-      ;;
-    16)
-      "$SCRIPTS_DIR/detect_and_adjust.sh" || true
-      ;;
-    17|*)
-      exit 0
+    "__EXIT__"|*)
+      # If the selection is a file path to a VM profile, start it
+      if [[ -n "$choice" && -f "$choice" ]]; then
+        start_vm "$choice" || true
+      else
+        exit 0
+      fi
       ;;
   esac
 done
