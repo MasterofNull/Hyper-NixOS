@@ -123,6 +123,7 @@ in {
       SupplementaryGroups = [ "kvm" "video" ];
       Restart = "always";
       RestartSec = 2;
+      ReadWritePaths = [ "/var/lib/hypervisor" "/var/log/hypervisor" ];
       StandardInput = "tty";
       StandardOutput = "tty";
       TTYPath = "/dev/tty1";
