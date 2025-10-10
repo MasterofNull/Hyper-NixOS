@@ -345,7 +345,8 @@ write_system_local_nix() {
       echo '  swapDevices = [{'
       echo "    device = \"/dev/disk/by-uuid/$swap_uuid\";"
       echo '  }];'
-      echo '  powerManagement.resumeDevice = lib.mkDefault (builtins.head (builtins.filter (d: builtins.match ".*swap.*" d != null) (map (d: d.device or "") config.swapDevices) ++ ["/dev/disk/by-uuid/'"$swap_uuid"'"]));'
+      # Optional: enable hibernation by pointing to the swap device. Uncomment after verification.
+      # echo '  boot.resumeDevice = lib.mkDefault "/dev/disk/by-uuid/'"$swap_uuid"'";'
     fi
     echo '}'
   } >"$dest_file"
