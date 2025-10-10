@@ -352,10 +352,10 @@ rebuild_menu() {
     case "$n" in 1) choice=build;; 2) choice=test;; 3) choice=switch;; 4) choice=shell;; *) choice=quit;; esac
   fi
   case "${choice:-quit}" in
-    build) nr build --flake "$attr" "${RB_OPTS[@]}" ;;
-    test) nr test --flake "$attr" "${RB_OPTS[@]}" ;;
+    build) nr build --impure --flake "$attr" "${RB_OPTS[@]}" ;;
+    test) nr test --impure --flake "$attr" "${RB_OPTS[@]}" ;;
     switch)
-      nr switch --flake "$attr" "${RB_OPTS[@]}"
+      nr switch --impure --flake "$attr" "${RB_OPTS[@]}"
       if $REBOOT; then
         systemctl reboot
       else
@@ -442,10 +442,10 @@ main() {
   if [[ -n "$ACTION" ]]; then
     export NIX_CONFIG="experimental-features = nix-command flakes"
     case "$ACTION" in
-      build) nr build --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}" ;;
-      test) nr test --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}" ;;
+      build) nr build --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}" ;;
+      test) nr test --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}" ;;
       switch)
-        nr switch --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
+        nr switch --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
         if $REBOOT; then
           systemctl reboot
         else
@@ -459,13 +459,13 @@ main() {
   else
     # Automated flow with minimal prompts: offer test first, then optional switch
     if ask_yes_no "Run a test activation (nixos-rebuild test) before full switch?" yes; then
-      if ! nr test --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"; then
+      if ! nr test --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"; then
         if [[ -n "$DIALOG" ]]; then "$DIALOG" --msgbox "Test activation failed. Review configuration and retry." 10 70 || true; fi
         echo "Test activation failed." >&2
         exit 1
       fi
       if ask_yes_no "Test succeeded. Proceed with full switch now?" yes; then
-        nr switch --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
+        nr switch --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
         if $REBOOT; then
           systemctl reboot
         else
@@ -478,7 +478,7 @@ main() {
       fi
     else
       if ask_yes_no "Proceed directly to full switch now?" yes; then
-        nr switch --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
+        nr switch --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
         if $REBOOT; then
           systemctl reboot
         else
