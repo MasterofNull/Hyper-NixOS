@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Purpose: Housekeeping helper to remove repo-local tmp folder (dev only)
+# Note: Not used in production NixOS flow.
 set -euo pipefail
 
 echo "Cleaning up temporary artifacts..."

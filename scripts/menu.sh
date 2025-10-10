@@ -124,7 +124,7 @@ start_vm() {
 }
 
 iso_manager() {
-  "$SCRIPTS_DIR/iso_manager.sh" "$ISOS_DIR" "$USER_PROFILES_DIR"
+  "$SCRIPTS_DIR/iso_manager.sh" "$ISOS_DIR" "$USER_PROFILES_DIR" || true
 }
 
 edit_profile() {
@@ -220,12 +220,11 @@ while true; do
       sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh wizard off && $DIALOG --msgbox "First-boot wizard disabled." 8 50 || $DIALOG --msgbox "Failed to toggle." 8 50
       ;;
     "__EXIT__"|*)
-      # If the selection is a file path to a VM profile, start it
+      # If the selection is a file path to a VM profile, start it then return to menu
       if [[ -n "$choice" && -f "$choice" ]]; then
         start_vm "$choice" || true
-      else
-        exit 0
       fi
+      # Return to main loop; let user explicitly exit via TTY
       ;;
   esac
 done

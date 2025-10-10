@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Purpose: Convenience wrapper for nixos-rebuild with flakes (dev/admin)
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077

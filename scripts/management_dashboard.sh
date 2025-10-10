@@ -3,12 +3,22 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 # Simple dashboard to launch hypervisor tools from GNOME
-# --autostart will open a basic chooser if no VMs configured
+# --autostart: if VMs exist, offer selection with timeout; if none, open dashboard
 
 ROOT=/etc/hypervisor
 SCRIPTS=$ROOT/scripts
 STATE=/var/lib/hypervisor
 : "${TERMINAL:=gnome-terminal}"
+
+list_vms() {
+  shopt -s nullglob
+  for f in "$STATE/vm_profiles"/*.json; do
+    name=$(jq -r '.name // empty' "$f" 2>/dev/null || basename "$f")
+    [[ -z "$name" ]] && name=$(basename "$f")
+    echo "$f|$name"
+  done
+  shopt -u nullglob
+}
 
 show_menu() {
   zenity --list --title="Hypervisor Dashboard" \
@@ -45,6 +55,30 @@ run_action() {
 if [[ "${1:-}" == "--autostart" ]]; then
   # Optionally auto-open dashboard; can be enhanced to show last VMs
   :
+fi
+
+# Autostart behavior: if VMs exist, offer selection with timeout; else show dashboard
+if [[ "${1:-}" == "--autostart" ]]; then
+  mapfile -t items < <(list_vms)
+  if (( ${#items[@]} > 0 )); then
+    ZLIST=( )
+    for line in "${items[@]}"; do
+      vm_path="${line%%|*}"; vm_name="${line##*|}"
+      ZLIST+=("$vm_path" "$vm_name")
+    done
+    last_vm="$STATE/last_vm"
+    default=""
+    [[ -f "$last_vm" ]] && default=$(cat "$last_vm" 2>/dev/null || true)
+    sel=$(zenity --list --title="Select VM (auto in 8s)" --timeout=8 \
+      --column=Path --column=Name "${ZLIST[@]}" 2>/dev/null || true)
+    if [[ -n "$sel" ]]; then
+      gnome-terminal -- bash -lc "$SCRIPTS/json_to_libvirt_xml_and_define.sh '$sel'"
+      exit 0
+    elif [[ -n "$default" && -f "$default" ]]; then
+      gnome-terminal -- bash -lc "$SCRIPTS/json_to_libvirt_xml_and_define.sh '$default'"
+      exit 0
+    fi
+  fi
 fi
 
 sel=$(show_menu || true)

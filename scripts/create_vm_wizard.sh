@@ -17,10 +17,26 @@ require
 
 ask() { $DIALOG --inputbox "$1" 10 60 "$2" 3>&1 1>&2 2>&3; }
 
+# Detect available system resources
+total_mem_kb=$(awk '/MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
+avail_mem_kb=$(awk '/MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
+total_mem_mb=$(( total_mem_kb / 1024 ))
+avail_mem_mb=$(( avail_mem_kb / 1024 ))
+total_cpus=$(nproc 2>/dev/null || echo 1)
+
+$DIALOG --msgbox "Host resources detected:\n\nCPUs: ${total_cpus}\nTotal RAM: ${total_mem_mb} MiB\nAvailable RAM: ${avail_mem_mb} MiB" 12 60
+
 name=$(ask "VM name" "my-vm") || exit 0
-cpus=$(ask "vCPUs" "2") || exit 0
-mem=$(ask "Memory (MiB)" "4096") || exit 0
+cpus=$(ask "vCPUs (host: ${total_cpus})" "2") || exit 0
+mem=$(ask "Memory (MiB) (avail: ${avail_mem_mb}, total: ${total_mem_mb})" "4096") || exit 0
 disk=$(ask "Disk size (GiB)" "20") || exit 0
+
+# Optional: variable memory limits (ballooning) via memory_max_mb and soft limit
+if $DIALOG --yesno "Enable variable memory limit (soft cap)?\n\nThis sets a memory_max_mb higher than the initial memory, allowing flexibility." 12 70 ; then
+  mem_max=$(ask "Max memory (MiB) (>= ${mem})" "$(( mem + 1024 ))") || exit 0
+else
+  mem_max=${mem}
+fi
 
 # ISO selection
 shopt -s nullglob
@@ -46,7 +62,7 @@ cat > "$profile_json" <<JSON
   "disk_gb": ${disk},
   "iso_path": "${iso_path}",
   "network": { "bridge": "" },
-  "limits": { "cpu_quota_percent": 200, "memory_max_mb": ${mem} }
+  "limits": { "cpu_quota_percent": 200, "memory_max_mb": ${mem_max} }
 }
 JSON
 

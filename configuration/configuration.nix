@@ -120,15 +120,15 @@ in {
   systemd.services.hypervisor-menu = {
     description = "Boot-time Hypervisor VM Menu";
     wantedBy = lib.optional enableMenuAtBoot "multi-user.target";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
+    after = [ "network-online.target" "libvirtd.service" ];
+    wants = [ "network-online.target" "libvirtd.service" ];
     conflicts = [ "getty@tty1.service" ];
     serviceConfig = {
       Type = "simple";
       ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/menu.sh";
       WorkingDirectory = "/etc/hypervisor";
       User = "${mgmtUser}";
-      SupplementaryGroups = [ "kvm" "video" ];
+      SupplementaryGroups = [ "kvm" "libvirtd" "video" ];
       Restart = "always";
       RestartSec = 2;
       StateDirectory = "hypervisor";
@@ -145,6 +145,8 @@ in {
       Environment = [
         "SDL_VIDEODRIVER=kmsdrm"
         "SDL_AUDIODRIVER=alsa"
+        "DIALOG=whiptail"
+        "TERM=linux"
         "PATH=/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       ];
 
@@ -258,6 +260,17 @@ in {
       Comment=Manage VMs and hypervisor tasks
       Exec=/etc/hypervisor/scripts/management_dashboard.sh
       Icon=computer
+      Categories=System;Utility;
+    '';
+  };
+  environment.etc."xdg/applications/hypervisor-installer.desktop" = lib.mkIf enableGuiAtBoot {
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Hypervisor Installer
+      Comment=Run first-boot setup/installer
+      Exec=/etc/hypervisor/scripts/setup_wizard.sh
+      Icon=system-software-install
       Categories=System;Utility;
     '';
   };
