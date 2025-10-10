@@ -124,11 +124,8 @@ in {
       SupplementaryGroups = [ "kvm" "video" ];
       Restart = "always";
       RestartSec = 2;
-      ExecStartPre = [
-        "${pkgs.coreutils}/bin/mkdir -p /var/log/hypervisor"
-        "${pkgs.coreutils}/bin/mkdir -p /var/lib/hypervisor"
-      ];
-      ReadWritePaths = [ "/var/lib/hypervisor" "/var/log/hypervisor" ];
+      StateDirectory = "hypervisor";
+      LogsDirectory = "hypervisor";
       StandardInput = "tty";
       StandardOutput = "tty";
       TTYPath = "/dev/tty1";
@@ -177,12 +174,9 @@ in {
       PrivateTmp = true;
       ProtectSystem = "strict";
       ProtectHome = true;
-      ExecStartPre = [
-        "${pkgs.coreutils}/bin/mkdir -p /var/lib/hypervisor"
-        "${pkgs.coreutils}/bin/mkdir -p /var/log/hypervisor"
-        "${pkgs.coreutils}/bin/mkdir -p /etc/hypervisor/configuration"
-      ];
-      ReadWritePaths = [ "/var/lib/hypervisor" "/var/log/hypervisor" "/etc/hypervisor/configuration" ];
+      StateDirectory = "hypervisor";
+      LogsDirectory = "hypervisor";
+      ReadWritePaths = [ "/etc/hypervisor/configuration" ];
       StandardInput = "tty";
       StandardOutput = "tty";
       TTYPath = "/dev/tty1";
