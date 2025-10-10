@@ -249,6 +249,8 @@ write_system_local_nix() {
     if [[ -n "$tz" ]]; then echo "  time.timeZone = \"$(escape_nix_string "$tz")\";"; fi
     if [[ -n "$locale" ]]; then echo "  i18n.defaultLocale = \"$(escape_nix_string "$locale")\";"; fi
     if [[ -n "$keymap" ]]; then echo "  console.keyMap = \"$(escape_nix_string "$keymap")\";"; fi
+    # Enable time synchronization by default for reliability during builds
+    echo '  services.timesyncd.enable = true;'
     echo '}'
   } >"$dest_file"
 
