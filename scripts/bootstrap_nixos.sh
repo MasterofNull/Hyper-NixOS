@@ -133,6 +133,128 @@ FLAKE
   sed -i "s/__HOST__/$hostname/" "$flake_path"
 }
 
+escape_nix_string() {
+  # Escape backslashes and double quotes for Nix string literals
+  local s="$1"
+  s=${s//\\/\\\\}
+  s=${s//\"/\\\"}
+  printf '%s' "$s"
+}
+
+detect_primary_users() {
+  # Print non-system users (uid >= 1000 and < 65534), one per line
+  awk -F: '($3 >= 1000 && $3 < 65534) { print $1 }' /etc/passwd | grep -vE '^(nobody)$' || true
+}
+
+write_users_local_nix() {
+  local dest_dir="/etc/hypervisor/configuration"
+  local dest_file="$dest_dir/users-local.nix"
+
+  mkdir -p "$dest_dir"
+  # Do not overwrite if already present
+  if [[ -f "$dest_file" ]]; then
+    msg "users-local.nix already exists; skipping carryover generation"
+    return 0
+  fi
+
+  local users; mapfile -t users < <(detect_primary_users)
+  if (( ${#users[@]} == 0 )); then
+    msg "No primary users detected (uid >= 1000). Skipping users-local.nix"
+    return 0
+  fi
+
+  # If multiple, prefer interactive choice when TUI available; otherwise take the first
+  local selected=("${users[@]}")
+  if (( ${#users[@]} > 1 )) && [[ -n "$DIALOG" && -t 1 ]]; then
+    local items=()
+    for u in "${users[@]}"; do items+=("$u" " "); done
+    local picked
+    picked=$("$DIALOG" --checklist "Select user(s) to carry over" 18 70 8 "${items[@]}" 3>&1 1>&2 2>&3 || true)
+    if [[ -n "$picked" ]]; then
+      # whiptail/dialog returns quoted names; normalize
+      read -r -a selected <<<"$picked"
+      # Strip quotes from each entry
+      for i in "${!selected[@]}"; do selected[$i]="${selected[$i]//\"/}"; done
+    fi
+  fi
+
+  {
+    echo '{ config, lib, pkgs, ... }:'
+    echo '{'
+    echo '  users.users = {'
+    for user in "${selected[@]}"; do
+      [[ -z "$user" ]] && continue
+      # Gather user details
+      local hash groups
+      hash=$(awk -F: -v u="$user" '($1==u){print $2}' /etc/shadow 2>/dev/null || true)
+      # If hash looks locked ("!" or "*"), omit it
+      if [[ "$hash" == '!' || "$hash" == '*' || -z "$hash" ]]; then
+        hash=""
+      fi
+      # Collect existing groups and ensure access groups
+      groups=$(id -nG "$user" 2>/dev/null | tr ' ' '\n' | sort -u | tr '\n' ' ')
+      # Ensure these are present
+      for g in wheel kvm libvirtd video; do
+        if ! grep -qE "(^| )$g( |$)" <<<"$groups"; then groups+="$g "; fi
+      done
+      # Emit Nix stanza
+      echo "    ${user} = {"
+      echo "      isNormalUser = true;"
+      echo -n "      extraGroups = ["
+      for g in $groups; do echo -n " \"$g\""; done
+      echo " ];"
+      echo "      createHome = true;"
+      if [[ -n "$hash" ]]; then
+        local esc; esc=$(escape_nix_string "$hash")
+        echo "      hashedPassword = \"$esc\";"
+      fi
+      echo "    };"
+    done
+    echo '  };'
+    echo '}'
+  } >"$dest_file"
+
+  chmod 0600 "$dest_file" || true
+  msg "Wrote $dest_file (permissions 0600)"
+}
+
+write_system_local_nix() {
+  local dest_dir="/etc/hypervisor/configuration"
+  local dest_file="$dest_dir/system-local.nix"
+  mkdir -p "$dest_dir"
+  # Do not overwrite if already present
+  if [[ -f "$dest_file" ]]; then
+    msg "system-local.nix already exists; skipping carryover generation"
+    return 0
+  fi
+
+  local host tz locale keymap
+  host=$(hostname -s 2>/dev/null || echo hypervisor)
+  # Prefer nixos-option for accuracy; fall back if missing
+  if command -v nixos-option >/dev/null 2>&1; then
+    tz=$(nixos-option time.timeZone 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+    locale=$(nixos-option i18n.defaultLocale 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+    keymap=$(nixos-option console.keyMap 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+  fi
+  # Fallbacks
+  if [[ -z "$tz" && -L /etc/localtime ]]; then
+    tz=$(readlink -f /etc/localtime | sed -n 's#^.*/zoneinfo/\(.*\)$#\1#p')
+  fi
+
+  {
+    echo '{ config, lib, pkgs, ... }:'
+    echo '{'
+    echo "  networking.hostName = \"$(escape_nix_string "$host")\";"
+    if [[ -n "$tz" ]]; then echo "  time.timeZone = \"$(escape_nix_string "$tz")\";"; fi
+    if [[ -n "$locale" ]]; then echo "  i18n.defaultLocale = \"$(escape_nix_string "$locale")\";"; fi
+    if [[ -n "$keymap" ]]; then echo "  console.keyMap = \"$(escape_nix_string "$keymap")\";"; fi
+    echo '}'
+  } >"$dest_file"
+
+  chmod 0644 "$dest_file" || true
+  msg "Wrote $dest_file"
+}
+
 rebuild_menu() {
   local host="$1"
   local attr="/etc/nixos#$host"
@@ -219,6 +341,10 @@ main() {
   ensure_hardware_config
   copy_repo_to_etc "$src_root"
   write_host_flake "$system" "$hostname"
+
+  # Generate carry-over local modules for users and base system settings
+  write_users_local_nix
+  write_system_local_nix
 
   if [[ -n "$ACTION" ]]; then
     export NIX_CONFIG="experimental-features = nix-command flakes"

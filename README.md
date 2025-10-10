@@ -34,6 +34,25 @@ Boot the ISO. On first boot, the setup wizard runs once to help with networking,
 - Snapshots, backups, bridge helper, hardware detection
 - Hardened kernel, non-root qemu, auditd, SSH (keys only)
 
+### Management environment (GUI)
+- The hypervisor host does not run a desktop environment. Management is via a console TUI (whiptail/dialog) at boot and on-demand.
+- X11/Wayland are disabled (`services.xserver.enable = false`). QEMU uses KMSDRM for host-side output; guests use OVMF (UEFI).
+
+## Configuration layering and carry-over
+On first install (bootstrap), the installer copies this repo to `/etc/hypervisor` and writes a host flake at `/etc/nixos/flake.nix`. To make host‑specific changes easy and keep secrets out of the repo, additional optional modules are auto-detected:
+
+- `configuration/users-local.nix` (auto‑generated):
+  - Contains carried‑over local user accounts from the base NixOS install, including `extraGroups` and the `hashedPassword` when available.
+  - Written to `/etc/hypervisor/configuration/users-local.nix` with `0600` permissions.
+  - Edit to add/remove users or change groups/passwords; delete the file to disable carry‑over.
+
+- `configuration/system-local.nix` (auto‑generated):
+  - Contains base system settings detected from the initial install, such as `networking.hostName`, `time.timeZone`, `i18n.defaultLocale`, and `console.keyMap`.
+  - Written to `/etc/hypervisor/configuration/system-local.nix`.
+  - Edit as needed; delete to fall back to defaults in `configuration/configuration.nix`.
+
+Both files are imported conditionally by `configuration/configuration.nix` only if present. They are not part of the Git repository.
+
 ### Linux 6.18 highlights supported
 - x86 CET virtualization toggles: Shadow Stack (`cpu_features.shstk`), IBT (`cpu_features.ibt` on Intel)
 - AMD virtualization: AVIC (`cpu_features.avic`), SEV/SEV-ES/SEV-SNP and related toggles

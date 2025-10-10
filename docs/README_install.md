@@ -52,3 +52,14 @@ Boot it (USB/IPMI). The first-boot service starts the setup wizard automatically
 - Linux 6.18 toggles: in a VM profile you can set `cpu_features.shstk`, `cpu_features.ibt`, `cpu_features.avic`, `cpu_features.sev`/`sev_es`/`sev_snp`, and `memory_options.guest_memfd`/`private` where supported by the host.
 - Multi-arch: set `arch` to `x86_64`, `aarch64`, `riscv64`, or `loongarch64` to choose the QEMU machine/firmware. On non‑x86, UEFI firmware may be optional.
  - Scripts are hardened (set -Eeuo pipefail, safe PATH, umask 077). Environment variables are sanitized where relevant.
+
+## Where configurations live
+- Repo is installed at `/etc/hypervisor`. Host flake is `/etc/nixos/flake.nix`.
+- On bootstrap, the installer will auto-generate these optional modules if absent:
+  - `/etc/hypervisor/configuration/users-local.nix` (0600): carries over local users (including password hashes when available) and ensures access groups like `kvm`, `libvirtd`, `video`, `wheel`.
+  - `/etc/hypervisor/configuration/system-local.nix`: carries over base settings like `networking.hostName`, `time.timeZone`, `i18n.defaultLocale`, `console.keyMap`.
+- Both modules are imported conditionally by `configuration/configuration.nix`.
+
+## GUI environment on the hypervisor
+- There is no desktop session. The management UI is a console TUI (whiptail/dialog) invoked at boot by a systemd service.
+- `services.xserver.enable = false` on the host. Guests use OVMF (UEFI) and QEMU; host output uses KMS/DRM.

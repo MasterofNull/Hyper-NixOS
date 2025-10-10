@@ -8,7 +8,9 @@
   ]
   ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix
   ++ lib.optional (builtins.pathExists ./perf-local.nix) ./perf-local.nix
-  ++ lib.optional (builtins.pathExists ./security-local.nix) ./security-local.nix;
+  ++ lib.optional (builtins.pathExists ./security-local.nix) ./security-local.nix
+  ++ lib.optional (builtins.pathExists ./users-local.nix) ./users-local.nix
+  ++ lib.optional (builtins.pathExists ./system-local.nix) ./system-local.nix;
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
