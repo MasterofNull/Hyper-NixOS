@@ -4,7 +4,7 @@ A NixOS-based, security and performance focused hypervisor with a boot-time VM m
 
 Enable flakes on fresh NixOS (first time only):
 ```bash
-sudo bash -lc 'set -euo pipefail; if ! nixos-rebuild --help 2>&1 | grep -q -- --flake; then cat >/tmp/enable-flakes.nix <<"NIX"; { config, pkgs, lib, ... }: { imports = [ /etc/nixos/configuration.nix ]; nix.settings.experimental-features = [ "nix-command" "flakes" ]; nix.package = pkgs.nixVersions.stable; }; NIX; nixos-rebuild switch -I nixos-config=/tmp/enable-flakes.nix; fi'
+sudo bash -lc 'set -euo pipefail; if ! nixos-rebuild --help 2>&1 | grep -q -- --flake; then tmp=/tmp/enable-flakes.nix; printf "%s\n" "{ config, pkgs, lib, ... }:" "{" "  imports = [ /etc/nixos/configuration.nix ];" "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];" "  nix.package = pkgs.nixVersions.stable;" "}" > "$tmp"; nixos-rebuild switch -I nixos-config="$tmp"; fi'
 ```
 
 Quick install (one‑liner):
