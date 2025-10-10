@@ -57,7 +57,7 @@
     gnupg
     swtpm
     openssh
-    genisoimage
+    xorriso
     nfs-utils
     openssh
   ];
