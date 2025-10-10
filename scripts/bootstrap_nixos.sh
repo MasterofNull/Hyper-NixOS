@@ -111,7 +111,14 @@ copy_repo_to_etc() {
     cp -a "$src_root"/* "$dst_root"/
     shopt -u dotglob
   fi
-  chmod -R go-rwx "$dst_root" || true
+  # Secure but usable perms: root:wheel can read; others denied. Ensure scripts remain executable.
+  chown -R root:wheel "$dst_root" || true
+  find "$dst_root" -type d -exec chmod 0750 {} + 2>/dev/null || true
+  find "$dst_root" -type f -exec chmod 0640 {} + 2>/dev/null || true
+  # Keep executable bits for shell scripts and helper binaries in scripts/
+  if [[ -d "$dst_root/scripts" ]]; then
+    find "$dst_root/scripts" -type f -exec chmod 0750 {} + 2>/dev/null || true
+  fi
 }
 
 write_host_flake() {
