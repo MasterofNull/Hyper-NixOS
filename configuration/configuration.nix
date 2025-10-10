@@ -173,12 +173,10 @@ in {
       ProtectSystem = "strict";
       ProtectHome = true;
       ReadWritePaths = [ "/var/lib/hypervisor" "/var/log/hypervisor" "/etc/hypervisor/configuration" ];
-      StandardInput = "tty";
-      StandardOutput = "tty";
-      TTYPath = "/dev/tty1";
-      TTYReset = true;
-      TTYVHangup = true;
       Environment = [ "DIALOG=whiptail" ];
+    };
+    unitConfig = {
+      ConditionPathExists = "!/var/lib/hypervisor/.first_boot_done";
     };
   };
 
