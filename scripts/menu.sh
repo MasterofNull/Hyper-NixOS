@@ -61,6 +61,11 @@ menu_vm_main() {
   entries+=("__GNOME__" "Start GNOME management session (fallback GUI)")
   entries+=("__MORE__" "More Options (setup, ISO, VFIO, tools)")
   entries+=("__UPDATE__" "Update Hypervisor (pin to latest)")
+  entries+=("__TOGGLE_MENU_ON" "Enable menu at boot")
+  entries+=("__TOGGLE_MENU_OFF" "Disable menu at boot")
+  entries+=("__RUN_WIZARD__" "Run first-boot setup wizard now")
+  entries+=("__TOGGLE_WIZARD_ON" "Enable first-boot wizard at boot")
+  entries+=("__TOGGLE_WIZARD_OFF" "Disable first-boot wizard at boot")
   entries+=("__EXIT__" "Exit")
   $DIALOG --title "Hypervisor - VMs" --menu "Select a VM to start, or choose an action" 22 90 14 "${entries[@]}" 3>&1 1>&2 2>&3
 }
@@ -198,6 +203,21 @@ while true; do
       else
         $DIALOG --msgbox "Update failed. See logs." 8 50
       fi
+      ;;
+    "__TOGGLE_MENU_ON")
+      sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh menu on && $DIALOG --msgbox "Menu will start at boot." 8 40 || $DIALOG --msgbox "Failed to toggle." 8 40
+      ;;
+    "__TOGGLE_MENU_OFF")
+      sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh menu off && $DIALOG --msgbox "Menu disabled at boot." 8 40 || $DIALOG --msgbox "Failed to toggle." 8 40
+      ;;
+    "__RUN_WIZARD__")
+      sudo ${SHELL:-/bin/bash} -lc '/etc/hypervisor/scripts/setup_wizard.sh' || true
+      ;;
+    "__TOGGLE_WIZARD_ON")
+      sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh wizard on && $DIALOG --msgbox "First-boot wizard enabled." 8 50 || $DIALOG --msgbox "Failed to toggle." 8 50
+      ;;
+    "__TOGGLE_WIZARD_OFF")
+      sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh wizard off && $DIALOG --msgbox "First-boot wizard disabled." 8 50 || $DIALOG --msgbox "Failed to toggle." 8 50
       ;;
     "__EXIT__"|*)
       # If the selection is a file path to a VM profile, start it
