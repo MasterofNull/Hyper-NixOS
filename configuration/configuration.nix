@@ -1,6 +1,8 @@
 { config, pkgs, lib, ... }:
 
-{
+let
+  mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
+in {
   system.stateVersion = "24.05"; # set at initial install; do not change blindly
   imports = [
     ./hardware-configuration.nix
@@ -14,6 +16,7 @@
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/security-local.nix) /var/lib/hypervisor/configuration/security-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/users-local.nix) /var/lib/hypervisor/configuration/users-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/system-local.nix) /var/lib/hypervisor/configuration/system-local.nix
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/management-local.nix) /var/lib/hypervisor/configuration/management-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/gui-local.nix) /var/lib/hypervisor/configuration/gui-local.nix;
 
   boot.loader.systemd-boot.enable = true;
@@ -73,23 +76,25 @@
   # Install libvirt hook for per-VM slice limits
   environment.etc."libvirt/hooks/qemu".source = ../scripts/libvirt_hooks/qemu;
 
-  # Create an unprivileged user that can access KVM
-  users.users.hypervisor = {
-    isNormalUser = true;
-    extraGroups = [ "kvm" "libvirtd" "video" ];
-    createHome = false;
+  # Create a default 'hypervisor' user only when used as the management user
+  users.users = lib.mkIf (mgmtUser == "hypervisor") {
+    hypervisor = {
+      isNormalUser = true;
+      extraGroups = [ "wheel" "kvm" "libvirtd" "video" ];
+      createHome = false;
+    };
   };
 
   # Create state dirs for OVMF vars, disks, XML, profiles, ISOs
   systemd.tmpfiles.rules = [
-    "d /var/lib/hypervisor 0750 hypervisor hypervisor - -"
-    "d /var/lib/hypervisor/isos 0750 hypervisor hypervisor - -"
-    "d /var/lib/hypervisor/disks 0750 hypervisor hypervisor - -"
-    "d /var/lib/hypervisor/xml 0750 hypervisor hypervisor - -"
-    "d /var/lib/hypervisor/vm_profiles 0750 hypervisor hypervisor - -"
-    "d /var/lib/hypervisor/gnupg 0700 hypervisor hypervisor - -"
-    "d /var/lib/hypervisor/backups 0750 hypervisor hypervisor - -"
-    "d /var/log/hypervisor 0750 hypervisor hypervisor - -"
+    "d /var/lib/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
+    "d /var/lib/hypervisor/isos 0750 ${mgmtUser} ${mgmtUser} - -"
+    "d /var/lib/hypervisor/disks 0750 ${mgmtUser} ${mgmtUser} - -"
+    "d /var/lib/hypervisor/xml 0750 ${mgmtUser} ${mgmtUser} - -"
+    "d /var/lib/hypervisor/vm_profiles 0750 ${mgmtUser} ${mgmtUser} - -"
+    "d /var/lib/hypervisor/gnupg 0700 ${mgmtUser} ${mgmtUser} - -"
+    "d /var/lib/hypervisor/backups 0750 ${mgmtUser} ${mgmtUser} - -"
+    "d /var/log/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
   ];
 
   # Enable libvirt for virsh/XML workflows
@@ -107,20 +112,26 @@
   systemd.services.hypervisor-menu = {
     description = "Boot-time Hypervisor VM Menu";
     wantedBy = [ "multi-user.target" ];
-    after = [ "getty@tty1.service" "network-online.target" ];
-    wants = [ "getty@tty1.service" "network-online.target" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    conflicts = [ "getty@tty1.service" ];
     serviceConfig = {
       Type = "simple";
       ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/menu.sh";
       WorkingDirectory = "/etc/hypervisor";
-      User = "hypervisor";
+      User = "${mgmtUser}";
       SupplementaryGroups = [ "kvm" "video" ];
       Restart = "always";
       RestartSec = 2;
+      ReadWritePaths = [ "/var/lib/hypervisor" "/var/log/hypervisor" ];
+      StandardInput = "tty";
+      StandardOutput = "tty";
+      TTYPath = "/dev/tty1";
+      TTYReset = true;
+      TTYVHangup = true;
       Environment = [
         "SDL_VIDEODRIVER=kmsdrm"
         "SDL_AUDIODRIVER=alsa"
-        "XDG_RUNTIME_DIR=/run/user/$(id -u hypervisor)"
       ];
 
       # Hardening
@@ -153,7 +164,7 @@
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash -lc 'if [ ! -f /var/lib/hypervisor/.first_boot_done ]; then /etc/hypervisor/scripts/setup_wizard.sh || true; touch /var/lib/hypervisor/.first_boot_done; fi'";
-      User = "hypervisor";
+      User = "${mgmtUser}";
       WorkingDirectory = "/etc/hypervisor";
       NoNewPrivileges = true;
       PrivateTmp = true;
@@ -164,6 +175,7 @@
 
   # Security hardening
   networking.firewall.enable = true;
+  security.sudo.enable = true;
   services.openssh = {
     enable = true;
     settings = {
