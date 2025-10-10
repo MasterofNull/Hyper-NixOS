@@ -63,7 +63,8 @@ menu_main() {
     14 "SSH setup (for migration)"
     15 "Live migration"
     16 "Detect & adjust (devices/security)"
-    17 "Exit"
+    17 "Start GNOME management session (fallback GUI)"
+    18 "Exit"
   )
   $DIALOG --title "Hypervisor Menu" --menu "Choose an option" 20 78 10 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -192,7 +193,20 @@ while true; do
     16)
       "$SCRIPTS_DIR/detect_and_adjust.sh" || true
       ;;
-    17|*)
+    17)
+      if systemctl is-enabled gdm.service >/dev/null 2>&1; then
+        $DIALOG --msgbox "GDM is enabled. Switching to graphical target and starting GNOME." 10 70
+        sudo systemctl set-default graphical.target || true
+        sudo systemctl start gdm.service || $DIALOG --msgbox "Failed to start GDM" 8 50
+      else
+        $DIALOG --yesno "GDM is not enabled. Attempt to enable and start GNOME now?" 10 70 && {
+          sudo systemctl enable gdm.service || true
+          sudo systemctl set-default graphical.target || true
+          sudo systemctl start gdm.service || $DIALOG --msgbox "Failed to start GDM" 8 50
+        }
+      fi
+      ;;
+    18|*)
       exit 0
       ;;
   esac

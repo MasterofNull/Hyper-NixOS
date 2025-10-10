@@ -65,5 +65,6 @@ Both files are imported conditionally by `configuration/configuration.nix` only 
 - `scripts/` automation (menu, iso, vfio, snapshots, setup, etc.)
 - `vm_profiles/` example VM profiles
 - `docs/` guides and warnings
+  - See `docs/gui_fallback.md` for enabling an optional GNOME desktop when needed.
 
 See `/etc/hypervisor/docs` on the running system.
