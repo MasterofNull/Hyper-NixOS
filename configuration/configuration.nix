@@ -7,11 +7,13 @@
     ./security.nix
   ]
   ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix
-  ++ lib.optional (builtins.pathExists ./perf-local.nix) ./perf-local.nix
-  ++ lib.optional (builtins.pathExists ./security-local.nix) ./security-local.nix
-  ++ lib.optional (builtins.pathExists ./users-local.nix) ./users-local.nix
-  ++ lib.optional (builtins.pathExists ./system-local.nix) ./system-local.nix
-  ++ lib.optional (builtins.pathExists ./gui-local.nix) ./gui-local.nix;
+  # Load local, host-specific overrides from /var/lib to avoid mutating the flake input
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/performance.nix) /var/lib/hypervisor/configuration/performance.nix
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/perf-local.nix) /var/lib/hypervisor/configuration/perf-local.nix
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/security-local.nix) /var/lib/hypervisor/configuration/security-local.nix
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/users-local.nix) /var/lib/hypervisor/configuration/users-local.nix
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/system-local.nix) /var/lib/hypervisor/configuration/system-local.nix
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/gui-local.nix) /var/lib/hypervisor/configuration/gui-local.nix;
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;

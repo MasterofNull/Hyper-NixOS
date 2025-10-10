@@ -150,6 +150,7 @@ detect_primary_users() {
 write_users_local_nix() {
   local dest_dir="/etc/hypervisor/configuration"
   local dest_file="$dest_dir/users-local.nix"
+  local state_dir="/var/lib/hypervisor/configuration"
 
   mkdir -p "$dest_dir"
   # Do not overwrite if already present
@@ -215,6 +216,10 @@ write_users_local_nix() {
     echo '}'
   } >"$dest_file"
 
+  # Mirror into state directory to avoid mutating the flake input path
+  mkdir -p "$state_dir"
+  cp "$dest_file" "$state_dir/users-local.nix"
+
   chmod 0600 "$dest_file" || true
   msg "Wrote $dest_file (permissions 0600)"
 }
@@ -222,6 +227,7 @@ write_users_local_nix() {
 write_system_local_nix() {
   local dest_dir="/etc/hypervisor/configuration"
   local dest_file="$dest_dir/system-local.nix"
+  local state_dir="/var/lib/hypervisor/configuration"
   mkdir -p "$dest_dir"
   # Do not overwrite if already present
   if [[ -f "$dest_file" ]]; then
@@ -253,6 +259,10 @@ write_system_local_nix() {
     echo '  services.timesyncd.enable = true;'
     echo '}'
   } >"$dest_file"
+
+  # Mirror into state directory to avoid mutating the flake input path
+  mkdir -p "$state_dir"
+  cp "$dest_file" "$state_dir/system-local.nix"
 
   chmod 0644 "$dest_file" || true
   msg "Wrote $dest_file"
