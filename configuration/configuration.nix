@@ -159,17 +159,26 @@ in {
   systemd.services.hypervisor-first-boot = {
     description = "First-boot Setup Wizard";
     wantedBy = [ "multi-user.target" ];
-    after = [ "network-online.target" ];
+    after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
+    before = [ "hypervisor-menu.service" ];
     wants = [ "network-online.target" ];
+    conflicts = [ "getty@tty1.service" ];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash -lc 'if [ ! -f /var/lib/hypervisor/.first_boot_done ]; then /etc/hypervisor/scripts/setup_wizard.sh || true; touch /var/lib/hypervisor/.first_boot_done; fi'";
-      User = "${mgmtUser}";
+      User = "root";
       WorkingDirectory = "/etc/hypervisor";
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectSystem = "strict";
       ProtectHome = true;
+      ReadWritePaths = [ "/var/lib/hypervisor" "/var/log/hypervisor" "/etc/hypervisor/configuration" ];
+      StandardInput = "tty";
+      StandardOutput = "tty";
+      TTYPath = "/dev/tty1";
+      TTYReset = true;
+      TTYVHangup = true;
+      Environment = [ "DIALOG=whiptail" ];
     };
   };
 
