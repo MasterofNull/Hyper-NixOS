@@ -222,7 +222,7 @@ write_users_local_nix() {
   mkdir -p "$dest_dir"
   # If exists, check for known problematic entries and regenerate if needed
   if [[ -f "$dest_file" ]]; then
-    if rg -q 'nixbld[0-9]+' "$dest_file" 2>/dev/null; then
+    if grep -Eq 'nixbld[0-9]+' "$dest_file" 2>/dev/null; then
       msg "users-local.nix contains nixbld entries; regenerating a filtered version"
       cp -a "$dest_file" "$dest_file.bak.$(date +%s)" || true
     else
@@ -259,7 +259,7 @@ write_users_local_nix() {
     for user in "${selected[@]}"; do
       [[ -z "$user" ]] && continue
       # Skip known system/builder accounts defensively
-      if [[ "$user" =~ ^nixbld[0-9]+$ ]] || [[ "$user" == "root" ]] || [[ "$user" == "nobody" ]]; then
+      if [[ "$user" =~ ^nixbld[0-9]+$ ]] || [[ "$user" == "root" ]] || [[ "$user" == "nobody" ]] || [[ "$user" == "hypervisor" ]]; then
         continue
       fi
       # Gather user details
