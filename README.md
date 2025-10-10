@@ -4,7 +4,7 @@ A NixOS-based, security and performance focused hypervisor with a boot-time VM m
 
 Quick install (one‑liner):
 ```bash
-bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; sudo bash "$tmp/hyper/scripts/bootstrap_nixos.sh" --hostname "$(hostname -s)" --action switch --source "$tmp/hyper"'
+bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash "$tmp/hyper/scripts/bootstrap_nixos.sh" --hostname "$(hostname -s)" --action switch --source "$tmp/hyper"'
 ```
 
 ## Quick start
