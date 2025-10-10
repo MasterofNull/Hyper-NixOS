@@ -209,8 +209,9 @@ escape_nix_string() {
 }
 
 detect_primary_users() {
-  # Print non-system users (uid >= 1000 and < 65534), one per line
-  awk -F: '($3 >= 1000 && $3 < 65534) { print $1 }' /etc/passwd | grep -vE '^(nobody)$' || true
+  # Print login-capable non-system users, skip builders and nologin shells
+  # Criteria: uid >= 1000, < 65534, shell not nologin/false, exclude nobody and nixbld*
+  awk -F: '($3 >= 1000 && $3 < 65534 && $1 != "nobody" && $1 !~ /^nixbld[0-9]+$/ && $7 !~ /nologin|false/) { print $1 }' /etc/passwd || true
 }
 
 write_users_local_nix() {
@@ -219,10 +220,15 @@ write_users_local_nix() {
   local state_dir="/var/lib/hypervisor/configuration"
 
   mkdir -p "$dest_dir"
-  # Do not overwrite if already present
+  # If exists, check for known problematic entries and regenerate if needed
   if [[ -f "$dest_file" ]]; then
-    msg "users-local.nix already exists; skipping carryover generation"
-    return 0
+    if rg -q 'nixbld[0-9]+' "$dest_file" 2>/dev/null; then
+      msg "users-local.nix contains nixbld entries; regenerating a filtered version"
+      cp -a "$dest_file" "$dest_file.bak.$(date +%s)" || true
+    else
+      msg "users-local.nix already exists; skipping carryover generation"
+      return 0
+    fi
   fi
 
   local users; mapfile -t users < <(detect_primary_users)
@@ -252,6 +258,10 @@ write_users_local_nix() {
     echo '  users.users = {'
     for user in "${selected[@]}"; do
       [[ -z "$user" ]] && continue
+      # Skip known system/builder accounts defensively
+      if [[ "$user" =~ ^nixbld[0-9]+$ ]] || [[ "$user" == "root" ]] || [[ "$user" == "nobody" ]]; then
+        continue
+      fi
       # Gather user details
       local hash groups
       hash=$(awk -F: -v u="$user" '($1==u){print $2}' /etc/shadow 2>/dev/null || true)
