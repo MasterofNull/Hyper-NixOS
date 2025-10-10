@@ -146,6 +146,13 @@ copy_repo_to_etc() {
   if [[ -d "$dst_root/scripts" ]]; then
     find "$dst_root/scripts" -type f -exec chmod 0750 {} + 2>/dev/null || true
   fi
+
+  # Sanitize shebang typos that may exist in contributed scripts
+  # Fix '/use/bin/env' -> '/usr/bin/env' on first line only
+  find "$dst_root" -type f \
+    -exec sed -i '1s|^#!/use/bin/env |#!/usr/bin/env |' {} + 2>/dev/null || true
+  find "$dst_root" -type f \
+    -exec sed -i '1s|^#!/use/bin/env$|#!/usr/bin/env|' {} + 2>/dev/null || true
 }
 
 write_host_flake() {
