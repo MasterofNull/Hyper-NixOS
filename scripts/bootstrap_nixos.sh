@@ -38,7 +38,7 @@ usage() {
 Usage: sudo $(basename "$0") [--hostname NAME] [--action build|test|switch] [--force] [--source PATH] [--reboot]
 
 Install Hyper‑NixOS from the current folder (USB checkout) into /etc/hypervisor,
-write /etc/nixos/flake.nix, and optionally perform a one-shot rebuild.
+write /etc/hypervisor/flake.nix (and symlink /etc/nixos/flake.nix), and optionally perform a one-shot rebuild.
 
 Options:
   --hostname NAME     Host attribute and system hostname (default: current hostname)
@@ -92,6 +92,9 @@ ensure_hardware_config() {
 copy_repo_to_etc() {
   local src_root="$1"
   local dst_root="/etc/hypervisor"
+  local src_real dst_real
+  src_real=$(readlink -f "$src_root" 2>/dev/null || echo "$src_root")
+  dst_real=$(readlink -f "$dst_root" 2>/dev/null || echo "$dst_root")
   if [[ -d "$dst_root" ]]; then
     if $FORCE; then
       :
@@ -105,19 +108,50 @@ copy_repo_to_etc() {
   fi
   mkdir -p "$dst_root"
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete --exclude ".git/" --exclude "result" --exclude "target/" "$src_root/" "$dst_root/"
+    # If source resides under destination, stage a temporary copy to avoid
+    # deleting our own source when we recreate the destination.
+    if [[ "$src_real" == "$dst_real"* ]]; then
+      local stage
+      stage=$(mktemp -d -t hypervisor-stage.XXXXXX)
+      rsync -a --exclude ".git/" --exclude "result" --exclude "target/" "$src_root/" "$stage/"
+      # Now populate destination from the staged snapshot
+      rsync -a --delete "$stage/" "$dst_root/"
+      rm -rf -- "$stage"
+    else
+      rsync -a --delete --exclude ".git/" --exclude "result" --exclude "target/" "$src_root/" "$dst_root/"
+    fi
   else
-    shopt -s dotglob
-    cp -a "$src_root"/* "$dst_root"/
-    shopt -u dotglob
+    # Fallback: copy via a temporary stage if needed
+    if [[ "$src_real" == "$dst_real"* ]]; then
+      local stage
+      stage=$(mktemp -d -t hypervisor-stage.XXXXXX)
+      shopt -s dotglob
+      cp -a "$src_root"/* "$stage"/
+      shopt -u dotglob
+      shopt -s dotglob
+      cp -a "$stage"/* "$dst_root"/
+      shopt -u dotglob
+      rm -rf -- "$stage"
+    else
+      shopt -s dotglob
+      cp -a "$src_root"/* "$dst_root"/
+      shopt -u dotglob
+    fi
   fi
-  chmod -R go-rwx "$dst_root" || true
+  # Secure but usable perms: root:wheel can read; others denied. Ensure scripts remain executable.
+  chown -R root:wheel "$dst_root" || true
+  find "$dst_root" -type d -exec chmod 0750 {} + 2>/dev/null || true
+  find "$dst_root" -type f -exec chmod 0640 {} + 2>/dev/null || true
+  # Keep executable bits for shell scripts and helper binaries in scripts/
+  if [[ -d "$dst_root/scripts" ]]; then
+    find "$dst_root/scripts" -type f -exec chmod 0750 {} + 2>/dev/null || true
+  fi
 }
 
 write_host_flake() {
   local system="$1"; shift
   local hostname="$1"; shift
-  local flake_path="/etc/nixos/flake.nix"
+  local flake_path="/etc/hypervisor/flake.nix"
   msg "Writing $flake_path for $hostname ($system)"
   install -m 0644 /dev/null "$flake_path"
   # Determine hypervisor input: prefer pinned Git commit from source if available; fall back to repo head
@@ -145,7 +179,7 @@ write_host_flake() {
       nixosConfigurations.__HOST__ = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
-          ./hardware-configuration.nix
+          /etc/nixos/hardware-configuration.nix
           (hypervisor + "/configuration/configuration.nix")
         ];
       };
@@ -157,6 +191,13 @@ FLAKE
   sed -i "s|__SYSTEM__|$system|" "$flake_path"
   sed -i "s|__HOST__|$hostname|" "$flake_path"
   sed -i "s|__HYP_URL__|$pinned_url|" "$flake_path"
+
+  # Ensure /etc/nixos points at this flake (symlink for compatibility)
+  mkdir -p /etc/nixos
+  if [[ -e /etc/nixos/flake.nix && ! -L /etc/nixos/flake.nix ]]; then
+    mv /etc/nixos/flake.nix "/etc/nixos/flake.nix.bak.$(date +%s)" || true
+  fi
+  ln -sfn "$flake_path" /etc/nixos/flake.nix || true
 }
 
 escape_nix_string() {
@@ -295,7 +336,7 @@ write_system_local_nix() {
 
 rebuild_menu() {
   local host="$1"
-  local attr="/etc/nixos#$host"
+  local attr="/etc/hypervisor#$host"
   export NIX_CONFIG="experimental-features = nix-command flakes"
   if [[ -n "$DIALOG" ]]; then
     "$DIALOG" --menu "Choose next step" 14 70 5 \
@@ -380,7 +421,7 @@ main() {
     hostname="$HOSTNAME_OVERRIDE"
   elif [[ -n "$DIALOG" && -z "$ACTION" ]]; then
     hostname=$("$DIALOG" --inputbox "Hostname for this hypervisor" 10 60 "$default_hostname" 3>&1 1>&2 2>&3 || echo "$default_hostname")
-    "$DIALOG" --msgbox "We will copy Hyper‑NixOS files to /etc/hypervisor and generate /etc/nixos/flake.nix for '$hostname' on $system." 12 70 || true
+    "$DIALOG" --msgbox "We will copy Hyper‑NixOS files to /etc/hypervisor and generate /etc/hypervisor/flake.nix (symlinked from /etc/nixos/flake.nix) for '$hostname' on $system." 12 70 || true
   else
     read -r -p "Hostname [$default_hostname]: " ans || true
     hostname=${ans:-$default_hostname}
@@ -396,15 +437,15 @@ main() {
 
   # Ensure flake.lock reflects the current /etc/hypervisor input (after local files were generated)
   export NIX_CONFIG="experimental-features = nix-command flakes"
-  nix flake lock --update-input hypervisor --flake /etc/nixos || true
+  nix flake lock --update-input hypervisor --flake /etc/hypervisor || true
 
   if [[ -n "$ACTION" ]]; then
     export NIX_CONFIG="experimental-features = nix-command flakes"
     case "$ACTION" in
-      build) nr build --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
-      test) nr test --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
+      build) nr build --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}" ;;
+      test) nr test --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}" ;;
       switch)
-        nr switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"
+        nr switch --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
         if $REBOOT; then
           systemctl reboot
         else
@@ -418,13 +459,13 @@ main() {
   else
     # Automated flow with minimal prompts: offer test first, then optional switch
     if ask_yes_no "Run a test activation (nixos-rebuild test) before full switch?" yes; then
-      if ! nr test --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"; then
+      if ! nr test --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"; then
         if [[ -n "$DIALOG" ]]; then "$DIALOG" --msgbox "Test activation failed. Review configuration and retry." 10 70 || true; fi
         echo "Test activation failed." >&2
         exit 1
       fi
       if ask_yes_no "Test succeeded. Proceed with full switch now?" yes; then
-        nr switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"
+        nr switch --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
         if $REBOOT; then
           systemctl reboot
         else
@@ -437,7 +478,7 @@ main() {
       fi
     else
       if ask_yes_no "Proceed directly to full switch now?" yes; then
-        nr switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"
+        nr switch --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
         if $REBOOT; then
           systemctl reboot
         else
