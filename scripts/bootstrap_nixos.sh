@@ -315,7 +315,7 @@ write_system_local_nix() {
     return 0
   fi
 
-  local host tz locale keymap
+  local host tz locale keymap swap_uuid
   host=$(hostname -s 2>/dev/null || echo hypervisor)
   # Prefer nixos-option for accuracy; fall back if missing
   if command -v nixos-option >/dev/null 2>&1; then
@@ -327,6 +327,8 @@ write_system_local_nix() {
   if [[ -z "$tz" && -L /etc/localtime ]]; then
     tz=$(readlink -f /etc/localtime | sed -n 's#^.*/zoneinfo/\(.*\)$#\1#p')
   fi
+  # Try to discover swap by label/uuid
+  swap_uuid=$(blkid -t TYPE=swap -o value -s UUID 2>/dev/null | head -n1 || true)
 
   {
     echo '{ config, lib, pkgs, ... }:'
@@ -337,6 +339,12 @@ write_system_local_nix() {
     if [[ -n "$keymap" ]]; then echo "  console.keyMap = lib.mkForce \"$(escape_nix_string "$keymap")\";"; fi
     # Enable time synchronization by default for reliability during builds
     echo '  services.timesyncd.enable = true;'
+    if [[ -n "$swap_uuid" ]]; then
+      echo '  swapDevices = [{'
+      echo "    device = \"/dev/disk/by-uuid/$swap_uuid\";"
+      echo '  }];'
+      echo '  powerManagement.resumeDevice = lib.mkDefault (builtins.head (builtins.filter (d: builtins.match ".*swap.*" d != null) (map (d: d.device or "") config.swapDevices) ++ ["/dev/disk/by-uuid/'"$swap_uuid"'"]));'
+    fi
     echo '}'
   } >"$dest_file"
 
