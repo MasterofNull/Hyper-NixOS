@@ -233,14 +233,14 @@ in {
 
   # GUI management environment (Wayland GNOME) - enabled by default for initial setup
   # Can be disabled by setting hypervisor.gui.enableAtBoot = false in management-local.nix
-  services.xserver = lib.mkIf enableGuiAtBoot {
+  services.xserver.enable = lib.mkIf enableGuiAtBoot true;
+  services.displayManager.gdm.enable = lib.mkIf enableGuiAtBoot true;
+  services.displayManager.gdm.wayland = lib.mkIf enableGuiAtBoot true;
+  services.displayManager.autoLogin = lib.mkIf enableGuiAtBoot {
     enable = true;
-    displayManager = {
-      gdm = { enable = true; wayland = true; };
-      autoLogin = { enable = true; user = mgmtUser; };
-    };
-    desktopManager.gnome.enable = true;
+    user = mgmtUser;
   };
+  services.desktopManager.gnome.enable = lib.mkIf enableGuiAtBoot true;
   programs.xwayland.enable = lib.mkIf enableGuiAtBoot true;
   environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
     text = ''
