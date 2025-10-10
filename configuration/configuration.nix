@@ -4,6 +4,7 @@ let
   mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
   enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] false config;
   enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
+  enableGuiAtBoot = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] true config;
 in {
   system.stateVersion = "24.05"; # set at initial install; do not change blindly
   imports = [
@@ -59,6 +60,8 @@ in {
     nano
     libvirt
     virt-manager
+    zenity
+    gnome.gnome-terminal
     pciutils
     looking-glass-client
     gnupg
@@ -224,7 +227,36 @@ in {
   services.printing.enable = false;
   hardware.pulseaudio.enable = false;
   sound.enable = false;
-  services.xserver.enable = false;
   hardware.opengl.enable = true;
+
+  # GUI management environment (Wayland GNOME) - enabled by default for initial setup
+  # Can be disabled by setting hypervisor.gui.enableAtBoot = false in management-local.nix
+  config = lib.mkIf enableGuiAtBoot {
+    services.xserver.enable = true;
+    services.xserver.displayManager.gdm.enable = true;
+    services.xserver.displayManager.gdm.wayland = true;
+    programs.xwayland.enable = true; # virt-manager may need XWayland
+    services.xserver.desktopManager.gnome.enable = true;
+    services.xserver.displayManager.autoLogin.enable = true;
+    services.xserver.displayManager.autoLogin.user = mgmtUser;
+
+    # Desktop entries for dashboard
+    environment.etc."xdg/autostart/hypervisor-dashboard.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Hypervisor Dashboard
+      Exec=/etc/hypervisor/scripts/management_dashboard.sh --autostart
+      X-GNOME-Autostart-enabled=true
+    '';
+    environment.etc."xdg/applications/hypervisor-dashboard.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Hypervisor Dashboard
+      Comment=Manage VMs and hypervisor tasks
+      Exec=/etc/hypervisor/scripts/management_dashboard.sh
+      Icon=computer
+      Categories=System;Utility;
+    '';
+  };
 }
 
