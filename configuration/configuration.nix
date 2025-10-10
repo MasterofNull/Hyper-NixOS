@@ -76,7 +76,7 @@
   # Create an unprivileged user that can access KVM
   users.users.hypervisor = {
     isNormalUser = true;
-    extraGroups = [ "kvm" "libvirtd" "video" ];
+    extraGroups = [ "wheel" "kvm" "libvirtd" "video" ];
     createHome = false;
   };
 
@@ -170,6 +170,7 @@
 
   # Security hardening
   networking.firewall.enable = true;
+  security.sudo.enable = true;
   services.openssh = {
     enable = true;
     settings = {
