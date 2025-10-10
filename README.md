@@ -7,9 +7,9 @@ Enable flakes on fresh NixOS (first time only):
 sudo bash -lc 'set -euo pipefail; if ! nixos-rebuild --help 2>&1 | grep -q -- --flake; then tmp=/tmp/enable-flakes.nix; printf "%s\n" "{ config, pkgs, lib, ... }:" "{" "  imports = [ /etc/nixos/configuration.nix ];" "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];" "  nix.package = pkgs.nixVersions.stable;" "}" > "$tmp"; nixos-rebuild switch -I nixos-config="$tmp"; fi'
 ```
 
-Quick install (one‑liner):
+Quick install + bootstrap (auto‑migrate, then reboot):
 ```bash
-bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; rev=$(git rev-parse HEAD); sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --source "$tmp/hyper"'
+bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
 ## Quick start
@@ -72,6 +72,16 @@ sudo bash /etc/hypervisor/scripts/update_hypervisor.sh [--ref <commit|branch|tag
 When you finish configuring and validating the system, you can optionally harden permissions on `/etc/hypervisor`:
 ```bash
 sudo bash /etc/hypervisor/scripts/harden_permissions.sh
+```
+
+Troubleshooting (optional)
+- Force a fresh fetch on rebuild (if you hit cache/NAR issues):
+```bash
+sudo env NIX_CONFIG="experimental-features = nix-command flakes" \
+  nixos-rebuild switch --impure --flake "/etc/hypervisor#$(hostname -s)" \
+  --refresh --option tarball-ttl 0 \
+  --option narinfo-cache-positive-ttl 0 \
+  --option narinfo-cache-negative-ttl 0
 ```
 
 See `/etc/hypervisor/docs` on the running system.
