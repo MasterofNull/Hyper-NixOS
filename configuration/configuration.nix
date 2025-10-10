@@ -22,8 +22,9 @@ in {
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "hypervisor";
-  time.timeZone = "UTC";
+  # Use mkDefault so host-imported settings from system-local.nix win
+  networking.hostName = lib.mkDefault "hypervisor";
+  time.timeZone = lib.mkDefault "UTC";
 
   # Hardened kernel and auditing
   boot.kernelPackages = pkgs.linuxPackages_hardened;

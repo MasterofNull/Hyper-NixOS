@@ -317,10 +317,10 @@ write_system_local_nix() {
   {
     echo '{ config, lib, pkgs, ... }:'
     echo '{'
-    echo "  networking.hostName = \"$(escape_nix_string "$host")\";"
-    if [[ -n "$tz" ]]; then echo "  time.timeZone = \"$(escape_nix_string "$tz")\";"; fi
-    if [[ -n "$locale" ]]; then echo "  i18n.defaultLocale = \"$(escape_nix_string "$locale")\";"; fi
-    if [[ -n "$keymap" ]]; then echo "  console.keyMap = \"$(escape_nix_string "$keymap")\";"; fi
+    echo "  networking.hostName = lib.mkForce \"$(escape_nix_string "$host")\";"
+    if [[ -n "$tz" ]]; then echo "  time.timeZone = lib.mkForce \"$(escape_nix_string "$tz")\";"; fi
+    if [[ -n "$locale" ]]; then echo "  i18n.defaultLocale = lib.mkForce \"$(escape_nix_string "$locale")\";"; fi
+    if [[ -n "$keymap" ]]; then echo "  console.keyMap = lib.mkForce \"$(escape_nix_string "$keymap")\";"; fi
     # Enable time synchronization by default for reliability during builds
     echo '  services.timesyncd.enable = true;'
     echo '}'
