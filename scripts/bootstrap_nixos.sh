@@ -349,6 +349,10 @@ main() {
   write_users_local_nix
   write_system_local_nix
 
+  # Ensure flake.lock reflects the current /etc/hypervisor input (after local files were generated)
+  export NIX_CONFIG="experimental-features = nix-command flakes"
+  nix flake lock --update-input hypervisor --flake /etc/nixos || true
+
   if [[ -n "$ACTION" ]]; then
     export NIX_CONFIG="experimental-features = nix-command flakes"
     case "$ACTION" in
