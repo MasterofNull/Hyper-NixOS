@@ -262,5 +262,16 @@ in {
       Categories=System;Utility;
     '';
   };
+  environment.etc."xdg/applications/hypervisor-installer.desktop" = lib.mkIf enableGuiAtBoot {
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Hypervisor Installer
+      Comment=Run first-boot setup/installer
+      Exec=/etc/hypervisor/scripts/setup_wizard.sh
+      Icon=system-software-install
+      Categories=System;Utility;
+    '';
+  };
 }
 
