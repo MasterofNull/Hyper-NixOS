@@ -92,6 +92,9 @@ ensure_hardware_config() {
 copy_repo_to_etc() {
   local src_root="$1"
   local dst_root="/etc/hypervisor"
+  local src_real dst_real
+  src_real=$(readlink -f "$src_root" 2>/dev/null || echo "$src_root")
+  dst_real=$(readlink -f "$dst_root" 2>/dev/null || echo "$dst_root")
   if [[ -d "$dst_root" ]]; then
     if $FORCE; then
       :
@@ -105,11 +108,35 @@ copy_repo_to_etc() {
   fi
   mkdir -p "$dst_root"
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete --exclude ".git/" --exclude "result" --exclude "target/" "$src_root/" "$dst_root/"
+    # If source resides under destination, stage a temporary copy to avoid
+    # deleting our own source when we recreate the destination.
+    if [[ "$src_real" == "$dst_real"* ]]; then
+      local stage
+      stage=$(mktemp -d -t hypervisor-stage.XXXXXX)
+      rsync -a --exclude ".git/" --exclude "result" --exclude "target/" "$src_root/" "$stage/"
+      # Now populate destination from the staged snapshot
+      rsync -a --delete "$stage/" "$dst_root/"
+      rm -rf -- "$stage"
+    else
+      rsync -a --delete --exclude ".git/" --exclude "result" --exclude "target/" "$src_root/" "$dst_root/"
+    fi
   else
-    shopt -s dotglob
-    cp -a "$src_root"/* "$dst_root"/
-    shopt -u dotglob
+    # Fallback: copy via a temporary stage if needed
+    if [[ "$src_real" == "$dst_real"* ]]; then
+      local stage
+      stage=$(mktemp -d -t hypervisor-stage.XXXXXX)
+      shopt -s dotglob
+      cp -a "$src_root"/* "$stage"/
+      shopt -u dotglob
+      shopt -s dotglob
+      cp -a "$stage"/* "$dst_root"/
+      shopt -u dotglob
+      rm -rf -- "$stage"
+    else
+      shopt -s dotglob
+      cp -a "$src_root"/* "$dst_root"/
+      shopt -u dotglob
+    fi
   fi
   # Secure but usable perms: root:wheel can read; others denied. Ensure scripts remain executable.
   chown -R root:wheel "$dst_root" || true
