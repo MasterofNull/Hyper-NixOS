@@ -337,7 +337,6 @@ write_system_local_nix() {
   # Discover swap by label/uuid only if not provided by nixos-option
   if [[ -z "$swap_device" ]]; then
     swap_uuid=$(blkid -t TYPE=swap -o value -s UUID 2>/dev/null | head -n1 || true)
-    [[ -n "$swap_uuid" ]] && swap_device="/dev/disk/by-uuid/$swap_uuid"
   fi
 
   {
@@ -349,14 +348,18 @@ write_system_local_nix() {
     if [[ -n "$keymap" ]]; then echo "  console.keyMap = lib.mkForce \"$(escape_nix_string "$keymap")\";"; fi
     # Enable time synchronization by default for reliability during builds
     echo '  services.timesyncd.enable = true;'
-    if [[ -n "$swap_device" ]]; then
+    # Only emit swap/resume if not already in host config
+    if [[ -z "$swap_device" && -n "$swap_uuid" ]]; then
       echo '  swapDevices = ['
       echo '    {'
-      echo "      device = \"$swap_device\";"
+      echo "      device = \"/dev/disk/by-uuid/$swap_uuid\";"
       echo '    }'
       echo '  ];'
-    fi
-    if [[ -n "$resume_device" ]]; then
+      # Optional: set resume to the same device if not declared
+      if [[ -z "$resume_device" ]]; then
+        echo "  boot.resumeDevice = lib.mkDefault \"/dev/disk/by-uuid/$swap_uuid\";"
+      fi
+    elif [[ -n "$resume_device" ]]; then
       echo "  boot.resumeDevice = lib.mkDefault \"$resume_device\";"
     fi
     echo '}'
