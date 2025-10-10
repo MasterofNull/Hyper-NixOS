@@ -146,13 +146,19 @@ copy_repo_to_etc() {
   if [[ -d "$dst_root/scripts" ]]; then
     find "$dst_root/scripts" -type f -exec chmod 0750 {} + 2>/dev/null || true
   fi
+
+  # Sanitize shebang typos that may exist in contributed scripts
+  # Fix '/use/bin/env' -> '/usr/bin/env' on first line only
+  find "$dst_root" -type f \
+    -exec sed -i '1s|^#!/use/bin/env |#!/usr/bin/env |' {} + 2>/dev/null || true
+  find "$dst_root" -type f \
+    -exec sed -i '1s|^#!/use/bin/env$|#!/usr/bin/env|' {} + 2>/dev/null || true
 }
 
 write_host_flake() {
   local system="$1"; shift
   local hostname="$1"; shift
   local flake_path="/etc/hypervisor/flake.nix"
-  msg "Writing $flake_path for $hostname ($system)"
   install -m 0644 /dev/null "$flake_path"
   # Determine hypervisor input: prefer pinned Git commit from source if available; fall back to repo head
   local repo_url="github:MasterofNull/Hyper-NixOS"

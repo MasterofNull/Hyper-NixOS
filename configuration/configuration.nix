@@ -126,6 +126,10 @@ in {
       RestartSec = 2;
       StateDirectory = "hypervisor";
       LogsDirectory = "";
+      ExecStartPre = [
+        "${pkgs.coreutils}/bin/mkdir -p /var/lib/hypervisor/logs"
+        "${pkgs.coreutils}/bin/touch /var/lib/hypervisor/logs/menu.log"
+      ];
       StandardInput = "tty";
       StandardOutput = "tty";
       TTYPath = "/dev/tty1";
@@ -134,6 +138,7 @@ in {
       Environment = [
         "SDL_VIDEODRIVER=kmsdrm"
         "SDL_AUDIODRIVER=alsa"
+        "PATH=/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       ];
 
       # Hardening
@@ -167,7 +172,7 @@ in {
     conflicts = [ "getty@tty1.service" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -c 'if [ ! -f /var/lib/hypervisor/.first_boot_done ]; then /etc/hypervisor/scripts/setup_wizard.sh || true; touch /var/lib/hypervisor/.first_boot_done; fi'";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'if [ ! -f /var/lib/hypervisor/.first_boot_done ]; then ${pkgs.bash}/bin/bash /etc/hypervisor/scripts/setup_wizard.sh || true; ${pkgs.coreutils}/bin/touch /var/lib/hypervisor/.first_boot_done; fi'";
       User = "root";
       WorkingDirectory = "/etc/hypervisor";
       NoNewPrivileges = true;
@@ -176,13 +181,18 @@ in {
       ProtectHome = true;
       StateDirectory = "hypervisor";
       LogsDirectory = "";
+      ExecStartPre = [
+        "${pkgs.coreutils}/bin/mkdir -p /var/lib/hypervisor/logs"
+        "${pkgs.coreutils}/bin/touch /var/lib/hypervisor/logs/first_boot.log"
+        "${pkgs.coreutils}/bin/mkdir -p /etc/hypervisor/configuration"
+      ];
       ReadWritePaths = [ "/etc/hypervisor/configuration" "/var/lib/hypervisor/logs" ];
       StandardInput = "tty";
       StandardOutput = "tty";
       TTYPath = "/dev/tty1";
       TTYReset = true;
       TTYVHangup = true;
-      Environment = [ "DIALOG=whiptail" "TERM=linux" "HOME=/root" ];
+      Environment = [ "DIALOG=whiptail" "TERM=linux" "HOME=/root" "PATH=/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin" ];
     };
     unitConfig = {
       ConditionPathExists = "!/var/lib/hypervisor/.first_boot_done";
