@@ -60,7 +60,7 @@ in {
     nano
     libvirt
     virt-manager
-    zenity
+    gnome.zenity
     gnome.gnome-terminal
     pciutils
     looking-glass-client
