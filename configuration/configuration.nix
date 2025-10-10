@@ -21,7 +21,7 @@
 
   # Hardened kernel and auditing
   boot.kernelPackages = pkgs.linuxPackages_hardened;
-  services.auditd.enable = true;
+  security.auditd.enable = true;
   boot.kernel.sysctl = {
     "kernel.unprivileged_userns_clone" = 0;
     "kernel.kptr_restrict" = 2;
