@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Purpose: Convert a VM JSON profile into libvirt XML and define/start it
+# Inputs: PROFILE_JSON (path)
+# Outputs: domain XML at /var/lib/hypervisor/xml/<name>.xml; domain started via virsh
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077

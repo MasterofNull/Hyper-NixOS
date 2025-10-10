@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
+# Purpose: Legacy host package installer for non-NixOS hosts (dev only)
+# Note: Not used on NixOS; dependencies come from NixOS modules.
 set -euo pipefail
 
 print_usage() {
   cat <<USAGE
 Usage: $(basename "$0") [--dry-run]
 
-Install host dependencies required for Hypervisor Suite.
+Install host dependencies required for Hypervisor Suite (non-NixOS).
 
 Options:
   --dry-run   Print actions without executing system changes.
