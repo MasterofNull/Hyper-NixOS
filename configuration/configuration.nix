@@ -231,24 +231,26 @@ in {
 
   # GUI management environment (Wayland GNOME) - enabled by default for initial setup
   # Can be disabled by setting hypervisor.gui.enableAtBoot = false in management-local.nix
-  config = lib.mkIf enableGuiAtBoot {
-    services.xserver.enable = true;
-    services.xserver.displayManager.gdm.enable = true;
-    services.xserver.displayManager.gdm.wayland = true;
-    programs.xwayland.enable = true; # virt-manager may need XWayland
-    services.xserver.desktopManager.gnome.enable = true;
-    services.xserver.displayManager.autoLogin.enable = true;
-    services.xserver.displayManager.autoLogin.user = mgmtUser;
-
-    # Desktop entries for dashboard
-    environment.etc."xdg/autostart/hypervisor-dashboard.desktop".text = ''
+  services.xserver = lib.mkIf enableGuiAtBoot {
+    enable = true;
+    displayManager = {
+      gdm = { enable = true; wayland = true; };
+      autoLogin = { enable = true; user = mgmtUser; };
+    };
+    desktopManager.gnome.enable = true;
+  };
+  programs.xwayland.enable = lib.mkIf enableGuiAtBoot true;
+  environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
+    text = ''
       [Desktop Entry]
       Type=Application
       Name=Hypervisor Dashboard
       Exec=/etc/hypervisor/scripts/management_dashboard.sh --autostart
       X-GNOME-Autostart-enabled=true
     '';
-    environment.etc."xdg/applications/hypervisor-dashboard.desktop".text = ''
+  };
+  environment.etc."xdg/applications/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
+    text = ''
       [Desktop Entry]
       Type=Application
       Name=Hypervisor Dashboard
