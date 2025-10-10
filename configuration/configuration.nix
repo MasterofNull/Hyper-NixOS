@@ -2,6 +2,8 @@
 
 let
   mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
+  enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] false config;
+  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
 in {
   system.stateVersion = "24.05"; # set at initial install; do not change blindly
   imports = [
@@ -113,7 +115,7 @@ in {
   # Start the VM selection menu at boot on the console
   systemd.services.hypervisor-menu = {
     description = "Boot-time Hypervisor VM Menu";
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = lib.optional enableMenuAtBoot "multi-user.target";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     conflicts = [ "getty@tty1.service" ];
@@ -166,7 +168,7 @@ in {
   # First-boot wizard (runs once, then marks completion)
   systemd.services.hypervisor-first-boot = {
     description = "First-boot Setup Wizard";
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = lib.optional enableWizardAtBoot "multi-user.target";
     after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
     before = [ "hypervisor-menu.service" ];
     wants = [ "network-online.target" ];
