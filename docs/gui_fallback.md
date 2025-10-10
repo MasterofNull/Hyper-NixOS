@@ -13,7 +13,7 @@ sudo nixos-rebuild switch --flake "/etc/nixos#$(hostname -s)"
 This enables GDM + GNOME and installs basic tools: virt-manager, GNOME system utilities, and Codium (VS Code OSS).
 
 ## Launch from the VM menu
-- From the boot-time TUI, choose: "Start GNOME management session (fallback GUI)".
+- From the boot-time TUI main screen, choose: "Start GNOME management session (fallback GUI)".
 - The menu will enable/start `gdm.service` if necessary and switch to the graphical target.
 
 To return to console-only at next boot:
@@ -26,3 +26,4 @@ sudo systemctl disable gdm.service
 ## Notes
 - The GUI is optional and off by default. Regular hypervisor operation should remain headless to minimize resource usage.
 - `services.xserver.enable` remains false unless you add `gui-local.nix`.
+- The auto-start countdown for the last VM still runs before showing the main menu; any key cancels it.

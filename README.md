@@ -38,6 +38,12 @@ Boot the ISO. On first boot, the setup wizard runs once to help with networking,
 - The hypervisor host does not run a desktop environment. Management is via a console TUI (whiptail/dialog) at boot and on-demand.
 - X11/Wayland are disabled (`services.xserver.enable = false`). QEMU uses KMSDRM for host-side output; guests use OVMF (UEFI).
 
+### Boot-time menu (multi-tier)
+- **Main menu**: lists installed VMs (from `/var/lib/hypervisor/vm_profiles/*.json`), plus:
+  - **Start GNOME management session (fallback GUI)**: launches GNOME if `gui-local.nix` is enabled (see `docs/gui_fallback.md`).
+  - **More Options**: opens a secondary menu with setup, ISO manager, VFIO, preflight, migration, snapshots, and other maintenance tools.
+- **Autostart last VM**: before the menu, a countdown auto-starts the last-run VM. The timeout is configurable via `/etc/hypervisor/config.json` at `features.autostart_timeout_sec` (default `5`; set `0` to disable).
+
 ## Configuration layering and carry-over
 On first install (bootstrap), the installer copies this repo to `/etc/hypervisor` and writes a host flake at `/etc/nixos/flake.nix`. To make host‑specific changes easy and keep secrets out of the repo, additional optional modules are auto-detected:
 

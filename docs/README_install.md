@@ -63,3 +63,9 @@ Boot it (USB/IPMI). The first-boot service starts the setup wizard automatically
 ## GUI environment on the hypervisor
 - There is no desktop session. The management UI is a console TUI (whiptail/dialog) invoked at boot by a systemd service.
 - `services.xserver.enable = false` on the host. Guests use OVMF (UEFI) and QEMU; host output uses KMS/DRM.
+
+## Boot menu behavior
+- The boot-time menu is two-tiered:
+  - Main menu lists installed VMs, plus "Start GNOME management session (fallback GUI)" and "More Options".
+  - More Options contains setup, ISO manager, VFIO tools, preflight, migration, and maintenance actions.
+- Autostart: before the menu, the last-run VM will auto-start after a countdown. Configure seconds via `/etc/hypervisor/config.json` at `features.autostart_timeout_sec` (set `0` to disable).
