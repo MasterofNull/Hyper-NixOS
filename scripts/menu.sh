@@ -145,7 +145,7 @@ autostart_countdown() {
   start_vm "$vm" || true
 }
 
-autostart_countdown 5
+autostart_countdown
 
 while true; do
   choice=$(menu_vm_main || true)
