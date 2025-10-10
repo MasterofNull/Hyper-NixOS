@@ -125,7 +125,7 @@ in {
       Restart = "always";
       RestartSec = 2;
       StateDirectory = "hypervisor";
-      LogsDirectory = "hypervisor";
+      LogsDirectory = "";
       StandardInput = "tty";
       StandardOutput = "tty";
       TTYPath = "/dev/tty1";
@@ -175,8 +175,8 @@ in {
       ProtectSystem = "strict";
       ProtectHome = true;
       StateDirectory = "hypervisor";
-      LogsDirectory = "hypervisor";
-      ReadWritePaths = [ "/etc/hypervisor/configuration" ];
+      LogsDirectory = "";
+      ReadWritePaths = [ "/etc/hypervisor/configuration" "/var/lib/hypervisor/logs" ];
       StandardInput = "tty";
       StandardOutput = "tty";
       TTYPath = "/dev/tty1";
