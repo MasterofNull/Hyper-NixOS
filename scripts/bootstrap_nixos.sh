@@ -19,6 +19,19 @@ FORCE=true
 SRC_OVERRIDE=""
 RB_OPTS=(--refresh --option tarball-ttl 0 --option narinfo-cache-positive-ttl 0 --option narinfo-cache-negative-ttl 0)
 
+# Wrapper: use a flake-capable nixos-rebuild even on older hosts
+supports_flakes_flag() {
+  nixos-rebuild --help 2>&1 | grep -q -- '--flake'
+}
+
+nr() {
+  if supports_flakes_flag; then
+    nixos-rebuild "$@"
+  else
+    nix --extra-experimental-features "nix-command flakes" shell nixpkgs#nixos-rebuild -c nixos-rebuild "$@"
+  fi
+}
+
 usage() {
   cat <<USAGE
 Usage: sudo $(basename "$0") [--hostname NAME] [--action build|test|switch] [--force] [--source PATH]
@@ -296,9 +309,9 @@ rebuild_menu() {
     case "$n" in 1) choice=build;; 2) choice=test;; 3) choice=switch;; 4) choice=shell;; *) choice=quit;; esac
   fi
   case "${choice:-quit}" in
-    build) nixos-rebuild build --flake "$attr" "${RB_OPTS[@]}" ;;
-    test) nixos-rebuild test --flake "$attr" "${RB_OPTS[@]}" ;;
-    switch) nixos-rebuild switch --flake "$attr" "${RB_OPTS[@]}" ;;
+    build) nr build --flake "$attr" "${RB_OPTS[@]}" ;;
+    test) nr test --flake "$attr" "${RB_OPTS[@]}" ;;
+    switch) nr switch --flake "$attr" "${RB_OPTS[@]}" ;;
     shell) ${SHELL:-/bin/bash} -l ;;
     *) : ;;
   esac
@@ -376,27 +389,27 @@ main() {
   if [[ -n "$ACTION" ]]; then
     export NIX_CONFIG="experimental-features = nix-command flakes"
     case "$ACTION" in
-      build) nixos-rebuild build --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
-      test) nixos-rebuild test --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
-      switch) nixos-rebuild switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
+      build) nr build --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
+      test) nr test --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
+      switch) nr switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}" ;;
       *) echo "Invalid --action: $ACTION" >&2; exit 1;;
     esac
   else
     # Automated flow with minimal prompts: offer test first, then optional switch
     if ask_yes_no "Run a test activation (nixos-rebuild test) before full switch?" yes; then
-      if ! nixos-rebuild test --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"; then
+      if ! nr test --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"; then
         if [[ -n "$DIALOG" ]]; then "$DIALOG" --msgbox "Test activation failed. Review configuration and retry." 10 70 || true; fi
         echo "Test activation failed." >&2
         exit 1
       fi
       if ask_yes_no "Test succeeded. Proceed with full switch now?" yes; then
-        nixos-rebuild switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"
+        nr switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"
       else
         msg "Switch skipped per user choice."
       fi
     else
       if ask_yes_no "Proceed directly to full switch now?" yes; then
-        nixos-rebuild switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"
+        nr switch --flake "/etc/nixos#$hostname" "${RB_OPTS[@]}"
       else
         msg "No rebuild performed."
       fi
