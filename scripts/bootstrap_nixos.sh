@@ -309,10 +309,15 @@ write_system_local_nix() {
   local dest_file="$dest_dir/system-local.nix"
   local state_dir="/var/lib/hypervisor/configuration"
   mkdir -p "$dest_dir"
-  # Do not overwrite if already present
+  # Do not overwrite if already present unless we need to fix duplicate swap emission
   if [[ -f "$dest_file" ]]; then
-    msg "system-local.nix already exists; skipping carryover generation"
-    return 0
+    if grep -qE '^\s*swapDevices\s*=' "$dest_file" 2>/dev/null; then
+      cp -a "$dest_file" "$dest_file.bak.$(date +%s)" || true
+      msg "Detected swapDevices in existing system-local.nix; regenerating with conflict-safe guard"
+    else
+      msg "system-local.nix already exists; skipping carryover generation"
+      return 0
+    fi
   fi
 
   local host tz locale keymap swap_uuid
@@ -340,11 +345,12 @@ write_system_local_nix() {
     # Enable time synchronization by default for reliability during builds
     echo '  services.timesyncd.enable = true;'
     if [[ -n "$swap_uuid" ]]; then
-      echo '  swapDevices = [{'
-      echo "    device = \"/dev/disk/by-uuid/$swap_uuid\";"
-      echo '  }];'
-      # Optional: enable hibernation by pointing to the swap device. Uncomment after verification.
-      # echo '  boot.resumeDevice = lib.mkDefault "/dev/disk/by-uuid/'"$swap_uuid"'";'
+      echo '  swapDevices = lib.mkIf (builtins.length config.swapDevices == 0) ['
+      echo '    {'
+      echo "      device = \"/dev/disk/by-uuid/$swap_uuid\";"
+      echo '    }
+      ];'
+      echo "  boot.resumeDevice = lib.mkDefault \"/dev/disk/by-uuid/$swap_uuid\";"
     fi
     echo '}'
   } >"$dest_file"
