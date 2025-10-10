@@ -165,7 +165,7 @@ in {
     conflicts = [ "getty@tty1.service" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -lc 'if [ ! -f /var/lib/hypervisor/.first_boot_done ]; then /etc/hypervisor/scripts/setup_wizard.sh || true; touch /var/lib/hypervisor/.first_boot_done; fi'";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'if [ ! -f /var/lib/hypervisor/.first_boot_done ]; then /etc/hypervisor/scripts/setup_wizard.sh || true; touch /var/lib/hypervisor/.first_boot_done; fi'";
       User = "root";
       WorkingDirectory = "/etc/hypervisor";
       NoNewPrivileges = true;
@@ -178,7 +178,10 @@ in {
       TTYPath = "/dev/tty1";
       TTYReset = true;
       TTYVHangup = true;
-      Environment = [ "DIALOG=whiptail" ];
+      Environment = [ "DIALOG=whiptail" "TERM=linux" "HOME=/root" ];
+    };
+    unitConfig = {
+      ConditionPathExists = "!/var/lib/hypervisor/.first_boot_done";
     };
   };
 
