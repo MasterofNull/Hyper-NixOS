@@ -4,14 +4,14 @@ A NixOS-based, security and performance focused hypervisor with a boot-time VM m
 
 Quick install (one‑liner):
 ```bash
-bash -lc 'set -euo pipefail; command -v git >/dev/null || nix profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; sudo "$tmp/hyper/scripts/bootstrap_nixos.sh" --hostname "$(hostname -s)" --action switch --source "$tmp/hyper"'
+bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; sudo "$tmp/hyper/scripts/bootstrap_nixos.sh" --hostname "$(hostname -s)" --action switch --source "$tmp/hyper"'
 ```
 
 ## Quick start
 
 - On an existing NixOS host (guided TUI bootstrap):
 ```bash
-sudo nix run .#bootstrap
+sudo env NIX_CONFIG="experimental-features = nix-command flakes" nix run .#bootstrap
 ```
 
 - One‑shot install from a USB/Git folder (no prompts):
@@ -21,12 +21,12 @@ sudo ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --
 
 - Optional rebuild helper (scriptable):
 ```bash
-nix run .#rebuild-helper -- --flake /etc/nixos --host $(hostname -s) {build|test|switch}
+env NIX_CONFIG="experimental-features = nix-command flakes" nix run .#rebuild-helper -- --flake /etc/nixos --host $(hostname -s) {build|test|switch}
 ```
 
 - Build a bootable ISO:
 ```bash
-nix build .#iso
+env NIX_CONFIG="experimental-features = nix-command flakes" nix build .#iso
 ```
 Boot the ISO. On first boot, the setup wizard runs once to help with networking, ISO download/verification, and creating your first VM.
 
