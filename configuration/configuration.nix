@@ -70,7 +70,6 @@ in {
     xorriso
     nfs-utils
     openssh
-    vscodium
   ];
 
   # Provide menu and profiles from this repository at runtime
@@ -234,7 +233,10 @@ in {
 
   # GUI management environment (Wayland GNOME) - enabled by default for initial setup
   # Can be disabled by setting hypervisor.gui.enableAtBoot = false in management-local.nix
-  services = lib.mkIf enableGuiAtBoot {
+  services.xserver.enable = lib.mkIf enableGuiAtBoot true;
+  services.displayManager.gdm.enable = lib.mkIf enableGuiAtBoot true;
+  services.displayManager.gdm.wayland = lib.mkIf enableGuiAtBoot true;
+  services.displayManager.autoLogin = lib.mkIf enableGuiAtBoot {
     enable = true;
     user = mgmtUser;
   };
@@ -272,4 +274,3 @@ in {
     '';
   };
 }
-
