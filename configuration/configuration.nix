@@ -1,6 +1,7 @@
 { config, pkgs, lib, ... }:
 
 {
+  system.stateVersion = "24.05"; # set at initial install; do not change blindly
   imports = [
     ./hardware-configuration.nix
     ../scripts/vfio-boot.nix
@@ -50,7 +51,7 @@
     dialog
     nano
     libvirt
-    virt-install
+    virt-manager
     pciutils
     looking-glass-client
     gnupg
@@ -93,7 +94,7 @@
 
   # Enable libvirt for virsh/XML workflows
   virtualisation.libvirtd.enable = true;
-  virtualisation.libvirtd.qemuRunAsRoot = false;
+  virtualisation.libvirtd.qemu.runAsRoot = false;
   virtualisation.libvirtd.extraConfig = ''
     security_driver = "apparmor"
     dynamic_ownership = 1
