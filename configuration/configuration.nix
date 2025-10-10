@@ -5,6 +5,11 @@ let
   enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] false config;
   enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
   enableGuiAtBoot = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] true config;
+  # Compatibility flags for NixOS versions (24.05 vs 24.11+)
+  hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
+  hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
+  hasNewDesk = lib.hasAttrByPath ["services" "desktopManager" "gnome"] config;
+  hasOldDesk = lib.hasAttrByPath ["services" "xserver" "desktopManager" "gnome"] config;
 in {
   system.stateVersion = "24.05"; # set at initial install; do not change blindly
   imports = [
@@ -232,15 +237,24 @@ in {
   hardware.opengl.enable = true;
 
   # GUI management environment (Wayland GNOME) - enabled by default for initial setup
-  # Can be disabled by setting hypervisor.gui.enableAtBoot = false in management-local.nix
+  # Toggle with: hypervisor.gui.enableAtBoot
   services.xserver.enable = lib.mkIf enableGuiAtBoot true;
-  services.displayManager.gdm.enable = lib.mkIf enableGuiAtBoot true;
-  services.displayManager.gdm.wayland = lib.mkIf enableGuiAtBoot true;
-  services.displayManager.autoLogin = lib.mkIf enableGuiAtBoot {
+  # Display Manager (GDM) - support both old and new option paths
+  services.displayManager.gdm.enable = lib.mkIf (enableGuiAtBoot && hasNewDM) true;
+  services.displayManager.gdm.wayland = lib.mkIf (enableGuiAtBoot && hasNewDM) true;
+  services.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasNewDM) {
     enable = true;
     user = mgmtUser;
   };
-  services.desktopManager.gnome.enable = lib.mkIf enableGuiAtBoot true;
+  services.xserver.displayManager.gdm.enable = lib.mkIf (enableGuiAtBoot && hasOldDM) true;
+  services.xserver.displayManager.gdm.wayland = lib.mkIf (enableGuiAtBoot && hasOldDM) true;
+  services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
+    enable = true;
+    user = mgmtUser;
+  };
+  # Desktop Manager (GNOME) - support both old and new option paths
+  services.desktopManager.gnome.enable = lib.mkIf (enableGuiAtBoot && hasNewDesk) true;
+  services.xserver.desktopManager.gnome.enable = lib.mkIf (enableGuiAtBoot && hasOldDesk) true;
   programs.xwayland.enable = lib.mkIf enableGuiAtBoot true;
   environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
     text = ''
