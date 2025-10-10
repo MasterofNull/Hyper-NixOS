@@ -232,7 +232,7 @@ in {
 
   # GUI management environment (Wayland GNOME) - enabled by default for initial setup
   # Can be disabled by setting hypervisor.gui.enableAtBoot = false in management-local.nix
-  services.xserver = lib.mkIf enableGuiAtBoot {
+  services = lib.mkIf enableGuiAtBoot {
     enable = true;
     displayManager = {
       gdm = { enable = true; wayland = true; };
