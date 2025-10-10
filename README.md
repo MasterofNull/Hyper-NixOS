@@ -74,6 +74,13 @@ When you finish configuring and validating the system, you can optionally harden
 sudo bash /etc/hypervisor/scripts/harden_permissions.sh
 ```
 
+If you need to update or prune old generations later, temporarily relax permissions, perform the maintenance, then harden again:
+```bash
+sudo bash /etc/hypervisor/scripts/relax_permissions.sh
+# ... perform updates, GC, or generation cleanup ...
+sudo bash /etc/hypervisor/scripts/harden_permissions.sh
+```
+
 Troubleshooting (optional)
 - Force a fresh fetch on rebuild (if you hit cache/NAR issues):
 ```bash
