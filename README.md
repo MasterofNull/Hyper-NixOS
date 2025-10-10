@@ -59,5 +59,9 @@ nix build .#iso
 - Install and host details: `docs/README_install.md`
 - Optional GNOME fallback: `docs/gui_fallback.md`
 - Advanced options and feature toggles: `docs/advanced_features.md`
+- Updating to latest or a specific ref: use the menu option “Update Hypervisor (pin to latest)” or run:
+```bash
+sudo bash /etc/hypervisor/scripts/update_hypervisor.sh [--ref <commit|branch|tag>]
+```
 
 See `/etc/hypervisor/docs` on the running system.
