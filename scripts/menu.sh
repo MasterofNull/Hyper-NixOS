@@ -56,6 +56,7 @@ menu_vm_main() {
   shopt -u nullglob
   entries+=("__GNOME__" "Start GNOME management session (fallback GUI)")
   entries+=("__MORE__" "More Options (setup, ISO, VFIO, tools)")
+  entries+=("__UPDATE__" "Update Hypervisor (pin to latest)")
   entries+=("__EXIT__" "Exit")
   $DIALOG --title "Hypervisor - VMs" --menu "Select a VM to start, or choose an action" 22 90 14 "${entries[@]}" 3>&1 1>&2 2>&3
 }
@@ -186,6 +187,13 @@ while true; do
           16|*) break;;
         esac
       done
+      ;;
+    "__UPDATE__")
+      if sudo bash /etc/hypervisor/scripts/update_hypervisor.sh; then
+        $DIALOG --msgbox "Hypervisor pinned to latest and system rebuilt." 10 70
+      else
+        $DIALOG --msgbox "Update failed. See logs." 8 50
+      fi
       ;;
     "__EXIT__"|*)
       # If the selection is a file path to a VM profile, start it
