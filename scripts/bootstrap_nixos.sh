@@ -159,7 +159,6 @@ write_host_flake() {
   local system="$1"; shift
   local hostname="$1"; shift
   local flake_path="/etc/hypervisor/flake.nix"
-  msg "Writing $flake_path for $hostname ($system)"
   install -m 0644 /dev/null "$flake_path"
   # Determine hypervisor input: prefer pinned Git commit from source if available; fall back to repo head
   local repo_url="github:MasterofNull/Hyper-NixOS"
