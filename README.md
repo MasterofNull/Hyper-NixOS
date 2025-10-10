@@ -69,4 +69,9 @@ nix build .#iso
 sudo bash /etc/hypervisor/scripts/update_hypervisor.sh [--ref <commit|branch|tag>]
 ```
 
+When you finish configuring and validating the system, you can optionally harden permissions on `/etc/hypervisor`:
+```bash
+sudo bash /etc/hypervisor/scripts/harden_permissions.sh
+```
+
 See `/etc/hypervisor/docs` on the running system.
