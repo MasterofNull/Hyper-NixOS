@@ -65,6 +65,51 @@ Boot it (USB/IPMI). The first-boot service starts the setup wizard automatically
 - `services.xserver.enable = false` on the host. Guests use OVMF (UEFI) and QEMU; host output uses KMS/DRM.
 
 ## Boot menu behavior
+## Troubleshooting: NAR hash mismatch / cache issues
+If you hit a NAR hash mismatch or similar cache error during `nixos-rebuild`, try the following:
+
+1. Ensure time is sane (NixOS blocks timedatectl; use an NTP tool temporarily):
+```bash
+sudo env NIX_CONFIG="experimental-features = nix-command flakes" \
+  nix run nixpkgs#chrony -c sudo chronyc -a makestep
+```
+
+2. Clear local narinfo/tarball caches and garbage-collect:
+```bash
+sudo rm -rf /root/.cache/nix ~/.cache/nix 2>/dev/null || true
+sudo nix-collect-garbage -d
+sudo nix store gc
+```
+
+3. Verify and repair the store:
+```bash
+sudo nix-store --verify --check-contents --repair
+```
+
+4. Rebuild with fresh fetch and zeroed TTLs:
+```bash
+sudo env NIX_CONFIG="experimental-features = nix-command flakes" \
+  nixos-rebuild switch --flake "/etc/nixos#$(hostname -s)" \
+  --refresh --option tarball-ttl 0 \
+  --option narinfo-cache-positive-ttl 0 \
+  --option narinfo-cache-negative-ttl 0
+```
+
+5. If still failing, restrict to the official cache:
+```bash
+sudo env NIX_CONFIG="experimental-features = nix-command flakes" \
+  nixos-rebuild switch --flake "/etc/nixos#$(hostname -s)" --refresh \
+  --option substituters "https://cache.nixos.org" \
+  --option trusted-public-keys "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+```
+
+6. Last resort: disable substituters (build locally):
+```bash
+sudo env NIX_CONFIG="experimental-features = nix-command flakes" \
+  nixos-rebuild switch --flake "/etc/nixos#$(hostname -s)" --option substituters ""
+```
+
+Tip: The bootstrapper script already adds `--refresh` and zero TTLs to rebuilds to avoid stale cache issues on first install.
 - The boot-time menu is two-tiered:
   - Main menu lists installed VMs, plus "Start GNOME management session (fallback GUI)" and "More Options".
   - More Options contains setup, ISO manager, VFIO tools, preflight, migration, and maintenance actions.
