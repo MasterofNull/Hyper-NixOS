@@ -70,6 +70,7 @@ in {
     xorriso
     nfs-utils
     openssh
+    vscodium
   ];
 
   # Provide menu and profiles from this repository at runtime
