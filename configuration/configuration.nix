@@ -107,8 +107,9 @@
   systemd.services.hypervisor-menu = {
     description = "Boot-time Hypervisor VM Menu";
     wantedBy = [ "multi-user.target" ];
-    after = [ "getty@tty1.service" "network-online.target" ];
-    wants = [ "getty@tty1.service" "network-online.target" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    conflicts = [ "getty@tty1.service" ];
     serviceConfig = {
       Type = "simple";
       ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/menu.sh";
@@ -117,6 +118,11 @@
       SupplementaryGroups = [ "kvm" "video" ];
       Restart = "always";
       RestartSec = 2;
+      StandardInput = "tty";
+      StandardOutput = "tty";
+      TTYPath = "/dev/tty1";
+      TTYReset = true;
+      TTYVHangup = true;
       Environment = [
         "SDL_VIDEODRIVER=kmsdrm"
         "SDL_AUDIODRIVER=alsa"
