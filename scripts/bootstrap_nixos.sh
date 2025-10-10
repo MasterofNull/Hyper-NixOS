@@ -151,9 +151,7 @@ copy_repo_to_etc() {
   # Fix '/use/bin/env' -> '/usr/bin/env' on first line only
   find "$dst_root" -type f \
     -exec sed -i '1s|^#!/use/bin/env |#!/usr/bin/env |' {} + 2>/dev/null || true
-  find "$dst_root" -type f \
-    -exec sed -i '1s|^#!/use/bin/env$|#!/usr/bin/env|' {} + 2>/dev/null || true
-}
+  }
 
 write_host_flake() {
   local system="$1"; shift
