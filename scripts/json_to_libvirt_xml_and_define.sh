@@ -312,8 +312,9 @@ if [[ -n "$vars_src" && -n "$nvram_line" ]]; then
 fi
 
 # Define and start
+# Do not remove storage on re-define; preserve installed disks between edits
 virsh destroy "$name" >/dev/null 2>&1 || true
-virsh undefine "$name" --remove-all-storage >/dev/null 2>&1 || true
+virsh undefine "$name" --nvram >/dev/null 2>&1 || true
 virsh define "$xml"
 virsh start "$name"
 if [[ "$autostart" == "true" || "$autostart" == "True" ]]; then
