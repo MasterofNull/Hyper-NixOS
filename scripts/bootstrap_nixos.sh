@@ -272,7 +272,7 @@ write_users_local_nix() {
       # Collect existing groups and ensure access groups
       groups=$(id -nG "$user" 2>/dev/null | tr ' ' '\n' | sort -u | tr '\n' ' ')
       # Ensure these are present
-      for g in wheel kvm libvirtd video; do
+      for g in wheel kvm libvirtd video input; do
         if ! grep -qE "(^| )$g( |$)" <<<"$groups"; then groups+="$g "; fi
       done
       # Emit Nix stanza
