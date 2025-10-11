@@ -45,6 +45,11 @@ cpus=$(jq -r '.cpus' "$PROFILE_JSON")
 memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
 disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
 iso_path=$(jq -r '.iso_path // empty' "$PROFILE_JSON")
+disk_image_path=$(jq -r '.disk_image_path // empty' "$PROFILE_JSON")
+ci_seed=$(jq -r '.cloud_init.seed_iso_path // empty' "$PROFILE_JSON")
+ci_user=$(jq -r '.cloud_init.user_data_path // empty' "$PROFILE_JSON")
+ci_meta=$(jq -r '.cloud_init.meta_data_path // empty' "$PROFILE_JSON")
+ci_net=$(jq -r '.cloud_init.network_config_path // empty' "$PROFILE_JSON")
 bridge=$(jq -r '.network.bridge // empty' "$PROFILE_JSON")
 # Optional logical zone name
 zone=$(jq -r '.network.zone // empty' "$PROFILE_JSON")
@@ -86,10 +91,15 @@ cf_zx_leaves=$(jq -r '.cpu_features.zhaoxin_centaur_leaves // false' "$PROFILE_J
 mem_guest_memfd=$(jq -r '.memory_options.guest_memfd // false' "$PROFILE_JSON")
 mem_private=$(jq -r '.memory_options.private // false' "$PROFILE_JSON")
 
-# Prepare disk if not present
+# Prepare disk if not present; allow base image clone when disk_image_path provided
 qcow="$DISKS_DIR/${name}.qcow2"
 if [[ ! -f "$qcow" ]]; then
-  qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+  if [[ -n "$disk_image_path" && -f "$disk_image_path" ]]; then
+    # Create a COW overlay referencing the base image
+    qemu-img create -f qcow2 -b "$disk_image_path" -F $(qemu-img info -f raw -U "$disk_image_path" >/dev/null 2>&1 && echo raw || echo qcow2) "$qcow" >/dev/null 2>&1 || qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+  else
+    qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+  fi
 fi
 
 # Resolve ISO
@@ -222,6 +232,23 @@ if [[ -n "${iso_path:-}" ]]; then
     <disk type='file' device='cdrom'>
       <source file='${v_iso}'/>
       <target dev='sda' bus='sata'/>
+      <readonly/>
+    </disk>
+XML
+fi
+
+# Optional cloud-init seed ISO
+if [[ -z "${ci_seed:-}" && ( -n "${ci_user:-}" || -n "${ci_meta:-}" ) ]]; then
+  # Generate seed into state dir
+  ci_seed="$DISKS_DIR/${name}-cidata.iso"
+  /etc/hypervisor/scripts/cloud_init_seed.sh "$ci_seed" "${ci_user:-}" "${ci_meta:-}" "${ci_net:-}" || true
+fi
+if [[ -n "${ci_seed:-}" && -f "$ci_seed" ]]; then
+  v_seed=$(printf '%s' "$ci_seed" | xml_escape)
+  cat >> "$xml" <<XML
+    <disk type='file' device='cdrom'>
+      <source file='${v_seed}'/>
+      <target dev='sdb' bus='sata'/>
       <readonly/>
     </disk>
 XML

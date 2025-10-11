@@ -49,6 +49,11 @@ memballoon_disable="false"
 autostart="false"
 autostart_group=""
 autostart_priority="50"
+# Cloud image and cloud-init defaults
+disk_image_path=""
+ci_user_data=""
+ci_meta_data=""
+ci_network_config=""
 
 # Pull defaults from config.json when available
 if [[ -f /etc/hypervisor/config.json ]]; then
@@ -74,7 +79,13 @@ save_state() {
   "mem_private": $mem_private,
   "vhost_net": $vhost_net,
   "memballoon_disable": $memballoon_disable,
-  "autostart": $autostart
+  "autostart": $autostart,
+  "autostart_group": "${autostart_group}",
+  "autostart_priority": $autostart_priority,
+  "disk_image_path": "${disk_image_path}",
+  "ci_user_data": "${ci_user_data}",
+  "ci_meta_data": "${ci_meta_data}",
+  "ci_network_config": "${ci_network_config}"
 }
 JSON
 }
@@ -97,6 +108,12 @@ load_state() {
   vhost_net=$(jq -r .vhost_net "$STATE_FILE")
   memballoon_disable=$(jq -r .memballoon_disable "$STATE_FILE")
   autostart=$(jq -r .autostart "$STATE_FILE")
+  autostart_group=$(jq -r .autostart_group "$STATE_FILE")
+  autostart_priority=$(jq -r .autostart_priority "$STATE_FILE")
+  disk_image_path=$(jq -r .disk_image_path "$STATE_FILE")
+  ci_user_data=$(jq -r .ci_user_data "$STATE_FILE")
+  ci_meta_data=$(jq -r .ci_meta_data "$STATE_FILE")
+  ci_network_config=$(jq -r .ci_network_config "$STATE_FILE")
 }
 
 # Offer resume if state exists
@@ -309,11 +326,28 @@ cat > "$tmp" <<JSON
   "memballoon": { "disable": ${memballoon_disable} },
   "autostart": ${autostart},
   "autostart_group": ${autostart_group:+"$autostart_group"}${autostart_group:=""},
-  "autostart_priority": ${autostart_priority}
+  "autostart_priority": ${autostart_priority},
+  "disk_image_path": ${disk_image_path:+"$disk_image_path"}${disk_image_path:=""},
+  "cloud_init": {
+    "seed_iso_path": "",
+    "user_data_path": ${ci_user_data:+"$ci_user_data"}${ci_user_data:=""},
+    "meta_data_path": ${ci_meta_data:+"$ci_meta_data"}${ci_meta_data:=""},
+    "network_config_path": ${ci_network_config:+"$ci_network_config"}${ci_network_config:=""}
+  }
 }
 JSON
 # Clean up audio object if empty model
-jq 'if .audio.model == null or .audio.model == "" then del(.audio) else . end | if .owner == null or .owner == "" then del(.owner) else . end | if .network.zone == null or .network.zone == "" then (.network |= del(.zone)) else . end' "$tmp" > "$profile_json"
+jq '
+  if .audio.model == null or .audio.model == "" then del(.audio) else . end
+  | if .owner == null or .owner == "" then del(.owner) else . end
+  | if .network.zone == null or .network.zone == "" then (.network |= del(.zone)) else . end
+  | if .disk_image_path == null or .disk_image_path == "" then del(.disk_image_path) else . end
+  | if (.cloud_init.user_data_path == null or .cloud_init.user_data_path == "")
+     and (.cloud_init.meta_data_path == null or .cloud_init.meta_data_path == "")
+     and (.cloud_init.network_config_path == null or .cloud_init.network_config_path == "")
+     and (.cloud_init.seed_iso_path == null or .cloud_init.seed_iso_path == "")
+    then del(.cloud_init) else . end
+' "$tmp" > "$profile_json"
 rm -f "$tmp"
 
 $DIALOG --msgbox "Created profile: $profile_json" 8 60
