@@ -125,9 +125,17 @@ download_iso() {
         chan_sel=$($DIALOG --menu "Choose channel" 12 50 2 stable "Stable releases" unstable "Unstable/devel" 3>&1 1>&2 2>&3 || echo stable)
       fi
       local items=()
-      for i in "${!names[@]}"; do [[ "${chans[$i]}" == "$chan_sel" || ( "$chan_sel" == stable && -z "${chans[$i]}" ) ]] && items+=("$i" "${names[$i]}"); done
+      for i in "${!names[@]}"; do
+        if [[ "${chans[$i]}" == "$chan_sel" ]]; then
+          items+=("$i" "${names[$i]}")
+        elif [[ "$chan_sel" == stable && -z "${chans[$i]}" ]]; then
+          items+=("$i" "${names[$i]}")
+        fi
+      done
       # Fallback to all if filter empty
-      if (( ${#items[@]} == 0 )); then for i in "${!names[@]}"; do items+=("$i" "${names[$i]}"); done; fi
+      if (( ${#items[@]} == 0 )); then
+        for i in "${!names[@]}"; do items+=("$i" "${names[$i]}"); done
+      fi
       preset_choice=$($DIALOG --menu "ISO presets (${chan_sel}) (or Cancel for manual URL)" 20 72 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
       if [[ -n "${preset_choice:-}" ]]; then
         url="${urls[$preset_choice]}"
@@ -454,7 +462,22 @@ while true; do
     7) list_isos | ${PAGER:-less} ;;
     8) scan_local_isos ;;
     9) mount_network_share_and_scan ;;
-    10) $DIALOG --msgbox "Tips:\n\n- Use presets for verified OS downloads (with mirrors).\n- Import from USB/network via scan options.\n- A sidecar .sha256 is generated for offline integrity.\n- Attach ISOs to VM profiles or create a new VM via the wizard.\n\nDocs: More Options -> Docs & Help" 16 70 ;;
+    10)
+      tmp_msg=$(mktemp)
+      cat > "$tmp_msg" <<'MSG'
+Tips:
+
+- Use presets for verified OS downloads (with mirrors).
+- Import from USB/network via scan options.
+- A sidecar .sha256 is generated for offline integrity.
+- Attach ISOs to VM profiles or create a new VM via the wizard.
+
+Docs: More Options -> Docs & Help
+MSG
+      msg=$(cat "$tmp_msg")
+      $DIALOG --msgbox "$msg" 16 70
+      rm -f "$tmp_msg"
+      ;;
     11) exit 0 ;;
   esac
 done
