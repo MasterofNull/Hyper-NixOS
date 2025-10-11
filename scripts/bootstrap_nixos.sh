@@ -158,21 +158,17 @@ write_host_flake() {
   local hostname="$1"; shift
   local flake_path="/etc/hypervisor/flake.nix"
   install -m 0644 /dev/null "$flake_path"
-  # Determine hypervisor input: prefer pinned Git commit from source if available; fall back to repo head
-  local repo_url="github:MasterofNull/Hyper-NixOS"
-  local pinned_url="$repo_url"
-  if command -v git >/dev/null 2>&1 && [[ -n "${SRC_OVERRIDE:-}" ]] && git -C "$SRC_OVERRIDE" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    local rev
-    rev=$(git -C "$SRC_OVERRIDE" rev-parse HEAD 2>/dev/null || true)
-    if [[ -n "$rev" ]]; then pinned_url="$repo_url/$rev"; fi
-  fi
+  # Use path input to /etc/hypervisor to avoid downloading the repo again
+  # since we've already copied it locally. This optimizes the quick install process.
+  local hypervisor_url="path:/etc/hypervisor"
   cat > "$flake_path" <<'FLAKE'
 {
   description = "Hyper‑NixOS Host";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-    # Use a Git input to avoid path narHash issues; host overrides live under /var/lib/hypervisor/configuration
+    # Use local path input since files are already copied to /etc/hypervisor
+    # This avoids duplicate downloads during quick install
     hypervisor.url = "__HYP_URL__";
   };
 
@@ -194,7 +190,7 @@ write_host_flake() {
 FLAKE
   sed -i "s|__SYSTEM__|$system|" "$flake_path"
   sed -i "s|__HOST__|$hostname|" "$flake_path"
-  sed -i "s|__HYP_URL__|$pinned_url|" "$flake_path"
+  sed -i "s|__HYP_URL__|$hypervisor_url|" "$flake_path"
 
   # Ensure /etc/nixos points at this flake (symlink for compatibility)
   mkdir -p /etc/nixos
@@ -276,7 +272,7 @@ write_users_local_nix() {
       # Collect existing groups and ensure access groups
       groups=$(id -nG "$user" 2>/dev/null | tr ' ' '\n' | sort -u | tr '\n' ' ')
       # Ensure these are present
-      for g in wheel kvm libvirtd video; do
+      for g in wheel kvm libvirtd video input; do
         if ! grep -qE "(^| )$g( |$)" <<<"$groups"; then groups+="$g "; fi
       done
       # Emit Nix stanza
@@ -474,9 +470,8 @@ main() {
   write_users_local_nix
   write_system_local_nix
 
-  # Ensure flake.lock reflects the current /etc/hypervisor input (after local files were generated)
-  export NIX_CONFIG="experimental-features = nix-command flakes"
-  nix flake lock --update-input hypervisor --flake /etc/hypervisor || true
+  # No need to update flake lock since we're using a local path input
+  # that references files already present at /etc/hypervisor
 
   if [[ -n "$ACTION" ]]; then
     export NIX_CONFIG="experimental-features = nix-command flakes"

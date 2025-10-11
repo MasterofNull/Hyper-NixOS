@@ -24,6 +24,14 @@
     { isNormalUser = true; createHome = true; }
   ];
 
+  # Note: Touchpad, keyboard, and input device support is automatically
+  # enabled via hardware-input.nix, including:
+  # - Multitouch gestures (two-finger scroll, tap-to-click)
+  # - Keyboard backlighting control (brightness hotkeys)
+  # - Screen brightness controls
+  # - Natural scrolling and other touchpad features
+  # See configuration/hardware-input.nix for customization options.
+
   # Ensure graphical session starts on demand (gdm service handled by systemd)
   # You can mask GDM until launched via menu script if you prefer.
 }

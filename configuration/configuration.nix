@@ -14,6 +14,7 @@ in {
   system.stateVersion = "24.05"; # set at initial install; do not change blindly
   imports = [
     ./hardware-configuration.nix
+    ./hardware-input.nix
     ../scripts/vfio-boot.nix
     ./security.nix
     ./monitoring.nix
@@ -94,7 +95,7 @@ in {
   users.users = lib.mkIf (mgmtUser == "hypervisor") {
     hypervisor = {
       isNormalUser = true;
-      extraGroups = [ "wheel" "kvm" "libvirtd" "video" ];
+      extraGroups = [ "wheel" "kvm" "libvirtd" "video" "input" ];
       createHome = false;
     };
   };
