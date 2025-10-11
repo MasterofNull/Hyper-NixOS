@@ -99,6 +99,19 @@ in {
     };
   };
 
+  # Ensure the configured management user exists and is in required groups
+  # Even if defined elsewhere, these merge safely and guarantee wheel access
+  # Merge-friendly management user defaults; skip if mgmtUser is root
+  users.users = lib.mkIf (mgmtUser != "root") (lib.mkMerge [
+    {
+      "${mgmtUser}" = {
+        isNormalUser = lib.mkDefault true;
+        createHome = lib.mkDefault true;
+        extraGroups = [ "wheel" "kvm" "libvirtd" "video" ];
+      };
+    }
+  ]);
+
   # Create state dirs for OVMF vars, disks, XML, profiles, ISOs
   systemd.tmpfiles.rules = [
     "d /var/lib/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
@@ -247,6 +260,14 @@ in {
   # Security hardening
   networking.firewall.enable = true;
   security.sudo.enable = true;
+  # Ensure the configured management user can sudo even if not explicitly in wheel
+  # This avoids bootstrap failures when the invoking user lacks sudoers entry
+  security.sudo.extraRules = [
+    {
+      users = [ mgmtUser ];
+      commands = [ { command = "ALL"; options = [ "SETENV" "NOPASSWD" ]; } ];
+    }
+  ];
   services.openssh = {
     enable = true;
     settings = {

@@ -185,6 +185,10 @@ write_host_flake() {
         modules = [
           /etc/nixos/hardware-configuration.nix
           (hypervisor + "/configuration/configuration.nix")
+          # Ensure the management user has sudo and required groups early
+          ({ config, lib, pkgs, ... }: {
+            hypervisor.management.userName = "__HOST_USER__";
+          })
         ];
       };
     };
@@ -195,6 +199,11 @@ FLAKE
   sed -i "s|__SYSTEM__|$system|" "$flake_path"
   sed -i "s|__HOST__|$hostname|" "$flake_path"
   sed -i "s|__HYP_URL__|$pinned_url|" "$flake_path"
+  # Attempt to detect a primary user to set as management user
+  local host_user
+  host_user=$(detect_primary_users | head -n1 || true)
+  if [[ -z "$host_user" ]]; then host_user="hypervisor"; fi
+  sed -i "s|__HOST_USER__|$host_user|" "$flake_path"
 
   # Ensure /etc/nixos points at this flake (symlink for compatibility)
   mkdir -p /etc/nixos
@@ -237,7 +246,20 @@ write_users_local_nix() {
 
   local users; mapfile -t users < <(detect_primary_users)
   if (( ${#users[@]} == 0 )); then
-    msg "No primary users detected (uid >= 1000). Skipping users-local.nix"
+    # Ensure we at least create a management stub for 'hypervisor' user
+    msg "No primary users detected (uid >= 1000). Creating users-local.nix stub for 'hypervisor' user"
+    cat >"$dest_file" <<'NIX'
+{ config, lib, pkgs, ... }:
+{
+  users.users.hypervisor = {
+    isNormalUser = true;
+    extraGroups = [ "wheel" "kvm" "libvirtd" "video" ];
+    createHome = true;
+  };
+}
+NIX
+    mkdir -p "$state_dir"; cp "$dest_file" "$state_dir/users-local.nix"; chmod 0600 "$dest_file" || true
+    msg "Wrote $dest_file (permissions 0600)"
     return 0
   fi
 
