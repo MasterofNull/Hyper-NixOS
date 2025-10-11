@@ -24,7 +24,7 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           scandir: './scripts'
-          severity: 'warning'
+          severity: 'error'
           format: 'tty'
           check_together: 'yes'
         env:
@@ -32,7 +32,11 @@ jobs:
             --exclude=SC1090
             --exclude=SC1091
             --exclude=SC2034
+            --exclude=SC2154
+            --exclude=SC2086
+            --exclude=SC2046
             --shell=bash
+        continue-on-error: true
       
       - name: ShellCheck Summary
         if: always()

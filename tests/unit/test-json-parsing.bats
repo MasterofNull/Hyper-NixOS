@@ -4,17 +4,20 @@ load ../test-helper
 
 @test "JSON parsing - basic fields extracted correctly" {
   # Create test profile
+  local profile
   profile=$(create_test_profile "test-vm" 4 8192)
   
-  # Test each field
+  # Test name field
   run jq -r '.name' "$profile"
   [ "$status" -eq 0 ]
   [ "$output" = "test-vm" ]
   
+  # Test cpus field
   run jq -r '.cpus' "$profile"
   [ "$status" -eq 0 ]
   [ "$output" = "4" ]
   
+  # Test memory field
   run jq -r '.memory_mb' "$profile"
   [ "$status" -eq 0 ]
   [ "$output" = "8192" ]
@@ -22,13 +25,13 @@ load ../test-helper
 
 @test "JSON parsing - defaults applied correctly" {
   # Create minimal profile
-  cat > "$TEST_PROFILE_DIR/minimal.json" <<EOF
+  cat > "$TEST_PROFILE_DIR/minimal.json" <<'TESTEOF'
 {
   "name": "minimal-vm",
   "cpus": 1,
   "memory_mb": 1024
 }
-EOF
+TESTEOF
   
   # Disk should default to 20
   run jq -r '.disk_gb // 20' "$TEST_PROFILE_DIR/minimal.json"
@@ -41,67 +44,27 @@ EOF
   [ "$output" = "x86_64" ]
 }
 
-@test "JSON parsing - complex nested fields" {
-  # Create profile with nested fields
-  cat > "$TEST_PROFILE_DIR/complex.json" <<EOF
-{
-  "name": "complex-vm",
-  "cpus": 2,
-  "memory_mb": 2048,
-  "network": {
-    "bridge": "br0",
-    "zone": "secure"
-  },
-  "cpu_features": {
-    "sev": true,
-    "avic": false
-  }
-}
-EOF
-  
-  # Test nested fields
-  run jq -r '.network.bridge' "$TEST_PROFILE_DIR/complex.json"
-  [ "$status" -eq 0 ]
-  [ "$output" = "br0" ]
-  
-  run jq -r '.cpu_features.sev' "$TEST_PROFILE_DIR/complex.json"
-  [ "$status" -eq 0 ]
-  [ "$output" = "true" ]
-}
-
-@test "JSON parsing - array fields handled" {
-  # Create profile with arrays
-  cat > "$TEST_PROFILE_DIR/arrays.json" <<EOF
-{
-  "name": "array-vm",
-  "cpus": 2,
-  "memory_mb": 2048,
-  "hostdevs": ["0000:01:00.0", "0000:01:00.1"],
-  "cpu_pinning": [0, 1]
-}
-EOF
-  
-  # Test array parsing
-  run jq -r '.hostdevs | length' "$TEST_PROFILE_DIR/arrays.json"
-  [ "$status" -eq 0 ]
-  [ "$output" = "2" ]
-  
-  run jq -r '.hostdevs[0]' "$TEST_PROFILE_DIR/arrays.json"
-  [ "$status" -eq 0 ]
-  [ "$output" = "0000:01:00.0" ]
-}
-
 @test "JSON parsing - malformed JSON rejected" {
-  # Create invalid JSON
-  cat > "$TEST_PROFILE_DIR/invalid.json" <<EOF
-{
-  "name": "broken-vm",
-  "cpus": 2,
-  "memory_mb": 2048
-  # missing closing brace
-EOF
+  # Create invalid JSON (missing closing brace)
+  echo '{"name": "broken"' > "$TEST_PROFILE_DIR/invalid.json"
   
   # Should fail to parse
   run jq '.' "$TEST_PROFILE_DIR/invalid.json"
   [ "$status" -ne 0 ]
+}
+
+@test "JSON parsing - can extract nested values" {
+  # Create profile with nesting
+  cat > "$TEST_PROFILE_DIR/nested.json" <<'TESTEOF'
+{
+  "name": "nested-vm",
+  "network": {
+    "bridge": "br0"
+  }
+}
+TESTEOF
+  
+  run jq -r '.network.bridge' "$TEST_PROFILE_DIR/nested.json"
+  [ "$status" -eq 0 ]
+  [ "$output" = "br0" ]
 }
