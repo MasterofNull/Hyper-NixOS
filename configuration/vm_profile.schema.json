@@ -80,8 +80,7 @@
         "disable": {"type": "boolean"}
       }
     },
-    "autostart": {"type": "boolean"}
-    ,
+    "autostart": {"type": "boolean"},
     "autostart_group": {"type": "string", "description": "Group name for boot ordering"},
     "autostart_priority": {"type": "integer", "minimum": 0, "maximum": 100, "description": "Lower starts earlier"}
   }
