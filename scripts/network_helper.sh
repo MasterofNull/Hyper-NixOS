@@ -46,8 +46,9 @@ menu() {
       setup)
         zone=$($DIALOG --inputbox "Zone name (must exist in config.json)" 10 60 3>&1 1>&2 2>&3) || continue
         br=$(jq -r --arg z "$zone" '.network_zones?[$z]?.bridge // empty' "$CONFIG_JSON")
+        cidr=$(jq -r --arg z "$zone" '.network_zones?[$z]?.dhcp_cidr // empty' "$CONFIG_JSON")
         [[ -z "$br" || "$br" == "null" ]] && { $DIALOG --msgbox "Unknown zone or bridge" 8 40; continue; }
-        ensure_bridge "$br"; apply_fw_rules "$br" "$zone"; $DIALOG --msgbox "Applied for $zone ($br)" 8 50 ;;
+        ensure_bridge "$br"; apply_fw_rules "$br" "$zone"; [[ -n "$cidr" && "$cidr" != "null" ]] && setup_dnsmasq "$br" "$cidr"; $DIALOG --msgbox "Applied for $zone ($br)" 8 50 ;;
       dhcp)
         br=$($DIALOG --inputbox "Bridge name" 10 60 3>&1 1>&2 2>&3) || continue
         cidr=$($DIALOG --inputbox "CIDR (e.g., 192.168.100.1/24)" 10 60 3>&1 1>&2 2>&3) || continue

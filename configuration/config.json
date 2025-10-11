@@ -17,8 +17,8 @@
     "boot_autostart_groups_order": ["core", "network", "apps"]
   },
   "network_zones": {
-    "secure":    { "bridge": "br-secure",    "allow_hostdev": true },
-    "untrusted": { "bridge": "br-untrusted", "allow_hostdev": false }
+    "secure":    { "bridge": "br-secure",    "allow_hostdev": true,  "dhcp_cidr": "192.168.10.1/24" },
+    "untrusted": { "bridge": "br-untrusted", "allow_hostdev": false, "dhcp_cidr": "192.168.20.1/24" }
   },
   "iso_presets": [
     {
