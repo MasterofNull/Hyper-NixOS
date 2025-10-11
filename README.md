@@ -2,53 +2,115 @@
 
 A NixOS-based, security and performance focused hypervisor with a boot-time VM menu, ISO download + verification, libvirt management, and optional VFIO passthrough.
 
-Enable flakes on fresh NixOS (first time only):
-```bash
-sudo bash -lc 'set -euo pipefail; if ! nixos-rebuild --help 2>&1 | grep -q -- --flake; then tmp=/tmp/enable-flakes.nix; printf "%s\n" "{ config, pkgs, lib, ... }:" "{" "  imports = [ /etc/nixos/configuration.nix ];" "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];" "  nix.package = pkgs.nixVersions.stable;" "}" > "$tmp"; nixos-rebuild switch -I nixos-config="$tmp"; fi'
-```
+---
 
-Quick install + bootstrap (auto‑migrate, then reboot):
+## 🚀 Installation (Choose ONE method)
+
+### Method 1: One-Liner Install (Recommended - Works anywhere)
+
+**Perfect for:** Fresh installs, automated deployments, USB boots
+
+This single command downloads the repo, installs the system, and reboots:
 ```bash
 bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
-## Quick start
+**What it does:**
+- ✅ Installs git if needed
+- ✅ Clones the repository  
+- ✅ Runs bootstrap installer
+- ✅ Migrates your existing users/settings
+- ✅ Switches to new system
+- ✅ Reboots automatically
 
-- On an existing NixOS host (guided TUI bootstrap):
+**That's it!** After reboot, you'll see the hypervisor menu. Skip to [After Installation](#after-installation).
+
+---
+
+### Method 2: Manual Install (If you already have the repo)
+
+**Perfect for:** Development, testing, customization
+
+#### Step 1: Enable flakes (Skip if already enabled)
+
+Check if you need this:
 ```bash
-sudo env NIX_CONFIG="experimental-features = nix-command flakes" nix run .#bootstrap
+nixos-rebuild --help 2>&1 | grep -q -- --flake && echo "Flakes already enabled ✓" || echo "Need to enable flakes"
 ```
 
-- One‑shot install from a USB/Git folder (no prompts):
+If needed, enable flakes:
 ```bash
-sudo ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --source "$(pwd)"
+sudo bash -lc 'set -euo pipefail; if ! nixos-rebuild --help 2>&1 | grep -q -- --flake; then tmp=/tmp/enable-flakes.nix; printf "%s\n" "{ config, pkgs, lib, ... }:" "{" "  imports = [ /etc/nixos/configuration.nix ];" "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];" "  nix.package = pkgs.nixVersions.stable;" "}" > "$tmp"; nixos-rebuild switch -I nixos-config="$tmp"; fi'
 ```
 
-- Optional rebuild helper (scriptable):
-```bash
-env NIX_CONFIG="experimental-features = nix-command flakes" nix run .#rebuild-helper -- --flake /etc/nixos --host $(hostname -s) {build|test|switch}
-```
+#### Step 2: Run bootstrap
 
-- Build a bootable ISO:
+**Option A - Guided install with prompts:**
 ```bash
-env NIX_CONFIG="experimental-features = nix-command flakes" nix build .#iso
-```
-Boot the ISO. On first boot, the setup wizard runs once to help with networking, ISO download/verification, and creating your first VM.
-
-## Install
-- One‑liner (downloads and runs bootstrap installer): see above.
-- From a cloned repo (guided TUI):
-```bash
+cd /path/to/Hyper-NixOS
 sudo nix run .#bootstrap
 ```
-- From a cloned repo (one‑shot):
+
+**Option B - Unattended install:**
 ```bash
-sudo ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --source "$(pwd)"
+cd /path/to/Hyper-NixOS
+sudo ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --source "$(pwd)" --reboot
 ```
-- Build a bootable ISO:
+
+**What bootstrap does:**
+- ✅ Copies configuration to `/etc/hypervisor/src`
+- ✅ Creates `/etc/hypervisor/flake.nix` 
+- ✅ Generates `users-local.nix` with your current users (including sudo access)
+- ✅ Generates `system-local.nix` with your timezone/locale
+- ✅ Runs `nixos-rebuild switch` to activate the new system
+- ✅ Optionally reboots
+
+---
+
+### Method 3: Build Bootable ISO
+
+**Perfect for:** Creating installation media, bare metal deployments
+
 ```bash
+cd /path/to/Hyper-NixOS
 nix build .#iso
+# ISO will be in ./result/iso/
 ```
+
+Boot from the ISO. On first boot, a setup wizard helps you configure networking and create your first VM.
+
+---
+
+## After Installation
+
+After reboot, you'll see the hypervisor boot menu with options to:
+- 🖥️ **Start VMs** - Launch your virtual machines
+- 📦 **Download ISOs** - Get OS installation images  
+- ⚙️ **Create VMs** - Set up new virtual machines
+- 🔧 **System Tools** - Diagnostics, updates, backups
+- 🪟 **GNOME Desktop** - Graphical fallback environment
+
+**Next steps:** See [Quick Start Guide](docs/QUICKSTART_EXPANDED.md) to create your first VM.
+
+---
+
+## Quick Reference
+
+### Update the system
+```bash
+sudo bash /etc/hypervisor/scripts/update_hypervisor.sh
+```
+
+### Rebuild after config changes
+```bash
+sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
+```
+
+### Rebuild helper (alternative)
+```bash
+nix run .#rebuild-helper -- --flake /etc/hypervisor --host $(hostname -s) {build|test|switch}
+```
+
 
 ## System features
 - Boot-time TUI menu (multi-tier): VM list, GNOME fallback, and More Options
