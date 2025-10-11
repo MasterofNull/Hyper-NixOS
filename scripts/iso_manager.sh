@@ -433,7 +433,8 @@ while true; do
     7 "List ISOs" \
     8 "Scan local storage for ISOs" \
     9 "Mount network share and scan" \
-    10 "Exit" 3>&1 1>&2 2>&3) || exit 0
+    10 "Help" \
+    11 "Exit" 3>&1 1>&2 2>&3) || exit 0
   case "$choice" in
     1) download_iso ;;
     2) validate_iso ;;
@@ -444,6 +445,7 @@ while true; do
     7) list_isos | ${PAGER:-less} ;;
     8) scan_local_isos ;;
     9) mount_network_share_and_scan ;;
-    10) exit 0 ;;
+    10) $DIALOG --msgbox "Tips:\n\n- Use presets for verified OS downloads (with mirrors).\n- Import from USB/network via scan options.\n- A sidecar .sha256 is generated for offline integrity.\n- Attach ISOs to VM profiles or create a new VM via the wizard.\n\nDocs: More Options -> Docs & Help" 16 70 ;;
+    11) exit 0 ;;
   esac
 done

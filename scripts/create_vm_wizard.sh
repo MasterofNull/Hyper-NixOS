@@ -242,6 +242,10 @@ EOT
     autostart "autostart ($autostart)" \
     agroup "autostart group (${autostart_group:-none})" \
     aprio "autostart priority (lower earlier: $autostart_priority)" \
+    cimg "cloud image (${disk_image_path:-none})" \
+    ciu "cloud-init user-data (${ci_user_data:-none})" \
+    cim "cloud-init meta-data (${ci_meta_data:-none})" \
+    cin "cloud-init net-conf (${ci_network_config:-none})" \
     done "Done" 3>&1 1>&2 2>&3 || echo done)
   case "$choice" in
     name) name=$(ask "VM name" "$name") || true ;;
@@ -275,6 +279,10 @@ EOT
     autostart) if $DIALOG --yesno "Autostart VM?" 8 40; then autostart=true; else autostart=false; fi ;;
     agroup) autostart_group=$($DIALOG --inputbox "Autostart group" 10 60 "$autostart_group" 3>&1 1>&2 2>&3) || true ;;
     aprio) autostart_priority=$($DIALOG --inputbox "Autostart priority (0-100; lower starts earlier)" 10 60 "$autostart_priority" 3>&1 1>&2 2>&3) || true ;;
+    cimg) disk_image_path=$($DIALOG --inputbox "Path to base cloud image (qcow2/raw)" 10 70 "$disk_image_path" 3>&1 1>&2 2>&3) || true ;;
+    ciu) ci_user_data=$($DIALOG --inputbox "cloud-init user-data path (YAML)" 10 70 "$ci_user_data" 3>&1 1>&2 2>&3) || true ;;
+    cim) ci_meta_data=$($DIALOG --inputbox "cloud-init meta-data path (YAML)" 10 70 "$ci_meta_data" 3>&1 1>&2 2>&3) || true ;;
+    cin) ci_network_config=$($DIALOG --inputbox "cloud-init network-config path (YAML)" 10 70 "$ci_network_config" 3>&1 1>&2 2>&3) || true ;;
     *) : ;;
   esac
   save_state
