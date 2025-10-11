@@ -12,7 +12,9 @@
     "boot_selector_enable": false,
     "boot_selector_timeout_sec": 8,
     "boot_selector_exit_after_start": true,
-    "boot_autostart_delay_ms": 1500
+    "boot_autostart_delay_ms": 1500,
+    "boot_autostart_delay_between_groups_ms": 2500,
+    "boot_autostart_groups_order": ["core", "network", "apps"]
   },
   "network_zones": {
     "secure":    { "bridge": "br-secure",    "allow_hostdev": true },

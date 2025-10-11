@@ -214,13 +214,29 @@ boot_vm_selector() {
     # Timed out or canceled: start autostart set by priority
     local delay_ms sleep_secs
     delay_ms=$(jq -r '.features.boot_autostart_delay_ms // 1500' "$CONFIG_JSON" 2>/dev/null || echo 1500)
-    local autolist prio path
-    autolist=$(for f in "$USER_PROFILES_DIR"/*.json; do [[ -f "$f" ]] || continue; a=$(jq -r '.autostart // false' "$f" 2>/dev/null || echo false); [[ "$a" == true || "$a" == True ]] || continue; p=$(jq -r '.autostart_priority // 50' "$f" 2>/dev/null || echo 50); printf '%03d\t%s\n' "$p" "$f"; done | sort -n)
-    while IFS=$'\t' read -r prio path; do
+    local autolist prio path group groups_order delay_group_ms last_group=""
+    delay_group_ms=$(jq -r '.features.boot_autostart_delay_between_groups_ms // 2500' "$CONFIG_JSON" 2>/dev/null || echo 2500)
+    mapfile -t groups_order < <(jq -r '.features.boot_autostart_groups_order[]? // empty' "$CONFIG_JSON" 2>/dev/null || true)
+    autolist=$(for f in "$USER_PROFILES_DIR"/*.json; do [[ -f "$f" ]] || continue; a=$(jq -r '.autostart // false' "$f" 2>/dev/null || echo false); [[ "$a" == true || "$a" == True ]] || continue; p=$(jq -r '.autostart_priority // 50' "$f" 2>/dev/null || echo 50); g=$(jq -r '.autostart_group // ""' "$f" 2>/dev/null || echo ""); printf '%s\t%03d\t%s\n' "$g" "$p" "$f"; done | sort -t $'\t' -k1,1 -k2,2n)
+    if (( ${#groups_order[@]} )); then
+      # reorder autolist by groups_order
+      tmp=""
+      for g in "${groups_order[@]}"; do
+        tmp+=$(printf '%s\n' "$autolist" | awk -F '\t' -v gg="$g" '$1==gg')$'\n'
+      done
+      tmp+=$(printf '%s\n' "$autolist" | awk -F '\t' 'BEGIN{OFS="\t"} NR==FNR{a[$0];next} !($1 in a){print $0}' <(printf '%s\n' "${groups_order[@]}") -)
+      autolist="$tmp"
+    fi
+    while IFS=$'\t' read -r group prio path; do
       [[ -z "$path" || ! -f "$path" ]] && continue
+      if [[ -n "$last_group" && "$group" != "$last_group" ]]; then
+        sleep_secs=$(awk -v ms="$delay_group_ms" 'BEGIN{printf("%0.3f", ms/1000)}')
+        sleep "$sleep_secs"
+      fi
       start_vm "$path" || true
       sleep_secs=$(awk -v ms="$delay_ms" 'BEGIN{printf("%0.3f", ms/1000)}')
       sleep "$sleep_secs"
+      last_group="$group"
     done <<< "$autolist"
     $BOOT_SELECTOR_EXIT_AFTER_START && exit 0 || return 0
   fi
