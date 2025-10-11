@@ -25,6 +25,47 @@
         "https://releases.ubuntu.com/24.04/SHA256SUMS",
         "https://cdimage.ubuntu.com/ubuntu/releases/24.04/release/SHA256SUMS"
       ],
+  "cloud_image_presets": [
+    {
+      "name": "Ubuntu 24.04 cloud image (amd64)",
+      "url": "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img",
+      "checksum_urls": [
+        "https://cloud-images.ubuntu.com/noble/current/SHA256SUMS"
+      ],
+      "signature_urls": [
+        "https://cloud-images.ubuntu.com/noble/current/SHA256SUMS.gpg"
+      ],
+      "gpg_key_urls": [
+        "https://ubuntu.com/security/ubuntu-keyring.gpg"
+      ]
+    },
+    {
+      "name": "Fedora 40 cloud image (qcow2)",
+      "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/40/Cloud/x86_64/images/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2",
+      "checksum_urls": [
+        "https://getfedora.org/static/checksums/40/Cloud/x86_64/CHECKSUM"
+      ],
+      "signature_urls": [
+        "https://getfedora.org/static/checksums/40/Cloud/x86_64/CHECKSUM.sig"
+      ],
+      "gpg_key_urls": [
+        "https://getfedora.org/static/fedora.gpg"
+      ]
+    },
+    {
+      "name": "Debian 12 cloud image (genericcloud)",
+      "url": "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2",
+      "checksum_urls": [
+        "https://cloud.debian.org/images/cloud/bookworm/latest/SHA256SUMS"
+      ],
+      "signature_urls": [
+        "https://cloud.debian.org/images/cloud/bookworm/latest/SHA256SUMS.sign"
+      ],
+      "gpg_key_urls": [
+        "https://ftp-master.debian.org/keys/archive-key-12.asc"
+      ]
+    }
+  ]
       "signature_urls": [
         "https://releases.ubuntu.com/24.04/SHA256SUMS.gpg"
       ],
