@@ -14,8 +14,8 @@
     "boot_selector_exit_after_start": true
   },
   "network_zones": {
-    "secure": { "bridge": "br-secure" },
-    "untrusted": { "bridge": "br-untrusted" }
+    "secure": { "bridge": "br-secure", "allow_hostdev": true },
+    "untrusted": { "bridge": "br-untrusted", "allow_hostdev": false }
   },
   "iso_presets": [
     {

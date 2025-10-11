@@ -15,6 +15,7 @@ USER_PROFILES_DIR="$STATE_DIR/vm_profiles"  # user-created profiles
 ISOS_DIR="$STATE_DIR/isos"                  # stateful ISO library
 SCRIPTS_DIR="$ROOT/scripts"
 LAST_VM_FILE="$STATE_DIR/last_vm"
+OWNER_FILTER_FILE="$STATE_DIR/owner_filter"
 
 : "${DIALOG:=whiptail}"
 export DIALOG
@@ -36,6 +37,10 @@ if [[ -f "$CONFIG_JSON" ]]; then
   BOOT_SELECTOR_TIMEOUT=$(jq -r '.features.boot_selector_timeout_sec // 8' "$CONFIG_JSON" 2>/dev/null || echo 8)
   BOOT_SELECTOR_EXIT_AFTER_START=$(jq -r '.features.boot_selector_exit_after_start // true' "$CONFIG_JSON" 2>/dev/null || echo true)
 fi
+if [[ -z "${OWNER_FILTER:-}" && -f "$OWNER_FILTER_FILE" ]]; then
+  OWNER_FILTER=$(cat "$OWNER_FILTER_FILE" 2>/dev/null || true)
+  export OWNER_FILTER
+fi
 [[ -z "$LOG_DIR" ]] && LOG_DIR="/var/lib/hypervisor/logs"
 LOG_FILE="$LOG_DIR/menu.log"
 mkdir -p "$LOG_DIR"
@@ -56,6 +61,7 @@ mkdir -p "$USER_PROFILES_DIR" "$ISOS_DIR"
 
 menu_vm_main() {
   local entries=()
+  local owner_filter="${OWNER_FILTER:-}"
   shopt -s nullglob
   for f in "$USER_PROFILES_DIR"/*.json; do
     local name
@@ -63,6 +69,9 @@ menu_vm_main() {
     [[ -z "$name" ]] && name=$(basename "$f")
     local owner
     owner=$(jq -r '.owner // empty' "$f" 2>/dev/null || true)
+    if [[ -n "$owner_filter" && "$owner" != "$owner_filter" ]]; then
+      continue
+    fi
     if [[ -n "$owner" && "$owner" != "null" ]]; then
       entries+=("$f" "VM: $name (owner: $owner)")
     else
@@ -73,6 +82,11 @@ menu_vm_main() {
   entries+=("__GNOME__" "Start GNOME management session (fallback GUI)")
   entries+=("__MORE__" "More Options (setup, ISO, VFIO, tools)")
   entries+=("__UPDATE__" "Update Hypervisor (pin to latest)")
+  if [[ -n "$owner_filter" ]]; then
+    entries+=("__CLEAR_OWNER_FILTER__" "Show all owners (clear filter)")
+  else
+    entries+=("__SET_OWNER_FILTER__" "Filter by owner…")
+  fi
   entries+=("__TOGGLE_MENU_ON" "Enable menu at boot")
   entries+=("__TOGGLE_MENU_OFF" "Disable menu at boot")
   entries+=("__RUN_WIZARD__" "Run first-boot setup wizard now")
@@ -171,7 +185,7 @@ autostart_countdown() {
 # Boot-time VM selector with timeout, similar to a bootloader menu
 boot_vm_selector() {
   # Build menu entries from user profiles and include a maintenance option
-  local entries=("__MAINTENANCE__" "Maintenance (skip autostart)")
+  local entries=("__MAINTENANCE__" "Maintenance (skip autostart)" "__SELECT_MULTI__" "Select multiple VMs…")
   shopt -s nullglob
   local first=""; local default_profile=""; local last=""; local f
   [[ -f "$LAST_VM_FILE" ]] && last=$(cat "$LAST_VM_FILE" 2>/dev/null || true)
@@ -188,15 +202,44 @@ boot_vm_selector() {
   if [[ -n "$last" && -f "$last" ]]; then default_profile="$last"; else default_profile="$first"; fi
 
   # Show one-shot menu with timeout; on timeout, autostart default_profile
-  local choice
+  local choice default_base
+  default_base=$(basename -- "$default_profile")
   choice=$($DIALOG --title "Hypervisor - Select VM to Boot" \
-    --menu "Select a VM to start (timeout ${BOOT_SELECTOR_TIMEOUT}s). Default: $(basename "$default_profile")" \
+    --menu "Select a VM to start (timeout ${BOOT_SELECTOR_TIMEOUT}s). Default: ${default_base}" \
     22 90 14 "${entries[@]}" --timeout "$BOOT_SELECTOR_TIMEOUT" 3>&1 1>&2 2>&3 || true)
 
   if [[ -z "$choice" ]]; then
-    # Timed out or canceled: start default if available
-    if [[ -n "$default_profile" && -f "$default_profile" ]]; then
-      start_vm "$default_profile" || true
+    # Timed out or canceled: start autostart set by priority
+    local delay_ms sleep_secs
+    delay_ms=$(jq -r '.features.boot_autostart_delay_ms // 1500' "$CONFIG_JSON" 2>/dev/null || echo 1500)
+    local autolist prio path
+    autolist=$(for f in "$USER_PROFILES_DIR"/*.json; do [[ -f "$f" ]] || continue; a=$(jq -r '.autostart // false' "$f" 2>/dev/null || echo false); [[ "$a" == true || "$a" == True ]] || continue; p=$(jq -r '.autostart_priority // 50' "$f" 2>/dev/null || echo 50); printf '%03d\t%s\n' "$p" "$f"; done | sort -n)
+    while IFS=$'\t' read -r prio path; do
+      [[ -z "$path" || ! -f "$path" ]] && continue
+      start_vm "$path" || true
+      sleep_secs=$(awk -v ms="$delay_ms" 'BEGIN{printf("%0.3f", ms/1000)}')
+      sleep "$sleep_secs"
+    done <<< "$autolist"
+    $BOOT_SELECTOR_EXIT_AFTER_START && exit 0 || return 0
+  fi
+
+  if [[ "$choice" == "__SELECT_MULTI__" ]]; then
+    # Build checklist
+    local items=()
+    for f in "$USER_PROFILES_DIR"/*.json; do
+      [[ -f "$f" ]] || continue
+      local name; name=$(jq -r '.name // empty' "$f" 2>/dev/null || basename "$f")
+      local on; on=$(jq -r '.autostart // false' "$f" 2>/dev/null || echo false)
+      items+=("$f" "$name" $( [[ "$on" == true || "$on" == True ]] && echo on || echo off ))
+    done
+    sel=$($DIALOG --checklist "Select VMs to start" 22 90 14 "${items[@]}" 3>&1 1>&2 2>&3 || true)
+    if [[ -n "$sel" ]]; then
+      # whiptail returns space-separated quoted paths
+      for p in $sel; do
+        # strip quotes
+        p=${p%\"}; p=${p#\"}
+        [[ -f "$p" ]] && start_vm "$p" || true
+      done
       $BOOT_SELECTOR_EXIT_AFTER_START && exit 0 || return 0
     fi
     return 0
@@ -266,6 +309,15 @@ while true; do
       else
         $DIALOG --msgbox "Update failed. See logs." 8 50
       fi
+      ;;
+    "__SET_OWNER_FILTER__")
+      OWNER_FILTER=$($DIALOG --inputbox "Owner to show" 10 60 3>&1 1>&2 2>&3 || echo "")
+      export OWNER_FILTER
+      if [[ -n "$OWNER_FILTER" ]]; then echo "$OWNER_FILTER" > "$OWNER_FILTER_FILE"; fi
+      ;;
+    "__CLEAR_OWNER_FILTER__")
+      unset OWNER_FILTER
+      rm -f "$OWNER_FILTER_FILE"
       ;;
     "__TOGGLE_MENU_ON")
       sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh menu on && $DIALOG --msgbox "Menu will start at boot." 8 40 || $DIALOG --msgbox "Failed to toggle." 8 40

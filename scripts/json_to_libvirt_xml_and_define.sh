@@ -280,6 +280,14 @@ for bdf in "${hostdevs[@]:-}"; do
     echo "Skipping invalid PCI BDF: $bdf" >&2
     continue
   fi
+  # Guard: if zone is 'untrusted' and not explicitly allowed, skip passthrough
+  if [[ -n "${zone:-}" && -f "$CONFIG_JSON" ]]; then
+    allow=$(jq -r --arg z "$zone" '.network_zones?[$z]?.allow_hostdev // false' "$CONFIG_JSON" 2>/dev/null || echo false)
+    if [[ "$allow" != true && "$allow" != True ]]; then
+      echo "Skipping hostdev passthrough in zone '$zone' (not allowed)" >&2
+      continue
+    fi
+  fi
   cat >> "$xml" <<XML
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <source>
