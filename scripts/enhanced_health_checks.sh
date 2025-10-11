@@ -186,7 +186,7 @@ comprehensive_checks() {
     echo "## File Permissions"
     
     # Check critical directories
-    for dir in /var/lib/hypervisor /etc/hypervisor/configuration; do
+    for dir in /var/lib/hypervisor /etc/hypervisor/src/configuration; do
         if [[ -d "$dir" ]]; then
             local perms=$(stat -c %a "$dir")
             if [[ "$perms" =~ ^7[0-5][0-5]$ ]]; then
