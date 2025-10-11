@@ -475,8 +475,13 @@ main() {
   write_system_local_nix
 
   # Ensure flake.lock reflects the current /etc/hypervisor input (after local files were generated)
-  export NIX_CONFIG="experimental-features = nix-command flakes"
-  nix flake lock --update-input hypervisor --flake /etc/hypervisor || true
+  # Optimization: When running in one-shot mode (ACTION set), skip this explicit lock step
+  # and let nixos-rebuild create/update the lock once. This avoids fetching the
+  # hypervisor (and nixpkgs) tarballs twice during the quick install path.
+  if [[ -z "$ACTION" ]]; then
+    export NIX_CONFIG="experimental-features = nix-command flakes"
+    nix flake lock --update-input hypervisor --flake /etc/hypervisor || true
+  fi
 
   if [[ -n "$ACTION" ]]; then
     export NIX_CONFIG="experimental-features = nix-command flakes"
