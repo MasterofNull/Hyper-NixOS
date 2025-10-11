@@ -1,0 +1,6 @@
+Networking
+
+- Zones map to bridges (see configuration/config.json)
+- Untrusted zones restrict passthrough by policy
+- Bridge helper and Zone manager assist with setup
+- VFIO tools and detection help with device passthrough

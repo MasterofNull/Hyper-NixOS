@@ -1,0 +1,9 @@
+Logs & Troubleshooting
+
+- Logs directory: /var/lib/hypervisor/logs (configurable via configuration/config.json)
+- Menu log: menu.log
+- ISO/image operations: sidecar .sha256 files for integrity
+- Common tips:
+  - Ensure bridges exist and VM has an IP (virsh domifaddr, cloud-init console)
+  - Remove iso_path after install if boot loops to installer
+  - Check SELinux/AppArmor denials if passthrough fails

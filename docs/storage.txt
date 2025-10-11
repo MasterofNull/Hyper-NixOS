@@ -1,0 +1,6 @@
+Storage
+
+- Disks stored in /var/lib/hypervisor/disks
+- XML generated to /var/lib/hypervisor/xml
+- Snapshots/backups: scheduled for implementation
+- Use qcow2 overlays on cloud images for fast cloning

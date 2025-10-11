@@ -1,0 +1,6 @@
+Cloud-init
+
+- Cloud images: small base OS images optimized for first-boot provisioning
+- Provide user-data and meta-data (YAML); optional network-config
+- The system can generate a seed ISO (cidata) and attach it automatically
+- Profiles: set disk_image_path and cloud_init paths

@@ -113,18 +113,35 @@ download_iso() {
     # Build preset menu
     mapfile -t names < <(jq -r '.iso_presets[]?.name' "$CONFIG_JSON")
     mapfile -t urls < <(jq -r '.iso_presets[]?.url' "$CONFIG_JSON")
-    mapfile -t preset_checksum_urls < <(jq -r '.iso_presets[]?.checksum_url // empty' "$CONFIG_JSON")
-    mapfile -t preset_signature_urls < <(jq -r '.iso_presets[]?.signature_url // empty' "$CONFIG_JSON")
-    mapfile -t preset_gpg_keys < <(jq -r '.iso_presets[]?.gpg_key_url // empty' "$CONFIG_JSON")
+    mapfile -t chans < <(jq -r '.iso_presets[]? | (.channel // "stable")' "$CONFIG_JSON")
+    mapfile -t preset_checksum_urls < <(jq -r '.iso_presets[]? | (.checksum_urls // [.checksum_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
+    mapfile -t preset_signature_urls < <(jq -r '.iso_presets[]? | (.signature_urls // [.signature_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
+    mapfile -t preset_gpg_keys < <(jq -r '.iso_presets[]? | (.gpg_key_urls // [.gpg_key_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
     if (( ${#names[@]} > 0 )); then
+      # Choose channel first when both exist
+      local have_stable=false have_unstable=false; for c in "${chans[@]}"; do [[ "$c" == stable ]] && have_stable=true; [[ "$c" == unstable ]] && have_unstable=true; done
+      local chan_sel="stable"
+      if $have_unstable; then
+        chan_sel=$($DIALOG --menu "Choose channel" 12 50 2 stable "Stable releases" unstable "Unstable/devel" 3>&1 1>&2 2>&3 || echo stable)
+      fi
       local items=()
-      for i in "${!names[@]}"; do items+=("$i" "${names[$i]}"); done
-      preset_choice=$($DIALOG --menu "ISO presets (or Cancel for manual URL)" 20 70 10 "${items[@]}" 3>&1 1>&2 2>&3 || true)
+      for i in "${!names[@]}"; do
+        if [[ "${chans[$i]}" == "$chan_sel" ]]; then
+          items+=("$i" "${names[$i]}")
+        elif [[ "$chan_sel" == stable && -z "${chans[$i]}" ]]; then
+          items+=("$i" "${names[$i]}")
+        fi
+      done
+      # Fallback to all if filter empty
+      if (( ${#items[@]} == 0 )); then
+        for i in "${!names[@]}"; do items+=("$i" "${names[$i]}"); done
+      fi
+      preset_choice=$($DIALOG --menu "ISO presets (${chan_sel}) (or Cancel for manual URL)" 20 72 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
       if [[ -n "${preset_choice:-}" ]]; then
         url="${urls[$preset_choice]}"
-        preset_checksum_url="${preset_checksum_urls[$preset_choice]:-}"
-        preset_signature_url="${preset_signature_urls[$preset_choice]:-}"
-        preset_gpg_key_url="${preset_gpg_keys[$preset_choice]:-}"
+        preset_checksum_list=$(eval echo ${preset_checksum_urls[$preset_choice]:-})
+        preset_signature_list=$(eval echo ${preset_signature_urls[$preset_choice]:-})
+        preset_gpg_key_list=$(eval echo ${preset_gpg_keys[$preset_choice]:-})
       fi
     fi
   fi
@@ -135,33 +152,35 @@ download_iso() {
   auto=""
   filename=$(basename "$url")
   tmpdir=$(mktemp -d)
-  if [[ -n "${preset_checksum_url:-}" ]]; then
-    checks_file="$tmpdir/checksums.txt"
-    curl -fsSL "$preset_checksum_url" -o "$checks_file" || true
-    if [[ -s "$checks_file" ]]; then
-      if [[ -n "${preset_signature_url:-}" ]]; then
-        sig_file="$tmpdir/checksums.sig"
-        curl -fsSL "$preset_signature_url" -o "$sig_file" || true
-        if [[ -s "$sig_file" ]]; then
-          # Auto-import vendor key if possible, then verify
-          auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "${preset_gpg_key_url:-}" || true
-          if ! GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$sig_file" "$checks_file"; then
-            # If verification failed (likely missing key), ask user to provide key URL
-            if $DIALOG --yesno "Signature verification failed. Provide a GPG key URL to import?" 10 70; then
-              import_gpg_key || true
-              GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$sig_file" "$checks_file" || $DIALOG --msgbox "WARNING: Signature still not verified" 8 60
-            else
-              $DIALOG --msgbox "WARNING: Signature verification not completed" 8 60
+  # Try a list of checksum/signature/key URLs (first one that works)
+  if [[ -n "${preset_checksum_list:-}" ]]; then
+    for preset_checksum_url in $preset_checksum_list; do
+      checks_file="$tmpdir/checksums.txt"
+      curl -fsSL "$preset_checksum_url" -o "$checks_file" || { rm -f "$checks_file"; continue; }
+      if [[ -s "$checks_file" ]]; then
+        # Try signatures for the checksum file if any
+        if [[ -n "${preset_signature_list:-}" ]]; then
+          for preset_signature_url in $preset_signature_list; do
+            sig_file="$tmpdir/checksums.sig"
+            curl -fsSL "$preset_signature_url" -o "$sig_file" || { rm -f "$sig_file"; continue; }
+            if [[ -s "$sig_file" ]]; then
+              # Attempt to import vendor keys before verify
+              if [[ -n "${preset_gpg_key_list:-}" ]]; then
+                for kurl in $preset_gpg_key_list; do auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "$kurl" || true; done
+              else
+                auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "" || true
+              fi
+              GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$sig_file" "$checks_file" || true
             fi
-          fi
+          done
         fi
+        auto=$(awk -v fn="$filename" 'BEGIN{IGNORECASE=1}
+          $1 ~ /^[a-f0-9]{64}$/ && index($0, fn){print $1; exit}
+          match($0, /SHA256 \(([^)]+)\) = ([a-f0-9]{64})/, m){ if (m[1]==fn){print m[2]; exit} }
+        ' "$checks_file")
+        [[ -n "$auto" ]] && break
       fi
-      # Parse checksum line for our filename (support common formats)
-      auto=$(awk -v fn="$filename" 'BEGIN{IGNORECASE=1}
-        $1 ~ /^[a-f0-9]{64}$/ && index($0, fn){print $1; exit}
-        match($0, /SHA256 \(([^)]+)\) = ([a-f0-9]{64})/, m){ if (m[1]==fn){print m[2]; exit} }
-      ' "$checks_file")
-    fi
+    done
   fi
   # Fallback to heuristic from URL base
   [[ -z "$auto" ]] && auto=$(try_fetch_checksum "$url" || true)
@@ -191,6 +210,39 @@ download_iso() {
     store_sidecar_checksum "$ISOS_DIR/$filename"
     $DIALOG --msgbox "Downloaded: $filename" 8 50
   fi
+}
+
+# Noninteractive download for CLI invocation
+download_iso_cli() {
+  local url="$1" checksum="$2" preset_checksum_url="$3" preset_signature_url="$4" preset_gpg_key_url="$5"
+  local filename tmpdir checks_file sig_file tmp
+  filename=$(basename "$url")
+  tmpdir=$(mktemp -d)
+  if [[ -z "$checksum" && -n "$preset_checksum_url" ]]; then
+    checks_file="$tmpdir/checksums.txt"
+    curl -fsSL "$preset_checksum_url" -o "$checks_file" || true
+    if [[ -s "$checks_file" ]]; then
+      if [[ -n "$preset_signature_url" ]]; then
+        sig_file="$tmpdir/checksums.sig"
+        curl -fsSL "$preset_signature_url" -o "$sig_file" || true
+        if [[ -s "$sig_file" ]]; then
+          auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "${preset_gpg_key_url:-}" || true
+          GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$sig_file" "$checks_file" || true
+        fi
+      fi
+      checksum=$(awk -v fn="$filename" 'BEGIN{IGNORECASE=1} $1 ~ /^[a-f0-9]{64}$/ && index($0, fn){print $1; exit} match($0, /SHA256 \(([^)]+)\) = ([a-f0-9]{64})/, m){ if (m[1]==fn){print m[2]; exit} }' "$checks_file")
+    fi
+  fi
+  tmp="$ISOS_DIR/.partial-$filename"
+  if command -v isoctl >/dev/null 2>&1; then
+    isoctl download --url "$url" --out "$tmp" || return 1
+  else
+    curl -L -C - "$url" -o "$tmp"
+  fi
+  mv "$tmp" "$ISOS_DIR/$filename"
+  if [[ -n "$checksum" ]]; then echo "$checksum  $ISOS_DIR/$filename" | sha256sum -c - || return 1; fi
+  sha256sum "$ISOS_DIR/$filename" > "$ISOS_DIR/$filename.sha256"
+  echo "$ISOS_DIR/$filename"
 }
 
 validate_iso() {
@@ -246,16 +298,160 @@ list_isos() {
   ls -1 "$ISOS_DIR"/*.iso 2>/dev/null || true
 }
 
+# Scan helper: find ISO files under given paths (up to limited depth)
+scan_paths_for_isos() {
+  local found=()
+  for base in "$@"; do
+    [[ -d "$base" ]] || continue
+    while IFS= read -r -d '' f; do found+=("$f"); done < <(find "$base" -maxdepth 3 -type f -iname "*.iso" -print0 2>/dev/null || true)
+  done
+  printf '%s\n' "${found[@]}" | sort -u
+}
+
+scan_local_isos() {
+  local defaults=(
+    /run/media /media /mnt /home /var/tmp /tmp
+  )
+  mapfile -t files < <(scan_paths_for_isos "${defaults[@]}")
+  if (( ${#files[@]} == 0 )); then
+    $DIALOG --msgbox "No ISOs found under default paths." 8 50
+    return 0
+  fi
+  # Build checklist
+  local items=()
+  for f in "${files[@]}"; do items+=("$f" "" off); done
+  sel=$($DIALOG --checklist "Select ISOs to import into $ISOS_DIR" 22 80 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
+  [[ -z "$sel" ]] && return 0
+  for p in $sel; do
+    p=${p%"}; p=${p#"}
+    [[ -f "$p" ]] || continue
+    cp -v "$p" "$ISOS_DIR/" || true
+    store_sidecar_checksum "$ISOS_DIR/$(basename "$p")"
+  done
+  $DIALOG --msgbox "Imported selected ISOs." 8 40
+}
+
+mount_network_share_and_scan() {
+  local typ mp target opts
+  typ=$($DIALOG --menu "Share type" 12 50 2 nfs "NFS" cifs "SMB/CIFS" 3>&1 1>&2 2>&3 || echo "")
+  [[ -z "$typ" ]] && return 0
+  target=$($DIALOG --inputbox "Remote (nfs: server:/path, cifs: //server/share)" 10 70 3>&1 1>&2 2>&3) || return 0
+  mp=$($DIALOG --inputbox "Mount point (will be created if missing)" 10 70 "/mnt/share" 3>&1 1>&2 2>&3) || return 0
+  mkdir -p "$mp"
+  if [[ "$typ" == nfs ]]; then
+    opts=$($DIALOG --inputbox "Mount options (optional)" 10 70 "ro,vers=4" 3>&1 1>&2 2>&3 || echo "ro")
+    if sudo mount -t nfs -o "$opts" "$target" "$mp"; then
+      $DIALOG --msgbox "Mounted NFS at $mp" 8 40
+      # Scan mount point
+      mapfile -t files < <(scan_paths_for_isos "$mp")
+    else
+      $DIALOG --msgbox "Failed to mount NFS" 8 40; return 1
+    fi
+  else
+    # CIFS
+    local user pass
+    user=$($DIALOG --inputbox "Username (optional)" 10 60 3>&1 1>&2 2>&3 || echo "")
+    pass=$($DIALOG --passwordbox "Password (optional)" 10 60 3>&1 1>&2 2>&3 || echo "")
+    opts="ro,vers=3.0"
+    [[ -n "$user" ]] && opts+="",username=$user
+    [[ -n "$pass" ]] && opts+="",password=$pass
+    if sudo mount -t cifs -o "$opts" "$target" "$mp"; then
+      $DIALOG --msgbox "Mounted CIFS at $mp" 8 40
+      mapfile -t files < <(scan_paths_for_isos "$mp")
+    else
+      $DIALOG --msgbox "Failed to mount CIFS" 8 40; return 1
+    fi
+  fi
+  if (( ${#files[@]} == 0 )); then
+    $DIALOG --msgbox "No ISOs found under $mp" 8 40
+    return 0
+  fi
+  local items=()
+  for f in "${files[@]}"; do items+=("$f" "" off); done
+  sel=$($DIALOG --checklist "Select ISOs to import" 22 80 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
+  [[ -z "$sel" ]] && return 0
+  for p in $sel; do
+    p=${p%"}; p=${p#"}
+    [[ -f "$p" ]] || continue
+    cp -v "$p" "$ISOS_DIR/" || true
+    store_sidecar_checksum "$ISOS_DIR/$(basename "$p")"
+  done
+  $DIALOG --msgbox "Imported selected ISOs." 8 40
+}
+
+
+# Noninteractive CLI mode for automation
+if [[ "${1:-}" == "--cli" ]]; then
+  shift
+  subcmd="${1:-}"
+  case "$subcmd" in
+    download)
+      # Usage: iso_manager.sh --cli download --url <URL> [--checksum <SHA256>] [--preset <index|name>]
+      shift || true
+      url=""; checksum=""; preset=""
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --url) url="$2"; shift 2 ;;
+          --checksum) checksum="$2"; shift 2 ;;
+          --preset) preset="$2"; shift 2 ;;
+          *) echo "Unknown option: $1" >&2; exit 2 ;;
+        esac
+      done
+      if [[ -n "$preset" ]]; then
+        # Allow lookup by index or name
+        if [[ -f "$CONFIG_JSON" ]]; then
+          mapfile -t names < <(jq -r '.iso_presets[]?.name' "$CONFIG_JSON")
+          mapfile -t urls < <(jq -r '.iso_presets[]?.url' "$CONFIG_JSON")
+          mapfile -t preset_checksum_urls < <(jq -r '.iso_presets[]? | (.checksum_urls // [.checksum_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
+          mapfile -t preset_signature_urls < <(jq -r '.iso_presets[]? | (.signature_urls // [.signature_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
+          mapfile -t preset_gpg_keys < <(jq -r '.iso_presets[]? | (.gpg_key_urls // [.gpg_key_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
+          idx=-1
+          if [[ "$preset" =~ ^[0-9]+$ ]]; then idx="$preset"; else
+            for i in "${!names[@]}"; do [[ "${names[$i]}" == "$preset" ]] && idx="$i" && break; done
+          fi
+          if (( idx >= 0 )) && [[ -n "${urls[$idx]:-}" ]]; then
+            url="${urls[$idx]}"
+            preset_checksum_list=$(eval echo ${preset_checksum_urls[$idx]:-})
+            preset_signature_list=$(eval echo ${preset_signature_urls[$idx]:-})
+            preset_gpg_key_list=$(eval echo ${preset_gpg_keys[$idx]:-})
+          else
+            echo "Invalid preset: $preset" >&2; exit 2
+          fi
+        else
+          echo "Missing CONFIG_JSON: $CONFIG_JSON" >&2; exit 2
+        fi
+      fi
+      # Try lists; pass first that works, handled inside download_iso_cli too
+      if [[ -z "${checksum:-}" && -n "${preset_checksum_list:-}" ]]; then
+        for preset_checksum_url in $preset_checksum_list; do
+          if download_iso_cli "$url" "${checksum:-}" "$preset_checksum_url" "${preset_signature_list:-}" "${preset_gpg_key_list:-}"; then exit 0; fi
+        done
+        exit 1
+      else
+        download_iso_cli "$url" "${checksum:-}" "" "${preset_signature_list:-}" "${preset_gpg_key_list:-}"
+      fi
+      ;;
+    *)
+      echo "Usage: $0 --cli download --url <URL> [--checksum <SHA256>] [--preset <index|name>]" >&2
+      exit 2
+      ;;
+  esac
+  exit 0
+fi
+
 while true; do
-  choice=$($DIALOG --menu "ISO Manager" 22 80 12 \
-    1 "Download ISO (auto-checksum when available)" \
+  choice=$($DIALOG --menu "ISO Manager" 24 90 14 \
+    1 "Download ISO (auto-checksum/signature/mirrors)" \
     2 "Validate ISO checksum" \
     3 "Import ISO from local path" \
     4 "Attach ISO to a VM profile" \
     5 "GPG: Import key" \
     6 "GPG: Verify ISO signature" \
     7 "List ISOs" \
-    8 "Exit" 3>&1 1>&2 2>&3) || exit 0
+    8 "Scan local storage for ISOs" \
+    9 "Mount network share and scan" \
+    10 "Help" \
+    11 "Exit" 3>&1 1>&2 2>&3) || exit 0
   case "$choice" in
     1) download_iso ;;
     2) validate_iso ;;
@@ -264,6 +460,24 @@ while true; do
     5) import_gpg_key ;;
     6) verify_gpg ;;
     7) list_isos | ${PAGER:-less} ;;
-    8) exit 0 ;;
+    8) scan_local_isos ;;
+    9) mount_network_share_and_scan ;;
+    10)
+      tmp_msg=$(mktemp)
+      cat > "$tmp_msg" <<'MSG'
+Tips:
+
+- Use presets for verified OS downloads (with mirrors).
+- Import from USB/network via scan options.
+- A sidecar .sha256 is generated for offline integrity.
+- Attach ISOs to VM profiles or create a new VM via the wizard.
+
+Docs: More Options -> Docs & Help
+MSG
+      msg=$(cat "$tmp_msg")
+      $DIALOG --msgbox "$msg" 16 70
+      rm -f "$tmp_msg"
+      ;;
+    11) exit 0 ;;
   esac
 done

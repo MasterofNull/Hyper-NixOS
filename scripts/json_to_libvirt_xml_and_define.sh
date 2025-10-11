@@ -14,7 +14,9 @@ PROFILE_JSON="$1"
 STATE_DIR="/var/lib/hypervisor"
 XML_DIR="$STATE_DIR/xml"
 DISKS_DIR="$STATE_DIR/disks"
-ISOS_DIR="/etc/hypervisor/isos"
+# Use the stateful ISO library to match menu/ISO manager conventions
+ISOS_DIR="/var/lib/hypervisor/isos"
+CONFIG_JSON="/etc/hypervisor/config.json"
 
 mkdir -p "$XML_DIR" "$DISKS_DIR"
 
@@ -43,7 +45,14 @@ cpus=$(jq -r '.cpus' "$PROFILE_JSON")
 memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
 disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
 iso_path=$(jq -r '.iso_path // empty' "$PROFILE_JSON")
+disk_image_path=$(jq -r '.disk_image_path // empty' "$PROFILE_JSON")
+ci_seed=$(jq -r '.cloud_init.seed_iso_path // empty' "$PROFILE_JSON")
+ci_user=$(jq -r '.cloud_init.user_data_path // empty' "$PROFILE_JSON")
+ci_meta=$(jq -r '.cloud_init.meta_data_path // empty' "$PROFILE_JSON")
+ci_net=$(jq -r '.cloud_init.network_config_path // empty' "$PROFILE_JSON")
 bridge=$(jq -r '.network.bridge // empty' "$PROFILE_JSON")
+# Optional logical zone name
+zone=$(jq -r '.network.zone // empty' "$PROFILE_JSON")
 # hostdev passthrough list e.g. ["0000:01:00.0","0000:01:00.1"]
 mapfile -t hostdevs < <(jq -r '.hostdevs[]? // empty' "$PROFILE_JSON")
 hugepages=$(jq -r '.hugepages // false' "$PROFILE_JSON")
@@ -82,10 +91,15 @@ cf_zx_leaves=$(jq -r '.cpu_features.zhaoxin_centaur_leaves // false' "$PROFILE_J
 mem_guest_memfd=$(jq -r '.memory_options.guest_memfd // false' "$PROFILE_JSON")
 mem_private=$(jq -r '.memory_options.private // false' "$PROFILE_JSON")
 
-# Prepare disk if not present
+# Prepare disk if not present; allow base image clone when disk_image_path provided
 qcow="$DISKS_DIR/${name}.qcow2"
 if [[ ! -f "$qcow" ]]; then
-  qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+  if [[ -n "$disk_image_path" && -f "$disk_image_path" ]]; then
+    # Create a COW overlay referencing the base image
+    qemu-img create -f qcow2 -b "$disk_image_path" -F $(qemu-img info -f raw -U "$disk_image_path" >/dev/null 2>&1 && echo raw || echo qcow2) "$qcow" >/dev/null 2>&1 || qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+  else
+    qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+  fi
 fi
 
 # Resolve ISO
@@ -223,6 +237,23 @@ if [[ -n "${iso_path:-}" ]]; then
 XML
 fi
 
+# Optional cloud-init seed ISO
+if [[ -z "${ci_seed:-}" && ( -n "${ci_user:-}" || -n "${ci_meta:-}" ) ]]; then
+  # Generate seed into state dir
+  ci_seed="$DISKS_DIR/${name}-cidata.iso"
+  /etc/hypervisor/scripts/cloud_init_seed.sh "$ci_seed" "${ci_user:-}" "${ci_meta:-}" "${ci_net:-}" || true
+fi
+if [[ -n "${ci_seed:-}" && -f "$ci_seed" ]]; then
+  v_seed=$(printf '%s' "$ci_seed" | xml_escape)
+  cat >> "$xml" <<XML
+    <disk type='file' device='cdrom'>
+      <source file='${v_seed}'/>
+      <target dev='sdb' bus='sata'/>
+      <readonly/>
+    </disk>
+XML
+fi
+
 cat >> "$xml" <<XML
     <graphics type='spice' autoport='yes' listen='127.0.0.1'/>
     <video>
@@ -248,6 +279,11 @@ if [[ "$looking_glass_enabled" == "true" || "$looking_glass_enabled" == "True" ]
 XML
 fi
 
+if [[ -z "${bridge:-}" && -n "${zone:-}" && -f "$CONFIG_JSON" ]]; then
+  # Map zone to bridge name via config file: .network_zones.{zone}.bridge
+  bridge=$(jq -r --arg z "$zone" '.network_zones?[$z]?.bridge // empty' "$CONFIG_JSON" 2>/dev/null || echo "")
+fi
+
 if [[ -n "${bridge:-}" ]]; then
   cat >> "$xml" <<XML
     <interface type='bridge'>
@@ -270,6 +306,14 @@ for bdf in "${hostdevs[@]:-}"; do
   if [[ ! "$bdf" =~ ^[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]$ ]]; then
     echo "Skipping invalid PCI BDF: $bdf" >&2
     continue
+  fi
+  # Guard: if zone is 'untrusted' and not explicitly allowed, skip passthrough
+  if [[ -n "${zone:-}" && -f "$CONFIG_JSON" ]]; then
+    allow=$(jq -r --arg z "$zone" '.network_zones?[$z]?.allow_hostdev // false' "$CONFIG_JSON" 2>/dev/null || echo false)
+    if [[ "$allow" != true && "$allow" != True ]]; then
+      echo "Skipping hostdev passthrough in zone '$zone' (not allowed)" >&2
+      continue
+    fi
   fi
   cat >> "$xml" <<XML
     <hostdev mode='subsystem' type='pci' managed='yes'>
@@ -311,8 +355,9 @@ if [[ -n "$vars_src" && -n "$nvram_line" ]]; then
 fi
 
 # Define and start
+# Do not remove storage on re-define; preserve installed disks between edits
 virsh destroy "$name" >/dev/null 2>&1 || true
-virsh undefine "$name" --remove-all-storage >/dev/null 2>&1 || true
+virsh undefine "$name" --nvram >/dev/null 2>&1 || true
 virsh define "$xml"
 virsh start "$name"
 if [[ "$autostart" == "true" || "$autostart" == "True" ]]; then

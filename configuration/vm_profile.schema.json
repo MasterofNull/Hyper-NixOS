@@ -4,6 +4,7 @@
   "type": "object",
   "required": ["name", "cpus", "memory_mb"],
   "properties": {
+    "owner": {"type": "string", "description": "Logical owner/user of this VM"},
     "arch": {
       "type": "string",
       "enum": ["x86_64", "aarch64", "riscv64", "loongarch64"],
@@ -14,10 +15,22 @@
     "memory_mb": {"type": "integer", "minimum": 256},
     "disk_gb": {"type": "integer", "minimum": 1},
     "iso_path": {"type": "string"},
+    "disk_image_path": {"type": "string", "description": "Path to base cloud image (raw/qcow2)"},
+    "cloud_init": {
+      "type": "object",
+      "properties": {
+        "seed_iso_path": {"type": "string", "description": "Path to generated cidata ISO"},
+        "user_data_path": {"type": "string"},
+        "meta_data_path": {"type": "string"},
+        "network_config_path": {"type": "string"}
+      }
+    },
     "network": {
       "type": "object",
       "properties": {
-        "bridge": {"type": "string"}
+        "bridge": {"type": "string"},
+        "vhost": {"type": "boolean", "description": "Enable vhost-net for virtio NIC"},
+        "zone": {"type": "string", "description": "Network zone name (e.g., secure, untrusted)"}
       }
     },
     "cpu_pinning": {"type": "array", "items": {"type": "integer"}},
@@ -60,6 +73,16 @@
         "cpu_quota_percent": {"type": "number", "minimum": 1, "maximum": 1000},
         "memory_max_mb": {"type": "integer", "minimum": 256}
       }
-    }
+    },
+    "memballoon": {
+      "type": "object",
+      "properties": {
+        "disable": {"type": "boolean"}
+      }
+    },
+    "autostart": {"type": "boolean"}
+    ,
+    "autostart_group": {"type": "string", "description": "Group name for boot ordering"},
+    "autostart_priority": {"type": "integer", "minimum": 0, "maximum": 100, "description": "Lower starts earlier"}
   }
 }
