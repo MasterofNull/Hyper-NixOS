@@ -102,21 +102,22 @@ menu_more() {
     1 "Create VM (wizard)"
     2 "VM setup workflow (guided end-to-end)"
     3 "ISO manager (download/validate/attach)"
-    4 "Hardware detect & VFIO suggestions"
-    5 "VFIO configure (bind & Nix)"
-    6 "Define/Start from JSON"
-    7 "Edit VM profile"
-    8 "Delete VM"
-    9 "Bridge helper"
-    10 "Zone manager (bridges & base rules)"
-    11 "Snapshots & backups"
-    12 "Docs & Help"
-    13 "Preflight check"
-    14 "SSH setup (for migration)"
-    15 "Live migration"
-    16 "Detect & adjust (devices/security)"
-    17 "Quick-start last VM"
-    18 "Back"
+    4 "Cloud image manager (cloud-init images)"
+    5 "Hardware detect & VFIO suggestions"
+    6 "VFIO configure (bind & Nix)"
+    7 "Define/Start from JSON"
+    8 "Edit VM profile"
+    9 "Delete VM"
+    10 "Bridge helper"
+    11 "Zone manager (bridges & base rules)"
+    12 "Snapshots & backups"
+    13 "Docs & Help"
+    14 "Preflight check"
+    15 "SSH setup (for migration)"
+    16 "Live migration"
+    17 "Detect & adjust (devices/security)"
+    18 "Quick-start last VM"
+    19 "Back"
   )
   $DIALOG --title "Hypervisor - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -287,21 +288,22 @@ while true; do
           1) create_vm_wizard || true;;
           2) "$SCRIPTS_DIR/vm_setup_workflow.sh" || true;;
           3) iso_manager || true;;
-          4) "$SCRIPTS_DIR/hardware_detect.sh" | ${PAGER:-less};;
-          5) "$SCRIPTS_DIR/vfio_workflow.sh" || true;;
-          6) p=$(select_profile || true) || continue; "$SCRIPTS_DIR/validate_profile.sh" "$p" || true; "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true;;
-          7) p=$(select_profile || true) || continue; edit_profile "$p";;
-          8) p=$(select_profile || true) || continue; delete_vm "$p";;
-          9) "$SCRIPTS_DIR/bridge_helper.sh" || true;;
-          10) "$SCRIPTS_DIR/zone_manager.sh" || true;;
-          11) "$SCRIPTS_DIR/snapshots_backups.sh" || true;;
-          12) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
-          13) "$SCRIPTS_DIR/preflight_check.sh" || true;;
-          14) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
-          15) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
-          16) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
-          17) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
-          18|*) break;;
+          4) "$SCRIPTS_DIR/image_manager.sh" || true;;
+          5) "$SCRIPTS_DIR/hardware_detect.sh" | ${PAGER:-less};;
+          6) "$SCRIPTS_DIR/vfio_workflow.sh" || true;;
+          7) p=$(select_profile || true) || continue; "$SCRIPTS_DIR/validate_profile.sh" "$p" || true; "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true;;
+          8) p=$(select_profile || true) || continue; edit_profile "$p";;
+          9) p=$(select_profile || true) || continue; delete_vm "$p";;
+          10) "$SCRIPTS_DIR/bridge_helper.sh" || true;;
+          11) "$SCRIPTS_DIR/zone_manager.sh" || true;;
+          12) "$SCRIPTS_DIR/snapshots_backups.sh" || true;;
+          13) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
+          14) "$SCRIPTS_DIR/preflight_check.sh" || true;;
+          15) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
+          16) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
+          17) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
+          18) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
+          19|*) break;;
         esac
       done
       ;;
