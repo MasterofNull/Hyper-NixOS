@@ -129,7 +129,9 @@ menu_more() {
     28 "System Diagnostics (troubleshooting)"
     29 "VM Dashboard (real-time status)"
     30 "Bulk Operations (manage multiple VMs)"
-    31 "Back"
+    31 "Help & Learning Center (tutorials, guides, FAQ)"
+    32 "Interactive Tutorial (hands-on learning)"
+    33 "Back"
   )
   $DIALOG --title "Hypervisor - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -460,7 +462,9 @@ while true; do
           28) "$SCRIPTS_DIR/diagnose.sh" | ${PAGER:-less};;
           29) "$SCRIPTS_DIR/vm_dashboard.sh" || true;;
           30) "$SCRIPTS_DIR/bulk_operations.sh" || true;;
-          31|*) break;;
+          31) "$SCRIPTS_DIR/help_assistant.sh" || true;;
+          32) "$SCRIPTS_DIR/interactive_tutorial.sh" || true;;
+          33|*) break;;
         esac
       done
       ;;
