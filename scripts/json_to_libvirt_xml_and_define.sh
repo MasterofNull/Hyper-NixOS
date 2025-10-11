@@ -14,7 +14,8 @@ PROFILE_JSON="$1"
 STATE_DIR="/var/lib/hypervisor"
 XML_DIR="$STATE_DIR/xml"
 DISKS_DIR="$STATE_DIR/disks"
-ISOS_DIR="/etc/hypervisor/isos"
+# Use the stateful ISO library to match menu/ISO manager conventions
+ISOS_DIR="/var/lib/hypervisor/isos"
 
 mkdir -p "$XML_DIR" "$DISKS_DIR"
 

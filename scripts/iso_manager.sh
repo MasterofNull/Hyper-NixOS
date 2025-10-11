@@ -193,6 +193,39 @@ download_iso() {
   fi
 }
 
+# Noninteractive download for CLI invocation
+download_iso_cli() {
+  local url="$1" checksum="$2" preset_checksum_url="$3" preset_signature_url="$4" preset_gpg_key_url="$5"
+  local filename tmpdir checks_file sig_file tmp
+  filename=$(basename "$url")
+  tmpdir=$(mktemp -d)
+  if [[ -z "$checksum" && -n "$preset_checksum_url" ]]; then
+    checks_file="$tmpdir/checksums.txt"
+    curl -fsSL "$preset_checksum_url" -o "$checks_file" || true
+    if [[ -s "$checks_file" ]]; then
+      if [[ -n "$preset_signature_url" ]]; then
+        sig_file="$tmpdir/checksums.sig"
+        curl -fsSL "$preset_signature_url" -o "$sig_file" || true
+        if [[ -s "$sig_file" ]]; then
+          auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "${preset_gpg_key_url:-}" || true
+          GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$sig_file" "$checks_file" || true
+        fi
+      fi
+      checksum=$(awk -v fn="$filename" 'BEGIN{IGNORECASE=1} $1 ~ /^[a-f0-9]{64}$/ && index($0, fn){print $1; exit} match($0, /SHA256 \(([^)]+)\) = ([a-f0-9]{64})/, m){ if (m[1]==fn){print m[2]; exit} }' "$checks_file")
+    fi
+  fi
+  tmp="$ISOS_DIR/.partial-$filename"
+  if command -v isoctl >/dev/null 2>&1; then
+    isoctl download --url "$url" --out "$tmp" || return 1
+  else
+    curl -L -C - "$url" -o "$tmp"
+  fi
+  mv "$tmp" "$ISOS_DIR/$filename"
+  if [[ -n "$checksum" ]]; then echo "$checksum  $ISOS_DIR/$filename" | sha256sum -c - || return 1; fi
+  sha256sum "$ISOS_DIR/$filename" > "$ISOS_DIR/$filename.sha256"
+  echo "$ISOS_DIR/$filename"
+}
+
 validate_iso() {
   local iso checksum side
   iso=$(choose_iso || true) || return 1
@@ -245,6 +278,58 @@ attach_iso_to_profile() {
 list_isos() {
   ls -1 "$ISOS_DIR"/*.iso 2>/dev/null || true
 }
+
+
+# Noninteractive CLI mode for automation
+if [[ "${1:-}" == "--cli" ]]; then
+  shift
+  subcmd="${1:-}"
+  case "$subcmd" in
+    download)
+      # Usage: iso_manager.sh --cli download --url <URL> [--checksum <SHA256>] [--preset <index|name>]
+      shift || true
+      url=""; checksum=""; preset=""
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --url) url="$2"; shift 2 ;;
+          --checksum) checksum="$2"; shift 2 ;;
+          --preset) preset="$2"; shift 2 ;;
+          *) echo "Unknown option: $1" >&2; exit 2 ;;
+        esac
+      done
+      if [[ -n "$preset" ]]; then
+        # Allow lookup by index or name
+        if [[ -f "$CONFIG_JSON" ]]; then
+          mapfile -t names < <(jq -r '.iso_presets[]?.name' "$CONFIG_JSON")
+          mapfile -t urls < <(jq -r '.iso_presets[]?.url' "$CONFIG_JSON")
+          mapfile -t preset_checksum_urls < <(jq -r '.iso_presets[]?.checksum_url // empty' "$CONFIG_JSON")
+          mapfile -t preset_signature_urls < <(jq -r '.iso_presets[]?.signature_url // empty' "$CONFIG_JSON")
+          mapfile -t preset_gpg_keys < <(jq -r '.iso_presets[]?.gpg_key_url // empty' "$CONFIG_JSON")
+          idx=-1
+          if [[ "$preset" =~ ^[0-9]+$ ]]; then idx="$preset"; else
+            for i in "${!names[@]}"; do [[ "${names[$i]}" == "$preset" ]] && idx="$i" && break; done
+          fi
+          if (( idx >= 0 )) && [[ -n "${urls[$idx]:-}" ]]; then
+            url="${urls[$idx]}"
+            preset_checksum_url="${preset_checksum_urls[$idx]:-}"
+            preset_signature_url="${preset_signature_urls[$idx]:-}"
+            preset_gpg_key_url="${preset_gpg_keys[$idx]:-}"
+          else
+            echo "Invalid preset: $preset" >&2; exit 2
+          fi
+        else
+          echo "Missing CONFIG_JSON: $CONFIG_JSON" >&2; exit 2
+        fi
+      fi
+      download_iso_cli "$url" "${checksum:-}" "${preset_checksum_url:-}" "${preset_signature_url:-}" "${preset_gpg_key_url:-}"
+      ;;
+    *)
+      echo "Usage: $0 --cli download --url <URL> [--checksum <SHA256>] [--preset <index|name>]" >&2
+      exit 2
+      ;;
+  esac
+  exit 0
+fi
 
 while true; do
   choice=$($DIALOG --menu "ISO Manager" 22 80 12 \
