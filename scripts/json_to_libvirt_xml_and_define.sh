@@ -79,55 +79,57 @@ if [[ ! "$raw_name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
 fi
 
 name="$raw_name"
-cpus=$(jq -r '.cpus' "$PROFILE_JSON")
-memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
-disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
-iso_path=$(jq -r '.iso_path // empty' "$PROFILE_JSON")
-disk_image_path=$(jq -r '.disk_image_path // empty' "$PROFILE_JSON")
-ci_seed=$(jq -r '.cloud_init.seed_iso_path // empty' "$PROFILE_JSON")
-ci_user=$(jq -r '.cloud_init.user_data_path // empty' "$PROFILE_JSON")
-ci_meta=$(jq -r '.cloud_init.meta_data_path // empty' "$PROFILE_JSON")
-ci_net=$(jq -r '.cloud_init.network_config_path // empty' "$PROFILE_JSON")
-bridge=$(jq -r '.network.bridge // empty' "$PROFILE_JSON")
-# Optional logical zone name
-zone=$(jq -r '.network.zone // empty' "$PROFILE_JSON")
-# hostdev passthrough list e.g. ["0000:01:00.0","0000:01:00.1"]
-mapfile -t hostdevs < <(jq -r '.hostdevs[]? // empty' "$PROFILE_JSON")
-hugepages=$(jq -r '.hugepages // false' "$PROFILE_JSON")
-audio_model=$(jq -r '.audio.model // empty' "$PROFILE_JSON")
-video_heads=$(jq -r '.video.heads // 1' "$PROFILE_JSON")
-looking_glass_enabled=$(jq -r '.looking_glass.enable // false' "$PROFILE_JSON")
-looking_glass_size=$(jq -r '.looking_glass.size_mb // 64' "$PROFILE_JSON")
-# cpu_pinning: array of host cpu ids, sequentially mapped to vcpus
-mapfile -t pin_array < <(jq -r '.cpu_pinning[]? // empty' "$PROFILE_JSON")
-# numatune
-numa_nodeset=$(jq -r '.numa.nodeset // empty' "$PROFILE_JSON")
-# memballoon
-memballoon_disable=$(jq -r '.memballoon.disable // false' "$PROFILE_JSON")
-# tpm
-tpm_enable=$(jq -r '.tpm.enable // false' "$PROFILE_JSON")
-# vhost-net
-vhost_net=$(jq -r '.network.vhost // false' "$PROFILE_JSON")
-# autostart
-autostart=$(jq -r '.autostart // false' "$PROFILE_JSON")
 
-# Architecture and advanced CPU/memory options
-arch=$(jq -r '.arch // "x86_64"' "$PROFILE_JSON")
-# CPU features (x86-centric where applicable)
-cf_shstk=$(jq -r '.cpu_features.shstk // false' "$PROFILE_JSON")
-cf_ibt=$(jq -r '.cpu_features.ibt // false' "$PROFILE_JSON")
-cf_avic=$(jq -r '.cpu_features.avic // false' "$PROFILE_JSON")
-cf_secure_avic=$(jq -r '.cpu_features.secure_avic // false' "$PROFILE_JSON")
-cf_sev=$(jq -r '.cpu_features.sev // false' "$PROFILE_JSON")
-cf_sev_es=$(jq -r '.cpu_features.sev_es // false' "$PROFILE_JSON")
-cf_sev_snp=$(jq -r '.cpu_features.sev_snp // false' "$PROFILE_JSON")
-cf_ciphertext_hiding=$(jq -r '.cpu_features.ciphertext_hiding // false' "$PROFILE_JSON")
-cf_secure_tsc=$(jq -r '.cpu_features.secure_tsc // false' "$PROFILE_JSON")
-cf_fred=$(jq -r '.cpu_features.fred // false' "$PROFILE_JSON")
-cf_zx_leaves=$(jq -r '.cpu_features.zhaoxin_centaur_leaves // false' "$PROFILE_JSON")
-# memory options
-mem_guest_memfd=$(jq -r '.memory_options.guest_memfd // false' "$PROFILE_JSON")
-mem_private=$(jq -r '.memory_options.private // false' "$PROFILE_JSON")
+# Optimized: Parse all scalar values in a single jq call
+IFS=$'\t' read -r cpus memory_mb disk_gb iso_path disk_image_path \
+  ci_seed ci_user ci_meta ci_net bridge zone hugepages audio_model \
+  video_heads looking_glass_enabled looking_glass_size numa_nodeset \
+  memballoon_disable tpm_enable vhost_net autostart arch \
+  cf_shstk cf_ibt cf_avic cf_secure_avic cf_sev cf_sev_es cf_sev_snp \
+  cf_ciphertext_hiding cf_secure_tsc cf_fred cf_zx_leaves \
+  mem_guest_memfd mem_private < <(
+  jq -r '[
+    .cpus,
+    .memory_mb,
+    (.disk_gb // 20),
+    (.iso_path // ""),
+    (.disk_image_path // ""),
+    (.cloud_init.seed_iso_path // ""),
+    (.cloud_init.user_data_path // ""),
+    (.cloud_init.meta_data_path // ""),
+    (.cloud_init.network_config_path // ""),
+    (.network.bridge // ""),
+    (.network.zone // ""),
+    (.hugepages // false),
+    (.audio.model // ""),
+    (.video.heads // 1),
+    (.looking_glass.enable // false),
+    (.looking_glass.size_mb // 64),
+    (.numa.nodeset // ""),
+    (.memballoon.disable // false),
+    (.tpm.enable // false),
+    (.network.vhost // false),
+    (.autostart // false),
+    (.arch // "x86_64"),
+    (.cpu_features.shstk // false),
+    (.cpu_features.ibt // false),
+    (.cpu_features.avic // false),
+    (.cpu_features.secure_avic // false),
+    (.cpu_features.sev // false),
+    (.cpu_features.sev_es // false),
+    (.cpu_features.sev_snp // false),
+    (.cpu_features.ciphertext_hiding // false),
+    (.cpu_features.secure_tsc // false),
+    (.cpu_features.fred // false),
+    (.cpu_features.zhaoxin_centaur_leaves // false),
+    (.memory_options.guest_memfd // false),
+    (.memory_options.private // false)
+  ] | @tsv' "$PROFILE_JSON"
+)
+
+# Arrays still need separate parsing (hostdevs, cpu_pinning)
+mapfile -t hostdevs < <(jq -r '.hostdevs[]? // empty' "$PROFILE_JSON")
+mapfile -t pin_array < <(jq -r '.cpu_pinning[]? // empty' "$PROFILE_JSON")
 
 # Prepare disk if not present; allow base image clone when disk_image_path provided
 qcow="$DISKS_DIR/${name}.qcow2"

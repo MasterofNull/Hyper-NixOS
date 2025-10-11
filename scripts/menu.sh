@@ -183,6 +183,123 @@ create_vm_wizard() {
   "$SCRIPTS_DIR/create_vm_wizard.sh" "$USER_PROFILES_DIR" "$ISOS_DIR"
 }
 
+launch_console() {
+  local domain="$1"
+  
+  # Check if VM is running
+  if ! virsh domstate "$domain" 2>/dev/null | grep -q "running"; then
+    $DIALOG --yesno "VM '$domain' is not running.\n\nStart it now?" 10 50
+    if [[ $? -eq 0 ]]; then
+      virsh start "$domain" 2>&1 | grep -v "^$" || true
+      sleep 3
+    else
+      return 1
+    fi
+  fi
+  
+  # Get display URI
+  local uri
+  uri=$(virsh domdisplay "$domain" 2>/dev/null || echo "")
+  
+  if [[ -z "$uri" ]]; then
+    $DIALOG --msgbox "Error: No display available for VM '$domain'\n\nEnsure VM has graphics enabled in profile." 10 60
+    return 1
+  fi
+  
+  # Check if remote-viewer is available
+  if ! command -v remote-viewer >/dev/null 2>&1; then
+    $DIALOG --msgbox "Error: remote-viewer not found\n\nInstall with:\n  nix-env -iA nixpkgs.virt-viewer" 10 60
+    return 1
+  fi
+  
+  # Launch viewer in background
+  log "Launching console for $domain (URI: $uri)"
+  nohup remote-viewer "$uri" >/dev/null 2>&1 &
+  
+  $DIALOG --msgbox "Console viewer launched for '$domain'\n\nURI: $uri" 10 60
+}
+
+vm_action_menu() {
+  local profile_json="$1"
+  local name
+  name=$(jq -r '.name // empty' "$profile_json" 2>/dev/null || basename "$profile_json" .json)
+  
+  while true; do
+    # Check VM state
+    local state="unknown"
+    if command -v virsh >/dev/null 2>&1; then
+      state=$(virsh domstate "$name" 2>/dev/null || echo "undefined")
+    fi
+    
+    local action
+    action=$($DIALOG --title "VM: $name" --menu "Status: $state\nChoose action:" 18 70 9 \
+      "1" "Start/Resume VM" \
+      "2" "Launch Console (SPICE/VNC)" \
+      "3" "View VM Status" \
+      "4" "Edit Profile" \
+      "5" "Stop VM" \
+      "6" "Force Stop VM" \
+      "7" "Delete VM" \
+      "8" "Clone VM" \
+      "9" "Back to Main Menu" \
+      3>&1 1>&2 2>&3 || echo "9")
+    
+    case "$action" in
+      1)
+        start_vm "$profile_json" || true
+        ;;
+      2)
+        launch_console "$name" || true
+        ;;
+      3)
+        local info
+        info=$(virsh dominfo "$name" 2>&1 || echo "VM not defined")
+        $DIALOG --title "VM Status: $name" --msgbox "$info" 20 70
+        ;;
+      4)
+        edit_profile "$profile_json"
+        ;;
+      5)
+        if virsh shutdown "$name" 2>&1; then
+          $DIALOG --msgbox "Shutdown signal sent to '$name'" 8 50
+        else
+          $DIALOG --msgbox "Failed to shutdown '$name'" 8 50
+        fi
+        ;;
+      6)
+        if virsh destroy "$name" 2>&1; then
+          $DIALOG --msgbox "VM '$name' force stopped" 8 50
+        else
+          $DIALOG --msgbox "Failed to stop '$name'" 8 50
+        fi
+        ;;
+      7)
+        if $DIALOG --yesno "Delete VM '$name'?\n\nThis will:\n- Stop the VM\n- Remove from libvirt\n- Delete storage\n- Keep profile: $profile_json\n\nContinue?" 14 60; then
+          delete_vm "$profile_json"
+          $DIALOG --msgbox "VM '$name' deleted" 8 50
+          break
+        fi
+        ;;
+      8)
+        local new_name
+        new_name=$($DIALOG --inputbox "New VM name:" 10 60 "${name}-clone" 3>&1 1>&2 2>&3 || echo "")
+        if [[ -n "$new_name" ]]; then
+          local new_profile="$USER_PROFILES_DIR/${new_name}.json"
+          if [[ -f "$new_profile" ]]; then
+            $DIALOG --msgbox "Profile already exists: $new_profile" 8 60
+          else
+            jq --arg newname "$new_name" '.name = $newname' "$profile_json" > "$new_profile"
+            $DIALOG --msgbox "Cloned to: $new_profile\n\nNote: Disk will be created on first start" 10 60
+          fi
+        fi
+        ;;
+      9|*)
+        break
+        ;;
+    esac
+  done
+}
+
 autostart_countdown() {
   local seconds="${1:-$AUTOSTART_SECS}"
   local vm
@@ -375,9 +492,9 @@ while true; do
       sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh wizard off && $DIALOG --msgbox "First-boot wizard disabled." 8 50 || $DIALOG --msgbox "Failed to toggle." 8 50
       ;;
     "__EXIT__"|*)
-      # If the selection is a file path to a VM profile, start it then return to menu
+      # If the selection is a file path to a VM profile, show action menu
       if [[ -n "$choice" && -f "$choice" ]]; then
-        start_vm "$choice" || true
+        vm_action_menu "$choice" || true
       fi
       # Return to main loop; let user explicitly exit via TTY
       ;;
