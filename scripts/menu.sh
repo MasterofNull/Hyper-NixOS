@@ -23,12 +23,18 @@ LOG_DIR="${LOG_DIR:-}"
 LOG_FILE=""
 AUTOSTART_SECS=5
 LOG_ENABLED=true
+BOOT_SELECTOR_ENABLE=false
+BOOT_SELECTOR_TIMEOUT=8
+BOOT_SELECTOR_EXIT_AFTER_START=true
 if [[ -f "$CONFIG_JSON" ]]; then
   AUTOSTART_SECS=$(jq -r '.features.autostart_timeout_sec // 5' "$CONFIG_JSON" 2>/dev/null || echo 5)
   LOG_ENABLED=$(jq -r '.logging.enabled // true' "$CONFIG_JSON" 2>/dev/null || echo true)
   if [[ -z "$LOG_DIR" ]]; then
     LOG_DIR=$(jq -r '.logging.dir // "/var/lib/hypervisor/logs"' "$CONFIG_JSON" 2>/dev/null || echo "/var/lib/hypervisor/logs")
   fi
+  BOOT_SELECTOR_ENABLE=$(jq -r '.features.boot_selector_enable // false' "$CONFIG_JSON" 2>/dev/null || echo false)
+  BOOT_SELECTOR_TIMEOUT=$(jq -r '.features.boot_selector_timeout_sec // 8' "$CONFIG_JSON" 2>/dev/null || echo 8)
+  BOOT_SELECTOR_EXIT_AFTER_START=$(jq -r '.features.boot_selector_exit_after_start // true' "$CONFIG_JSON" 2>/dev/null || echo true)
 fi
 [[ -z "$LOG_DIR" ]] && LOG_DIR="/var/lib/hypervisor/logs"
 LOG_FILE="$LOG_DIR/menu.log"
@@ -156,7 +162,56 @@ autostart_countdown() {
   start_vm "$vm" || true
 }
 
-autostart_countdown
+# Boot-time VM selector with timeout, similar to a bootloader menu
+boot_vm_selector() {
+  # Build menu entries from user profiles and include a maintenance option
+  local entries=("__MAINTENANCE__" "Maintenance (skip autostart)")
+  shopt -s nullglob
+  local first=""; local default_profile=""; local last=""; local f
+  [[ -f "$LAST_VM_FILE" ]] && last=$(cat "$LAST_VM_FILE" 2>/dev/null || true)
+  for f in "$USER_PROFILES_DIR"/*.json; do
+    local name; name=$(jq -r '.name // empty' "$f" 2>/dev/null || true)
+    [[ -z "$name" ]] && name=$(basename "$f")
+    entries+=("$f" "VM: $name")
+    [[ -z "$first" ]] && first="$f"
+  done
+  shopt -u nullglob
+  (( ${#entries[@]} <= 2 )) && return 0  # no VMs present
+
+  # Determine default profile: prefer last, else first
+  if [[ -n "$last" && -f "$last" ]]; then default_profile="$last"; else default_profile="$first"; fi
+
+  # Show one-shot menu with timeout; on timeout, autostart default_profile
+  local choice
+  choice=$($DIALOG --title "Hypervisor - Select VM to Boot" \
+    --menu "Select a VM to start (timeout ${BOOT_SELECTOR_TIMEOUT}s). Default: $(basename "$default_profile")" \
+    22 90 14 "${entries[@]}" --timeout "$BOOT_SELECTOR_TIMEOUT" 3>&1 1>&2 2>&3 || true)
+
+  if [[ -z "$choice" ]]; then
+    # Timed out or canceled: start default if available
+    if [[ -n "$default_profile" && -f "$default_profile" ]]; then
+      start_vm "$default_profile" || true
+      $BOOT_SELECTOR_EXIT_AFTER_START && exit 0 || return 0
+    fi
+    return 0
+  fi
+
+  if [[ "$choice" == "__MAINTENANCE__" ]]; then
+    # Stay in maintenance (no autostart); fall through to main menu
+    return 0
+  fi
+
+  if [[ -f "$choice" ]]; then
+    start_vm "$choice" || true
+    $BOOT_SELECTOR_EXIT_AFTER_START && exit 0 || return 0
+  fi
+}
+
+if [[ "$BOOT_SELECTOR_ENABLE" == "true" || "$BOOT_SELECTOR_ENABLE" == "True" ]]; then
+  boot_vm_selector || true
+else
+  autostart_countdown
+fi
 
 while true; do
   choice=$(menu_vm_main || true)
