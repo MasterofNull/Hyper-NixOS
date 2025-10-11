@@ -23,6 +23,7 @@ struct LookingGlass {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct CpuFeatures {
     shstk: Option<bool>,
     ibt: Option<bool>,

@@ -1,0 +1,12 @@
+/workspace/tools/target/debug/deps/term-c36a17d98da655c7.d: /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/mod.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/searcher.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parser/compiled.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parser/names.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parm.rs
+
+/workspace/tools/target/debug/deps/libterm-c36a17d98da655c7.rlib: /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/mod.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/searcher.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parser/compiled.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parser/names.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parm.rs
+
+/workspace/tools/target/debug/deps/libterm-c36a17d98da655c7.rmeta: /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/mod.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/searcher.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parser/compiled.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parser/names.rs /usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parm.rs
+
+/usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/lib.rs:
+/usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/mod.rs:
+/usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/searcher.rs:
+/usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parser/compiled.rs:
+/usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parser/names.rs:
+/usr/local/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/term-0.7.0/src/terminfo/parm.rs:
