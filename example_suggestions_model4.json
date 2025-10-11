@@ -1,0 +1,37 @@
+{
+  "suggestions": [
+    {
+      "model": "CodeLlama",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 1,
+      "end_line": 1,
+      "old_content": "#!/usr/bin/env python3",
+      "new_content": "#!/usr/bin/env python3\n# Configuration management and modularity improvements",
+      "confidence": 0.6,
+      "type": "enhancement",
+      "description": "Add configuration management improvements"
+    },
+    {
+      "model": "CodeLlama",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 2,
+      "end_line": 9,
+      "old_content": "import curses\nimport json\nimport os\nimport shlex\nimport shutil\nimport subprocess\nimport sys\nfrom pathlib import Path",
+      "new_content": "import curses\nimport json\nimport os\nimport shlex\nimport shutil\nimport subprocess\nimport sys\nfrom pathlib import Path\nfrom dataclasses import dataclass",
+      "confidence": 0.65,
+      "type": "import",
+      "description": "Add dataclasses for configuration management"
+    },
+    {
+      "model": "CodeLlama",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 12,
+      "end_line": 16,
+      "old_content": "REPO_ROOT = Path(__file__).resolve().parents[1]\nDEFAULT_PROFILES_DIR = (REPO_ROOT / \"vm_profiles\").resolve()\nDEFAULT_ISOS_DIR = (REPO_ROOT / \"isos\").resolve()\nSTATE_DIR = Path(\"/var/lib/hypervisor\").resolve()",
+      "new_content": "@dataclass\nclass Config:\n    \"\"\"Configuration class for hypervisor manager.\"\"\"\n    repo_root: Path = Path(__file__).resolve().parents[1]\n    profiles_dir: Path = (repo_root / \"vm_profiles\").resolve()\n    isos_dir: Path = (repo_root / \"isos\").resolve()\n    state_dir: Path = Path(\"/var/lib/hypervisor\").resolve()\n    \n    def __post_init__(self):\n        \"\"\"Ensure all directories exist after initialization.\"\"\"\n        for dir_path in [self.profiles_dir, self.isos_dir, self.state_dir]:\n            dir_path.mkdir(parents=True, exist_ok=True)\n\n# Global configuration instance\nconfig = Config()\n\n# Backward compatibility\nREPO_ROOT = config.repo_root\nDEFAULT_PROFILES_DIR = config.profiles_dir\nDEFAULT_ISOS_DIR = config.isos_dir\nSTATE_DIR = config.state_dir",
+      "confidence": 0.7,
+      "type": "refactoring",
+      "description": "Refactor configuration into a dataclass for better organization"
+    }
+  ]
+}

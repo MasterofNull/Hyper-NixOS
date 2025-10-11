@@ -1,0 +1,37 @@
+{
+  "suggestions": [
+    {
+      "model": "Gemini-Pro",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 1,
+      "end_line": 1,
+      "old_content": "#!/usr/bin/env python3",
+      "new_content": "#!/usr/bin/env python3\n# Security enhancements and input validation",
+      "confidence": 0.75,
+      "type": "enhancement",
+      "description": "Add security-focused improvements"
+    },
+    {
+      "model": "Gemini-Pro",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 2,
+      "end_line": 9,
+      "old_content": "import curses\nimport json\nimport os\nimport shlex\nimport shutil\nimport subprocess\nimport sys\nfrom pathlib import Path",
+      "new_content": "import curses\nimport hashlib\nimport json\nimport os\nimport shlex\nimport shutil\nimport subprocess\nimport sys\nfrom pathlib import Path",
+      "confidence": 0.7,
+      "type": "import",
+      "description": "Add hashlib for file integrity checking"
+    },
+    {
+      "model": "Gemini-Pro",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 28,
+      "end_line": 35,
+      "old_content": "def read_profile(profile_path: Path) -> dict:\n    with profile_path.open(\"r\", encoding=\"utf-8\") as f:\n        data = json.load(f)\n    required = [\"name\", \"cpus\", \"memory_mb\"]\n    for key in required:\n        if key not in data:\n            raise ValueError(f\"Missing required field '{key}' in {profile_path}\")\n    return data",
+      "new_content": "def read_profile(profile_path: Path) -> Dict[str, Any]:\n    \"\"\"Read and validate VM profile from JSON file.\n    \n    Args:\n        profile_path: Path to the profile JSON file\n        \n    Returns:\n        Validated profile data dictionary\n        \n    Raises:\n        ValueError: If required fields are missing\n        json.JSONDecodeError: If file contains invalid JSON\n    \"\"\"\n    try:\n        with profile_path.open(\"r\", encoding=\"utf-8\") as f:\n            data = json.load(f)\n    except json.JSONDecodeError as e:\n        raise ValueError(f\"Invalid JSON in profile {profile_path}: {e}\")\n    \n    required = [\"name\", \"cpus\", \"memory_mb\"]\n    for key in required:\n        if key not in data:\n            raise ValueError(f\"Missing required field '{key}' in {profile_path}\")\n    \n    # Validate data types\n    if not isinstance(data.get(\"cpus\"), int) or data[\"cpus\"] <= 0:\n        raise ValueError(f\"Invalid CPU count in {profile_path}\")\n    if not isinstance(data.get(\"memory_mb\"), int) or data[\"memory_mb\"] <= 0:\n        raise ValueError(f\"Invalid memory size in {profile_path}\")\n    \n    return data",
+      "confidence": 0.82,
+      "type": "function_enhancement",
+      "description": "Add comprehensive validation and error handling"
+    }
+  ]
+}

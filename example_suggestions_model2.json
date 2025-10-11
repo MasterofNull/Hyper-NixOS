@@ -1,0 +1,37 @@
+{
+  "suggestions": [
+    {
+      "model": "Claude-3",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 1,
+      "end_line": 1,
+      "old_content": "#!/usr/bin/env python3",
+      "new_content": "#!/usr/bin/env python3\n# Type hints and performance optimizations",
+      "confidence": 0.8,
+      "type": "enhancement",
+      "description": "Add performance optimization comments"
+    },
+    {
+      "model": "Claude-3",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 2,
+      "end_line": 9,
+      "old_content": "import curses\nimport json\nimport os\nimport shlex\nimport shutil\nimport subprocess\nimport sys\nfrom pathlib import Path",
+      "new_content": "import curses\nimport json\nimport os\nimport shlex\nimport shutil\nimport subprocess\nimport sys\nfrom pathlib import Path\nfrom typing import List, Dict, Optional, Tuple",
+      "confidence": 0.9,
+      "type": "import",
+      "description": "Add typing imports for better type annotations"
+    },
+    {
+      "model": "Claude-3",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 22,
+      "end_line": 25,
+      "old_content": "def list_vm_profiles(profiles_dir: Path) -> list[Path]:\n    if not profiles_dir.exists():\n        return []\n    return sorted(p for p in profiles_dir.glob(\"*.json\") if p.is_file())",
+      "new_content": "def list_vm_profiles(profiles_dir: Path) -> List[Path]:\n    \"\"\"List VM profile files in the given directory.\n    \n    Args:\n        profiles_dir: Directory containing VM profile JSON files\n        \n    Returns:\n        Sorted list of Path objects for valid profile files\n    \"\"\"\n    if not profiles_dir.exists():\n        return []\n    return sorted(p for p in profiles_dir.glob(\"*.json\") if p.is_file())",
+      "confidence": 0.88,
+      "type": "function_enhancement",
+      "description": "Improve type hints and add docstring"
+    }
+  ]
+}

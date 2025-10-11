@@ -1,0 +1,37 @@
+{
+  "suggestions": [
+    {
+      "model": "GPT-4",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 1,
+      "end_line": 1,
+      "old_content": "#!/usr/bin/env python3",
+      "new_content": "#!/usr/bin/env python3\n# Enhanced with better error handling and logging",
+      "confidence": 0.9,
+      "type": "enhancement",
+      "description": "Add logging import and improve error handling"
+    },
+    {
+      "model": "GPT-4",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 2,
+      "end_line": 9,
+      "old_content": "import curses\nimport json\nimport os\nimport shlex\nimport shutil\nimport subprocess\nimport sys\nfrom pathlib import Path",
+      "new_content": "import curses\nimport json\nimport logging\nimport os\nimport shlex\nimport shutil\nimport subprocess\nimport sys\nfrom pathlib import Path",
+      "confidence": 0.95,
+      "type": "import",
+      "description": "Add logging import for better error tracking"
+    },
+    {
+      "model": "GPT-4",
+      "file_path": "hypervisor_manager/menu.py",
+      "start_line": 18,
+      "end_line": 20,
+      "old_content": "def ensure_state_dirs() -> None:\n    STATE_DIR.mkdir(parents=True, exist_ok=True)",
+      "new_content": "def ensure_state_dirs() -> None:\n    \"\"\"Ensure state directories exist with proper error handling.\"\"\"\n    try:\n        STATE_DIR.mkdir(parents=True, exist_ok=True)\n        logging.info(f\"State directory ensured: {STATE_DIR}\")\n    except PermissionError as e:\n        logging.error(f\"Permission denied creating state directory: {e}\")\n        raise\n    except Exception as e:\n        logging.error(f\"Failed to create state directory: {e}\")\n        raise",
+      "confidence": 0.85,
+      "type": "function_enhancement",
+      "description": "Add error handling and logging to ensure_state_dirs function"
+    }
+  ]
+}
