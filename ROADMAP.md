@@ -2,7 +2,7 @@
 
 **Based on Audit Report 2025-10-11**
 
-This roadmap prioritizes improvements based on impact, effort, and alignment with design goals (novice-friendly, secure, minimal overhead).
+This roadmap prioritizes improvements based on impact, effort, and alignment with design goals (new-user-friendly, secure, minimal overhead).
 
 ---
 
@@ -58,13 +58,13 @@ NIX
 ## Phase 2: Documentation Overhaul (Weeks 2-3) 📚
 
 **Effort:** 20-30 hours  
-**Impact:** Very High - Directly addresses novice user needs
+**Impact:** Very High - Directly addresses new user needs
 
 ### 2.1 Expand Quick Start Guide (Week 2)
 - **File:** `docs/quickstart.txt` → `docs/quickstart_expanded.md`
 - **Content:** 200+ line step-by-step guide with troubleshooting
 - **Time:** 4-6 hours
-- **Priority:** P0 (novice users)
+- **Priority:** P0 (new users)
 
 **Deliverables:**
 - [ ] Step-by-step installation with expected output
@@ -76,7 +76,7 @@ NIX
 - **File:** `docs/troubleshooting.md`
 - **Content:** Decision trees for common problems
 - **Time:** 4-6 hours
-- **Priority:** P0 (novice users)
+- **Priority:** P0 (new users)
 
 **Deliverables:**
 - [ ] VM won't start (5+ scenarios)
@@ -142,7 +142,7 @@ NIX
 - **Files:** All `scripts/*.sh`
 - **Pattern:** Error + Reason + How to Fix
 - **Time:** 8-12 hours
-- **Priority:** P0 (novice users)
+- **Priority:** P0 (new users)
 
 **Approach:**
 1. Audit all error messages in scripts
@@ -670,7 +670,7 @@ This roadmap balances immediate needs (critical fixes), user experience improvem
 
 After the first 6 weeks, you'll have:
 - ✅ A rock-solid, bug-free system
-- ✅ Comprehensive documentation for novices
+- ✅ Comprehensive documentation for new users
 - ✅ Greatly improved daily usability
 - ✅ Clear path forward for testing and monitoring
 

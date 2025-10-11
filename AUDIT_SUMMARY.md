@@ -18,7 +18,7 @@ Your NixOS-based hypervisor system is **production-ready** with excellent securi
 
 ### What Needs Work ⚠️
 
-1. **Novice User Experience (3/5)** - Documentation lacks beginner-friendly guides and troubleshooting
+1. **New user User Experience (3/5)** - Documentation lacks beginner-friendly guides and troubleshooting
 2. **Day-to-Day Operations (3/5)** - No VM dashboard, limited monitoring, manual workflows
 3. **Testing (1/5)** - No automated test suite, no CI/CD
 4. **Monitoring (2/5)** - Stub implementations only
@@ -65,7 +65,7 @@ Your NixOS-based hypervisor system is **production-ready** with excellent securi
 
 | Goal | Score | Assessment |
 |------|-------|------------|
-| **Novice-Friendly** | 3/5 | Good foundation, needs better docs and error handling |
+| **New-User-Friendly** | 3/5 | Good foundation, needs better docs and error handling |
 | **Advanced Flexibility** | 5/5 | Excellent - full NixOS power available |
 | **Security First** | 5/5 | Outstanding - comprehensive hardening |
 | **Minimal Overhead** | 4/5 | Very good - hardened kernel has minor perf impact |
@@ -103,7 +103,7 @@ Your NixOS-based hypervisor system is **production-ready** with excellent securi
 
 ## Key Recommendations
 
-### For Novice Users
+### For New user Users
 
 **DO THIS:**
 1. **Expand `docs/quickstart.txt`** to 200+ lines with:
@@ -247,7 +247,7 @@ cd tools && cargo test --all
 
 This is a **well-architected, security-focused hypervisor system** that successfully achieves most of its design goals. It's ready for advanced users today.
 
-**For novice users**, focus on:
+**For new users**, focus on:
 1. Documentation expansion (high impact, medium effort)
 2. Better error handling (high impact, low effort)  
 3. Diagnostic tools (high impact, medium effort)
