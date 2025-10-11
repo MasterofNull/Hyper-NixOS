@@ -239,7 +239,7 @@ EOT
     break
   fi
   # Allow editing fields
-  choice=$($DIALOG --menu "Edit which field?" 24 70 14 \
+  choice=$($DIALOG --menu "Edit which field?" 26 72 16 \
     name "VM name ($name)" \
     owner "Owner (${owner:-})" \
     arch "Architecture ($arch)" \
@@ -263,6 +263,7 @@ EOT
     ciu "cloud-init user-data (${ci_user_data:-none})" \
     cim "cloud-init meta-data (${ci_meta_data:-none})" \
     cin "cloud-init net-conf (${ci_network_config:-none})" \
+    help "Help (tips and guidance)" \
     done "Done" 3>&1 1>&2 2>&3 || echo done)
   case "$choice" in
     name) name=$(ask "VM name" "$name") || true ;;
@@ -300,6 +301,9 @@ EOT
     ciu) ci_user_data=$($DIALOG --inputbox "cloud-init user-data path (YAML)" 10 70 "$ci_user_data" 3>&1 1>&2 2>&3) || true ;;
     cim) ci_meta_data=$($DIALOG --inputbox "cloud-init meta-data path (YAML)" 10 70 "$ci_meta_data" 3>&1 1>&2 2>&3) || true ;;
     cin) ci_network_config=$($DIALOG --inputbox "cloud-init network-config path (YAML)" 10 70 "$ci_network_config" 3>&1 1>&2 2>&3) || true ;;
+    help)
+      $DIALOG --msgbox "Tips:\n\n- ISO path: use ISO manager if none present.\n- Cloud image: use Cloud image manager, then point wizard at image.\n- Network zone: maps to bridges via configuration/config.json.\n- Autostart: group and priority affect boot order and delays.\n- Hugepages/memfd/private: performance/security trade-offs.\n\nDocs: More Options -> Docs & Help" 18 72
+      ;;
     *) : ;;
   esac
   save_state

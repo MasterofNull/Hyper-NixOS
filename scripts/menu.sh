@@ -109,15 +109,16 @@ menu_more() {
     8 "Edit VM profile"
     9 "Delete VM"
     10 "Bridge helper"
-    11 "Zone manager (bridges & base rules)"
-    12 "Snapshots & backups"
-    13 "Docs & Help"
-    14 "Preflight check"
-    15 "SSH setup (for migration)"
-    16 "Live migration"
-    17 "Detect & adjust (devices/security)"
-    18 "Quick-start last VM"
-    19 "Back"
+    11 "Network helper (firewall & DHCP)"
+    12 "Zone manager (bridges & base rules)"
+    13 "Snapshots & backups"
+    14 "Docs & Help"
+    15 "Preflight check"
+    16 "SSH setup (for migration)"
+    17 "Live migration"
+    18 "Detect & adjust (devices/security)"
+    19 "Quick-start last VM"
+    20 "Back"
   )
   $DIALOG --title "Hypervisor - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -311,15 +312,16 @@ while true; do
           8) p=$(select_profile || true) || continue; edit_profile "$p";;
           9) p=$(select_profile || true) || continue; delete_vm "$p";;
           10) "$SCRIPTS_DIR/bridge_helper.sh" || true;;
-          11) "$SCRIPTS_DIR/zone_manager.sh" || true;;
-          12) "$SCRIPTS_DIR/snapshots_backups.sh" || true;;
-          13) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
-          14) "$SCRIPTS_DIR/preflight_check.sh" || true;;
-          15) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
-          16) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
-          17) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
-          18) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
-          19|*) break;;
+          11) "$SCRIPTS_DIR/network_helper.sh" || true;;
+          12) "$SCRIPTS_DIR/zone_manager.sh" || true;;
+          13) "$SCRIPTS_DIR/snapshots_backups.sh" || true;;
+          14) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
+          15) "$SCRIPTS_DIR/preflight_check.sh" || true;;
+          16) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
+          17) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
+          18) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
+          19) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
+          20|*) break;;
         esac
       done
       ;;
