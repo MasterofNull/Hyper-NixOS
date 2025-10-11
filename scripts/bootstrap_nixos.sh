@@ -50,7 +50,70 @@ Options:
 USAGE
 }
 
+# Detect the actual user (not root) who invoked this script
+detect_invoking_user() {
+  # When run with sudo, SUDO_USER contains the original user
+  if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
+    echo "${SUDO_USER}"
+  # When run directly as root, try to find a real user from the environment
+  elif [[ ${EUID:-$(id -u)} -eq 0 ]]; then
+    # Check LOGNAME or USER environment variables
+    local user="${LOGNAME:-${USER:-}}"
+    if [[ -n "$user" && "$user" != "root" ]]; then
+      echo "$user"
+    else
+      # Find the first non-root user with uid >= 1000
+      awk -F: '($3 >= 1000 && $3 < 65534 && $1 != "nobody" && $1 !~ /^nixbld[0-9]+$/) { print $1; exit }' /etc/passwd || echo ""
+    fi
+  else
+    # Not running as root, return current user
+    whoami 2>/dev/null || id -un 2>/dev/null || echo ""
+  fi
+}
+
+# Ensure the invoking user has sudo privileges
+ensure_sudo_access() {
+  local user="$1"
+  if [[ -z "$user" || "$user" == "root" ]]; then
+    return 0  # root always has access
+  fi
+
+  # Check if user is already in wheel group or has sudo access
+  if id -nG "$user" 2>/dev/null | grep -qw wheel; then
+    msg "User '$user' is in wheel group"
+    return 0
+  fi
+
+  # Check if user already has sudo access via other means
+  if sudo -n -l -U "$user" &>/dev/null; then
+    msg "User '$user' already has sudo access"
+    return 0
+  fi
+
+  # User needs sudo access - add them to sudoers temporarily
+  msg "Configuring sudo access for user '$user'..."
+  local sudoers_file="/etc/sudoers.d/hypervisor-bootstrap-${user}"
+  
+  # Create sudoers entry for this user
+  if command -v visudo >/dev/null 2>&1; then
+    echo "${user} ALL=(ALL) NOPASSWD: ALL" | EDITOR="tee" visudo -f "${sudoers_file}" >/dev/null 2>&1 || {
+      # Fallback: direct write with strict permissions
+      echo "${user} ALL=(ALL) NOPASSWD: ALL" > "${sudoers_file}"
+      chmod 0440 "${sudoers_file}"
+    }
+  else
+    echo "${user} ALL=(ALL) NOPASSWD: ALL" > "${sudoers_file}"
+    chmod 0440 "${sudoers_file}"
+  fi
+  
+  msg "Sudo access configured for '$user' via ${sudoers_file}"
+}
+
 require_root() {
+  # Detect the actual user before elevation
+  local invoking_user
+  invoking_user=$(detect_invoking_user)
+  
   if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
     if command -v sudo >/dev/null 2>&1; then
       echo "Elevating privileges with sudo..."
@@ -58,6 +121,11 @@ require_root() {
     else
       echo "This script must be run as root (use sudo)." >&2
       exit 1
+    fi
+  else
+    # We're running as root, ensure the invoking user has sudo access
+    if [[ -n "$invoking_user" ]]; then
+      ensure_sudo_access "$invoking_user"
     fi
   fi
 }
@@ -271,10 +339,11 @@ write_users_local_nix() {
       fi
       # Collect existing groups and ensure access groups
       groups=$(id -nG "$user" 2>/dev/null | tr ' ' '\n' | sort -u | tr '\n' ' ')
-      # Ensure these are present
+      # Ensure these are present (wheel is required for sudo access)
       for g in wheel kvm libvirtd video input; do
         if ! grep -qE "(^| )$g( |$)" <<<"$groups"; then groups+="$g "; fi
       done
+      msg "User '$user' will be added to groups: $groups"
       # Emit Nix stanza
       echo "    ${user} = {"
       echo "      isNormalUser = true;"

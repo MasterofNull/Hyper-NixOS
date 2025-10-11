@@ -92,6 +92,8 @@ in {
   environment.etc."libvirt/hooks/qemu".source = ../scripts/libvirt_hooks/qemu;
 
   # Create a default 'hypervisor' user only when used as the management user
+  # Note: During bootstrap, the script will automatically detect existing users
+  # and add them to users-local.nix with wheel group membership for sudo access
   users.users = lib.mkIf (mgmtUser == "hypervisor") {
     hypervisor = {
       isNormalUser = true;
@@ -248,8 +250,11 @@ in {
   # Security hardening
   networking.firewall.enable = true;
   security.sudo.enable = true;
+  # Allow wheel group passwordless sudo - this enables any user added to wheel
+  # (including dynamically detected users during bootstrap) to run sudo commands
   security.sudo.wheelNeedsPassword = false;
   security.sudo.extraRules = [
+    # Ensure management user has explicit sudo access
     {
       users = [ mgmtUser ];
       commands = [
