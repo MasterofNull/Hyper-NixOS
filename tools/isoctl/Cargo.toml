@@ -9,5 +9,7 @@ reqwest = { version = "0.12", features = ["rustls-tls", "stream"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 sha2 = "0.10"
 indicatif = "0.17"
-sequoia-openpgp = { version = "1", default-features = false, features = ["compression", "crypto-rust"] }
+sequoia-openpgp = { version = "1", default-features = false, features = ["compression", "crypto-rust", "allow-experimental-crypto", "allow-variable-time-crypto"] }
 anyhow = "1"
+futures-util = "0.3"
+hex = "0.4"
