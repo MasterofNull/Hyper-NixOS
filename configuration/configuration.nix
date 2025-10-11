@@ -247,6 +247,18 @@ in {
   # Security hardening
   networking.firewall.enable = true;
   security.sudo.enable = true;
+  security.sudo.wheelNeedsPassword = false;
+  security.sudo.extraRules = [
+    {
+      users = [ mgmtUser ];
+      commands = [
+        {
+          command = "ALL";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
   services.openssh = {
     enable = true;
     settings = {
