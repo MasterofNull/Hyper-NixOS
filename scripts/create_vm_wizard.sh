@@ -191,6 +191,15 @@ if $DIALOG --yesno "Configure advanced options (audio, video heads, hugepages, m
   save_state
 fi
 
+# Cloud image and cloud-init (optional)
+if $DIALOG --yesno "Use a cloud image with cloud-init?" 10 70; then
+  disk_image_path=$($DIALOG --inputbox "Path to base cloud image (qcow2/raw)" 10 70 3>&1 1>&2 2>&3 || echo "")
+  ci_user_data=$($DIALOG --inputbox "cloud-init user-data path (YAML)" 10 70 3>&1 1>&2 2>&3 || echo "")
+  ci_meta_data=$($DIALOG --inputbox "cloud-init meta-data path (YAML)" 10 70 3>&1 1>&2 2>&3 || echo "")
+  ci_network_config=$($DIALOG --inputbox "cloud-init network-config path (YAML) (optional)" 10 70 3>&1 1>&2 2>&3 || echo "")
+  save_state
+fi
+
 # Review loop
 while true; do
   summary=$(cat <<EOT
@@ -201,6 +210,7 @@ vCPU: $cpus
 RAM: $mem MiB (max $mem_max)
 Disk: $disk GiB
 ISO: $iso_path
+Cloud image: ${disk_image_path:-}
 Audio: ${audio_model:-none}
 Video heads: $video_heads
 Hugepages: $hugepages, memfd: $mem_guest_memfd, private: $mem_private

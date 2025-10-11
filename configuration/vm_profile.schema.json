@@ -15,6 +15,16 @@
     "memory_mb": {"type": "integer", "minimum": 256},
     "disk_gb": {"type": "integer", "minimum": 1},
     "iso_path": {"type": "string"},
+    "disk_image_path": {"type": "string", "description": "Path to base cloud image (raw/qcow2)"},
+    "cloud_init": {
+      "type": "object",
+      "properties": {
+        "seed_iso_path": {"type": "string", "description": "Path to generated cidata ISO"},
+        "user_data_path": {"type": "string"},
+        "meta_data_path": {"type": "string"},
+        "network_config_path": {"type": "string"}
+      }
+    },
     "network": {
       "type": "object",
       "properties": {
