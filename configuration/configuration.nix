@@ -239,13 +239,7 @@ in {
   # GUI management environment (Wayland GNOME) - enabled by default for initial setup
   # Toggle with: hypervisor.gui.enableAtBoot
   services.xserver.enable = lib.mkIf enableGuiAtBoot true;
-  # Display Manager (GDM) - support both old and new option paths
-  services.displayManager.gdm.enable = lib.mkIf (enableGuiAtBoot && hasNewDM) true;
-  services.displayManager.gdm.wayland = lib.mkIf (enableGuiAtBoot && hasNewDM) true;
-  services.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasNewDM) {
-    enable = true;
-    user = mgmtUser;
-  };
+  # Display Manager (GDM) - prefer legacy xserver paths for compatibility
   services.xserver.displayManager.gdm.enable = lib.mkIf (enableGuiAtBoot && hasOldDM) true;
   services.xserver.displayManager.gdm.wayland = lib.mkIf (enableGuiAtBoot && hasOldDM) true;
   services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
@@ -253,7 +247,7 @@ in {
     user = mgmtUser;
   };
   # Desktop Manager (GNOME) - support both old and new option paths
-  services.desktopManager.gnome.enable = lib.mkIf (enableGuiAtBoot && hasNewDesk) true;
+  # Prefer legacy path for current target systems
   services.xserver.desktopManager.gnome.enable = lib.mkIf (enableGuiAtBoot && hasOldDesk) true;
   programs.xwayland.enable = lib.mkIf enableGuiAtBoot true;
   environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
