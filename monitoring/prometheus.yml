@@ -1,0 +1,49 @@
+# Prometheus configuration for hypervisor monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'hypervisor'
+    environment: 'production'
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+
+# Load alert rules
+rule_files:
+  - 'alert-rules.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Hypervisor metrics from file exporter
+  - job_name: 'hypervisor'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: '/var/lib/hypervisor/metrics/hypervisor.prom'
+    scheme: 'file'
+    
+    # Refresh interval
+    scrape_interval: 15s
+    scrape_timeout: 10s
+  
+  # Node exporter (if installed)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+    
+  # Process exporter for QEMU processes
+  - job_name: 'qemu-processes'
+    static_configs:
+      - targets: ['localhost:9256']
+
+# Storage configuration
+storage:
+  tsdb:
+    path: '/var/lib/prometheus'
+    retention:
+      time: '30d'
+      size: '10GB'

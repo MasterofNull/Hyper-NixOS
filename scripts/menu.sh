@@ -127,7 +127,9 @@ menu_more() {
     26 "Detect & adjust (devices/security)"
     27 "Quick-start last VM"
     28 "System Diagnostics (troubleshooting)"
-    29 "Back"
+    29 "VM Dashboard (real-time status)"
+    30 "Bulk Operations (manage multiple VMs)"
+    31 "Back"
   )
   $DIALOG --title "Hypervisor - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -456,7 +458,9 @@ while true; do
           26) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
           27) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
           28) "$SCRIPTS_DIR/diagnose.sh" | ${PAGER:-less};;
-          29|*) break;;
+          29) "$SCRIPTS_DIR/vm_dashboard.sh" || true;;
+          30) "$SCRIPTS_DIR/bulk_operations.sh" || true;;
+          31|*) break;;
         esac
       done
       ;;

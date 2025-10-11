@@ -1,0 +1,118 @@
+groups:
+  - name: hypervisor_alerts
+    interval: 30s
+    rules:
+      # VM State Alerts
+      - alert: VMCrashed
+        expr: vm_state{state="running"} == 0 and vm_state{state="running"} offset 5m == 1
+        for: 1m
+        labels:
+          severity: critical
+          component: vm
+        annotations:
+          summary: "VM {{ $labels.vm }} has crashed"
+          description: "VM {{ $labels.vm }} was running but is now stopped unexpectedly."
+          action: "Check VM logs: journalctl -u libvirtd | grep {{ $labels.vm }}"
+      
+      # Resource Alerts - Host
+      - alert: HostHighMemoryUsage
+        expr: (hypervisor_memory_bytes{type="total"} - hypervisor_memory_bytes{type="available"}) / hypervisor_memory_bytes{type="total"} * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: host
+        annotations:
+          summary: "Host memory usage critical"
+          description: "Host memory usage is above 90% for 5 minutes. Current: {{ $value }}%"
+          action: "Review VM memory allocations or add more RAM"
+      
+      - alert: HostHighCPULoad
+        expr: hypervisor_load_average{period="5m"} / hypervisor_cpu_count > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: host
+        annotations:
+          summary: "Host CPU load is high"
+          description: "5-minute load average is {{ $value }}x the CPU count"
+          action: "Check VM CPU usage and consider reducing VM count or adding CPUs"
+      
+      - alert: HostLowDiskSpace
+        expr: hypervisor_disk_bytes{type="available"} / hypervisor_disk_bytes{type="total"} * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          component: storage
+        annotations:
+          summary: "Host disk space critically low"
+          description: "Less than 10% disk space available on {{ $labels.mount }}"
+          action: "Free space: sudo nix-collect-garbage -d; or remove unused ISOs/VMs"
+      
+      # VM Resource Alerts
+      - alert: VMHighMemoryUsage
+        expr: vm_memory_bytes{type="used"} / vm_memory_bytes{type="total"} * 100 > 95
+        for: 5m
+        labels:
+          severity: warning
+          component: vm
+        annotations:
+          summary: "VM {{ $labels.vm }} memory usage high"
+          description: "VM is using {{ $value }}% of allocated memory"
+          action: "Consider increasing VM memory allocation in profile"
+      
+      - alert: VMHighDiskIO
+        expr: rate(vm_disk_write_bytes_total[5m]) > 100000000
+        for: 5m
+        labels:
+          severity: info
+          component: vm
+        annotations:
+          summary: "VM {{ $labels.vm }} has high disk I/O"
+          description: "Disk write rate is {{ $value | humanize }}B/s"
+          action: "Normal for active workloads; investigate if unexpected"
+      
+      # Service Alerts
+      - alert: LibvirtDown
+        expr: hypervisor_libvirt_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: service
+        annotations:
+          summary: "Libvirt daemon is down"
+          description: "The libvirt daemon is not running. VMs cannot be managed."
+          action: "Start libvirt: sudo systemctl start libvirtd"
+      
+      - alert: NetworkDown
+        expr: hypervisor_network_up == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: network
+        annotations:
+          summary: "Libvirt network {{ $labels.network }} is down"
+          description: "Virtual network is not active. VMs may not have network access."
+          action: "Start network: virsh net-start {{ $labels.network }}"
+      
+      # Health Alerts
+      - alert: NoVMsRunning
+        expr: hypervisor_vms_total{state="running"} == 0 and hypervisor_vms_total{state="all"} > 0
+        for: 10m
+        labels:
+          severity: info
+          component: vm
+        annotations:
+          summary: "No VMs are currently running"
+          description: "You have {{ $value }} VMs defined but none are running."
+          action: "Start VMs if this is unexpected"
+      
+      - alert: TooManyVMs
+        expr: hypervisor_vms_total{state="running"} > 20
+        for: 5m
+        labels:
+          severity: info
+          component: capacity
+        annotations:
+          summary: "High number of VMs running"
+          description: "{{ $value }} VMs are running. Ensure host has sufficient resources."
+          action: "Monitor resource usage closely"
