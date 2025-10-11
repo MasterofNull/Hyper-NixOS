@@ -16,6 +16,8 @@ in {
     ./hardware-configuration.nix
     ../scripts/vfio-boot.nix
     ./security.nix
+    ./monitoring.nix
+    ./backup.nix
   ]
   ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix
   # Load local, host-specific overrides from /var/lib to avoid mutating the flake input

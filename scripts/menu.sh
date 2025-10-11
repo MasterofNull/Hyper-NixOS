@@ -117,14 +117,16 @@ menu_more() {
     16 "Guest agent actions (shutdown/fsfreeze)"
     17 "Template/Clone manager"
     18 "Metrics & Health"
-    19 "Docs & Help"
-    20 "Health checks"
-    21 "Preflight check"
-    22 "SSH setup (for migration)"
-    23 "Live migration"
-    24 "Detect & adjust (devices/security)"
-    25 "Quick-start last VM"
-    26 "Back"
+    19 "Enhanced health diagnostics"
+    20 "Resource optimizer"
+    21 "Docs & Help"
+    22 "Health checks"
+    23 "Preflight check"
+    24 "SSH setup (for migration)"
+    25 "Live migration"
+    26 "Detect & adjust (devices/security)"
+    27 "Quick-start last VM"
+    28 "Back"
   )
   $DIALOG --title "Hypervisor - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -326,13 +328,16 @@ while true; do
           16) "$SCRIPTS_DIR/guest_agent_actions.sh" || true;;
           17) "$SCRIPTS_DIR/template_clone_manager.sh" || true;;
           18) "$SCRIPTS_DIR/metrics_health.sh" || true;;
-          19) "$SCRIPTS_DIR/prom_exporter.sh" || true;;
-          20) "$SCRIPTS_DIR/health_checks.sh" || true;;
-          21) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
-          22) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
-          23) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
-          24) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
-          25|*) break;;
+          19) "$SCRIPTS_DIR/enhanced_health_checks.sh" || true;;
+          20) "$SCRIPTS_DIR/vm_resource_optimizer.sh" || true;;
+          21) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
+          22) "$SCRIPTS_DIR/health_checks.sh" || true;;
+          23) "$SCRIPTS_DIR/preflight_check.sh" || true;;
+          24) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
+          25) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
+          26) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
+          27) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
+          28|*) break;;
         esac
       done
       ;;
