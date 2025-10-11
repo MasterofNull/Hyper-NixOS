@@ -64,16 +64,16 @@ if $DIALOG --yesno "Advanced mode: apply best‑practice secure/performance sett
   cat > /etc/hypervisor/configuration/security-local.nix <<NIX
 { config, lib, pkgs, ... }:
 {
-  hypervisor.security.strictFirewall = ${sf:+true}${sf:0:0}${sf/1/true}${sf/0/false};
-  hypervisor.security.migrationTcp = ${mt:+true}${mt:0:0}${mt/1/true}${mt/0/false};
+  hypervisor.security.strictFirewall = $( [[ $sf == 1 ]] && echo true || echo false );
+  hypervisor.security.migrationTcp = $( [[ $mt == 1 ]] && echo true || echo false );
 }
 NIX
   # Write perf-local.nix
   cat > /etc/hypervisor/configuration/perf-local.nix <<NIX
 { config, lib, pkgs, ... }:
 {
-  hypervisor.performance.enableHugepages = ${hp:+true}${hp:0:0}${hp/1/true}${hp/0/false};
-  hypervisor.performance.disableSMT = ${smt:+true}${smt:0:0}${smt/1/true}${smt/0/false};
+  hypervisor.performance.enableHugepages = $( [[ $hp == 1 ]] && echo true || echo false );
+  hypervisor.performance.disableSMT = $( [[ $smt == 1 ]] && echo true || echo false );
 }
 NIX
 

@@ -126,7 +126,8 @@ menu_more() {
     25 "Live migration"
     26 "Detect & adjust (devices/security)"
     27 "Quick-start last VM"
-    28 "Back"
+    28 "System Diagnostics (troubleshooting)"
+    29 "Back"
   )
   $DIALOG --title "Hypervisor - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -337,7 +338,8 @@ while true; do
           25) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
           26) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
           27) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
-          28|*) break;;
+          28) "$SCRIPTS_DIR/diagnose.sh" | ${PAGER:-less};;
+          29|*) break;;
         esac
       done
       ;;

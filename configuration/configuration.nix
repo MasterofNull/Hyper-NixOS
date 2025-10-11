@@ -109,7 +109,37 @@ in {
     "d /var/lib/hypervisor/gnupg 0700 ${mgmtUser} ${mgmtUser} - -"
     "d /var/lib/hypervisor/backups 0750 ${mgmtUser} ${mgmtUser} - -"
     "d /var/log/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
+    "d /var/lib/hypervisor/logs 0750 ${mgmtUser} ${mgmtUser} - -"
   ];
+
+  # Log rotation for hypervisor logs
+  services.logrotate = {
+    enable = true;
+    settings = {
+      "/var/lib/hypervisor/logs/*.log" = {
+        frequency = "daily";
+        rotate = 7;
+        compress = true;
+        compresscmd = "${pkgs.gzip}/bin/gzip";
+        compressext = ".gz";
+        missingok = true;
+        notifempty = true;
+        sharedscripts = true;
+        postrotate = ''
+          systemctl reload hypervisor-menu.service 2>/dev/null || true
+        '';
+      };
+      "/var/log/hypervisor/*.log" = {
+        frequency = "daily";
+        rotate = 7;
+        compress = true;
+        compresscmd = "${pkgs.gzip}/bin/gzip";
+        compressext = ".gz";
+        missingok = true;
+        notifempty = true;
+      };
+    };
+  };
 
   # Enable libvirt for virsh/XML workflows
   virtualisation.libvirtd.enable = true;

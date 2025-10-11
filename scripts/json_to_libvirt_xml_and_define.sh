@@ -21,7 +21,27 @@ CONFIG_JSON="/etc/hypervisor/config.json"
 mkdir -p "$XML_DIR" "$DISKS_DIR"
 
 require() {
-  for b in jq virsh; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done
+  local missing=()
+  for b in "$@"; do
+    if ! command -v "$b" >/dev/null 2>&1; then
+      missing+=("$b")
+    fi
+  done
+  
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "Error: Missing required dependencies: ${missing[*]}" >&2
+    echo "" >&2
+    echo "To install on NixOS:" >&2
+    for dep in "${missing[@]}"; do
+      case "$dep" in
+        jq) echo "  nix-env -iA nixpkgs.jq" >&2 ;;
+        virsh) echo "  Enable virtualisation.libvirtd in configuration.nix" >&2 ;;
+        qemu-img) echo "  nix-env -iA nixpkgs.qemu" >&2 ;;
+        *) echo "  nix-env -iA nixpkgs.$dep" >&2 ;;
+      esac
+    done
+    exit 1
+  fi
 }
 
 xml_escape() {
@@ -32,15 +52,33 @@ xml_escape() {
       -e 's/"/\&quot;/g' \
       -e "s/'/\&apos;/g"
 }
-require
+require jq virsh qemu-img
 
 raw_name=$(jq -r '.name' "$PROFILE_JSON")
-# Constrain name to safe subset for domain names (defense-in-depth)
-if [[ ! "$raw_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
-  name=$(echo "$raw_name" | tr -cs 'A-Za-z0-9._-' '-' | sed 's/^-*//; s/-*$//')
-else
-  name="$raw_name"
+
+# Validate VM name: 1-64 chars, alphanumeric + . _ -
+# Must not start with . or -
+if [[ -z "$raw_name" || "$raw_name" == "null" ]]; then
+  echo "Error: VM name cannot be empty" >&2
+  echo "  Profile: $PROFILE_JSON" >&2
+  exit 1
 fi
+
+if [[ ${#raw_name} -gt 64 ]]; then
+  echo "Error: VM name too long (max 64 characters): $raw_name" >&2
+  echo "  Length: ${#raw_name} characters" >&2
+  echo "  Profile: $PROFILE_JSON" >&2
+  exit 1
+fi
+
+if [[ ! "$raw_name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+  echo "Error: Invalid VM name: $raw_name" >&2
+  echo "  Name must start with alphanumeric and contain only: A-Z, a-z, 0-9, ., _, -" >&2
+  echo "  Profile: $PROFILE_JSON" >&2
+  exit 1
+fi
+
+name="$raw_name"
 cpus=$(jq -r '.cpus' "$PROFILE_JSON")
 memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
 disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
@@ -96,9 +134,38 @@ qcow="$DISKS_DIR/${name}.qcow2"
 if [[ ! -f "$qcow" ]]; then
   if [[ -n "$disk_image_path" && -f "$disk_image_path" ]]; then
     # Create a COW overlay referencing the base image
-    qemu-img create -f qcow2 -b "$disk_image_path" -F $(qemu-img info -f raw -U "$disk_image_path" >/dev/null 2>&1 && echo raw || echo qcow2) "$qcow" >/dev/null 2>&1 || qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+    if ! qemu-img create -f qcow2 -b "$disk_image_path" -F $(qemu-img info -f raw -U "$disk_image_path" >/dev/null 2>&1 && echo raw || echo qcow2) "$qcow" >/dev/null 2>&1; then
+      # Fall back to creating a fresh disk
+      if ! qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null 2>&1; then
+        echo "Error: Failed to create disk image" >&2
+        echo "  Path: $qcow" >&2
+        echo "  Size: ${disk_gb}G" >&2
+        echo "" >&2
+        echo "Possible causes:" >&2
+        echo "  - Insufficient disk space (check: df -h $DISKS_DIR)" >&2
+        echo "  - Permission denied (check: ls -ld $DISKS_DIR)" >&2
+        echo "  - Invalid size (must be > 0)" >&2
+        echo "" >&2
+        echo "Available space:" >&2
+        df -h "$DISKS_DIR" | tail -1 | awk '{print "  Total: " $2 ", Used: " $3 ", Available: " $4}' >&2
+        exit 1
+      fi
+    fi
   else
-    qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+    if ! qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null 2>&1; then
+      echo "Error: Failed to create disk image" >&2
+      echo "  Path: $qcow" >&2
+      echo "  Size: ${disk_gb}G" >&2
+      echo "" >&2
+      echo "Possible causes:" >&2
+      echo "  - Insufficient disk space (check: df -h $DISKS_DIR)" >&2
+      echo "  - Permission denied (check: ls -ld $DISKS_DIR)" >&2
+      echo "  - Invalid size (must be > 0)" >&2
+      echo "" >&2
+      echo "Available space:" >&2
+      df -h "$DISKS_DIR" | tail -1 | awk '{print "  Total: " $2 ", Used: " $3 ", Available: " $4}' >&2
+      exit 1
+    fi
   fi
 fi
 
@@ -107,6 +174,25 @@ if [[ -n "$iso_path" && ! -f "$iso_path" ]]; then
   # if relative, resolve from ISOS_DIR
   if [[ "$iso_path" != /* ]]; then
     iso_path="$ISOS_DIR/$iso_path"
+  fi
+fi
+
+# Verify ISO has been checksummed (security measure)
+if [[ -n "$iso_path" && -f "$iso_path" ]]; then
+  checksum_file="${iso_path}.sha256.verified"
+  if [[ ! -f "$checksum_file" ]]; then
+    echo "Warning: ISO $iso_path has not been verified with checksums" >&2
+    echo "  For security, run ISO Manager to verify before use, or manually:" >&2
+    echo "    1. Verify checksum matches official source" >&2
+    echo "    2. Create verification marker: touch ${iso_path}.sha256.verified" >&2
+    echo "" >&2
+    if [[ "${HYPERVISOR_REQUIRE_ISO_VERIFICATION:-1}" == "1" ]]; then
+      echo "Error: ISO verification required for security." >&2
+      echo "  To bypass (not recommended): export HYPERVISOR_REQUIRE_ISO_VERIFICATION=0" >&2
+      exit 1
+    else
+      echo "  Continuing without verification (HYPERVISOR_REQUIRE_ISO_VERIFICATION=0)" >&2
+    fi
   fi
 fi
 
