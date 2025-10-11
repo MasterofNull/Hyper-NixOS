@@ -108,14 +108,15 @@ menu_more() {
     7 "Edit VM profile"
     8 "Delete VM"
     9 "Bridge helper"
-    10 "Snapshots & backups"
-    11 "Docs & Help"
-    12 "Preflight check"
-    13 "SSH setup (for migration)"
-    14 "Live migration"
-    15 "Detect & adjust (devices/security)"
-    16 "Quick-start last VM"
-    17 "Back"
+    10 "Zone manager (bridges & base rules)"
+    11 "Snapshots & backups"
+    12 "Docs & Help"
+    13 "Preflight check"
+    14 "SSH setup (for migration)"
+    15 "Live migration"
+    16 "Detect & adjust (devices/security)"
+    17 "Quick-start last VM"
+    18 "Back"
   )
   $DIALOG --title "Hypervisor - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
 }
@@ -292,14 +293,15 @@ while true; do
           7) p=$(select_profile || true) || continue; edit_profile "$p";;
           8) p=$(select_profile || true) || continue; delete_vm "$p";;
           9) "$SCRIPTS_DIR/bridge_helper.sh" || true;;
-          10) "$SCRIPTS_DIR/snapshots_backups.sh" || true;;
-          11) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
-          12) "$SCRIPTS_DIR/preflight_check.sh" || true;;
-          13) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
-          14) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
-          15) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
-          16) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
-          17|*) break;;
+          10) "$SCRIPTS_DIR/zone_manager.sh" || true;;
+          11) "$SCRIPTS_DIR/snapshots_backups.sh" || true;;
+          12) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
+          13) "$SCRIPTS_DIR/preflight_check.sh" || true;;
+          14) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
+          15) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
+          16) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
+          17) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
+          18|*) break;;
         esac
       done
       ;;

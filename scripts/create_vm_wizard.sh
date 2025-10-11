@@ -47,6 +47,8 @@ mem_private="false"
 vhost_net="false"
 memballoon_disable="false"
 autostart="false"
+autostart_group=""
+autostart_priority="50"
 
 # Pull defaults from config.json when available
 if [[ -f /etc/hypervisor/config.json ]]; then
@@ -182,6 +184,10 @@ if $DIALOG --yesno "Configure advanced options (audio, video heads, hugepages, m
   save_state
   # Autostart
   if $DIALOG --yesno "Autostart this VM on boot?" 8 50; then autostart=true; else autostart=false; fi
+  if [[ "$autostart" == true ]]; then
+    autostart_group=$($DIALOG --inputbox "Autostart group (optional)" 10 60 "$autostart_group" 3>&1 1>&2 2>&3 || echo "")
+    autostart_priority=$($DIALOG --inputbox "Autostart priority (0-100; lower starts earlier)" 10 60 "$autostart_priority" 3>&1 1>&2 2>&3 || echo "50")
+  fi
   save_state
 fi
 
@@ -224,6 +230,8 @@ EOT
     vhost "vhost-net ($vhost_net)" \
     balloon "disable balloon ($memballoon_disable)" \
     autostart "autostart ($autostart)" \
+    agroup "autostart group (${autostart_group:-none})" \
+    aprio "autostart priority (lower earlier: $autostart_priority)" \
     done "Done" 3>&1 1>&2 2>&3 || echo done)
   case "$choice" in
     name) name=$(ask "VM name" "$name") || true ;;
@@ -255,6 +263,8 @@ EOT
     vhost) if $DIALOG --yesno "Enable vhost-net?" 8 40; then vhost_net=true; else vhost_net=false; fi ;;
     balloon) if $DIALOG --yesno "Disable memballoon?" 8 40; then memballoon_disable=true; else memballoon_disable=false; fi ;;
     autostart) if $DIALOG --yesno "Autostart VM?" 8 40; then autostart=true; else autostart=false; fi ;;
+    agroup) autostart_group=$($DIALOG --inputbox "Autostart group" 10 60 "$autostart_group" 3>&1 1>&2 2>&3) || true ;;
+    aprio) autostart_priority=$($DIALOG --inputbox "Autostart priority (0-100; lower starts earlier)" 10 60 "$autostart_priority" 3>&1 1>&2 2>&3) || true ;;
     *) : ;;
   esac
   save_state
@@ -279,7 +289,9 @@ cat > "$tmp" <<JSON
   "hugepages": ${hugepages},
   "memory_options": { "guest_memfd": ${mem_guest_memfd}, "private": ${mem_private} },
   "memballoon": { "disable": ${memballoon_disable} },
-  "autostart": ${autostart}
+  "autostart": ${autostart},
+  "autostart_group": ${autostart_group:+"$autostart_group"}${autostart_group:=""},
+  "autostart_priority": ${autostart_priority}
 }
 JSON
 # Clean up audio object if empty model
