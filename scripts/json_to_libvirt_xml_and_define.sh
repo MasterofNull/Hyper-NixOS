@@ -21,7 +21,27 @@ CONFIG_JSON="/etc/hypervisor/config.json"
 mkdir -p "$XML_DIR" "$DISKS_DIR"
 
 require() {
-  for b in jq virsh; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done
+  local missing=()
+  for b in "$@"; do
+    if ! command -v "$b" >/dev/null 2>&1; then
+      missing+=("$b")
+    fi
+  done
+  
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "Error: Missing required dependencies: ${missing[*]}" >&2
+    echo "" >&2
+    echo "To install on NixOS:" >&2
+    for dep in "${missing[@]}"; do
+      case "$dep" in
+        jq) echo "  nix-env -iA nixpkgs.jq" >&2 ;;
+        virsh) echo "  Enable virtualisation.libvirtd in configuration.nix" >&2 ;;
+        qemu-img) echo "  nix-env -iA nixpkgs.qemu" >&2 ;;
+        *) echo "  nix-env -iA nixpkgs.$dep" >&2 ;;
+      esac
+    done
+    exit 1
+  fi
 }
 
 xml_escape() {
@@ -32,73 +52,122 @@ xml_escape() {
       -e 's/"/\&quot;/g' \
       -e "s/'/\&apos;/g"
 }
-require
+require jq virsh qemu-img
 
 raw_name=$(jq -r '.name' "$PROFILE_JSON")
-# Constrain name to safe subset for domain names (defense-in-depth)
-if [[ ! "$raw_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
-  name=$(echo "$raw_name" | tr -cs 'A-Za-z0-9._-' '-' | sed 's/^-*//; s/-*$//')
-else
-  name="$raw_name"
-fi
-cpus=$(jq -r '.cpus' "$PROFILE_JSON")
-memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
-disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
-iso_path=$(jq -r '.iso_path // empty' "$PROFILE_JSON")
-disk_image_path=$(jq -r '.disk_image_path // empty' "$PROFILE_JSON")
-ci_seed=$(jq -r '.cloud_init.seed_iso_path // empty' "$PROFILE_JSON")
-ci_user=$(jq -r '.cloud_init.user_data_path // empty' "$PROFILE_JSON")
-ci_meta=$(jq -r '.cloud_init.meta_data_path // empty' "$PROFILE_JSON")
-ci_net=$(jq -r '.cloud_init.network_config_path // empty' "$PROFILE_JSON")
-bridge=$(jq -r '.network.bridge // empty' "$PROFILE_JSON")
-# Optional logical zone name
-zone=$(jq -r '.network.zone // empty' "$PROFILE_JSON")
-# hostdev passthrough list e.g. ["0000:01:00.0","0000:01:00.1"]
-mapfile -t hostdevs < <(jq -r '.hostdevs[]? // empty' "$PROFILE_JSON")
-hugepages=$(jq -r '.hugepages // false' "$PROFILE_JSON")
-audio_model=$(jq -r '.audio.model // empty' "$PROFILE_JSON")
-video_heads=$(jq -r '.video.heads // 1' "$PROFILE_JSON")
-looking_glass_enabled=$(jq -r '.looking_glass.enable // false' "$PROFILE_JSON")
-looking_glass_size=$(jq -r '.looking_glass.size_mb // 64' "$PROFILE_JSON")
-# cpu_pinning: array of host cpu ids, sequentially mapped to vcpus
-mapfile -t pin_array < <(jq -r '.cpu_pinning[]? // empty' "$PROFILE_JSON")
-# numatune
-numa_nodeset=$(jq -r '.numa.nodeset // empty' "$PROFILE_JSON")
-# memballoon
-memballoon_disable=$(jq -r '.memballoon.disable // false' "$PROFILE_JSON")
-# tpm
-tpm_enable=$(jq -r '.tpm.enable // false' "$PROFILE_JSON")
-# vhost-net
-vhost_net=$(jq -r '.network.vhost // false' "$PROFILE_JSON")
-# autostart
-autostart=$(jq -r '.autostart // false' "$PROFILE_JSON")
 
-# Architecture and advanced CPU/memory options
-arch=$(jq -r '.arch // "x86_64"' "$PROFILE_JSON")
-# CPU features (x86-centric where applicable)
-cf_shstk=$(jq -r '.cpu_features.shstk // false' "$PROFILE_JSON")
-cf_ibt=$(jq -r '.cpu_features.ibt // false' "$PROFILE_JSON")
-cf_avic=$(jq -r '.cpu_features.avic // false' "$PROFILE_JSON")
-cf_secure_avic=$(jq -r '.cpu_features.secure_avic // false' "$PROFILE_JSON")
-cf_sev=$(jq -r '.cpu_features.sev // false' "$PROFILE_JSON")
-cf_sev_es=$(jq -r '.cpu_features.sev_es // false' "$PROFILE_JSON")
-cf_sev_snp=$(jq -r '.cpu_features.sev_snp // false' "$PROFILE_JSON")
-cf_ciphertext_hiding=$(jq -r '.cpu_features.ciphertext_hiding // false' "$PROFILE_JSON")
-cf_secure_tsc=$(jq -r '.cpu_features.secure_tsc // false' "$PROFILE_JSON")
-cf_fred=$(jq -r '.cpu_features.fred // false' "$PROFILE_JSON")
-cf_zx_leaves=$(jq -r '.cpu_features.zhaoxin_centaur_leaves // false' "$PROFILE_JSON")
-# memory options
-mem_guest_memfd=$(jq -r '.memory_options.guest_memfd // false' "$PROFILE_JSON")
-mem_private=$(jq -r '.memory_options.private // false' "$PROFILE_JSON")
+# Validate VM name: 1-64 chars, alphanumeric + . _ -
+# Must not start with . or -
+if [[ -z "$raw_name" || "$raw_name" == "null" ]]; then
+  echo "Error: VM name cannot be empty" >&2
+  echo "  Profile: $PROFILE_JSON" >&2
+  exit 1
+fi
+
+if [[ ${#raw_name} -gt 64 ]]; then
+  echo "Error: VM name too long (max 64 characters): $raw_name" >&2
+  echo "  Length: ${#raw_name} characters" >&2
+  echo "  Profile: $PROFILE_JSON" >&2
+  exit 1
+fi
+
+if [[ ! "$raw_name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+  echo "Error: Invalid VM name: $raw_name" >&2
+  echo "  Name must start with alphanumeric and contain only: A-Z, a-z, 0-9, ., _, -" >&2
+  echo "  Profile: $PROFILE_JSON" >&2
+  exit 1
+fi
+
+name="$raw_name"
+
+# Optimized: Parse all scalar values in a single jq call
+IFS=$'\t' read -r cpus memory_mb disk_gb iso_path disk_image_path \
+  ci_seed ci_user ci_meta ci_net bridge zone hugepages audio_model \
+  video_heads looking_glass_enabled looking_glass_size numa_nodeset \
+  memballoon_disable tpm_enable vhost_net autostart arch \
+  cf_shstk cf_ibt cf_avic cf_secure_avic cf_sev cf_sev_es cf_sev_snp \
+  cf_ciphertext_hiding cf_secure_tsc cf_fred cf_zx_leaves \
+  mem_guest_memfd mem_private < <(
+  jq -r '[
+    .cpus,
+    .memory_mb,
+    (.disk_gb // 20),
+    (.iso_path // ""),
+    (.disk_image_path // ""),
+    (.cloud_init.seed_iso_path // ""),
+    (.cloud_init.user_data_path // ""),
+    (.cloud_init.meta_data_path // ""),
+    (.cloud_init.network_config_path // ""),
+    (.network.bridge // ""),
+    (.network.zone // ""),
+    (.hugepages // false),
+    (.audio.model // ""),
+    (.video.heads // 1),
+    (.looking_glass.enable // false),
+    (.looking_glass.size_mb // 64),
+    (.numa.nodeset // ""),
+    (.memballoon.disable // false),
+    (.tpm.enable // false),
+    (.network.vhost // false),
+    (.autostart // false),
+    (.arch // "x86_64"),
+    (.cpu_features.shstk // false),
+    (.cpu_features.ibt // false),
+    (.cpu_features.avic // false),
+    (.cpu_features.secure_avic // false),
+    (.cpu_features.sev // false),
+    (.cpu_features.sev_es // false),
+    (.cpu_features.sev_snp // false),
+    (.cpu_features.ciphertext_hiding // false),
+    (.cpu_features.secure_tsc // false),
+    (.cpu_features.fred // false),
+    (.cpu_features.zhaoxin_centaur_leaves // false),
+    (.memory_options.guest_memfd // false),
+    (.memory_options.private // false)
+  ] | @tsv' "$PROFILE_JSON"
+)
+
+# Arrays still need separate parsing (hostdevs, cpu_pinning)
+mapfile -t hostdevs < <(jq -r '.hostdevs[]? // empty' "$PROFILE_JSON")
+mapfile -t pin_array < <(jq -r '.cpu_pinning[]? // empty' "$PROFILE_JSON")
 
 # Prepare disk if not present; allow base image clone when disk_image_path provided
 qcow="$DISKS_DIR/${name}.qcow2"
 if [[ ! -f "$qcow" ]]; then
   if [[ -n "$disk_image_path" && -f "$disk_image_path" ]]; then
     # Create a COW overlay referencing the base image
-    qemu-img create -f qcow2 -b "$disk_image_path" -F $(qemu-img info -f raw -U "$disk_image_path" >/dev/null 2>&1 && echo raw || echo qcow2) "$qcow" >/dev/null 2>&1 || qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+    if ! qemu-img create -f qcow2 -b "$disk_image_path" -F $(qemu-img info -f raw -U "$disk_image_path" >/dev/null 2>&1 && echo raw || echo qcow2) "$qcow" >/dev/null 2>&1; then
+      # Fall back to creating a fresh disk
+      if ! qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null 2>&1; then
+        echo "Error: Failed to create disk image" >&2
+        echo "  Path: $qcow" >&2
+        echo "  Size: ${disk_gb}G" >&2
+        echo "" >&2
+        echo "Possible causes:" >&2
+        echo "  - Insufficient disk space (check: df -h $DISKS_DIR)" >&2
+        echo "  - Permission denied (check: ls -ld $DISKS_DIR)" >&2
+        echo "  - Invalid size (must be > 0)" >&2
+        echo "" >&2
+        echo "Available space:" >&2
+        df -h "$DISKS_DIR" | tail -1 | awk '{print "  Total: " $2 ", Used: " $3 ", Available: " $4}' >&2
+        exit 1
+      fi
+    fi
   else
-    qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+    if ! qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null 2>&1; then
+      echo "Error: Failed to create disk image" >&2
+      echo "  Path: $qcow" >&2
+      echo "  Size: ${disk_gb}G" >&2
+      echo "" >&2
+      echo "Possible causes:" >&2
+      echo "  - Insufficient disk space (check: df -h $DISKS_DIR)" >&2
+      echo "  - Permission denied (check: ls -ld $DISKS_DIR)" >&2
+      echo "  - Invalid size (must be > 0)" >&2
+      echo "" >&2
+      echo "Available space:" >&2
+      df -h "$DISKS_DIR" | tail -1 | awk '{print "  Total: " $2 ", Used: " $3 ", Available: " $4}' >&2
+      exit 1
+    fi
   fi
 fi
 
@@ -107,6 +176,25 @@ if [[ -n "$iso_path" && ! -f "$iso_path" ]]; then
   # if relative, resolve from ISOS_DIR
   if [[ "$iso_path" != /* ]]; then
     iso_path="$ISOS_DIR/$iso_path"
+  fi
+fi
+
+# Verify ISO has been checksummed (security measure)
+if [[ -n "$iso_path" && -f "$iso_path" ]]; then
+  checksum_file="${iso_path}.sha256.verified"
+  if [[ ! -f "$checksum_file" ]]; then
+    echo "Warning: ISO $iso_path has not been verified with checksums" >&2
+    echo "  For security, run ISO Manager to verify before use, or manually:" >&2
+    echo "    1. Verify checksum matches official source" >&2
+    echo "    2. Create verification marker: touch ${iso_path}.sha256.verified" >&2
+    echo "" >&2
+    if [[ "${HYPERVISOR_REQUIRE_ISO_VERIFICATION:-1}" == "1" ]]; then
+      echo "Error: ISO verification required for security." >&2
+      echo "  To bypass (not recommended): export HYPERVISOR_REQUIRE_ISO_VERIFICATION=0" >&2
+      exit 1
+    else
+      echo "  Continuing without verification (HYPERVISOR_REQUIRE_ISO_VERIFICATION=0)" >&2
+    fi
   fi
 fi
 

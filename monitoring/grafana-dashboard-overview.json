@@ -1,0 +1,244 @@
+{
+  "dashboard": {
+    "title": "Hypervisor Overview",
+    "tags": ["hypervisor", "vms", "overview"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Running VMs",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "hypervisor_vms_total{state=\"running\"}",
+            "legendFormat": "Running",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total VMs",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "targets": [
+          {
+            "expr": "hypervisor_vms_total{state=\"all\"}",
+            "legendFormat": "Total",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Host CPU Cores",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "hypervisor_cpu_count",
+            "legendFormat": "CPUs",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Host Memory Usage",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+        "targets": [
+          {
+            "expr": "(hypervisor_memory_bytes{type=\"total\"} - hypervisor_memory_bytes{type=\"available\"}) / hypervisor_memory_bytes{type=\"total\"} * 100",
+            "legendFormat": "Used %",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            },
+            "unit": "percent",
+            "max": 100,
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "VM States Over Time",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "targets": [
+          {
+            "expr": "hypervisor_vms_total{state=\"running\"}",
+            "legendFormat": "Running",
+            "refId": "A"
+          },
+          {
+            "expr": "hypervisor_vms_total{state=\"stopped\"}",
+            "legendFormat": "Stopped",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"label": "VMs", "show": true},
+          {"show": false}
+        ],
+        "xaxis": {"show": true, "mode": "time"}
+      },
+      {
+        "id": 6,
+        "title": "Host Load Average",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "targets": [
+          {
+            "expr": "hypervisor_load_average{period=\"1m\"}",
+            "legendFormat": "1 minute",
+            "refId": "A"
+          },
+          {
+            "expr": "hypervisor_load_average{period=\"5m\"}",
+            "legendFormat": "5 minutes",
+            "refId": "B"
+          },
+          {
+            "expr": "hypervisor_load_average{period=\"15m\"}",
+            "legendFormat": "15 minutes",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {"label": "Load", "show": true},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Per-VM Memory Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "targets": [
+          {
+            "expr": "vm_memory_bytes{type=\"used\"}",
+            "legendFormat": "{{vm}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"label": "Memory (bytes)", "show": true, "format": "bytes"},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Per-VM CPU Time",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "targets": [
+          {
+            "expr": "rate(vm_cpu_time_seconds_total[5m])",
+            "legendFormat": "{{vm}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"label": "CPU Time (s/s)", "show": true},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Disk I/O (Read)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+        "targets": [
+          {
+            "expr": "rate(vm_disk_read_bytes_total[5m])",
+            "legendFormat": "{{vm}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"label": "Read Rate (bytes/s)", "show": true, "format": "Bps"},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Network I/O",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+        "targets": [
+          {
+            "expr": "rate(vm_network_rx_bytes_total[5m])",
+            "legendFormat": "{{vm}} RX",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(vm_network_tx_bytes_total[5m])",
+            "legendFormat": "{{vm}} TX",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"label": "Network Rate (bytes/s)", "show": true, "format": "Bps"},
+          {"show": false}
+        ]
+      }
+    ]
+  }
+}

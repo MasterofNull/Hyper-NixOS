@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-This NixOS-based hypervisor system demonstrates a **strong foundation** with security-first design, comprehensive feature coverage, and thoughtful architecture. The system successfully balances security hardening with usability, though there are opportunities to enhance the novice user experience and documentation.
+This NixOS-based hypervisor system demonstrates a **strong foundation** with security-first design, comprehensive feature coverage, and thoughtful architecture. The system successfully balances security hardening with usability, though there are opportunities to enhance the new user experience and documentation.
 
 **Overall Rating: 8.5/10**
 
@@ -21,7 +21,7 @@ This NixOS-based hypervisor system demonstrates a **strong foundation** with sec
 ✅ Flexible configuration with JSON schemas
 
 ### Areas for Improvement
-⚠️ Documentation could be more novice-friendly with step-by-step guides  
+⚠️ Documentation could be more new-user-friendly with step-by-step guides  
 ⚠️ Some security hardening steps require manual intervention  
 ⚠️ Limited automated testing and validation  
 ⚠️ GUI tools are minimal (primarily CLI/TUI focused)  
@@ -230,7 +230,7 @@ qcow="$DISKS_DIR/${name}.qcow2"
 
 ## 3. Design Intent Alignment
 
-### 3.1 Target Demographic: Novice/New Users ⭐⭐⭐⚪⚪ (3/5)
+### 3.1 Target Demographic: New user/New Users ⭐⭐⭐⚪⚪ (3/5)
 
 **Strengths:**
 - ✅ Excellent one-liner installation
@@ -590,7 +590,7 @@ bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experiment
 ### 6.1 HIGH PRIORITY
 
 #### 1. Comprehensive Documentation Overhaul
-**Why:** Target demographic (novices) needs more guidance  
+**Why:** Target demographic (new users) needs more guidance  
 **What:**
 - Create step-by-step tutorials with screenshots
 - Add troubleshooting decision trees
@@ -627,7 +627,7 @@ bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experiment
 **Impact:** High
 
 #### 4. Enhanced Error Handling & User Feedback
-**Why:** Improve user experience, especially for novices  
+**Why:** Improve user experience, especially for new users  
 **What:**
 - Add actionable error messages with suggestions
 - Implement progress indicators for long operations
@@ -1573,16 +1573,16 @@ This hypervisor system represents a **high-quality, security-focused virtualizat
 - Excellent security posture with defense-in-depth
 - Comprehensive feature set including cutting-edge tech (SEV-SNP, CET)
 - Well-structured codebase with good practices
-- Flexible architecture supporting novice to advanced users
+- Flexible architecture supporting new user to advanced users
 
 ### Primary Opportunities
-- Enhanced documentation for novice users
+- Enhanced documentation for new users
 - Improved monitoring and observability
 - Automated testing for reliability
 - Better error handling and user feedback
 
 ### Overall Assessment
-**This is production-ready software** suitable for security-conscious users who want a locked-down hypervisor. With the recommended improvements, especially in documentation and user experience, it can become an **excellent choice for novice users** while maintaining its advanced capabilities.
+**This is production-ready software** suitable for security-conscious users who want a locked-down hypervisor. With the recommended improvements, especially in documentation and user experience, it can become an **excellent choice for new users** while maintaining its advanced capabilities.
 
 **Recommended Next Steps:**
 1. Implement immediate fixes (setup wizard, input validation)

@@ -2,7 +2,7 @@
 
 ## Proposed Organization
 
-### For Novice Users
+### For New user Users
 - `docs/getting-started/`
   - `installation.md` - Step-by-step installation guide
   - `first-vm.md` - Creating your first VM walkthrough

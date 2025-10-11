@@ -1,0 +1,48 @@
+name: ShellCheck
+
+on:
+  push:
+    branches: [ main, develop, 'cursor/**' ]
+    paths:
+      - 'scripts/**/*.sh'
+      - '.github/workflows/shellcheck.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'scripts/**/*.sh'
+
+jobs:
+  shellcheck:
+    name: ShellCheck Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './scripts'
+          severity: 'error'
+          format: 'tty'
+          check_together: 'yes'
+        env:
+          SHELLCHECK_OPTS: >-
+            --exclude=SC1090
+            --exclude=SC1091
+            --exclude=SC2034
+            --exclude=SC2154
+            --exclude=SC2086
+            --exclude=SC2046
+            --shell=bash
+        continue-on-error: true
+      
+      - name: ShellCheck Summary
+        if: always()
+        run: |
+          echo "### ShellCheck Results 🐚" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Scanned all shell scripts in \`scripts/\` directory" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

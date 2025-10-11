@@ -200,6 +200,8 @@ download_iso() {
   if [[ -n "${checksum:-}" ]]; then
     if echo "$checksum  $ISOS_DIR/$filename" | sha256sum -c -; then
       store_sidecar_checksum "$ISOS_DIR/$filename"
+      # Mark ISO as verified for security enforcement
+      touch "$ISOS_DIR/$filename.sha256.verified"
       $DIALOG --msgbox "Downloaded and verified: $filename" 8 60
     else
       $DIALOG --msgbox "Checksum FAILED" 8 40
@@ -208,7 +210,7 @@ download_iso() {
   else
     # Generate sidecar anyway for offline integrity
     store_sidecar_checksum "$ISOS_DIR/$filename"
-    $DIALOG --msgbox "Downloaded: $filename" 8 50
+    $DIALOG --msgbox "Downloaded: $filename (WARNING: not verified)" 8 50
   fi
 }
 
@@ -250,11 +252,21 @@ validate_iso() {
   iso=$(choose_iso || true) || return 1
   side="${iso}.sha256"
   if [[ -f "$side" ]]; then
-    if sha256sum -c "$side"; then $DIALOG --msgbox "Checksum OK (sidecar)" 8 40; else $DIALOG --msgbox "Checksum FAILED" 8 40; fi
+    if sha256sum -c "$side"; then
+      touch "$iso.sha256.verified"
+      $DIALOG --msgbox "Checksum OK (sidecar)" 8 40
+    else
+      $DIALOG --msgbox "Checksum FAILED" 8 40
+    fi
     return 0
   fi
   checksum=$($DIALOG --inputbox "Expected SHA256" 10 70 3>&1 1>&2 2>&3) || return 1
-  echo "$checksum  $iso" | sha256sum -c - && $DIALOG --msgbox "Checksum OK" 8 30 || $DIALOG --msgbox "Checksum FAILED" 8 40
+  if echo "$checksum  $iso" | sha256sum -c -; then
+    touch "$iso.sha256.verified"
+    $DIALOG --msgbox "Checksum OK" 8 30
+  else
+    $DIALOG --msgbox "Checksum FAILED" 8 40
+  fi
 }
 
 verify_gpg() {
@@ -264,7 +276,12 @@ verify_gpg() {
   tmpdir=$(mktemp -d)
   asc="$tmpdir/$(basename "$asc_url")"
   curl -fsSL "$asc_url" -o "$asc" || { $DIALOG --msgbox "Failed to download signature" 8 50; rm -rf "$tmpdir"; return 1; }
-  GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$asc" "$iso" && $DIALOG --msgbox "GPG signature VERIFIED" 8 40 || $DIALOG --msgbox "GPG verification FAILED" 8 40
+  if GNUPGHOME=/var/lib/hypervisor/gnupg gpg --batch --verify "$asc" "$iso"; then
+    touch "$iso.sha256.verified"
+    $DIALOG --msgbox "GPG signature VERIFIED" 8 40
+  else
+    $DIALOG --msgbox "GPG verification FAILED" 8 40
+  fi
   rm -rf "$tmpdir"
 }
 
@@ -351,7 +368,15 @@ mount_network_share_and_scan() {
     # CIFS
     local user pass
     user=$($DIALOG --inputbox "Username (optional)" 10 60 3>&1 1>&2 2>&3 || echo "")
-    pass=$($DIALOG --passwordbox "Password (optional)" 10 60 3>&1 1>&2 2>&3 || echo "")
+    
+    # Secure password input using temporary file with restrictive permissions
+    local tmppass
+    tmppass=$(mktemp -p /dev/shm 2>/dev/null || mktemp)
+    chmod 600 "$tmppass"
+    $DIALOG --passwordbox "Password (optional)" 10 60 2>"$tmppass" || echo ""
+    pass=$(cat "$tmppass" 2>/dev/null || echo "")
+    shred -u "$tmppass" 2>/dev/null || rm -f "$tmppass"
+    
     opts="ro,vers=3.0"
     [[ -n "$user" ]] && opts+="",username=$user
     [[ -n "$pass" ]] && opts+="",password=$pass

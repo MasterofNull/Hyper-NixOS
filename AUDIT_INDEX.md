@@ -143,7 +143,7 @@
 
 ### [docs/QUICK_REFERENCE.md](./docs/QUICK_REFERENCE.md) (421 lines)
 **Purpose:** Day-to-day operations cheat sheet  
-**Audience:** All users (novice to advanced)  
+**Audience:** All users (new user to advanced)  
 **Read Time:** 15-20 minutes (or quick lookup)
 
 **Contents:**
@@ -198,8 +198,8 @@
 
 ---
 
-### Scenario 4: "I want to improve the novice user experience"
-1. Read [`AUDIT_SUMMARY.md`](./AUDIT_SUMMARY.md) - Novice UX section (5 min)
+### Scenario 4: "I want to improve the new user experience"
+1. Read [`AUDIT_SUMMARY.md`](./AUDIT_SUMMARY.md) - New user UX section (5 min)
 2. Study [`AUDIT_REPORT.md`](./AUDIT_REPORT.md) Section 4 (Usability) (15 min)
 3. Review [`ROADMAP.md`](./ROADMAP.md) Phase 2 (Documentation) (10 min)
 4. Review [`ROADMAP.md`](./ROADMAP.md) Phase 3 (UX Improvements) (10 min)
@@ -265,7 +265,7 @@
 | **Overall Rating** | 8.5/10 |
 | **Security Score** | 5/5 ⭐⭐⭐⭐⭐ |
 | **Feature Completeness** | 4.5/5 ⭐⭐⭐⭐⚪ |
-| **Novice-Friendliness** | 3/5 ⭐⭐⭐⚪⚪ |
+| **New user-Friendliness** | 3/5 ⭐⭐⭐⚪⚪ |
 | **Advanced Flexibility** | 5/5 ⭐⭐⭐⭐⭐ |
 | **VM Isolation** | 5/5 ⭐⭐⭐⭐⭐ |
 | | |
@@ -402,7 +402,7 @@
 This audit provides actionable guidance for improving an already strong hypervisor system. 
 
 **The system is production-ready today** for advanced users.  
-**With Phase 1-3 improvements**, it will be excellent for novice users too.
+**With Phase 1-3 improvements**, it will be excellent for new users too.
 
 ---
 
