@@ -113,13 +113,22 @@ download_iso() {
     # Build preset menu
     mapfile -t names < <(jq -r '.iso_presets[]?.name' "$CONFIG_JSON")
     mapfile -t urls < <(jq -r '.iso_presets[]?.url' "$CONFIG_JSON")
+    mapfile -t chans < <(jq -r '.iso_presets[]? | (.channel // "stable")' "$CONFIG_JSON")
     mapfile -t preset_checksum_urls < <(jq -r '.iso_presets[]? | (.checksum_urls // [.checksum_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
     mapfile -t preset_signature_urls < <(jq -r '.iso_presets[]? | (.signature_urls // [.signature_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
     mapfile -t preset_gpg_keys < <(jq -r '.iso_presets[]? | (.gpg_key_urls // [.gpg_key_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
     if (( ${#names[@]} > 0 )); then
+      # Choose channel first when both exist
+      local have_stable=false have_unstable=false; for c in "${chans[@]}"; do [[ "$c" == stable ]] && have_stable=true; [[ "$c" == unstable ]] && have_unstable=true; done
+      local chan_sel="stable"
+      if $have_unstable; then
+        chan_sel=$($DIALOG --menu "Choose channel" 12 50 2 stable "Stable releases" unstable "Unstable/devel" 3>&1 1>&2 2>&3 || echo stable)
+      fi
       local items=()
-      for i in "${!names[@]}"; do items+=("$i" "${names[$i]}"); done
-      preset_choice=$($DIALOG --menu "ISO presets (or Cancel for manual URL)" 20 70 10 "${items[@]}" 3>&1 1>&2 2>&3 || true)
+      for i in "${!names[@]}"; do [[ "${chans[$i]}" == "$chan_sel" || ( "$chan_sel" == stable && -z "${chans[$i]}" ) ]] && items+=("$i" "${names[$i]}"); done
+      # Fallback to all if filter empty
+      if (( ${#items[@]} == 0 )); then for i in "${!names[@]}"; do items+=("$i" "${names[$i]}"); done; fi
+      preset_choice=$($DIALOG --menu "ISO presets (${chan_sel}) (or Cancel for manual URL)" 20 72 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
       if [[ -n "${preset_choice:-}" ]]; then
         url="${urls[$preset_choice]}"
         preset_checksum_list=$(eval echo ${preset_checksum_urls[$preset_choice]:-})
