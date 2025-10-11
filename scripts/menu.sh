@@ -326,7 +326,7 @@ while true; do
           16) "$SCRIPTS_DIR/guest_agent_actions.sh" || true;;
           17) "$SCRIPTS_DIR/template_clone_manager.sh" || true;;
           18) "$SCRIPTS_DIR/metrics_health.sh" || true;;
-          19) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
+          19) "$SCRIPTS_DIR/prom_exporter.sh" || true;;
           20) "$SCRIPTS_DIR/health_checks.sh" || true;;
           21) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
           22) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
