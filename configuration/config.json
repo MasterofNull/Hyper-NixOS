@@ -80,6 +80,107 @@
       ],
       "signature_urls": [],
       "gpg_key_urls": []
+    },
+    {
+      "name": "Rocky Linux 9 (latest) DVD",
+      "url": "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9-latest-x86_64-dvd.iso",
+      "checksum_urls": [
+        "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/CHECKSUM"
+      ],
+      "signature_urls": [
+        "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/CHECKSUM.sig"
+      ],
+      "gpg_key_urls": [
+        "https://download.rockylinux.org/pub/rocky/RPM-GPG-KEY-Rocky-9"
+      ]
+    },
+    {
+      "name": "AlmaLinux 9 (latest) DVD",
+      "url": "https://repo.almalinux.org/almalinux/9/isos/x86_64/AlmaLinux-9-latest-x86_64-dvd.iso",
+      "checksum_urls": [
+        "https://repo.almalinux.org/almalinux/9/isos/x86_64/CHECKSUM"
+      ],
+      "signature_urls": [
+        "https://repo.almalinux.org/almalinux/9/isos/x86_64/CHECKSUM.asc"
+      ],
+      "gpg_key_urls": [
+        "https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux-9"
+      ]
+    },
+    {
+      "name": "openSUSE Leap 15.6 DVD",
+      "url": "https://download.opensuse.org/distribution/leap/15.6/iso/openSUSE-Leap-15.6-DVD-x86_64-Media.iso",
+      "checksum_urls": [
+        "https://download.opensuse.org/distribution/leap/15.6/iso/openSUSE-Leap-15.6-DVD-x86_64-Media.iso.sha256"
+      ],
+      "signature_urls": [
+        "https://download.opensuse.org/distribution/leap/15.6/iso/openSUSE-Leap-15.6-DVD-x86_64-Media.iso.sha256.asc"
+      ],
+      "gpg_key_urls": [
+        "https://download.opensuse.org/keys/openSUSE-Project-2022.pub"
+      ]
+    },
+    {
+      "name": "openSUSE Tumbleweed DVD (Current)",
+      "url": "https://download.opensuse.org/tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Current.iso",
+      "checksum_urls": [
+        "https://download.opensuse.org/tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Current.iso.sha256"
+      ],
+      "signature_urls": [
+        "https://download.opensuse.org/tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Current.iso.sha256.asc"
+      ],
+      "gpg_key_urls": [
+        "https://download.opensuse.org/keys/openSUSE-Project-2022.pub"
+      ]
+    },
+    {
+      "name": "FreeBSD 14.1-RELEASE amd64 DVD",
+      "url": "https://download.freebsd.org/releases/amd64/amd64/ISO-IMAGES/14.1/FreeBSD-14.1-RELEASE-amd64-dvd1.iso",
+      "checksum_urls": [
+        "https://download.freebsd.org/releases/amd64/amd64/ISO-IMAGES/14.1/CHECKSUM.SHA256"
+      ],
+      "signature_urls": [],
+      "gpg_key_urls": []
+    },
+    {
+      "name": "OpenBSD 7.5 amd64 CD",
+      "url": "https://cdn.openbsd.org/pub/OpenBSD/7.5/amd64/cd75.iso",
+      "checksum_urls": [
+        "https://cdn.openbsd.org/pub/OpenBSD/7.5/amd64/SHA256"
+      ],
+      "signature_urls": [],
+      "gpg_key_urls": []
+    },
+    {
+      "name": "NetBSD 10.0 amd64 ISO",
+      "url": "https://cdn.NetBSD.org/pub/NetBSD/NetBSD-10.0/images/NetBSD-10.0-amd64.iso",
+      "checksum_urls": [
+        "https://cdn.NetBSD.org/pub/NetBSD/NetBSD-10.0/images/SHA512"
+      ],
+      "signature_urls": [],
+      "gpg_key_urls": []
+    },
+    {
+      "name": "Kali Linux 2024.3 Installer amd64",
+      "url": "https://cdimage.kali.org/current/kali-linux-2024.3-installer-amd64.iso",
+      "checksum_urls": [
+        "https://cdimage.kali.org/current/SHA256SUMS"
+      ],
+      "signature_urls": [
+        "https://cdimage.kali.org/current/SHA256SUMS.gpg"
+      ],
+      "gpg_key_urls": [
+        "https://archive.kali.org/archive-key.asc"
+      ]
+    },
+    {
+      "name": "CentOS Stream 9 DVD",
+      "url": "https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/iso/CentOS-Stream-9-latest-x86_64-dvd1.iso",
+      "checksum_urls": [
+        "https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/iso/CHECKSUM"
+      ],
+      "signature_urls": [],
+      "gpg_key_urls": []
     }
   ]
 }

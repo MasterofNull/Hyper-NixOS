@@ -281,6 +281,87 @@ list_isos() {
   ls -1 "$ISOS_DIR"/*.iso 2>/dev/null || true
 }
 
+# Scan helper: find ISO files under given paths (up to limited depth)
+scan_paths_for_isos() {
+  local found=()
+  for base in "$@"; do
+    [[ -d "$base" ]] || continue
+    while IFS= read -r -d '' f; do found+=("$f"); done < <(find "$base" -maxdepth 3 -type f -iname "*.iso" -print0 2>/dev/null || true)
+  done
+  printf '%s\n' "${found[@]}" | sort -u
+}
+
+scan_local_isos() {
+  local defaults=(
+    /run/media /media /mnt /home /var/tmp /tmp
+  )
+  mapfile -t files < <(scan_paths_for_isos "${defaults[@]}")
+  if (( ${#files[@]} == 0 )); then
+    $DIALOG --msgbox "No ISOs found under default paths." 8 50
+    return 0
+  fi
+  # Build checklist
+  local items=()
+  for f in "${files[@]}"; do items+=("$f" "" off); done
+  sel=$($DIALOG --checklist "Select ISOs to import into $ISOS_DIR" 22 80 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
+  [[ -z "$sel" ]] && return 0
+  for p in $sel; do
+    p=${p%"}; p=${p#"}
+    [[ -f "$p" ]] || continue
+    cp -v "$p" "$ISOS_DIR/" || true
+    store_sidecar_checksum "$ISOS_DIR/$(basename "$p")"
+  done
+  $DIALOG --msgbox "Imported selected ISOs." 8 40
+}
+
+mount_network_share_and_scan() {
+  local typ mp target opts
+  typ=$($DIALOG --menu "Share type" 12 50 2 nfs "NFS" cifs "SMB/CIFS" 3>&1 1>&2 2>&3 || echo "")
+  [[ -z "$typ" ]] && return 0
+  target=$($DIALOG --inputbox "Remote (nfs: server:/path, cifs: //server/share)" 10 70 3>&1 1>&2 2>&3) || return 0
+  mp=$($DIALOG --inputbox "Mount point (will be created if missing)" 10 70 "/mnt/share" 3>&1 1>&2 2>&3) || return 0
+  mkdir -p "$mp"
+  if [[ "$typ" == nfs ]]; then
+    opts=$($DIALOG --inputbox "Mount options (optional)" 10 70 "ro,vers=4" 3>&1 1>&2 2>&3 || echo "ro")
+    if sudo mount -t nfs -o "$opts" "$target" "$mp"; then
+      $DIALOG --msgbox "Mounted NFS at $mp" 8 40
+      # Scan mount point
+      mapfile -t files < <(scan_paths_for_isos "$mp")
+    else
+      $DIALOG --msgbox "Failed to mount NFS" 8 40; return 1
+    fi
+  else
+    # CIFS
+    local user pass
+    user=$($DIALOG --inputbox "Username (optional)" 10 60 3>&1 1>&2 2>&3 || echo "")
+    pass=$($DIALOG --passwordbox "Password (optional)" 10 60 3>&1 1>&2 2>&3 || echo "")
+    opts="ro,vers=3.0"
+    [[ -n "$user" ]] && opts+="",username=$user
+    [[ -n "$pass" ]] && opts+="",password=$pass
+    if sudo mount -t cifs -o "$opts" "$target" "$mp"; then
+      $DIALOG --msgbox "Mounted CIFS at $mp" 8 40
+      mapfile -t files < <(scan_paths_for_isos "$mp")
+    else
+      $DIALOG --msgbox "Failed to mount CIFS" 8 40; return 1
+    fi
+  fi
+  if (( ${#files[@]} == 0 )); then
+    $DIALOG --msgbox "No ISOs found under $mp" 8 40
+    return 0
+  fi
+  local items=()
+  for f in "${files[@]}"; do items+=("$f" "" off); done
+  sel=$($DIALOG --checklist "Select ISOs to import" 22 80 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
+  [[ -z "$sel" ]] && return 0
+  for p in $sel; do
+    p=${p%"}; p=${p#"}
+    [[ -f "$p" ]] || continue
+    cp -v "$p" "$ISOS_DIR/" || true
+    store_sidecar_checksum "$ISOS_DIR/$(basename "$p")"
+  done
+  $DIALOG --msgbox "Imported selected ISOs." 8 40
+}
+
 
 # Noninteractive CLI mode for automation
 if [[ "${1:-}" == "--cli" ]]; then
@@ -342,15 +423,17 @@ if [[ "${1:-}" == "--cli" ]]; then
 fi
 
 while true; do
-  choice=$($DIALOG --menu "ISO Manager" 22 80 12 \
-    1 "Download ISO (auto-checksum when available)" \
+  choice=$($DIALOG --menu "ISO Manager" 24 90 14 \
+    1 "Download ISO (auto-checksum/signature/mirrors)" \
     2 "Validate ISO checksum" \
     3 "Import ISO from local path" \
     4 "Attach ISO to a VM profile" \
     5 "GPG: Import key" \
     6 "GPG: Verify ISO signature" \
     7 "List ISOs" \
-    8 "Exit" 3>&1 1>&2 2>&3) || exit 0
+    8 "Scan local storage for ISOs" \
+    9 "Mount network share and scan" \
+    10 "Exit" 3>&1 1>&2 2>&3) || exit 0
   case "$choice" in
     1) download_iso ;;
     2) validate_iso ;;
@@ -359,6 +442,8 @@ while true; do
     5) import_gpg_key ;;
     6) verify_gpg ;;
     7) list_isos | ${PAGER:-less} ;;
-    8) exit 0 ;;
+    8) scan_local_isos ;;
+    9) mount_network_share_and_scan ;;
+    10) exit 0 ;;
   esac
 done
