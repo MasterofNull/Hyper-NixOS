@@ -21,7 +21,27 @@ CONFIG_JSON="/etc/hypervisor/config.json"
 mkdir -p "$XML_DIR" "$DISKS_DIR"
 
 require() {
-  for b in jq virsh; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done
+  local missing=()
+  for b in "$@"; do
+    if ! command -v "$b" >/dev/null 2>&1; then
+      missing+=("$b")
+    fi
+  done
+  
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "Error: Missing required dependencies: ${missing[*]}" >&2
+    echo "" >&2
+    echo "To install on NixOS:" >&2
+    for dep in "${missing[@]}"; do
+      case "$dep" in
+        jq) echo "  nix-env -iA nixpkgs.jq" >&2 ;;
+        virsh) echo "  Enable virtualisation.libvirtd in configuration.nix" >&2 ;;
+        qemu-img) echo "  nix-env -iA nixpkgs.qemu" >&2 ;;
+        *) echo "  nix-env -iA nixpkgs.$dep" >&2 ;;
+      esac
+    done
+    exit 1
+  fi
 }
 
 xml_escape() {
@@ -32,15 +52,34 @@ xml_escape() {
       -e 's/"/\&quot;/g' \
       -e "s/'/\&apos;/g"
 }
-require
+require jq virsh qemu-img
 
 raw_name=$(jq -r '.name' "$PROFILE_JSON")
-# Constrain name to safe subset for domain names (defense-in-depth)
-if [[ ! "$raw_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
-  name=$(echo "$raw_name" | tr -cs 'A-Za-z0-9._-' '-' | sed 's/^-*//; s/-*$//')
-else
-  name="$raw_name"
+
+# Validate VM name: 1-64 chars, alphanumeric + . _ -
+# Must not start with . or -
+if [[ -z "$raw_name" ]]; then
+  echo "Error: VM name cannot be empty" >&2
+  exit 1
 fi
+
+if [[ ${#raw_name} -gt 64 ]]; then
+  echo "Error: VM name too long (max 64 characters): $raw_name" >&2
+  exit 1
+fi
+
+if [[ ! "$raw_name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+  echo "Error: Invalid VM name: $raw_name" >&2
+  echo "Name must start with alphanumeric and contain only: A-Z, a-z, 0-9, ., _, -" >&2
+  echo "" >&2
+  echo "Examples of valid names:" >&2
+  echo "  ubuntu-server" >&2
+  echo "  windows11_gaming" >&2
+  echo "  test-vm.dev" >&2
+  exit 1
+fi
+
+name="$raw_name"
 cpus=$(jq -r '.cpus' "$PROFILE_JSON")
 memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
 disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
@@ -96,9 +135,26 @@ qcow="$DISKS_DIR/${name}.qcow2"
 if [[ ! -f "$qcow" ]]; then
   if [[ -n "$disk_image_path" && -f "$disk_image_path" ]]; then
     # Create a COW overlay referencing the base image
-    qemu-img create -f qcow2 -b "$disk_image_path" -F $(qemu-img info -f raw -U "$disk_image_path" >/dev/null 2>&1 && echo raw || echo qcow2) "$qcow" >/dev/null 2>&1 || qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+    if ! qemu-img create -f qcow2 -b "$disk_image_path" -F $(qemu-img info -f raw -U "$disk_image_path" >/dev/null 2>&1 && echo raw || echo qcow2) "$qcow" >/dev/null 2>&1; then
+      if ! qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null 2>&1; then
+        echo "Error: Failed to create disk image with backing file" >&2
+        echo "  Path: $qcow" >&2
+        echo "  Base: $disk_image_path" >&2
+        exit 1
+      fi
+    fi
   else
-    qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null
+    if ! qemu-img create -f qcow2 "$qcow" "${disk_gb}G" >/dev/null 2>&1; then
+      echo "Error: Failed to create disk image" >&2
+      echo "  Path: $qcow" >&2
+      echo "  Size: ${disk_gb}G" >&2
+      echo "" >&2
+      echo "Possible causes:" >&2
+      echo "  - Insufficient disk space (check: df -h /var/lib/hypervisor)" >&2
+      echo "  - Permission denied (check: ls -ld /var/lib/hypervisor/disks)" >&2
+      echo "  - Invalid size (must be > 0)" >&2
+      exit 1
+    fi
   fi
 fi
 
@@ -107,6 +163,25 @@ if [[ -n "$iso_path" && ! -f "$iso_path" ]]; then
   # if relative, resolve from ISOS_DIR
   if [[ "$iso_path" != /* ]]; then
     iso_path="$ISOS_DIR/$iso_path"
+  fi
+fi
+
+# Verify ISO has been checksummed (security enhancement)
+if [[ -n "$iso_path" && -f "$iso_path" ]]; then
+  checksum_file="${iso_path}.sha256.verified"
+  if [[ ! -f "$checksum_file" ]]; then
+    echo "Warning: ISO has not been verified with checksums: $iso_path" >&2
+    echo "" >&2
+    echo "For security, verify the ISO using the ISO Manager before use." >&2
+    echo "Or manually mark as verified (only if you trust the source):" >&2
+    echo "  touch '${checksum_file}'" >&2
+    echo "" >&2
+    if [[ "${HYPERVISOR_REQUIRE_ISO_VERIFICATION:-1}" == "1" ]]; then
+      echo "Error: ISO verification is required by security policy." >&2
+      echo "To bypass (not recommended), set:" >&2
+      echo "  export HYPERVISOR_REQUIRE_ISO_VERIFICATION=0" >&2
+      exit 1
+    fi
   fi
 fi
 
@@ -358,8 +433,33 @@ fi
 # Do not remove storage on re-define; preserve installed disks between edits
 virsh destroy "$name" >/dev/null 2>&1 || true
 virsh undefine "$name" --nvram >/dev/null 2>&1 || true
-virsh define "$xml"
-virsh start "$name"
+if ! virsh define "$xml"; then
+  echo "Error: Failed to define VM '$name'" >&2
+  echo "  XML file: $xml" >&2
+  echo "" >&2
+  echo "Possible causes:" >&2
+  echo "  - Invalid XML configuration" >&2
+  echo "  - Conflicting VM name already exists" >&2
+  echo "  - Libvirtd not running (check: systemctl status libvirtd)" >&2
+  echo "" >&2
+  echo "To debug, check the XML file: cat $xml" >&2
+  exit 1
+fi
+
+if ! virsh start "$name"; then
+  echo "Error: Failed to start VM '$name'" >&2
+  echo "" >&2
+  echo "Possible causes:" >&2
+  echo "  - Insufficient memory available" >&2
+  echo "  - KVM not available (check: ls /dev/kvm)" >&2
+  echo "  - ISO or disk image not found" >&2
+  echo "  - Network bridge not available" >&2
+  echo "" >&2
+  echo "To debug:" >&2
+  echo "  - Check VM definition: virsh dumpxml $name" >&2
+  echo "  - Check libvirt logs: journalctl -u libvirtd -n 50" >&2
+  exit 1
+fi
 if [[ "$autostart" == "true" || "$autostart" == "True" ]]; then
   virsh autostart "$name" || true
 fi

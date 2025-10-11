@@ -46,6 +46,31 @@ LOG_FILE="$LOG_DIR/menu.log"
 mkdir -p "$LOG_DIR"
 log() { $LOG_ENABLED && printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG_FILE" || true; }
 
+launch_console() {
+  local domain="$1"
+  
+  # Get display URI
+  local uri
+  uri=$(virsh domdisplay "$domain" 2>/dev/null || echo "")
+  
+  if [[ -z "$uri" ]]; then
+    $DIALOG --msgbox "Error: No display available for VM '$domain'\n\nEnsure VM is running and has graphics enabled." 10 60
+    return 1
+  fi
+  
+  # Check if remote-viewer is available
+  if ! command -v remote-viewer >/dev/null 2>&1; then
+    $DIALOG --msgbox "Error: remote-viewer not found\n\nInstall with: nix-env -iA nixpkgs.virt-viewer" 10 60
+    return 1
+  fi
+  
+  # Launch viewer in background
+  log "Launching console for $domain (URI: $uri)"
+  nohup remote-viewer "$uri" >/dev/null 2>&1 &
+  
+  $DIALOG --msgbox "Console viewer launched for '$domain'\n\nConnection: $uri\n\nIf the window doesn't appear, check your display settings." 12 70
+}
+
 require() {
   for bin in "$@"; do
     command -v "$bin" >/dev/null 2>&1 || {
@@ -117,7 +142,7 @@ menu_more() {
     16 "Guest agent actions (shutdown/fsfreeze)"
     17 "Template/Clone manager"
     18 "Metrics & Health"
-    19 "Enhanced health diagnostics"
+    19 "System Diagnostics (comprehensive health check)"
     20 "Resource optimizer"
     21 "Docs & Help"
     22 "Health checks"
@@ -328,7 +353,7 @@ while true; do
           16) "$SCRIPTS_DIR/guest_agent_actions.sh" || true;;
           17) "$SCRIPTS_DIR/template_clone_manager.sh" || true;;
           18) "$SCRIPTS_DIR/metrics_health.sh" || true;;
-          19) "$SCRIPTS_DIR/enhanced_health_checks.sh" || true;;
+          19) "$SCRIPTS_DIR/diagnose.sh" | ${PAGER:-less} || true;;
           20) "$SCRIPTS_DIR/vm_resource_optimizer.sh" || true;;
           21) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
           22) "$SCRIPTS_DIR/health_checks.sh" || true;;
@@ -373,9 +398,71 @@ while true; do
       sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh wizard off && $DIALOG --msgbox "First-boot wizard disabled." 8 50 || $DIALOG --msgbox "Failed to toggle." 8 50
       ;;
     "__EXIT__"|*)
-      # If the selection is a file path to a VM profile, start it then return to menu
+      # If the selection is a file path to a VM profile, show action menu
       if [[ -n "$choice" && -f "$choice" ]]; then
-        start_vm "$choice" || true
+        local vm_name
+        vm_name=$(jq -r '.name' "$choice" 2>/dev/null || basename "$choice" .json)
+        
+        # Check if VM is already running
+        local vm_state="stopped"
+        if virsh domstate "$vm_name" 2>/dev/null | grep -q "running"; then
+          vm_state="running"
+        fi
+        
+        local action
+        if [[ "$vm_state" == "running" ]]; then
+          action=$($DIALOG --menu "VM: $vm_name (running)" 16 60 6 \
+            console "Launch Console (SPICE/VNC)" \
+            stop "Stop VM" \
+            restart "Restart VM" \
+            edit "Edit Profile" \
+            back "Back" 3>&1 1>&2 2>&3 || echo "back")
+        else
+          action=$($DIALOG --menu "VM: $vm_name (stopped)" 16 60 6 \
+            start "Start VM" \
+            console "Start and Launch Console" \
+            edit "Edit Profile" \
+            delete "Delete VM" \
+            back "Back" 3>&1 1>&2 2>&3 || echo "back")
+        fi
+        
+        case "$action" in
+          start)
+            start_vm "$choice" || true
+            ;;
+          console)
+            if [[ "$vm_state" != "running" ]]; then
+              # Start VM first
+              if start_vm "$choice"; then
+                sleep 3  # Give VM time to initialize display
+              else
+                continue
+              fi
+            fi
+            launch_console "$vm_name"
+            ;;
+          stop)
+            virsh shutdown "$vm_name" || virsh destroy "$vm_name"
+            $DIALOG --msgbox "VM '$vm_name' stopped" 8 50
+            ;;
+          restart)
+            virsh reboot "$vm_name" || (virsh destroy "$vm_name" && virsh start "$vm_name")
+            $DIALOG --msgbox "VM '$vm_name' restarted" 8 50
+            ;;
+          edit)
+            edit_profile "$choice"
+            ;;
+          delete)
+            if $DIALOG --yesno "Delete VM '$vm_name' and its disk?" 10 50; then
+              delete_vm "$choice"
+              rm -f "$choice"
+              $DIALOG --msgbox "VM '$vm_name' deleted" 8 50
+            fi
+            ;;
+          back|*)
+            # Return to main menu
+            ;;
+        esac
       fi
       # Return to main loop; let user explicitly exit via TTY
       ;;

@@ -283,4 +283,33 @@ in {
       Categories=System;Utility;
     '';
   };
+
+  # Log rotation for hypervisor logs
+  services.logrotate = {
+    enable = true;
+    settings = {
+      "/var/lib/hypervisor/logs/*.log" = {
+        rotate = 7;
+        daily = true;
+        compress = true;
+        compresscmd = "${pkgs.gzip}/bin/gzip";
+        compressext = ".gz";
+        missingok = true;
+        notifempty = true;
+        sharedscripts = true;
+        postrotate = ''
+          systemctl reload hypervisor-menu.service 2>/dev/null || true
+        '';
+      };
+      "/var/log/hypervisor/*.log" = {
+        rotate = 7;
+        daily = true;
+        compress = true;
+        compresscmd = "${pkgs.gzip}/bin/gzip";
+        compressext = ".gz";
+        missingok = true;
+        notifempty = true;
+      };
+    };
+  };
 }

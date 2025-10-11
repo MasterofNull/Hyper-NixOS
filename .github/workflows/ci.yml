@@ -1,0 +1,175 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run ShellCheck on all scripts
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: '.'
+          severity: warning
+          format: gcc
+  
+  nix-build:
+    name: Nix Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        nixpkgs-channel: [nixos-24.05, nixos-unstable]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:${{ matrix.nixpkgs-channel }}
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v13
+        with:
+          name: hypervisor-nixos
+          skipPush: true
+      
+      - name: Check Nix flake
+        run: |
+          nix flake check
+          nix flake show
+      
+      - name: Build NixOS configuration
+        run: |
+          nix build .#nixosConfigurations.hypervisor-x86_64.config.system.build.toplevel --no-link
+      
+      - name: Build bootable ISO
+        run: |
+          nix build .#iso --no-link
+        continue-on-error: true  # ISO build might require KVM
+  
+  rust-checks:
+    name: Rust Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      
+      - name: Cache cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            tools/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Check formatting
+        working-directory: tools
+        run: cargo fmt --all -- --check
+      
+      - name: Run clippy
+        working-directory: tools
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      
+      - name: Run tests
+        working-directory: tools
+        run: cargo test --all
+      
+      - name: Build release binaries
+        working-directory: tools
+        run: cargo build --release --all
+  
+  documentation:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v14
+        with:
+          globs: |
+            **/*.md
+            !**/node_modules/**
+        continue-on-error: true
+      
+      - name: Check for broken links
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: --verbose --no-progress './**/*.md' './**/*.txt'
+          fail: false  # Don't fail on broken links, just report
+      
+      - name: Spell check
+        uses: streetsidesoftware/cspell-action@v5
+        with:
+          files: |
+            **/*.md
+            **/*.txt
+            scripts/*.sh
+          config: |
+            {
+              "ignorePaths": [
+                "node_modules/**",
+                ".git/**"
+              ],
+              "words": [
+                "nixos",
+                "nixpkgs",
+                "hypervisor",
+                "libvirt",
+                "qemu",
+                "virsh",
+                "ovmf",
+                "vfio",
+                "iommu",
+                "apparmor",
+                "systemd",
+                "qcow",
+                "spice",
+                "virtio"
+              ]
+            }
+        continue-on-error: true
+  
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+      
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD

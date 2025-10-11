@@ -85,6 +85,8 @@ store_sidecar_checksum() {
   local iso="$1"
   local sidecar="${iso}.sha256"
   sha256sum "$iso" > "$sidecar"
+  # Mark ISO as verified
+  touch "${iso}.sha256.verified"
 }
 
 try_fetch_checksum() {
@@ -250,11 +252,23 @@ validate_iso() {
   iso=$(choose_iso || true) || return 1
   side="${iso}.sha256"
   if [[ -f "$side" ]]; then
-    if sha256sum -c "$side"; then $DIALOG --msgbox "Checksum OK (sidecar)" 8 40; else $DIALOG --msgbox "Checksum FAILED" 8 40; fi
+    if sha256sum -c "$side"; then 
+      $DIALOG --msgbox "Checksum OK (sidecar)" 8 40
+      touch "${iso}.sha256.verified"
+    else 
+      $DIALOG --msgbox "Checksum FAILED" 8 40
+      rm -f "${iso}.sha256.verified"
+    fi
     return 0
   fi
   checksum=$($DIALOG --inputbox "Expected SHA256" 10 70 3>&1 1>&2 2>&3) || return 1
-  echo "$checksum  $iso" | sha256sum -c - && $DIALOG --msgbox "Checksum OK" 8 30 || $DIALOG --msgbox "Checksum FAILED" 8 40
+  if echo "$checksum  $iso" | sha256sum -c -; then
+    $DIALOG --msgbox "Checksum OK" 8 30
+    store_sidecar_checksum "$iso"
+  else
+    $DIALOG --msgbox "Checksum FAILED" 8 40
+    rm -f "${iso}.sha256.verified"
+  fi
 }
 
 verify_gpg() {
@@ -351,7 +365,21 @@ mount_network_share_and_scan() {
     # CIFS
     local user pass
     user=$($DIALOG --inputbox "Username (optional)" 10 60 3>&1 1>&2 2>&3 || echo "")
-    pass=$($DIALOG --passwordbox "Password (optional)" 10 60 3>&1 1>&2 2>&3 || echo "")
+    # Secure password input using temporary file with restrictive permissions
+    if [[ "$DIALOG" == "whiptail" ]] || [[ "$DIALOG" == "dialog" ]]; then
+      # For TUI, use temporary file in /dev/shm (memory-based)
+      local tmppass=$(mktemp -p /dev/shm hypervisor-pass.XXXXXX)
+      chmod 600 "$tmppass"
+      $DIALOG --passwordbox "Password (optional)" 10 60 2>"$tmppass" || echo ""
+      pass=$(cat "$tmppass" 2>/dev/null || echo "")
+      # Securely erase the temporary file
+      shred -u "$tmppass" 2>/dev/null || rm -f "$tmppass"
+    else
+      # For command line, use read -s
+      echo -n "Password (optional): " >&2
+      read -r -s pass
+      echo "" >&2
+    fi
     opts="ro,vers=3.0"
     [[ -n "$user" ]] && opts+="",username=$user
     [[ -n "$pass" ]] && opts+="",password=$pass

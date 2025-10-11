@@ -1,5 +1,9 @@
 Hypervisor Quickstart
 
+For a comprehensive step-by-step guide with troubleshooting, see:
+  /etc/hypervisor/docs/quickstart_expanded.md
+
+Quick Summary:
 1) Download OS ISO or cloud image
    - TUI: More Options -> ISO manager (or Cloud image manager)
 2) Create a VM profile
@@ -7,5 +11,17 @@ Hypervisor Quickstart
    - Choose ISO or cloud image + cloud-init files
 3) Deploy and launch
    - TUI: Define/Start from JSON, or end-to-end workflow
-4) After install
+4) Connect to console
+   - Install virt-viewer: nix-env -iA nixpkgs.virt-viewer
+   - Run: remote-viewer $(virsh domdisplay vmname)
+5) After install
    - Remove iso_path for faster boots; set autostart if desired
+
+Common commands:
+  virsh list --all          # List all VMs
+  virsh start vmname        # Start VM
+  virsh shutdown vmname     # Graceful shutdown
+  virsh domifaddr vmname    # Get VM IP address
+
+For diagnostics:
+  /etc/hypervisor/scripts/diagnose.sh
