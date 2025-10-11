@@ -327,7 +327,7 @@ while true; do
           17) "$SCRIPTS_DIR/template_clone_manager.sh" || true;;
           18) "$SCRIPTS_DIR/metrics_health.sh" || true;;
           19) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
-          20) "$SCRIPTS_DIR/preflight_check.sh" || true;;
+          20) "$SCRIPTS_DIR/health_checks.sh" || true;;
           21) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
           22) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
           23) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;

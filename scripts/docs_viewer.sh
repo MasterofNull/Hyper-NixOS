@@ -18,6 +18,7 @@ while true; do
     cloudinit "Cloud-init - images and seeds" \
     networking "Networking - zones, bridges, VFIO" \
     storage "Storage - disks, snapshots, backups" \
+    firewall "Per-VM firewall" \
     logs "Logs & troubleshooting" \
     exit "Exit" 3>&1 1>&2 2>&3 || true)
   case "$choice" in
@@ -26,6 +27,7 @@ while true; do
     cloudinit) show_file "$DOCS_DIR/cloudinit.txt" ;;
     networking) show_file "$DOCS_DIR/networking.txt" ;;
     storage) show_file "$DOCS_DIR/storage.txt" ;;
+    firewall) show_file "$DOCS_DIR/firewall.txt" ;;
     logs) show_file "$DOCS_DIR/logs.txt" ;;
     *) exit 0 ;;
   esac

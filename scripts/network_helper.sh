@@ -26,6 +26,18 @@ CONF"
   sudo systemctl restart dnsmasq || true
 }
 
+apply_reservations() {
+  local zone="$1" br="$2"; local conf="/etc/dnsmasq.d/hypervisor-${br}.conf"
+  # Append dhcp-host entries from config.json dhcp_reservations
+  tmp=$(mktemp)
+  cp "$conf" "$tmp" || true
+  while IFS= read -r kv; do
+    mac="${kv%%|*}"; ip="${kv##*|}"
+    echo "dhcp-host=$mac,$ip" >> "$tmp"
+  done < <(jq -r --arg z "$zone" '.network_zones[$z].dhcp_reservations | to_entries[] | (.key+"|"+.value)' "$CONFIG_JSON" 2>/dev/null || true)
+  sudo mv "$tmp" "$conf" && sudo systemctl restart dnsmasq || true
+}
+
 apply_fw_rules() {
   local br="$1" zone="$2"
   sudo iptables -N "VMZ_${zone^^}" >/dev/null 2>&1 || true
@@ -48,7 +60,7 @@ menu() {
         br=$(jq -r --arg z "$zone" '.network_zones?[$z]?.bridge // empty' "$CONFIG_JSON")
         cidr=$(jq -r --arg z "$zone" '.network_zones?[$z]?.dhcp_cidr // empty' "$CONFIG_JSON")
         [[ -z "$br" || "$br" == "null" ]] && { $DIALOG --msgbox "Unknown zone or bridge" 8 40; continue; }
-        ensure_bridge "$br"; apply_fw_rules "$br" "$zone"; [[ -n "$cidr" && "$cidr" != "null" ]] && setup_dnsmasq "$br" "$cidr"; $DIALOG --msgbox "Applied for $zone ($br)" 8 50 ;;
+        ensure_bridge "$br"; apply_fw_rules "$br" "$zone"; [[ -n "$cidr" && "$cidr" != "null" ]] && setup_dnsmasq "$br" "$cidr" && apply_reservations "$zone" "$br"; $DIALOG --msgbox "Applied for $zone ($br)" 8 50 ;;
       dhcp)
         br=$($DIALOG --inputbox "Bridge name" 10 60 3>&1 1>&2 2>&3) || continue
         cidr=$($DIALOG --inputbox "CIDR (e.g., 192.168.100.1/24)" 10 60 3>&1 1>&2 2>&3) || continue

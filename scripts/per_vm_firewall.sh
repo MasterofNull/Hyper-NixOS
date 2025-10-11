@@ -36,8 +36,10 @@ apply_rules() {
   ip=$(get_vm_ip "$name" || true)
   br=$(get_vm_bridge "$name" || true)
   while true; do
-    choice=$($DIALOG --menu "Inbound rule for $name" 16 70 6 \
+    choice=$($DIALOG --menu "Inbound rule for $name" 18 72 8 \
       add "Add TCP/UDP port" \
+      list "List FORWARD rules (filtered)" \
+      del "Delete rule by number" \
       done "Done" 3>&1 1>&2 2>&3 || true)
     case "$choice" in
       add)
@@ -53,6 +55,12 @@ apply_rules() {
           sudo iptables -I FORWARD -p "$proto" --dport "$port" -j ACCEPT
           $DIALOG --msgbox "Opened $proto/$port (broad rule)." 8 50
         fi ;;
+      list)
+        # Show only rules that match VM IP or bridge, else all FORWARD
+        if [[ -n "$ip" ]]; then sudo iptables -S FORWARD | grep -E "-d $ip|--dport" | nl -ba | ${PAGER:-less}; else sudo iptables -S FORWARD | nl -ba | ${PAGER:-less}; fi ;;
+      del)
+        num=$($DIALOG --inputbox "Rule number to delete (per 'iptables -S FORWARD' listing)" 10 70 3>&1 1>&2 2>&3) || true
+        [[ -n "$num" ]] && sudo iptables -D FORWARD "$num" || true ;;
       *) break ;;
     esac
   done
