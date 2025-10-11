@@ -58,12 +58,16 @@ sudo ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --
 ```
 
 **What bootstrap does:**
+- ✅ Detects your username automatically (no hardcoding!)
 - ✅ Copies configuration to `/etc/hypervisor/src`
 - ✅ Creates `/etc/hypervisor/flake.nix` 
-- ✅ Generates `users-local.nix` with your current users (including sudo access)
+- ✅ Generates `users-local.nix` with your user added to the wheel group
 - ✅ Generates `system-local.nix` with your timezone/locale
 - ✅ Runs `nixos-rebuild switch` to activate the new system
+- ✅ After switch, you have permanent sudo access (via wheel group)
 - ✅ Optionally reboots
+
+**Note:** You need to be able to run `sudo` initially to start the bootstrap. If you're on a fresh NixOS install, the installer typically gives the initial user sudo access. The bootstrap will then ensure you keep sudo access permanently through the wheel group configuration.
 
 ---
 
@@ -143,8 +147,35 @@ sudo bash /etc/hypervisor/scripts/relax_permissions.sh
 sudo bash /etc/hypervisor/scripts/harden_permissions.sh
 ```
 
-Troubleshooting (optional)
-- Force a fresh fetch on rebuild (if you hit cache/NAR issues):
+## Troubleshooting
+
+### "User not in sudoers file" error
+If you get this error when trying to run `sudo nix run .#bootstrap`:
+
+**The Issue:** You need sudo access to run the bootstrap script initially.
+
+**Solutions:**
+
+1. **On a fresh NixOS install:** The installer usually creates your first user with sudo access via the wheel group. Try:
+```bash
+# Check if you're in the wheel group
+groups $USER | grep -q wheel && echo "In wheel group ✓" || echo "Not in wheel group"
+```
+
+2. **If not in wheel group:** You can either:
+   - **Option A:** Become root directly: `su -` then run the bootstrap
+   - **Option B:** Have an admin add you to wheel: `sudo usermod -aG wheel your-username`
+
+3. **After bootstrap completes:** The script automatically adds your user to the wheel group in `users-local.nix`. After `nixos-rebuild switch` completes, you'll have permanent sudo access through the NixOS configuration (no manual sudoers editing needed!)
+
+**How it works:**
+- Bootstrap detects your username via `$SUDO_USER` or system detection
+- Generates `users-local.nix` with your user in the wheel group
+- NixOS configuration has `security.sudo.wheelNeedsPassword = false`
+- After rebuild, wheel group members have passwordless sudo
+
+### Force fresh fetch on rebuild
+If you hit cache/NAR issues:
 ```bash
 sudo env NIX_CONFIG="experimental-features = nix-command flakes" \
   nixos-rebuild switch --impure --flake "/etc/hypervisor#$(hostname -s)" \
@@ -153,4 +184,7 @@ sudo env NIX_CONFIG="experimental-features = nix-command flakes" \
   --option narinfo-cache-negative-ttl 0
 ```
 
-See `/etc/hypervisor/docs` on the running system.
+### More help
+See `/etc/hypervisor/docs` on the running system, especially:
+- `docs/TROUBLESHOOTING.md` - Comprehensive troubleshooting guide
+- `docs/QUICKSTART_EXPANDED.md` - Detailed VM creation guide
