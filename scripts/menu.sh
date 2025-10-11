@@ -61,7 +61,13 @@ menu_vm_main() {
     local name
     name=$(jq -r '.name // empty' "$f" 2>/dev/null || true)
     [[ -z "$name" ]] && name=$(basename "$f")
-    entries+=("$f" "VM: $name")
+    local owner
+    owner=$(jq -r '.owner // empty' "$f" 2>/dev/null || true)
+    if [[ -n "$owner" && "$owner" != "null" ]]; then
+      entries+=("$f" "VM: $name (owner: $owner)")
+    else
+      entries+=("$f" "VM: $name")
+    fi
   done
   shopt -u nullglob
   entries+=("__GNOME__" "Start GNOME management session (fallback GUI)")

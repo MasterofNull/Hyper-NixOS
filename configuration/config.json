@@ -8,7 +8,14 @@
     "vfio": false,
     "hugepages_default": false,
     "looking_glass_default": false,
-    "autostart_timeout_sec": 5
+    "autostart_timeout_sec": 5,
+    "boot_selector_enable": false,
+    "boot_selector_timeout_sec": 8,
+    "boot_selector_exit_after_start": true
+  },
+  "network_zones": {
+    "secure": { "bridge": "br-secure" },
+    "untrusted": { "bridge": "br-untrusted" }
   },
   "iso_presets": [
     {

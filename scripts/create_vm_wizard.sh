@@ -37,6 +37,8 @@ mem="4096"
 disk="20"
 mem_max="4096"
 arch="x86_64"
+owner=""
+zone=""
 audio_model=""
 video_heads="1"
 hugepages="false"
@@ -56,6 +58,7 @@ save_state() {
   cat > "$STATE_FILE" <<JSON
 {
   "name": "$name",
+  "owner": "$owner",
   "cpus": $cpus,
   "memory_mb": $mem,
   "disk_gb": $disk,
@@ -77,6 +80,7 @@ JSON
 load_state() {
   [[ -f "$STATE_FILE" ]] || return 1
   name=$(jq -r .name "$STATE_FILE")
+  owner=$(jq -r .owner "$STATE_FILE")
   cpus=$(jq -r .cpus "$STATE_FILE")
   mem=$(jq -r .memory_mb "$STATE_FILE")
   disk=$(jq -r .disk_gb "$STATE_FILE")
@@ -106,6 +110,7 @@ $DIALOG --msgbox "Host resources detected:\n\nCPUs: ${total_cpus}\nTotal RAM: ${
 
 # Step inputs
 name=$(ask "VM name" "$name") || exit 0; save_state
+owner=$(ask "Owner (optional)" "$owner") || exit 0; save_state
 cpus=$(ask "vCPUs (host: ${total_cpus})" "$cpus") || exit 0; save_state
 mem=$(ask "Memory (MiB) (avail: ${avail_mem_mb}, total: ${total_mem_mb})" "$mem") || exit 0; save_state
 disk=$(ask "Disk size (GiB)" "$disk") || exit 0; save_state
@@ -120,6 +125,17 @@ save_state
 
 # Architecture
 arch=$($DIALOG --menu "Architecture" 12 60 4 x86_64 "x86_64" aarch64 "aarch64" riscv64 "riscv64" loongarch64 "loongarch64" 3>&1 1>&2 2>&3) || arch="x86_64"; save_state
+
+# Optional zone selection (logical security/network domain)
+if [[ -f /etc/hypervisor/config.json ]]; then
+  mapfile -t zones < <(jq -r '.network_zones? | keys[]?' /etc/hypervisor/config.json 2>/dev/null || true)
+  if (( ${#zones[@]} > 0 )); then
+    zitems=()
+    for z in "${zones[@]}"; do zitems+=("$z" " "); done
+    zone=$($DIALOG --menu "Network zone (optional)" 20 60 10 "${zitems[@]}" 3>&1 1>&2 2>&3 || echo "")
+    save_state
+  fi
+fi
 
 # ISO selection with preselect support
 shopt -s nullglob
@@ -173,6 +189,7 @@ fi
 while true; do
   summary=$(cat <<EOT
 Name: $name
+Owner: ${owner:-}
 Arch: $arch
 vCPU: $cpus
 RAM: $mem MiB (max $mem_max)
@@ -189,14 +206,16 @@ EOT
     break
   fi
   # Allow editing fields
-  choice=$($DIALOG --menu "Edit which field?" 22 70 12 \
+  choice=$($DIALOG --menu "Edit which field?" 24 70 14 \
     name "VM name ($name)" \
+    owner "Owner (${owner:-})" \
     arch "Architecture ($arch)" \
     cpus "vCPUs ($cpus)" \
     mem "Memory MiB ($mem)" \
     memmax "Memory max MiB ($mem_max)" \
     disk "Disk GiB ($disk)" \
     iso "ISO path" \
+    zone "Network zone (${zone:-})" \
     audio "Audio model (${audio_model:-none})" \
     video "Video heads ($video_heads)" \
     huge "Hugepages ($hugepages)" \
@@ -209,11 +228,25 @@ EOT
   case "$choice" in
     name) name=$(ask "VM name" "$name") || true ;;
     arch) arch=$($DIALOG --menu "Architecture" 12 60 4 x86_64 "x86_64" aarch64 "aarch64" riscv64 "riscv64" loongarch64 "loongarch64" 3>&1 1>&2 2>&3) || true ;;
+    owner) owner=$(ask "Owner" "$owner") || true ;;
     cpus) cpus=$(ask "vCPUs" "$cpus") || true ;;
     mem) mem=$(ask "Memory (MiB)" "$mem") || true ;;
     memmax) mem_max=$(ask "Max memory (MiB)" "$mem_max") || true ;;
     disk) disk=$(ask "Disk GiB" "$disk") || true ;;
     iso) iso_path=$($DIALOG --inputbox "ISO path" 10 70 "$iso_path" 3>&1 1>&2 2>&3) || true ;;
+    zone)
+      if [[ -f /etc/hypervisor/config.json ]]; then
+        mapfile -t zones < <(jq -r '.network_zones? | keys[]?' /etc/hypervisor/config.json 2>/dev/null || true)
+      else
+        zones=()
+      fi
+      if (( ${#zones[@]} > 0 )); then
+        zitems=(); for z in "${zones[@]}"; do zitems+=("$z" " "); done
+        zone=$($DIALOG --menu "Network zone" 20 60 10 "${zitems[@]}" 3>&1 1>&2 2>&3 || echo "")
+      else
+        zone=$(ask "Network zone (free-form)" "$zone") || true
+      fi
+      ;;
     audio) audio_model=$($DIALOG --menu "Audio" 14 60 6 none "None" ich9 "ICH9" ac97 "AC97" es1370 "ES1370" ich6 "ICH6" 3>&1 1>&2 2>&3 || true); [[ "$audio_model" == "none" ]] && audio_model="" ;;
     video) video_heads=$($DIALOG --menu "Video heads" 12 50 4 1 "Single" 2 "Dual" 3 "Triple" 4 "Quad" 3>&1 1>&2 2>&3 || echo 1) ;;
     huge) if $DIALOG --yesno "Enable Hugepages?" 8 40; then hugepages=true; else hugepages=false; fi ;;
@@ -233,12 +266,13 @@ tmp=$(mktemp)
 cat > "$tmp" <<JSON
 {
   "name": "${name}",
+  "owner": ${owner:+"$owner"}${owner:=""},
   "arch": "${arch}",
   "cpus": ${cpus},
   "memory_mb": ${mem},
   "disk_gb": ${disk},
   "iso_path": "${iso_path}",
-  "network": { "bridge": "", "vhost": ${vhost_net} },
+  "network": { "bridge": "", "vhost": ${vhost_net}, "zone": ${zone:+"$zone"}${zone:=""} },
   "limits": { "cpu_quota_percent": 200, "memory_max_mb": ${mem_max} },
   "audio": { "model": ${audio_model:+"$audio_model"}${audio_model:=""} },
   "video": { "heads": ${video_heads} },
@@ -249,7 +283,7 @@ cat > "$tmp" <<JSON
 }
 JSON
 # Clean up audio object if empty model
-jq 'if .audio.model == null or .audio.model == "" then del(.audio) else . end' "$tmp" > "$profile_json"
+jq 'if .audio.model == null or .audio.model == "" then del(.audio) else . end | if .owner == null or .owner == "" then del(.owner) else . end | if .network.zone == null or .network.zone == "" then (.network |= del(.zone)) else . end' "$tmp" > "$profile_json"
 rm -f "$tmp"
 
 $DIALOG --msgbox "Created profile: $profile_json" 8 60

@@ -16,6 +16,7 @@ XML_DIR="$STATE_DIR/xml"
 DISKS_DIR="$STATE_DIR/disks"
 # Use the stateful ISO library to match menu/ISO manager conventions
 ISOS_DIR="/var/lib/hypervisor/isos"
+CONFIG_JSON="/etc/hypervisor/config.json"
 
 mkdir -p "$XML_DIR" "$DISKS_DIR"
 
@@ -45,6 +46,8 @@ memory_mb=$(jq -r '.memory_mb' "$PROFILE_JSON")
 disk_gb=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
 iso_path=$(jq -r '.iso_path // empty' "$PROFILE_JSON")
 bridge=$(jq -r '.network.bridge // empty' "$PROFILE_JSON")
+# Optional logical zone name
+zone=$(jq -r '.network.zone // empty' "$PROFILE_JSON")
 # hostdev passthrough list e.g. ["0000:01:00.0","0000:01:00.1"]
 mapfile -t hostdevs < <(jq -r '.hostdevs[]? // empty' "$PROFILE_JSON")
 hugepages=$(jq -r '.hugepages // false' "$PROFILE_JSON")
@@ -247,6 +250,11 @@ if [[ "$looking_glass_enabled" == "true" || "$looking_glass_enabled" == "True" ]
       <size unit='M'>${looking_glass_size}</size>
     </shmem>
 XML
+fi
+
+if [[ -z "${bridge:-}" && -n "${zone:-}" && -f "$CONFIG_JSON" ]]; then
+  # Map zone to bridge name via config file: .network_zones.{zone}.bridge
+  bridge=$(jq -r --arg z "$zone" '.network_zones?[$z]?.bridge // empty' "$CONFIG_JSON" 2>/dev/null || echo "")
 fi
 
 if [[ -n "${bridge:-}" ]]; then
