@@ -6,7 +6,7 @@ PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 trap 'exit $?' EXIT HUP INT TERM
 : "${DIALOG:=whiptail}"
 
-CONFIG_DIR="/etc/hypervisor/configuration"
+CONFIG_DIR="/etc/hypervisor/src/configuration"
 LOCAL_VFIO="/var/lib/hypervisor/vfio-boot.local.nix"
 TARGET_CONFIG="/etc/nixos/configuration.nix"
 

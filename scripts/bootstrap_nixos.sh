@@ -37,13 +37,13 @@ usage() {
   cat <<USAGE
 Usage: sudo $(basename "$0") [--hostname NAME] [--action build|test|switch] [--force] [--source PATH] [--reboot]
 
-Install Hyper‑NixOS from the current folder (USB checkout) into /etc/hypervisor,
+Install Hyper‑NixOS from the current folder (USB checkout) into /etc/hypervisor/src,
 write /etc/hypervisor/flake.nix (and symlink /etc/nixos/flake.nix), and optionally perform a one-shot rebuild.
 
 Options:
   --hostname NAME     Host attribute and system hostname (default: current hostname)
   --action MODE       One of: build, test, switch. If omitted, show TUI menu.
-  --force             Overwrite existing /etc/hypervisor without prompting
+  --force             Overwrite existing /etc/hypervisor/src without prompting
   --source PATH       Use PATH as source folder instead of auto-detect
   --reboot            Reboot after successful switch (recommended on fresh installs)
   -h, --help          Show this help
@@ -91,7 +91,7 @@ ensure_hardware_config() {
 
 copy_repo_to_etc() {
   local src_root="$1"
-  local dst_root="/etc/hypervisor"
+  local dst_root="/etc/hypervisor/src"
   local src_real dst_real
   src_real=$(readlink -f "$src_root" 2>/dev/null || echo "$src_root")
   dst_real=$(readlink -f "$dst_root" 2>/dev/null || echo "$dst_root")
@@ -99,9 +99,9 @@ copy_repo_to_etc() {
     if $FORCE; then
       :
     elif [[ -n "$DIALOG" ]]; then
-      "$DIALOG" --yesno "/etc/hypervisor exists. Overwrite with current repo contents?" 10 70 || return 0
+      "$DIALOG" --yesno "/etc/hypervisor/src exists. Overwrite with current repo contents?" 10 70 || return 0
     else
-      read -r -p "/etc/hypervisor exists. Overwrite? [y/N] " ans
+      read -r -p "/etc/hypervisor/src exists. Overwrite? [y/N] " ans
       [[ "$ans" =~ ^[Yy]$ ]] || return 0
     fi
     rm -rf -- "$dst_root"
@@ -158,16 +158,16 @@ write_host_flake() {
   local hostname="$1"; shift
   local flake_path="/etc/hypervisor/flake.nix"
   install -m 0644 /dev/null "$flake_path"
-  # Use path input to /etc/hypervisor to avoid downloading the repo again
+  # Use path input to /etc/hypervisor/src to avoid downloading the repo again
   # since we've already copied it locally. This optimizes the quick install process.
-  local hypervisor_url="path:/etc/hypervisor"
+  local hypervisor_url="path:/etc/hypervisor/src"
   cat > "$flake_path" <<'FLAKE'
 {
   description = "Hyper‑NixOS Host";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-    # Use local path input since files are already copied to /etc/hypervisor
+    # Use local path input since files are already copied to /etc/hypervisor/src
     # This avoids duplicate downloads during quick install
     hypervisor.url = "__HYP_URL__";
   };
@@ -215,7 +215,7 @@ detect_primary_users() {
 }
 
 write_users_local_nix() {
-  local dest_dir="/etc/hypervisor/configuration"
+  local dest_dir="/etc/hypervisor/src/configuration"
   local dest_file="$dest_dir/users-local.nix"
   local state_dir="/var/lib/hypervisor/configuration"
 
@@ -301,7 +301,7 @@ write_users_local_nix() {
 }
 
 write_system_local_nix() {
-  local dest_dir="/etc/hypervisor/configuration"
+  local dest_dir="/etc/hypervisor/src/configuration"
   local dest_file="$dest_dir/system-local.nix"
   local state_dir="/var/lib/hypervisor/configuration"
   mkdir -p "$dest_dir"
@@ -456,7 +456,7 @@ main() {
     hostname="$HOSTNAME_OVERRIDE"
   elif [[ -n "$DIALOG" && -z "$ACTION" ]]; then
     hostname=$("$DIALOG" --inputbox "Hostname for this hypervisor" 10 60 "$default_hostname" 3>&1 1>&2 2>&3 || echo "$default_hostname")
-    "$DIALOG" --msgbox "We will copy Hyper‑NixOS files to /etc/hypervisor and generate /etc/hypervisor/flake.nix (symlinked from /etc/nixos/flake.nix) for '$hostname' on $system." 12 70 || true
+    "$DIALOG" --msgbox "We will copy Hyper‑NixOS files to /etc/hypervisor/src and generate /etc/hypervisor/flake.nix (symlinked from /etc/nixos/flake.nix) for '$hostname' on $system." 12 70 || true
   else
     read -r -p "Hostname [$default_hostname]: " ans || true
     hostname=${ans:-$default_hostname}
@@ -471,7 +471,7 @@ main() {
   write_system_local_nix
 
   # No need to update flake lock since we're using a local path input
-  # that references files already present at /etc/hypervisor
+  # that references files already present at /etc/hypervisor/src
 
   if [[ -n "$ACTION" ]]; then
     export NIX_CONFIG="experimental-features = nix-command flakes"

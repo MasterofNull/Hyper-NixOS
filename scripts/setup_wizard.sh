@@ -59,9 +59,9 @@ if $DIALOG --yesno "Advanced mode: apply best‑practice secure/performance sett
   $DIALOG --yesno "Enable Hugepages (can improve performance; reduces flexibility)?\nRecommended: Yes (most hosts)." 10 78 && hp=1 || hp=0
   $DIALOG --yesno "Disable SMT/Hyper‑Threading (mitigates side‑channels; may reduce throughput)?\nRecommended: Yes (secure); No (throughput)." 12 78 && smt=1 || smt=0
 
-  mkdir -p /etc/hypervisor/configuration
+  mkdir -p /etc/hypervisor/src/configuration
   # Write security-local.nix
-  cat > /etc/hypervisor/configuration/security-local.nix <<NIX
+  cat > /etc/hypervisor/src/configuration/security-local.nix <<NIX
 { config, lib, pkgs, ... }:
 {
   hypervisor.security.strictFirewall = $( [[ $sf == 1 ]] && echo true || echo false );
@@ -69,7 +69,7 @@ if $DIALOG --yesno "Advanced mode: apply best‑practice secure/performance sett
 }
 NIX
   # Write perf-local.nix
-  cat > /etc/hypervisor/configuration/perf-local.nix <<NIX
+  cat > /etc/hypervisor/src/configuration/perf-local.nix <<NIX
 { config, lib, pkgs, ... }:
 {
   hypervisor.performance.enableHugepages = $( [[ $hp == 1 ]] && echo true || echo false );
@@ -79,11 +79,11 @@ NIX
 
   if $DIALOG --yesno "Attempt to rebuild now (nixos-rebuild switch)?" 10 70 ; then
     if ! sudo nixos-rebuild switch; then
-      $DIALOG --msgbox "Rebuild failed. Please review /etc/hypervisor/configuration/*.nix and try again." 10 70
+      $DIALOG --msgbox "Rebuild failed. Please review /etc/hypervisor/src/configuration/*.nix and try again." 10 70
     fi
   else
-    $DIALOG --msgbox "Written: /etc/hypervisor/configuration/security-local.nix and perf-local.nix. Rebuild when ready." 10 78
+    $DIALOG --msgbox "Written: /etc/hypervisor/src/configuration/security-local.nix and perf-local.nix. Rebuild when ready." 10 78
   fi
 fi
 
-$DIALOG --msgbox "Setup complete. See /etc/hypervisor/docs for guides and warnings." 10 70
+$DIALOG --msgbox "Setup complete. See /etc/hypervisor/src/docs for guides and warnings." 10 70

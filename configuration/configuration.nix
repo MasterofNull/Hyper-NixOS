@@ -230,9 +230,9 @@ in {
       ExecStartPre = [
         "${pkgs.coreutils}/bin/mkdir -p /var/lib/hypervisor/logs"
         "${pkgs.coreutils}/bin/touch /var/lib/hypervisor/logs/first_boot.log"
-        "${pkgs.coreutils}/bin/mkdir -p /etc/hypervisor/configuration"
+        "${pkgs.coreutils}/bin/mkdir -p /etc/hypervisor/src/configuration"
       ];
-      ReadWritePaths = [ "/etc/hypervisor/configuration" "/var/lib/hypervisor/logs" ];
+      ReadWritePaths = [ "/etc/hypervisor/src/configuration" "/var/lib/hypervisor/logs" ];
       StandardInput = "tty";
       StandardOutput = "tty";
       TTYPath = "/dev/tty1";
