@@ -22,6 +22,7 @@ in {
     ./security.nix
     ./monitoring.nix
     ./backup.nix
+    ./automation.nix  # Automated health checks, backups, updates, monitoring
   ]
   ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix
   # Load local, host-specific overrides from /var/lib to avoid mutating the flake input
