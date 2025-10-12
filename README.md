@@ -203,19 +203,33 @@ After reboot, you'll be **automatically logged in** to the console and the **fir
 
 1. **Welcome Screen** - Overview of the wizard
 2. **Network Bridge Setup** - Intelligent bridge configuration (optional)
+   - Runs the interactive bridge helper script
    - Automatic physical interface detection
    - Performance profile selection (Standard/Performance)
    - MTU optimization (1500 standard, 9000 jumbo frames)
    - Guided setup with validation
-3. **ISO Download** - Download and verify OS installer from 14 presets (optional)
-4. **VM Creation** - Create your first VM profile (optional)
-5. **Summary** - Shows what was configured
+3. **ISO Manager** - Access to ISO management tools (optional)
+   - If accepted, launches the ISO Manager menu
+   - Select option 1 "Download ISO" to see 14 verified OS presets
+   - Includes Ubuntu, Fedora, Debian, Arch, NixOS, Rocky, Alma, openSUSE, FreeBSD, OpenBSD, NetBSD, Kali, and CentOS Stream
+   - Auto-fetches checksums/signatures and verifies authenticity
+   - Or use other options to import ISOs from local storage/network
+4. **VM Creation Wizard** - Create your first VM profile (optional)
+   - If accepted, launches the interactive VM creation wizard
+   - Configure CPU, memory, disk, architecture
+   - Select from downloaded ISOs
+   - Advanced options: audio, video heads, hugepages, network zones
+5. **Advanced Configuration** - Security and performance settings (optional)
+   - Firewall rules, migration ports
+   - Hugepages, SMT/Hyper-Threading
+   - VFIO hardware passthrough detection
+6. **Summary** - Shows what was configured
 
 **No login required!** The system automatically logs you in and starts the wizard.
 
-**The wizard shows clear progress and feedback at each step!**
+**After the wizard completes, the main hypervisor menu loads automatically.**
 
-After the wizard completes (or on subsequent boots), you'll see the **hypervisor console menu** with:
+On subsequent boots, you'll see the **hypervisor console menu** directly with:
 - 🖥️ **Start VMs** - Launch your virtual machines
 - 📦 **Download ISOs** - Get OS installation images  
 - ⚙️ **Create VMs** - Set up new virtual machines
@@ -330,6 +344,25 @@ sudo bash /etc/hypervisor/scripts/setup_wizard.sh
 ### View wizard logs
 ```bash
 cat /var/lib/hypervisor/logs/first_boot.log
+```
+
+### If GNOME GUI loads instead of console wizard
+If the GNOME desktop environment starts instead of the console wizard/menu:
+```bash
+# Check if GUI is enabled in local config
+cat /var/lib/hypervisor/configuration/gui-local.nix
+
+# To disable GUI and use console mode:
+sudo rm /var/lib/hypervisor/configuration/gui-local.nix
+sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
+```
+
+Or edit the file to set:
+```nix
+{
+  hypervisor.gui.enableAtBoot = false;
+  hypervisor.menu.enableAtBoot = true;  # Enable console menu
+}
 ```
 
 ### Rebuild helper (alternative)
