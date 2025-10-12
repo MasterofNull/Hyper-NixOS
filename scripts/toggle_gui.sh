@@ -37,25 +37,35 @@ if [[ "$state" == "status" ]]; then
   
   if [[ -f "$FILE" ]]; then
     gui_enabled=$(sed -n 's/.*hypervisor\.gui\.enableAtBoot\s*=\s*\(true\|false\).*/\1/p' "$FILE" | head -n1 || echo "not set")
-    echo "Hypervisor GUI Override: $gui_enabled (file exists)"
-    
+    echo "Hypervisor Override: ACTIVE (gui-local.nix exists)"
+    echo "Override Setting: hypervisor.gui.enableAtBoot = $gui_enabled"
+    echo ""
     if [[ "$gui_enabled" == "true" ]]; then
-      echo ""
-      echo "Result: GNOME will start automatically on boot (hypervisor forced)"
+      echo "Result: GNOME will start on boot (OVERRIDING base system)"
     elif [[ "$gui_enabled" == "false" ]]; then
-      echo ""
-      echo "Result: Console menu on boot (GUI disabled by hypervisor)"
+      echo "Result: Console menu on boot (OVERRIDING base system)"
     fi
+    echo ""
+    echo "To remove override and respect base system:"
+    echo "  sudo $0 auto"
   else
-    echo "Hypervisor GUI Override: not set (no gui-local.nix)"
+    echo "Hypervisor Override: NONE (no gui-local.nix)"
+    echo "Configuration: Using base system default (respecting your choice)"
     echo ""
     if $base_has_gui; then
-      echo "Result: GNOME will start (from base system install)"
+      echo "Result: GNOME will start (from your NixOS installation)"
       echo ""
-      echo "To force console menu:"
+      echo "Your base system has GNOME configured. This is respected."
+      echo ""
+      echo "To override and force console menu:"
       echo "  sudo $0 off"
     else
-      echo "Result: Console menu on boot (default)"
+      echo "Result: Console menu on boot (from your NixOS installation)"
+      echo ""
+      echo "Your base system has no GUI. This is respected."
+      echo ""
+      echo "To override and enable GNOME:"
+      echo "  sudo $0 on"
     fi
   fi
   

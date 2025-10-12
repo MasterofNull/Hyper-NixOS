@@ -10,11 +10,12 @@ let
   enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
   # Detect if GUI is available in base system (for menu/dashboard to know)
   baseSystemHasGui = config.services.xserver.enable or false;
-  # GUI at boot is ONLY enabled if explicitly requested via hypervisor config
-  # Having GNOME installed != wanting it to auto-start on boot
-  # Default: Console menu on boot, GNOME available via menu selection
+  # Check if user has explicit hypervisor GUI preference
+  # If not set, we respect base system configuration (don't override)
+  hasHypervisorGuiPreference = lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config;
   hypervisorGuiRequested = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
-  enableGuiAtBoot = hypervisorGuiRequested;
+  # Only override if user has explicit preference, otherwise respect base system
+  enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else baseSystemHasGui;
   # Compatibility flags for NixOS versions (24.05 vs 24.11+)
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
@@ -120,11 +121,12 @@ in {
   # SECURITY NOTE: For production/multi-user systems, disable autologin!
   # See docs/SECURITY_MODEL.md for secure configurations
   # 
-  # Default: Autologin to management user for console menu (INSECURE but convenient)
-  # Only auto-login to console (getty) if NOT booting into GUI
+  # Console auto-login: Only if menu/wizard enabled AND (no GUI preference OR GUI explicitly disabled)
+  # This respects base system GUI configuration - we don't force console login if user wants GUI
   # Recommended: Create hypervisor-operator user without sudo access
   # See: /var/lib/hypervisor/configuration/security-kiosk.nix
-  services.getty.autologinUser = lib.mkIf ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot) mgmtUser;
+  consoleAutoLoginEnabled = (enableMenuAtBoot || enableWizardAtBoot) && (!hasHypervisorGuiPreference || !enableGuiAtBoot);
+  services.getty.autologinUser = lib.mkIf consoleAutoLoginEnabled mgmtUser;
   
   # Create a default 'hypervisor' user only when used as the management user
   # Note: During bootstrap, the script will automatically detect existing users
@@ -500,5 +502,8 @@ in {
       Categories=System;Utility;
     '';
     mode = "0755";
+  };
+}
+  mode = "0755";
   };
 }
