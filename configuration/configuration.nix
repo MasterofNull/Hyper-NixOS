@@ -52,7 +52,6 @@ in {
     "net.ipv4.conf.default.rp_filter" = 1;
     "fs.protected_hardlinks" = 1;
     "fs.protected_symlinks" = 1;
-    "fs.protected_fifos" = 2;
     "kernel.kexec_load_disabled" = 1;
     "kernel.dmesg_restrict" = 1;
     "kernel.unprivileged_bpf_disabled" = 1;
