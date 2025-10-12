@@ -254,8 +254,8 @@
         local interfaces=$(virsh domiflist "$vm" | awk 'NR>2 {print $1}')
         for iface in $interfaces; do
           virsh domiftune "$vm" "$iface" \
-            --inbound "$network_kb,${network_kb}0,${network_kb}00" \
-            --outbound "$network_kb,${network_kb}0,${network_kb}00" 2>/dev/null || true
+            --inbound "$network_kb,''${network_kb}0,''${network_kb}00" \
+            --outbound "$network_kb,''${network_kb}0,''${network_kb}00" 2>/dev/null || true
         done
         
         echo "✓ Quotas enforced"
