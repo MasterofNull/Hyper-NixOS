@@ -72,7 +72,7 @@ in
   
   # Firewall: Allow web dashboard on localhost only by default
   # For external access, use nginx/apache reverse proxy with authentication
-  networking.firewall.interfaces."lo".allowedTCPPorts = [ 8080 ];
+  networking.firewall.interfaces."lo".allowedTCPPorts = lib.mkAfter [ 8080 ];
   
   # Optional: Nginx reverse proxy with authentication
   # Uncomment to enable external access with password protection
