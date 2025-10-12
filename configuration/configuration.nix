@@ -238,11 +238,19 @@ in {
   hardware.pulseaudio.enable = false;
   sound.enable = false;
   hardware.opengl.enable = true;
-  # Enforce desired boot target only when an explicit hypervisor preference exists.
-  # This ensures headless (multi-user.target) when GUI is disabled via gui-local.nix,
-  # and graphical.target when explicitly enabled.
-  systemd.defaultUnit = lib.mkIf hasHypervisorGuiPreference
-    (lib.mkOverride 900 (if enableGuiAtBoot then "graphical.target" else "multi-user.target"));
+  # Determine when we should explicitly boot headless (TTY) vs graphical.
+  # We force headless when any boot-time TTY UI is enabled (menu/welcome/wizard),
+  # unless the user explicitly requested GUI via gui-local.nix.
+  # If GUI was explicitly requested, force graphical.target. Otherwise, if any
+  # TTY UI is enabled, force multi-user.target so the display manager does not
+  # preempt TTY1 and hide the menu/wizard.
+  systemd.defaultUnit =
+    let
+      ttyUisEnabled = (enableMenuAtBoot || enableWelcomeAtBoot || enableWizardAtBoot);
+    in lib.mkIf (hasHypervisorGuiPreference || ttyUisEnabled)
+      (lib.mkOverride 900 (
+        if hasHypervisorGuiPreference && enableGuiAtBoot then "graphical.target" else "multi-user.target"
+      ));
 
   # Old xserver.* option set (pre-24.11 style)
   services.xserver.enable = lib.mkIf hasHypervisorGuiPreference (lib.mkOverride 900 enableGuiAtBoot);
