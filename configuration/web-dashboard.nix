@@ -3,12 +3,11 @@
 # Web Dashboard Configuration
 # Lightweight web interface for VM management
 
-{
+let
   # Provide a Python interpreter with required packages
-  let
-    py = pkgs.python3.withPackages (ps: [ ps.flask ps.requests ]);
-  in
-  {
+  py = pkgs.python3.withPackages (ps: [ ps.flask ps.requests ]);
+in
+{
   # Runtime user for the web dashboard (non-login)
   users.users.hypervisor-operator = {
     isSystemUser = true;
