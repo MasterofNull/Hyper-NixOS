@@ -7,7 +7,7 @@
 ## 🎯 What Was Delivered
 
 ### 1. ✅ Dynamic Sudoers Configuration (Issue #1)
-**Problem:** "hyperd is not in the sudoers file" - hardcoded usernames
+**Problem:** "user-name is not in the sudoers file" - hardcoded usernames
 
 **Solution:**
 - Dynamic user detection via `$SUDO_USER` or system

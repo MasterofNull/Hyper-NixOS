@@ -8,7 +8,7 @@ Complete summary of all improvements and fixes implemented in this session.
 ## 🎯 Issues Addressed
 
 ### 1. Dynamic Sudoers Configuration ✅
-**Problem:** Hardcoded username "hyperd" caused "user not in sudoers file" errors
+**Problem:** Hardcoded username caused "user not in sudoers file" errors
 
 **Solution:** Implemented dynamic user detection and proper NixOS sudo configuration
 
@@ -41,7 +41,7 @@ Complete summary of all improvements and fixes implemented in this session.
 **Changes:**
 ```bash
 # OLD: Manual sudoers file creation (wrong approach)
-echo "hyperd ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/hypervisor-bootstrap-hyperd
+echo "user-name ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/hypervisor-bootstrap-user-name
 
 # NEW: Dynamic detection + NixOS configuration
 detect_invoking_user() {

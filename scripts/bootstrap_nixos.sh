@@ -327,13 +327,13 @@ write_users_local_nix() {
       for g in wheel kvm libvirtd video input; do
         if ! grep -qE "(^| )$g( |$)" <<<"$groups"; then groups+="$g "; fi
       done
-      msg "User '$user' will be added to groups: $groups (wheel provides sudo with password)"
+      msg "User '$user' will be added to groups: $groups (wheel provides sudo with password)" >&2
       
       # Check if user has a valid password hash
       if [[ -z "$hash" ]]; then
-        msg "WARNING: User '$user' has no password set"
-        msg "You will need to set a password after installation for sudo access"
-        msg "Run: sudo passwd $user"
+        msg "WARNING: User '$user' has no password set" >&2
+        msg "You will need to set a password after installation for sudo access" >&2
+        msg "Run: sudo passwd $user" >&2
       fi
       # Emit Nix stanza
       echo "    ${user} = {"
