@@ -1,10 +1,23 @@
 #!/usr/bin/env bash
+#
+# Hyper-NixOS First-Boot Setup Wizard
+# Copyright (C) 2024-2025 MasterofNull
+# Licensed under GPL v3.0
+#
+# Guides users through initial system configuration:
+# - Network bridge setup with optimization
+# - ISO downloads with verification
+# - First VM creation
+# - Security and performance settings
+#
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
 PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 trap 'exit $?' EXIT HUP INT TERM
 : "${DIALOG:=whiptail}"
+
+VERSION="2.0"
 
 LOGFILE="/var/lib/hypervisor/logs/first_boot.log"
 mkdir -p "$(dirname "$LOGFILE")"
@@ -26,7 +39,23 @@ require
 
 log "=== First-Boot Setup Wizard Started ==="
 
-$DIALOG --msgbox "Welcome to Hypervisor Suite Setup Wizard\n\nWe will configure a secure-by-default hypervisor with sensible features enabled.\n\nYou can adjust any setting later or skip this wizard.\n\nLogs: $LOGFILE" 16 78
+$DIALOG --msgbox "╔════════════════════════════════════════════════════════════════╗
+║         Hyper-NixOS v${VERSION} - First-Boot Setup Wizard         ║
+║                  © 2024-2025 MasterofNull                      ║
+║                  Licensed under GPL v3.0                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+Welcome! This wizard will help you configure your hypervisor:
+
+✓ Network bridge with performance optimization
+✓ OS installer download (14 verified distributions)
+✓ First VM creation with secure defaults
+✓ Security and performance tuning
+
+Everything is optional - you can skip any step.
+All settings can be changed later.
+
+Logs: $LOGFILE" 22 78
 
 # Track what was configured
 CONFIGURED_ITEMS=()
@@ -161,4 +190,18 @@ log "=== Final Summary ==="
 log "$FINAL_SUMMARY"
 log "=== First-Boot Setup Wizard Completed ==="
 
-$DIALOG --msgbox "First-Boot Setup Complete!\n\nWhat was configured:\n$FINAL_SUMMARY\n\nNext steps:\n- The main menu will now load\n- Access docs at: /etc/hypervisor/docs\n- View logs at: $LOGFILE" 22 78
+$DIALOG --msgbox "╔════════════════════════════════════════════════════════════════╗
+║              First-Boot Setup Complete!                        ║
+╚════════════════════════════════════════════════════════════════╝
+
+What was configured:
+$FINAL_SUMMARY
+
+Next steps:
+• The main menu will now load
+• Create VMs from the console menu
+• Access documentation: /etc/hypervisor/docs
+• View logs: $LOGFILE
+
+Hyper-NixOS v${VERSION}
+https://github.com/MasterofNull/Hyper-NixOS" 24 78

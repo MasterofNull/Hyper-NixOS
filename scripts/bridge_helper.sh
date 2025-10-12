@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+#
+# Hyper-NixOS Network Bridge Configuration Wizard
+# Copyright (C) 2024-2025 MasterofNull
+# Licensed under GPL v3.0
+#
+# Intelligent network bridge setup with automatic interface detection,
+# performance optimization, and MTU configuration for optimal VM networking.
+#
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077

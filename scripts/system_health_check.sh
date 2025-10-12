@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
+#
+# Hyper-NixOS System Health Check
+# Copyright (C) 2024-2025 MasterofNull
+# Licensed under GPL v3.0
+#
 # Comprehensive system health check and diagnostic tool
 # Runs on boot and on-demand to ensure system is ready for operations
-
+# Validates hardware, services, network, storage, VMs, security, and performance
+#
 set -Eeuo pipefail
 PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 

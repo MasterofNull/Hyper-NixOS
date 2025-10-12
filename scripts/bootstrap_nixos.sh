@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+#
+# Hyper-NixOS Bootstrap Installer
+# Copyright (C) 2024-2025 MasterofNull
+# Licensed under GPL v3.0
+#
+# This script installs the Hyper-NixOS hypervisor suite on an existing NixOS system.
+# It detects your hardware, migrates existing users, and configures a production-ready
+# hypervisor with enterprise automation and zero-trust security.
+#
+# Repository: https://github.com/MasterofNull/Hyper-NixOS
+# Documentation: See README.md and docs/ directory
+#
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
@@ -19,6 +31,8 @@ FORCE=true
 SRC_OVERRIDE=""
 RB_OPTS=(--refresh --option tarball-ttl 0 --option narinfo-cache-positive-ttl 0 --option narinfo-cache-negative-ttl 0)
 REBOOT=false
+FAST_MODE=false
+MINIMAL_MODE=false
 
 # Wrapper: use a flake-capable nixos-rebuild even on older hosts
 supports_flakes_flag() {
@@ -472,10 +486,21 @@ main() {
       --force) FORCE=true; shift;;
       --source) SRC_OVERRIDE="$2"; shift 2;;
       --reboot) REBOOT=true; shift;;
+      --fast) FAST_MODE=true; shift;;
+      --minimal) MINIMAL_MODE=true; shift;;
       -h|--help) usage; exit 0;;
       *) echo "Unknown option: $1" >&2; usage; exit 1;;
     esac
   done
+  
+  # Fast mode optimizations
+  if $FAST_MODE; then
+    msg "Fast mode enabled - optimizing for speed"
+    RB_OPTS+=(--no-update-lock-file)
+    RB_OPTS+=(--max-jobs auto)
+    RB_OPTS+=(--cores 0)
+    RB_OPTS+=(--option http-connections 25)
+  fi
 
   local system; system=$(detect_system)
   local default_hostname; default_hostname=$(hostname -s 2>/dev/null || echo hypervisor)
@@ -508,6 +533,26 @@ main() {
   # Generate carry-over local modules for users and base system settings
   write_users_local_nix
   write_system_local_nix
+  
+  # Create optimization configs if requested
+  if $MINIMAL_MODE; then
+    msg "Creating minimal bootstrap configuration"
+    local minimal_conf="/etc/hypervisor/src/configuration/minimal-bootstrap.nix"
+    [[ -f "$minimal_conf" ]] || cp "$src_root/configuration/minimal-bootstrap.nix" "$minimal_conf"
+    
+    # Link to state dir
+    mkdir -p /var/lib/hypervisor/configuration
+    ln -sf "$minimal_conf" /var/lib/hypervisor/configuration/minimal-bootstrap.nix 2>/dev/null || true
+  fi
+  
+  # Always create cache optimization config
+  msg "Creating cache optimization configuration"
+  local cache_conf="/etc/hypervisor/src/configuration/cache-optimization.nix"
+  [[ -f "$cache_conf" ]] || cp "$src_root/configuration/cache-optimization.nix" "$cache_conf"
+  
+  # Link to state dir
+  mkdir -p /var/lib/hypervisor/configuration
+  ln -sf "$cache_conf" /var/lib/hypervisor/configuration/cache-optimization.nix 2>/dev/null || true
 
   # No need to update flake lock since we're using a local path input
   # that references files already present at /etc/hypervisor/src
