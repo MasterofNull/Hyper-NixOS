@@ -77,9 +77,10 @@ if [[ "$state" == "status" ]]; then
   exit 0
 fi
 
-if [[ ! "$state" =~ ^(off|auto)$ ]]; then
-  echo "Usage: $0 {off|auto|status}" >&2
+if [[ ! "$state" =~ ^(on|off|auto)$ ]]; then
+  echo "Usage: $0 {on|off|auto|status}" >&2
   echo ""
+  echo "  on     - Force GNOME at boot (override base system)"
   echo "  off    - Force console menu at boot (override base system)"
   echo "  auto   - Remove override, use base system default"
   echo "  status - Show current configuration"
@@ -105,22 +106,51 @@ if [[ "$state" == "auto" ]]; then
   else
     echo "Base system has no GUI - console menu will start on boot"
   fi
-else
-  cat >"$FILE" <<NIX
+elif [[ "$state" == "off" ]]; then
+  # Force console (headless) mode and ensure GDM/graphical target are disabled
+  cat >"$FILE" <<'NIX'
 { config, lib, pkgs, ... }:
 {
   # Force console menu at boot (hypervisor override)
-  # This disables GUI even if base system has it configured
   hypervisor.gui.enableAtBoot = false;
-  
-  # Enable console menu
   hypervisor.menu.enableAtBoot = true;
+
+  # Hard-disable graphical login managers and GNOME even if base enables them
+  services.xserver.enable = lib.mkForce false;
+  services.xserver.displayManager.gdm.enable = lib.mkForce false;
+  services.xserver.desktopManager.gnome.enable = lib.mkForce false;
+
+  # Ensure system boots to multi-user (text) target
+  systemd.defaultUnit = lib.mkForce "multi-user.target";
+
+  # As an extra guard, make display-manager and gdm units disabled
+  systemd.services."display-manager".enable = lib.mkForce false;
+  systemd.services."gdm".enable = lib.mkForce false;
 }
 NIX
   echo "Forcing console menu at boot (override)..."
+elif [[ "$state" == "on" ]]; then
+  # Force GNOME GUI at boot
+  cat >"$FILE" <<'NIX'
+{ config, lib, pkgs, ... }:
+{
+  # Force GUI at boot (hypervisor override)
+  hypervisor.gui.enableAtBoot = true;
+  hypervisor.menu.enableAtBoot = false;
+
+  # Ensure GNOME + GDM are enabled
+  services.xserver.enable = true;
+  services.xserver.displayManager.gdm.enable = true;
+  services.xserver.desktopManager.gnome.enable = true;
+
+  # Boot to graphical target
+  systemd.defaultUnit = lib.mkForce "graphical.target";
+}
+NIX
+  echo "Forcing GNOME GUI at boot (override)..."
 fi
 
-if [[ "$state" != "auto" ]] || [[ -f "$FILE" ]]; then
+if [[ "$state" == "auto" ]] || [[ -f "$FILE" ]]; then
   export NIX_CONFIG="experimental-features = nix-command flakes"
   host=$(hostname -s 2>/dev/null || echo hypervisor)
   echo "Rebuilding system configuration..."
@@ -128,18 +158,18 @@ if [[ "$state" != "auto" ]] || [[ -f "$FILE" ]]; then
     echo ""
     echo "✓ Configuration updated successfully"
     echo ""
-    if [[ "$state" == "auto" ]]; then
-      echo "Using base system default boot behavior"
-    else
-      echo "Console menu will start on next boot (forced)"
-      echo "To access GNOME: select 'GNOME Desktop' from menu"
-    fi
+    case "$state" in
+      auto)
+        echo "Using base system default boot behavior";;
+      off)
+        echo "Console menu will start on next boot (forced)"
+        echo "To access GNOME: select 'GNOME Desktop' from menu";;
+      on)
+        echo "GNOME will start on next boot (forced)";;
+    esac
   else
     echo ""
     echo "✗ Rebuild failed - check errors above"
     exit 1
   fi
-else
-  echo ""
-  echo "✓ No rebuild needed (already using base system default)"
 fi
