@@ -14,11 +14,14 @@
       # Enable cgroup resource management
       package = pkgs.qemu_kvm;
       
-      # VNC for console access
-      vncListen = "127.0.0.1";
-      
       # Security
       runAsRoot = false;
+      
+      # VNC security - only listen on localhost
+      # This prevents VMs from being accessible from the network
+      verbatimConfig = ''
+        vnc_listen = "127.0.0.1"
+      '';
     };
   };
   
