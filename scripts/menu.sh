@@ -94,60 +94,80 @@ menu_vm_main() {
   done
   shopt -u nullglob
   entries+=("__VM_SELECTOR__" "← Back to VM Boot Selector")
-  entries+=("__GNOME__" "Start GNOME management session (fallback GUI)")
-  entries+=("__MORE__" "More Options (setup, ISO, VFIO, tools)")
-  entries+=("__UPDATE__" "Update Hypervisor (pin to latest)")
+  entries+=("" "")
+  entries+=("__VM_OPS__" "VM Operations →")
+  entries+=("__SYS_CONFIG__" "System Configuration → [sudo]")
+  entries+=("__ADMIN__" "🔧 Admin Management Environment → (full access)")
+  entries+=("" "")
   if [[ -n "$owner_filter" ]]; then
     entries+=("__CLEAR_OWNER_FILTER__" "Show all owners (clear filter)")
   else
     entries+=("__SET_OWNER_FILTER__" "Filter by owner…")
   fi
-  entries+=("__TOGGLE_MENU_ON" "Enable menu at boot")
-  entries+=("__TOGGLE_MENU_OFF" "Disable menu at boot")
+  entries+=("" "")
+  entries+=("__GNOME__" "Start GNOME session [sudo]")
   entries+=("__EXIT__" "Exit")
   $DIALOG --title "$BRANDING - Main Menu" --menu "Select a VM to start, or choose an action" 22 90 14 "${entries[@]}" 3>&1 1>&2 2>&3
 }
 
-menu_more() {
+menu_vm_operations() {
   local choices=(
     0 "🚀 Install VMs - Complete guided workflow (RECOMMENDED)"
-    1 "Create VM (wizard only)"
-    2 "ISO manager (download/validate/attach)"
-    3 "Cloud image manager (cloud-init images)"
-    4 "Hardware detect & VFIO suggestions"
-    5 "VFIO configure (bind & Nix)"
-    6 "Define/Start from JSON"
-    7 "Edit VM profile"
-    8 "Delete VM"
-    9 "Bridge helper"
-    10 "Network helper (firewall & DHCP)"
-    11 "Zone manager (bridges & base rules)"
-    13 "Snapshots & backups"
-    14 "Per-VM firewall (inbound rules)"
-    15 "SPICE/VNC launcher"
-    16 "Guest agent actions (shutdown/fsfreeze)"
-    17 "Template/Clone manager"
-    18 "Metrics & Health"
-    19 "Enhanced health diagnostics"
-    20 "Resource optimizer"
-    21 "Docs & Help"
-    22 "Health checks"
-    23 "Preflight check"
-    24 "SSH setup (for migration)"
-    25 "Live migration"
-    26 "Detect & adjust (devices/security)"
-    27 "Quick-start last VM"
-    28 "System Diagnostics (troubleshooting)"
-    29 "VM Dashboard (real-time status)"
-    30 "Bulk Operations (manage multiple VMs)"
-    31 "Help & Learning Center (tutorials, guides, FAQ)"
-    32 "Interactive Tutorial (hands-on learning)"
-    33 "🎓 Guided System Testing (Learn + Verify)"
-    34 "📊 Guided Metrics Viewer (Learn Performance)"
-    35 "💾 Guided Backup Verification (Learn DR)"
-    36 "Back"
+    1 "Create VM wizard"
+    2 "Edit VM profile"
+    3 "Delete VM"
+    4 "Define/Start VM from JSON"
+    5 "Validate VM profile"
+    "" ""
+    10 "ISO manager (download/verify ISOs)"
+    11 "Cloud image manager (cloud-init images)"
+    "" ""
+    20 "Snapshots & backups"
+    21 "Clone/Template manager"
+    22 "Resource optimizer"
+    23 "Bulk operations (manage multiple VMs)"
+    "" ""
+    30 "Metrics & Health diagnostics"
+    31 "Health checks"
+    32 "View logs"
+    33 "VM Dashboard (real-time status)"
+    "" ""
+    40 "Hardware detect & VFIO suggestions"
+    41 "SPICE/VNC launcher"
+    42 "Guest agent actions"
+    "" ""
+    99 "← Back to Main Menu"
   )
-  $DIALOG --title "$BRANDING - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
+  $DIALOG --title "$BRANDING - VM Operations" --menu "VM setup and management (no sudo required)" 24 80 16 "${choices[@]}" 3>&1 1>&2 2>&3
+}
+
+menu_system_config() {
+  local choices=(
+    1 "Network foundation setup [sudo]"
+    2 "Bridge helper [sudo]"
+    3 "Network helper (firewall & DHCP) [sudo]"
+    4 "Zone manager (bridges & base rules) [sudo]"
+    5 "SSH setup (for migration) [sudo]"
+    "" ""
+    10 "VFIO configure (bind & Nix) [sudo]"
+    11 "Per-VM firewall (inbound rules) [sudo]"
+    "" ""
+    20 "Update Hypervisor (pin latest) [sudo]"
+    21 "Security audit [sudo]"
+    22 "Preflight check [sudo]"
+    23 "System diagnostics [sudo]"
+    24 "Detect & adjust (devices/security) [sudo]"
+    "" ""
+    30 "Docs & Help"
+    31 "Interactive Tutorial"
+    32 "Help & Learning Center"
+    33 "Guided System Testing"
+    34 "Guided Metrics Viewer"
+    35 "Guided Backup Verification"
+    "" ""
+    99 "← Back to Main Menu"
+  )
+  $DIALOG --title "$BRANDING - System Configuration" --menu "System-level configuration (requires sudo)" 24 80 16 "${choices[@]}" 3>&1 1>&2 2>&3
 }
 
 select_profile() {
@@ -430,6 +450,9 @@ while true; do
   case "$choice" in
     "__VM_SELECTOR__")
       exec "$SCRIPTS_DIR/vm_boot_selector.sh"
+      ;;
+    "__ADMIN__")
+      exec "$SCRIPTS_DIR/admin_menu.sh"
       ;;
     "__GNOME__")
       if systemctl is-enabled gdm.service >/dev/null 2>&1; then
