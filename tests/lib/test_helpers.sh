@@ -54,12 +54,17 @@ test_suite_end() {
 test_start() {
   local name="$1"
   echo -n "  Testing: $name ... "
-  ((TEST_TOTAL++))
+  TEST_TOTAL=$((TEST_TOTAL + 1))
+}
+
+# Alias for consistency
+test_case() {
+  test_start "$@"
 }
 
 test_pass() {
   local message="${1:-}"
-  ((TEST_PASSED++))
+  TEST_PASSED=$((TEST_PASSED + 1))
   
   if [[ -n "$message" ]]; then
     echo -e "${GREEN}✓${NC} $message"
@@ -70,7 +75,7 @@ test_pass() {
 
 test_fail() {
   local message="${1:-}"
-  ((TEST_FAILED++))
+  TEST_FAILED=$((TEST_FAILED + 1))
   
   if [[ -n "$message" ]]; then
     echo -e "${RED}✗${NC} $message"

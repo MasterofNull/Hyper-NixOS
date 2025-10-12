@@ -3,7 +3,8 @@
 # Hyper-NixOS Test Runner
 # Runs all integration and unit tests
 
-set -euo pipefail
+set -uo pipefail
+# Note: NOT using -e because arithmetic operations can return non-zero
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -49,7 +50,7 @@ run_test() {
     if grep -q "virsh\|libvirtd\|qemu-system" "$test_file" 2>/dev/null; then
       if ! command -v virsh &>/dev/null; then
         echo -e "${YELLOW}SKIP (requires libvirt)${NC}"
-        ((TOTAL_SKIPPED++))
+        TOTAL_SKIPPED=$((TOTAL_SKIPPED + 1))
         return 0
       fi
     fi
@@ -58,7 +59,7 @@ run_test() {
     if grep -q "nixos-rebuild\|systemctl.*libvirtd" "$test_file" 2>/dev/null; then
       if ! command -v nixos-rebuild &>/dev/null; then
         echo -e "${YELLOW}SKIP (requires NixOS)${NC}"
-        ((TOTAL_SKIPPED++))
+        TOTAL_SKIPPED=$((TOTAL_SKIPPED + 1))
         return 0
       fi
     fi
@@ -66,10 +67,10 @@ run_test() {
   
   if bash "$test_file" >/dev/null 2>&1; then
     echo -e "${GREEN}PASS${NC}"
-    ((TOTAL_PASSED++))
+    TOTAL_PASSED=$((TOTAL_PASSED + 1))
   else
     echo -e "${RED}FAIL${NC}"
-    ((TOTAL_FAILED++))
+    TOTAL_FAILED=$((TOTAL_FAILED + 1))
     FAILED_TESTS+=("$test_name")
   fi
 }
@@ -100,9 +101,32 @@ echo ""
 echo -e "Passed:  ${GREEN}$TOTAL_PASSED${NC}"
 echo -e "Failed:  ${RED}$TOTAL_FAILED${NC}"
 echo -e "Skipped: ${YELLOW}$TOTAL_SKIPPED${NC}"
+echo ""
 
-if [[ $TOTAL_FAILED -gt 0 ]]; then
+# CI mode: Skipped tests are OK
+if $CI_MODE; then
+  if [[ $TOTAL_FAILED -gt 0 ]]; then
+    echo "Failed Tests:"
+    for test in "${FAILED_TESTS[@]}"; do
+      echo "  - $test"
+    done
+    echo ""
+    echo "✗ Some CI validation checks failed"
+    exit 1
+  fi
+  
+  if [[ $TOTAL_SKIPPED -gt 0 ]]; then
+    echo -e "${BLUE}Tests requiring NixOS/libvirt were skipped (expected in CI)${NC}"
+    echo "Full integration tests run when deployed on actual NixOS system"
+  fi
+  
   echo ""
+  echo "✓ CI validation successful!"
+  exit 0
+fi
+
+# Non-CI mode
+if [[ $TOTAL_FAILED -gt 0 ]]; then
   echo "Failed Tests:"
   for test in "${FAILED_TESTS[@]}"; do
     echo "  - $test"
@@ -111,15 +135,5 @@ if [[ $TOTAL_FAILED -gt 0 ]]; then
   exit 1
 fi
 
-if $CI_MODE && [[ $TOTAL_SKIPPED -gt 0 ]] && [[ $TOTAL_PASSED -eq 0 ]]; then
-  echo ""
-  echo -e "${BLUE}Note: All tests skipped in CI (expected)${NC}"
-  echo "Tests require full NixOS environment with libvirt"
-  echo "Syntax validation passed ✓"
-  echo ""
-  exit 0
-fi
-
-echo ""
 echo "✓ All tests passed!"
 exit 0

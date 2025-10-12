@@ -269,7 +269,7 @@ jobs:
           cat hyper-nixos-${{ github.ref_name }}.tar.gz.sha256
       
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-package
           path: |
