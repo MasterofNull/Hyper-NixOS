@@ -414,6 +414,8 @@ in {
   # Prefer legacy path for current target systems
   services.xserver.desktopManager.gnome.enable = lib.mkIf (enableGuiAtBoot && hasOldDesk) true;
   programs.xwayland.enable = lib.mkIf enableGuiAtBoot true;
+  # Desktop files - ALWAYS present so they work if user manually accesses GNOME
+  # Even if GUI boot is disabled, these allow easy menu access from GNOME session
   environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
     text = ''
       [Desktop Entry]
@@ -423,26 +425,68 @@ in {
       X-GNOME-Autostart-enabled=true
     '';
   };
-  environment.etc."xdg/applications/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
+  
+  # Application launcher icons - always available
+  environment.etc."xdg/applications/hypervisor-menu.desktop" = {
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Hypervisor Console Menu
+      Comment=Main hypervisor management menu
+      Exec=gnome-terminal -- /etc/hypervisor/scripts/menu.sh
+      Icon=utilities-terminal
+      Terminal=false
+      Categories=System;Utility;
+    '';
+  };
+  environment.etc."xdg/applications/hypervisor-dashboard.desktop" = {
     text = ''
       [Desktop Entry]
       Type=Application
       Name=Hypervisor Dashboard
-      Comment=Manage VMs and hypervisor tasks
+      Comment=GUI dashboard for VM and task management
       Exec=/etc/hypervisor/scripts/management_dashboard.sh
       Icon=computer
       Categories=System;Utility;
     '';
   };
-  environment.etc."xdg/applications/hypervisor-installer.desktop" = lib.mkIf enableGuiAtBoot {
+  environment.etc."xdg/applications/hypervisor-installer.desktop" = {
     text = ''
       [Desktop Entry]
       Type=Application
-      Name=Hypervisor Installer
-      Comment=Run first-boot setup/installer
-      Exec=/etc/hypervisor/scripts/setup_wizard.sh
+      Name=Hypervisor Setup Wizard
+      Comment=Run first-boot setup and configuration wizard
+      Exec=gnome-terminal -- /etc/hypervisor/scripts/setup_wizard.sh
       Icon=system-software-install
+      Terminal=false
+      Categories=System;Settings;
+    '';
+  };
+  environment.etc."xdg/applications/hypervisor-networking.desktop" = {
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Network Foundation Setup
+      Comment=Configure foundational networking (bridges, interfaces)
+      Exec=gnome-terminal -- sudo /etc/hypervisor/scripts/foundational_networking_setup.sh
+      Icon=network-wired
+      Terminal=false
+      Categories=System;Settings;Network;
+    '';
+  };
+  
+  # Create desktop shortcuts for quick access
+  environment.etc."skel/Desktop/Hypervisor-Menu.desktop" = {
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Hypervisor Console Menu
+      Comment=Main hypervisor management menu
+      Exec=gnome-terminal -- /etc/hypervisor/scripts/menu.sh
+      Icon=utilities-terminal
+      Terminal=false
       Categories=System;Utility;
     '';
+    mode = "0755";
   };
 }
