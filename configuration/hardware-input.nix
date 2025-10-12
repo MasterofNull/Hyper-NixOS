@@ -168,7 +168,6 @@
       Name=Libinput Gestures
       Comment=Multitouch gesture recognizer
       Exec=${pkgs.libinput-gestures}/bin/libinput-gestures
-      X-GNOME-Autostart-enabled=true
       NoDisplay=true
     '';
   };

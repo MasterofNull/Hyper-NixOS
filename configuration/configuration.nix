@@ -10,8 +10,6 @@ let
   enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else baseSystemHasGui;
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
-  hasNewDesk = lib.hasAttrByPath ["services" "desktopManager" "gnome"] config;
-  hasOldDesk = lib.hasAttrByPath ["services" "xserver" "desktopManager" "gnome"] config;
   # Enable console autologin only when not booting to a GUI Desktop
   consoleAutoLoginEnabled = (enableMenuAtBoot || enableWizardAtBoot) && (!enableGuiAtBoot);
 in {
@@ -37,7 +35,9 @@ in {
   boot.loader.efi.canTouchEfiVariables = true;
   networking.hostName = lib.mkDefault "hypervisor";
   time.timeZone = lib.mkDefault "UTC";
-  boot.kernelPackages = pkgs.linuxPackages_hardened;
+  # Prefer latest stable kernel; allow override to hardened
+  boot.kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
+  # Security-conscious users can set boot.kernelPackages = pkgs.linuxPackages_hardened; in local overlays
   security.auditd.enable = true;
   boot.kernel.sysctl = {
     "kernel.unprivileged_userns_clone" = 0;
@@ -54,7 +54,7 @@ in {
   };
   environment.systemPackages = with pkgs; [
     qemu_full OVMF jq python3 python3Packages.jsonschema curl newt dialog nano
-    libvirt virt-manager gnome.zenity gnome.gnome-terminal pciutils
+    libvirt virt-manager pciutils ripgrep yad
     looking-glass-client gnupg swtpm openssh xorriso nfs-utils
   ];
   environment.etc."hypervisor/vm_profiles".source = ../vm_profiles;
@@ -241,12 +241,11 @@ in {
   sound.enable = false;
   hardware.opengl.enable = true;
   services.xserver.enable = lib.mkDefault (baseSystemHasGui || enableGuiAtBoot);
-  services.xserver.displayManager.gdm.enable = lib.mkDefault (enableGuiAtBoot && hasOldDM);
-  services.xserver.displayManager.gdm.wayland = lib.mkDefault (enableGuiAtBoot && hasOldDM);
+  # Do not force any specific display manager; respect the system's previous generation
   services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
     enable = lib.mkDefault true; user = mgmtUser;
   };
-  services.xserver.desktopManager.gnome.enable = lib.mkDefault (enableGuiAtBoot && hasOldDesk);
+  # Wayland-first: enable Xwayland only if GUI is enabled for compatibility
   programs.xwayland.enable = lib.mkDefault enableGuiAtBoot;
   environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
     text = ''
@@ -254,7 +253,6 @@ in {
       Type=Application
       Name=Hypervisor Dashboard
       Exec=/etc/hypervisor/scripts/management_dashboard.sh --autostart
-      X-GNOME-Autostart-enabled=true
     '';
   };
   environment.etc."xdg/applications/hypervisor-menu.desktop".text = ''
@@ -262,9 +260,9 @@ in {
     Type=Application
     Name=Hypervisor Console Menu
     Comment=Main hypervisor management menu
-    Exec=gnome-terminal -- /etc/hypervisor/scripts/menu.sh
+    Exec=/etc/hypervisor/scripts/menu.sh
     Icon=utilities-terminal
-    Terminal=false
+    Terminal=true
     Categories=System;Utility;
   '';
   environment.etc."xdg/applications/hypervisor-dashboard.desktop".text = ''
@@ -281,9 +279,9 @@ in {
     Type=Application
     Name=Hypervisor Setup Wizard
     Comment=Run first-boot setup and configuration wizard
-    Exec=gnome-terminal -- /etc/hypervisor/scripts/setup_wizard.sh
+    Exec=/etc/hypervisor/scripts/setup_wizard.sh
     Icon=system-software-install
-    Terminal=false
+    Terminal=true
     Categories=System;Settings;
   '';
   environment.etc."xdg/applications/hypervisor-networking.desktop".text = ''
@@ -291,9 +289,9 @@ in {
     Type=Application
     Name=Network Foundation Setup
     Comment=Configure foundational networking (bridges, interfaces)
-    Exec=gnome-terminal -- sudo /etc/hypervisor/scripts/foundational_networking_setup.sh
+    Exec=sudo /etc/hypervisor/scripts/foundational_networking_setup.sh
     Icon=network-wired
-    Terminal=false
+    Terminal=true
     Categories=System;Settings;Network;
   '';
   environment.etc."skel/Desktop/Hypervisor-Menu.desktop" = {
@@ -302,9 +300,9 @@ in {
       Type=Application
       Name=Hypervisor Console Menu
       Comment=Main hypervisor management menu
-      Exec=gnome-terminal -- /etc/hypervisor/scripts/menu.sh
+      Exec=/etc/hypervisor/scripts/menu.sh
       Icon=utilities-terminal
-      Terminal=false
+      Terminal=true
       Categories=System;Utility;
     '';
     mode = "0755";

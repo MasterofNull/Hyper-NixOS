@@ -1,13 +1,18 @@
 {
   description = "Hyper-NixOS: Production-ready NixOS hypervisor with zero-trust security and enterprise automation";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    # Track latest NixOS; pin via flake.lock for reproducibility
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = inputs@{ self, nixpkgs, flake-utils }:
     let lib = nixpkgs.lib;
     in flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = import nixpkgs { inherit system; };
+      let pkgs = import nixpkgs {
+            inherit system;
+            # Allow unfree if user enables; keeps default permissive off
+            config = { allowUnfree = false; }; 
+          };
       in {
         packages.iso = pkgs.nixos ({ config, pkgs, ... }: {
           imports = [ ./configuration/configuration.nix ];

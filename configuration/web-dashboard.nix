@@ -4,12 +4,19 @@
 # Lightweight web interface for VM management
 
 {
-  # Install Python and Flask
-  environment.systemPackages = with pkgs; [
-    python3
-    python3Packages.flask
-    python3Packages.requests
-  ];
+  # Provide a Python interpreter with required packages
+  let
+    py = pkgs.python3.withPackages (ps: [ ps.flask ps.requests ]);
+  in
+  {
+  # Runtime user for the web dashboard (non-login)
+  users.users.hypervisor-operator = {
+    isSystemUser = true;
+    group = "hypervisor-operator";
+    extraGroups = [ "libvirtd" "kvm" ];
+    shell = pkgs.shadow.nologin;
+  };
+  users.groups.hypervisor-operator = {};
   
   # Web dashboard service
   systemd.services.hypervisor-web-dashboard = {
@@ -19,7 +26,7 @@
     
     serviceConfig = {
       Type = "simple";
-      ExecStart = "${pkgs.python3}/bin/python3 /etc/hypervisor/scripts/web_dashboard.py";
+      ExecStart = "${py}/bin/python3 /etc/hypervisor/scripts/web_dashboard.py";
       
       # Run as operator user for security
       User = "hypervisor-operator";
@@ -58,9 +65,10 @@
     "d /var/www/hypervisor/static 0755 root root - -"
   ];
   
-  # Copy web files
-  environment.etc."hypervisor/web/dashboard.html" = {
+  # Install template to the Flask template directory
+  environment.etc."var/www/hypervisor/templates/dashboard.html" = {
     source = ../web/templates/dashboard.html;
+    mode = "0644";
   };
   
   # Firewall: Allow web dashboard on localhost only by default

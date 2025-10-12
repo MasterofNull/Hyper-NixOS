@@ -192,10 +192,12 @@ fn gen_xml(p: &Profile) -> String {
         "  <devices>\n    <emulator>{}</emulator>\n",
         emulator
     ));
-    if let Some(disk_gb) = p.disk_gb {
-        let _ = disk_gb;
-    }
-    xml.push_str("    <disk type='file' device='disk'>\n      <driver name='qemu' type='qcow2'/>\n      <source file='REPLACEME_QCOW'/>\n      <target dev='vda' bus='virtio'/>\n    </disk>\n");
+    // Primary disk (standardized qcow path under state directory)
+    let qcow_path = format!("/var/lib/hypervisor/disks/{}.qcow2", name);
+    xml.push_str(&format!(
+        "    <disk type='file' device='disk'>\n      <driver name='qemu' type='qcow2'/>\n      <source file='{}'/>\n      <target dev='vda' bus='virtio'/>\n    </disk>\n",
+        escape(&qcow_path)
+    ));
     if let Some(iso) = p.iso_path.as_ref() {
         xml.push_str(&format!("    <disk type='file' device='cdrom'>\n      <source file='{}'/>\n      <target dev='sda' bus='sata'/>\n      <readonly/>\n    </disk>\n", escape(iso)));
     }
@@ -223,15 +225,21 @@ fn gen_xml(p: &Profile) -> String {
         );
     }
     if let Some(hostdevs) = p.hostdevs.as_ref() {
+        let re = regex::Regex::new(r"^(?i)([0-9a-f]{4}):([0-9a-f]{2}):([0-9a-f]{2})\.([0-7])$").unwrap();
         for bdf in hostdevs {
-            if !bdf
-                .chars()
-                .all(|c| c.is_ascii_hexdigit() || c == ':' || c == '.')
-            {
+            if let Some(caps) = re.captures(bdf) {
+                let domain = &caps[1];
+                let bus = &caps[2];
+                let slot = &caps[3];
+                let func = &caps[4];
+                xml.push_str(&format!(
+                    "    <hostdev mode='subsystem' type='pci' managed='yes'>\n      <source>\n        <address domain='0x{}' bus='0x{}' slot='0x{}' function='0x{}'/>\n      </source>\n    </hostdev>\n",
+                    domain, bus, slot, func
+                ));
+            } else {
+                // Skip invalid BDF input safely
                 continue;
             }
-            xml.push_str(&format!("    <hostdev mode='subsystem' type='pci' managed='yes'>\n      <source>\n        <address domain='0x{}' bus='0x{}' slot='0x{}' function='0x{}'/>\n      </source>\n    </hostdev>\n",
-                &bdf[0..4], &bdf[5..7], &bdf[8..10], &bdf[11..12]));
         }
     }
     xml.push_str("  </devices>\n</domain>\n");
