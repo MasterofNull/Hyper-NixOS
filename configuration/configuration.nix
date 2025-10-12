@@ -4,8 +4,10 @@ let
   mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
   # Enable menu at boot by default - this is the primary interface
   enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
-  # Enable wizard on first boot only (controlled by .first_boot_done marker)
-  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] true config;
+  # First-boot welcome screen - lightweight orientation (one-time, auto-dismiss)
+  enableWelcomeAtBoot = lib.attrByPath ["hypervisor" "firstBootWelcome" "enableAtBoot"] true config;
+  # First-boot wizard disabled - users run "Install VMs" from main menu instead
+  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
   # Disable GUI by default - users can enable it if they want graphical management
   enableGuiAtBoot = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
   # Compatibility flags for NixOS versions (24.05 vs 24.11+)
@@ -243,9 +245,45 @@ in {
     };
   };
 
-  # First-boot wizard (runs once, then marks completion)
+  # First-boot welcome screen (lightweight, one-time orientation)
+  systemd.services.hypervisor-first-boot-welcome = {
+    description = "First-boot Welcome Screen";
+    wantedBy = lib.optional enableWelcomeAtBoot "multi-user.target";
+    after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
+    before = [ "hypervisor-menu.service" ];
+    wants = [ "network-online.target" ];
+    conflicts = [ "getty@tty1.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/first_boot_welcome.sh";
+      User = "root";
+      WorkingDirectory = "/etc/hypervisor";
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      StateDirectory = "hypervisor";
+      ExecStartPre = [
+        "${pkgs.coreutils}/bin/mkdir -p /var/lib/hypervisor/logs"
+        "${pkgs.coreutils}/bin/touch /var/lib/hypervisor/logs/first_boot.log"
+      ];
+      ReadWritePaths = [ "/var/lib/hypervisor/logs" "/var/lib/hypervisor/.first_boot_welcome_shown" ];
+      StandardInput = "tty";
+      StandardOutput = "tty";
+      TTYPath = "/dev/tty1";
+      TTYReset = true;
+      TTYVHangup = true;
+      Environment = [ "DIALOG=whiptail" "TERM=linux" "HOME=/root" "PATH=/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin" ];
+    };
+    unitConfig = {
+      ConditionPathExists = "!/var/lib/hypervisor/.first_boot_welcome_shown";
+    };
+  };
+
+  # First-boot wizard (DISABLED - replaced by "Install VMs" menu option)
+  # Kept for reference but not enabled by default
   systemd.services.hypervisor-first-boot = {
-    description = "First-boot Setup Wizard";
+    description = "First-boot Setup Wizard (Disabled)";
     wantedBy = lib.optional enableWizardAtBoot "multi-user.target";
     after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
     before = [ "hypervisor-menu.service" ];
@@ -362,8 +400,8 @@ in {
   sound.enable = false;
   hardware.opengl.enable = true;
 
-  # GUI management environment (Wayland GNOME) - enabled by default for initial setup
-  # Toggle with: hypervisor.gui.enableAtBoot
+  # GUI management environment (Wayland GNOME) - DISABLED by default
+  # To enable: Create /var/lib/hypervisor/configuration/gui-local.nix with hypervisor.gui.enableAtBoot = true
   services.xserver.enable = lib.mkIf enableGuiAtBoot true;
   # Display Manager (GDM) - prefer legacy xserver paths for compatibility
   services.xserver.displayManager.gdm.enable = lib.mkIf (enableGuiAtBoot && hasOldDM) true;

@@ -3,9 +3,11 @@
 {
   # Comprehensive touchpad and keyboard support for hypervisor management
   # This module provides multitouch, gestures, backlighting, and hotkey support
+  # ONLY enabled when X server is enabled (GUI mode)
 
   # Touchpad support with libinput (modern, multitouch-aware driver)
-  services.xserver.libinput = {
+  # Only enable when xserver is enabled to avoid forcing GUI mode
+  services.xserver.libinput = lib.mkIf config.services.xserver.enable {
     enable = true;
     
     # Touchpad-specific settings
@@ -50,8 +52,8 @@
     };
   };
 
-  # Keyboard configuration
-  services.xserver.xkb = {
+  # Keyboard configuration (only when X server is enabled)
+  services.xserver.xkb = lib.mkIf config.services.xserver.enable {
     layout = lib.mkDefault "us";
     variant = lib.mkDefault "";
     options = lib.mkDefault "terminate:ctrl_alt_bksp";  # Ctrl+Alt+Backspace to restart X
@@ -190,7 +192,7 @@
 
   # Enable support for additional keyboard layouts and variants
   # Users can switch layouts with: setxkbmap <layout>
-  services.xserver.xkb.extraLayouts = {};
+  services.xserver.xkb.extraLayouts = lib.mkIf config.services.xserver.enable {};
 
   # Enable NumLock on boot (console and X11)
   # Uncomment if desired:

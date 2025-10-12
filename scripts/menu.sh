@@ -103,28 +103,24 @@ menu_vm_main() {
   fi
   entries+=("__TOGGLE_MENU_ON" "Enable menu at boot")
   entries+=("__TOGGLE_MENU_OFF" "Disable menu at boot")
-  entries+=("__RUN_WIZARD__" "Run first-boot setup wizard now")
-  entries+=("__TOGGLE_WIZARD_ON" "Enable first-boot wizard at boot")
-  entries+=("__TOGGLE_WIZARD_OFF" "Disable first-boot wizard at boot")
   entries+=("__EXIT__" "Exit")
   $DIALOG --title "$BRANDING" --menu "Select a VM to start, or choose an action" 22 90 14 "${entries[@]}" 3>&1 1>&2 2>&3
 }
 
 menu_more() {
   local choices=(
-    0 "Setup wizard (recommended)"
-    1 "Create VM (wizard)"
-    2 "VM setup workflow (guided end-to-end)"
-    3 "ISO manager (download/validate/attach)"
-    4 "Cloud image manager (cloud-init images)"
-    5 "Hardware detect & VFIO suggestions"
-    6 "VFIO configure (bind & Nix)"
-    7 "Define/Start from JSON"
-    8 "Edit VM profile"
-    9 "Delete VM"
-    10 "Bridge helper"
-    11 "Network helper (firewall & DHCP)"
-    12 "Zone manager (bridges & base rules)"
+    0 "🚀 Install VMs - Complete guided workflow (RECOMMENDED)"
+    1 "Create VM (wizard only)"
+    2 "ISO manager (download/validate/attach)"
+    3 "Cloud image manager (cloud-init images)"
+    4 "Hardware detect & VFIO suggestions"
+    5 "VFIO configure (bind & Nix)"
+    6 "Define/Start from JSON"
+    7 "Edit VM profile"
+    8 "Delete VM"
+    9 "Bridge helper"
+    10 "Network helper (firewall & DHCP)"
+    11 "Zone manager (bridges & base rules)"
     13 "Snapshots & backups"
     14 "Per-VM firewall (inbound rules)"
     15 "SPICE/VNC launcher"
@@ -448,43 +444,42 @@ while true; do
       while true; do
         mchoice=$(menu_more || true)
         case "$mchoice" in
-          0) "$SCRIPTS_DIR/setup_wizard.sh" || true;;
+          0) "$SCRIPTS_DIR/install_vm_workflow.sh" || true;;
           1) create_vm_wizard || true;;
-          2) "$SCRIPTS_DIR/vm_setup_workflow.sh" || true;;
-          3) iso_manager || true;;
-          4) "$SCRIPTS_DIR/image_manager.sh" || true;;
-          5) "$SCRIPTS_DIR/hardware_detect.sh" | ${PAGER:-less};;
-          6) "$SCRIPTS_DIR/vfio_workflow.sh" || true;;
-          7) p=$(select_profile || true) || continue; "$SCRIPTS_DIR/validate_profile.sh" "$p" || true; "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true;;
-          8) p=$(select_profile || true) || continue; edit_profile "$p";;
-          9) p=$(select_profile || true) || continue; delete_vm "$p";;
-          10) "$SCRIPTS_DIR/bridge_helper.sh" || true;;
-          11) "$SCRIPTS_DIR/network_helper.sh" || true;;
-          12) "$SCRIPTS_DIR/zone_manager.sh" || true;;
-          13) "$SCRIPTS_DIR/snapshots_backups.sh" || true;;
-          14) "$SCRIPTS_DIR/per_vm_firewall.sh" || true;;
-          15) "$SCRIPTS_DIR/spice_vnc_launcher.sh" || true;;
-          16) "$SCRIPTS_DIR/guest_agent_actions.sh" || true;;
-          17) "$SCRIPTS_DIR/template_clone_manager.sh" || true;;
-          18) "$SCRIPTS_DIR/metrics_health.sh" || true;;
-          19) "$SCRIPTS_DIR/enhanced_health_checks.sh" || true;;
-          20) "$SCRIPTS_DIR/vm_resource_optimizer.sh" || true;;
-          21) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
-          22) "$SCRIPTS_DIR/health_checks.sh" || true;;
-          23) "$SCRIPTS_DIR/preflight_check.sh" || true;;
-          24) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
-          25) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
-          26) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
-          27) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
-          28) "$SCRIPTS_DIR/diagnose.sh" | ${PAGER:-less};;
-          29) "$SCRIPTS_DIR/vm_dashboard.sh" || true;;
-          30) "$SCRIPTS_DIR/bulk_operations.sh" || true;;
-          31) "$SCRIPTS_DIR/help_assistant.sh" || true;;
-          32) "$SCRIPTS_DIR/interactive_tutorial.sh" || true;;
-          33) "$SCRIPTS_DIR/guided_system_test.sh" || true;;
-          34) "$SCRIPTS_DIR/guided_metrics_viewer.sh" || true;;
-          35) "$SCRIPTS_DIR/guided_backup_verification.sh" || true;;
-          36|*) break;;
+          2) iso_manager || true;;
+          3) "$SCRIPTS_DIR/image_manager.sh" || true;;
+          4) "$SCRIPTS_DIR/hardware_detect.sh" | ${PAGER:-less};;
+          5) "$SCRIPTS_DIR/vfio_workflow.sh" || true;;
+          6) p=$(select_profile || true) || continue; "$SCRIPTS_DIR/validate_profile.sh" "$p" || true; "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true;;
+          7) p=$(select_profile || true) || continue; edit_profile "$p";;
+          8) p=$(select_profile || true) || continue; delete_vm "$p";;
+          9) "$SCRIPTS_DIR/bridge_helper.sh" || true;;
+          10) "$SCRIPTS_DIR/network_helper.sh" || true;;
+          11) "$SCRIPTS_DIR/zone_manager.sh" || true;;
+          12) "$SCRIPTS_DIR/snapshots_backups.sh" || true;;
+          13) "$SCRIPTS_DIR/per_vm_firewall.sh" || true;;
+          14) "$SCRIPTS_DIR/spice_vnc_launcher.sh" || true;;
+          15) "$SCRIPTS_DIR/guest_agent_actions.sh" || true;;
+          16) "$SCRIPTS_DIR/template_clone_manager.sh" || true;;
+          17) "$SCRIPTS_DIR/metrics_health.sh" || true;;
+          18) "$SCRIPTS_DIR/enhanced_health_checks.sh" || true;;
+          19) "$SCRIPTS_DIR/vm_resource_optimizer.sh" || true;;
+          20) "$SCRIPTS_DIR/docs_viewer.sh" || true;;
+          21) "$SCRIPTS_DIR/health_checks.sh" || true;;
+          22) "$SCRIPTS_DIR/preflight_check.sh" || true;;
+          23) "$SCRIPTS_DIR/ssh_setup.sh" || true;;
+          24) "$SCRIPTS_DIR/migrate_vm.sh" || true;;
+          25) "$SCRIPTS_DIR/detect_and_adjust.sh" || true;;
+          26) p=$(quick_start_last || true) || { $DIALOG --msgbox "No previous VM" 8 40; continue; }; start_vm "$p" || true;;
+          27) "$SCRIPTS_DIR/diagnose.sh" | ${PAGER:-less};;
+          28) "$SCRIPTS_DIR/vm_dashboard.sh" || true;;
+          29) "$SCRIPTS_DIR/bulk_operations.sh" || true;;
+          30) "$SCRIPTS_DIR/help_assistant.sh" || true;;
+          31) "$SCRIPTS_DIR/interactive_tutorial.sh" || true;;
+          32) "$SCRIPTS_DIR/guided_system_test.sh" || true;;
+          33) "$SCRIPTS_DIR/guided_metrics_viewer.sh" || true;;
+          34) "$SCRIPTS_DIR/guided_backup_verification.sh" || true;;
+          35|*) break;;
         esac
       done
       ;;
@@ -509,15 +504,6 @@ while true; do
       ;;
     "__TOGGLE_MENU_OFF")
       sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh menu off && $DIALOG --msgbox "Menu disabled at boot." 8 40 || $DIALOG --msgbox "Failed to toggle." 8 40
-      ;;
-    "__RUN_WIZARD__")
-      sudo ${SHELL:-/bin/bash} -lc '/etc/hypervisor/scripts/setup_wizard.sh' || true
-      ;;
-    "__TOGGLE_WIZARD_ON")
-      sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh wizard on && $DIALOG --msgbox "First-boot wizard enabled." 8 50 || $DIALOG --msgbox "Failed to toggle." 8 50
-      ;;
-    "__TOGGLE_WIZARD_OFF")
-      sudo bash /etc/hypervisor/scripts/toggle_boot_features.sh wizard off && $DIALOG --msgbox "First-boot wizard disabled." 8 50 || $DIALOG --msgbox "Failed to toggle." 8 50
       ;;
     "__EXIT__"|*)
       # If the selection is a file path to a VM profile, show action menu

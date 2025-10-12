@@ -198,10 +198,14 @@ What was configured:
 $FINAL_SUMMARY
 
 Next steps:
-• The main menu will now load
+• The main menu will now load automatically
 • Create VMs from the console menu
 • Access documentation: /etc/hypervisor/docs
 • View logs: $LOGFILE
 
 Hyper-NixOS v${VERSION}
 https://github.com/MasterofNull/Hyper-NixOS" 24 78
+
+# Launch the main menu instead of exiting
+log "Launching main menu after wizard completion"
+exec /etc/hypervisor/scripts/menu.sh
