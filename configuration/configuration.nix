@@ -12,7 +12,8 @@ let
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
   hasNewDesk = lib.hasAttrByPath ["services" "desktopManager" "gnome"] config;
   hasOldDesk = lib.hasAttrByPath ["services" "xserver" "desktopManager" "gnome"] config;
-  consoleAutoLoginEnabled = (enableMenuAtBoot || enableWizardAtBoot) && (!hasHypervisorGuiPreference || !enableGuiAtBoot);
+  # Enable console autologin only when not booting to a GUI Desktop
+  consoleAutoLoginEnabled = (enableMenuAtBoot || enableWizardAtBoot) && (!enableGuiAtBoot);
 in {
   system.stateVersion = "24.05";
   imports = [
@@ -109,10 +110,11 @@ in {
   '';
   systemd.services.hypervisor-menu = {
     description = "Boot-time Hypervisor VM Menu";
-    wantedBy = lib.optional enableMenuAtBoot "multi-user.target";
+    wantedBy = lib.optional (enableMenuAtBoot && !enableGuiAtBoot) "multi-user.target";
     after = [ "network-online.target" "libvirtd.service" ];
     wants = [ "network-online.target" "libvirtd.service" ];
-    conflicts = [ "getty@tty1.service" ];
+    # Avoid racing the Display Manager for VT1
+    conflicts = [ "getty@tty1.service" "display-manager.service" ];
     serviceConfig = {
       Type = "simple";
       ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/menu.sh";
