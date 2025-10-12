@@ -362,8 +362,8 @@ in {
   sound.enable = false;
   hardware.opengl.enable = true;
 
-  # GUI management environment (Wayland GNOME) - enabled by default for initial setup
-  # Toggle with: hypervisor.gui.enableAtBoot
+  # GUI management environment (Wayland GNOME) - DISABLED by default
+  # To enable: Create /var/lib/hypervisor/configuration/gui-local.nix with hypervisor.gui.enableAtBoot = true
   services.xserver.enable = lib.mkIf enableGuiAtBoot true;
   # Display Manager (GDM) - prefer legacy xserver paths for compatibility
   services.xserver.displayManager.gdm.enable = lib.mkIf (enableGuiAtBoot && hasOldDM) true;

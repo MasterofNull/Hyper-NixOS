@@ -199,42 +199,49 @@ Boot from the ISO. On first boot, a setup wizard helps you configure networking 
 
 ### First Boot Experience
 
-After reboot, you'll be **automatically logged in** to the console and the **first-boot setup wizard** will run:
+After reboot, you'll be **automatically logged in** to the console and see the **hypervisor main menu**:
 
-1. **Welcome Screen** - Overview of the wizard
-2. **Network Bridge Setup** - Intelligent bridge configuration (optional)
-   - Runs the interactive bridge helper script
-   - Automatic physical interface detection
-   - Performance profile selection (Standard/Performance)
-   - MTU optimization (1500 standard, 9000 jumbo frames)
-   - Guided setup with validation
-3. **ISO Manager** - Access to ISO management tools (optional)
-   - If accepted, launches the ISO Manager menu
-   - Select option 1 "Download ISO" to see 14 verified OS presets
-   - Includes Ubuntu, Fedora, Debian, Arch, NixOS, Rocky, Alma, openSUSE, FreeBSD, OpenBSD, NetBSD, Kali, and CentOS Stream
-   - Auto-fetches checksums/signatures and verifies authenticity
-   - Or use other options to import ISOs from local storage/network
-4. **VM Creation Wizard** - Create your first VM profile (optional)
-   - If accepted, launches the interactive VM creation wizard
-   - Configure CPU, memory, disk, architecture
-   - Select from downloaded ISOs
-   - Advanced options: audio, video heads, hugepages, network zones
-5. **Advanced Configuration** - Security and performance settings (optional)
-   - Firewall rules, migration ports
-   - Hugepages, SMT/Hyper-Threading
-   - VFIO hardware passthrough detection
-6. **Summary** - Shows what was configured
-
-**No login required!** The system automatically logs you in and starts the wizard.
-
-**After the wizard completes, the main hypervisor menu loads automatically.**
-
-On subsequent boots, you'll see the **hypervisor console menu** directly with:
-- 🖥️ **Start VMs** - Launch your virtual machines
-- 📦 **Download ISOs** - Get OS installation images  
-- ⚙️ **Create VMs** - Set up new virtual machines
-- 🔧 **System Tools** - Diagnostics, updates, backups
+**No login required!** The system automatically logs you in and displays the menu.
+**Main Menu Features:**
+- 🚀 **Install VMs** - Complete guided workflow (RECOMMENDED for new users)
+  - Download/import OS ISOs from 14+ verified distributions
+  - Configure network bridges automatically
+  - Create VM with full configuration wizard
+  - Launch VM immediately after creation
+  - Return to menu at any time
+- 🖥️ **Start VMs** - Launch your existing virtual machines
+- 📦 **ISO Manager** - Download/validate/attach OS installation images
+- ⚙️ **More Options** - Advanced tools, diagnostics, updates, backups
 - 🪟 **GNOME Desktop** - Graphical environment (if enabled)
+
+### 🚀 Install Your First VM
+
+Select **"More Options" → "Install VMs"** from the main menu to start the comprehensive guided workflow:
+
+1. **Welcome & System Status** - View current configuration
+2. **Network Bridge Setup** - Automatically configure VM networking
+   - Auto-detection of physical interfaces
+   - Standard/Performance profiles
+   - MTU optimization (1500 standard, 9000 jumbo frames)
+3. **ISO Download/Import** - Multiple options:
+   - **Download from 14+ verified presets** (Ubuntu, Fedora, Debian, Arch, NixOS, Rocky, Alma, openSUSE, FreeBSD, OpenBSD, NetBSD, Kali, CentOS Stream)
+   - Import from local storage (USB/disk)
+   - Import from network share (NFS/CIFS)
+   - Custom ISO URL
+   - Automatic checksum/signature verification
+4. **Pre-flight Validation** - Check system readiness
+5. **VM Creation Wizard** - Full configuration:
+   - Name, CPU, memory, disk size
+   - Architecture (x86_64, aarch64, riscv64, loongarch64)
+   - ISO selection
+   - Network zones
+   - Advanced options: audio, video heads, hugepages, autostart
+6. **Launch VM** - Start VM immediately with console access
+7. **Summary** - Review what was configured
+
+**💡 TIP:** You can exit to main menu at any time during the workflow by selecting Cancel
+
+**📋 All actions are logged** to `/var/lib/hypervisor/logs/install_vm.log`
 
 ### Login & Security Model
 
@@ -275,9 +282,6 @@ Want to change what loads at boot? Create `/var/lib/hypervisor/configuration/gui
   # Enable GNOME at boot instead of console menu
   hypervisor.gui.enableAtBoot = true;
   hypervisor.menu.enableAtBoot = false;
-  
-  # Disable first-boot wizard (after it runs once)
-  hypervisor.firstBootWizard.enableAtBoot = false;
 }
 ```
 
@@ -333,21 +337,20 @@ sudo bash /etc/hypervisor/scripts/update_hypervisor.sh
 sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
 ```
 
-### Re-run the first-boot wizard
+### Run the Install VMs workflow
 ```bash
-# Remove the marker file
-sudo rm /var/lib/hypervisor/.first_boot_done
-# Then reboot, or run manually:
-sudo bash /etc/hypervisor/scripts/setup_wizard.sh
+# From the main menu: More Options → Install VMs
+# Or run directly:
+sudo bash /etc/hypervisor/scripts/install_vm_workflow.sh
 ```
 
-### View wizard logs
+### View installation logs
 ```bash
-cat /var/lib/hypervisor/logs/first_boot.log
+cat /var/lib/hypervisor/logs/install_vm.log
 ```
 
-### If GNOME GUI loads instead of console wizard
-If the GNOME desktop environment starts instead of the console wizard/menu:
+### If GNOME GUI loads instead of console menu
+If the GNOME desktop environment starts instead of the console menu:
 ```bash
 # Check if GUI is enabled in local config
 cat /var/lib/hypervisor/configuration/gui-local.nix
