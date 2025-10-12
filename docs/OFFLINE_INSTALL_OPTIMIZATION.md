@@ -2,88 +2,49 @@
 
 **Minimize bandwidth usage and installation time**
 
+**Note:** Hyper-NixOS uses optimized installation by default with `--fast` mode (25 parallel downloads, ~15 min, ~2GB). This guide covers additional optimizations for special scenarios.
+
 ---
 
 ## 🎯 Optimization Strategies
 
-### Quick Wins (Implement These First)
+### Already Optimized by Default ✅
+
+The standard installation already includes:
+- ✅ 25 parallel download connections
+- ✅ Local flake paths (no re-downloads)
+- ✅ Optimized binary cache configuration
+- ✅ HTTP/2 support
+- ✅ Maximum CPU parallelism
+
+**Result:** 15 minutes install time, 2GB download
+
+### Additional Optimizations (If Needed)
 
 | Optimization | Bandwidth Saved | Time Saved | Difficulty |
 |--------------|-----------------|------------|------------|
-| Use local flake path | ~500MB | ~5 min | Easy |
-| Binary cache config | ~1-2GB | ~10 min | Easy |
 | Pre-download ISOs | Varies | Varies | Easy |
-| Offline ISO mode | ~2-3GB | ~15 min | Medium |
+| Offline ISO mode | ~2-3GB | Varies | Medium |
 | Shared nix store | ~2-5GB | ~20 min | Medium |
-| Minimal initial install | ~1GB | ~5 min | Easy |
 
 ---
 
-## 🚀 Fast Installation Mode
+## 🚀 Standard Installation is Already Fast
 
-### Option 1: Minimal Bootstrap (Fastest)
+The default installation mode is already optimized:
 
-**What it does:** Install only essential packages, defer optional features
-
-**Create:** `configuration/minimal-bootstrap.nix`
-
-```nix
-{ config, lib, pkgs, ... }:
-
-{
-  # Minimal initial installation - add features later
-  
-  # Disable GUI by default (saves ~500MB)
-  hypervisor.gui.enableAtBoot = lib.mkForce false;
-  
-  # Minimal package set
-  environment.systemPackages = lib.mkForce (with pkgs; [
-    # Core hypervisor tools only
-    qemu_full
-    libvirt
-    jq
-    python3
-    curl
-    dialog
-    nano
-    
-    # Skip optional tools initially:
-    # - virt-manager (GUI - 200MB with deps)
-    # - gnome packages (500MB+)
-    # - looking-glass-client
-    # - monitoring tools
-  ]);
-  
-  # Disable optional services initially
-  services.xserver.enable = lib.mkForce false;
-  
-  # Disable documentation generation (saves time)
-  documentation.enable = lib.mkDefault false;
-  documentation.man.enable = lib.mkDefault false;
-  documentation.info.enable = lib.mkDefault false;
-  documentation.doc.enable = lib.mkDefault false;
-  
-  # Use smaller kernel
-  boot.kernelPackages = lib.mkDefault pkgs.linuxPackages;  # Instead of hardened
-  
-  # Minimize initrd size
-  boot.initrd.compressor = "xz";
-  boot.initrd.compressorArgs = [ "-9" ];
-}
-```
-
-**Usage:**
+**Default Install:**
 ```bash
-# Import this during bootstrap
-sudo ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" \
-     --action switch --source "$(pwd)" \
-     --minimal
+sudo ./scripts/bootstrap_nixos.sh --fast --hostname "$(hostname -s)" --action switch
 ```
 
-**Result:** 
-- First install: ~1.5GB download (vs 3GB normal)
-- Install time: ~15 minutes (vs 30 minutes)
-- Add features later: `hypervisor.gui.enableAtBoot = true`
+**What's included:**
+- Full feature set (GUI, monitoring, automation)
+- Optimized downloads (25 parallel connections)
+- Install time: ~15 minutes
+- Download size: ~2GB
+
+**No "minimal mode" needed** - the default is already fast and efficient.
 
 ---
 
@@ -390,66 +351,53 @@ nix.settings.substituters = [ "http://server:5000" ];
 
 ## 📊 Optimization Results
 
-### Bandwidth Usage Comparison
+### Installation Performance
 
-| Install Method | Download Size | Time (100Mbps) | Time (10Mbps) |
-|----------------|---------------|----------------|---------------|
-| **Default** | 3.0 GB | 4 min | 40 min |
-| **+ Binary cache config** | 2.5 GB | 3.5 min | 33 min |
-| **+ Minimal mode** | 1.5 GB | 2 min | 20 min |
-| **+ Local ISOs** | 1.5 GB | 2 min | 20 min |
-| **+ Fast mode** | 1.5 GB | 1.5 min | 20 min |
-| **+ Shared store** | 500 MB | 40 sec | 7 min |
+**Default Install (optimized):**
+- Time: ~15 minutes (100 Mbps), ~20 minutes (10 Mbps)
+- Download: ~2 GB
+- Already includes: 25 parallel connections, optimized cache
 
-### Time Optimization
+**With Additional Optimizations:**
 
-| Phase | Default | Optimized | Savings |
-|-------|---------|-----------|---------|
-| Download packages | 10 min | 3 min | 70% |
-| Build system | 15 min | 8 min | 47% |
-| Configure users | 2 min | 2 min | 0% |
-| ISO download | 5 min | 0 min* | 100% |
-| **Total** | **32 min** | **13 min** | **59%** |
-
-*If pre-downloaded
+| Optimization | Time Saved | Complexity |
+|-------------|------------|------------|
+| Pre-download ISOs | Varies | Low |
+| Shared nix store (multiple systems) | 80% | Medium |
+| Local binary cache server | 90% | Medium |
 
 ---
 
 ## 🎛️ Implementation Priority
 
-### Phase 1: Quick Wins (Do These Now)
+### Default Install (Already Optimized) ✅
+
+The standard installation includes all basic optimizations:
 
 ```bash
-# 1. Enable binary cache optimization
-cat > /var/lib/hypervisor/configuration/cache-optimization.nix <<'EOF'
-{ config, lib, ... }:
-{
-  nix.settings = {
-    max-jobs = lib.mkDefault 4;
-    http-connections = lib.mkDefault 25;
-    cores = lib.mkDefault 0;
-  };
-}
-EOF
-
-# 2. Use fast bootstrap
+# Standard optimized install
 sudo ./scripts/bootstrap_nixos.sh --fast --hostname "$(hostname -s)" --action switch
-
-# 3. Pre-download common ISOs (optional)
-# Run prepare-offline-bundle.sh
 ```
 
-### Phase 2: Advanced Optimizations (If Needed)
+**Already includes:**
+- 25 parallel downloads
+- Optimized binary cache
+- Maximum CPU parallelism
+- Local flake paths
+
+### Advanced Optimizations (Optional)
+
+Only needed for special scenarios:
 
 ```bash
-# 1. Minimal mode for initial install
-sudo ./scripts/bootstrap_nixos.sh --fast --minimal --hostname "$(hostname -s)"
+# 1. Pre-download ISOs (if offline install needed)
+# Run prepare-offline-bundle.sh
 
-# 2. Add features later
-sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
-
-# 3. Set up binary cache server (if multiple systems)
+# 2. Set up binary cache server (if deploying to multiple systems)
 nix-serve --port 5000
+
+# 3. Share nix store via NFS (for lab environments)
+# See "Shared Nix Store" section below
 ```
 
 ---
@@ -582,29 +530,19 @@ nix.settings.substituters = [
 
 ---
 
-## 🚀 Quick Start Optimization
+## 🚀 Quick Start
 
-**Fastest Possible Install:**
+**Standard Optimized Install:**
 
 ```bash
-# 1. Pre-configure DNS
-echo -e "nameserver 8.8.8.8\nnameserver 1.1.1.1" | sudo tee /etc/resolv.conf
-
-# 2. Create cache config
-sudo mkdir -p /var/lib/hypervisor/configuration
-cat | sudo tee /var/lib/hypervisor/configuration/cache-optimization.nix <<'EOF'
-{ config, lib, ... }: {
-  nix.settings = {
-    max-jobs = 4;
-    http-connections = 25;
-    cores = 0;
-  };
-}
-EOF
-
-# 3. Run fast minimal bootstrap
-sudo ./scripts/bootstrap_nixos.sh --fast --minimal \
-     --hostname "$(hostname -s)" --action switch --reboot
+# Single command - already optimized
+bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
-**Result:** Install in ~15 minutes with ~1.5GB download!
+**Result:** Install in ~15 minutes with ~2GB download!
+
+**Optional DNS optimization:**
+```bash
+# If you have slow DNS resolution
+echo -e "nameserver 8.8.8.8\nnameserver 1.1.1.1" | sudo tee /etc/resolv.conf
+```

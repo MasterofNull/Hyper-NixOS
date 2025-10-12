@@ -36,7 +36,6 @@ in {
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/management-local.nix) /var/lib/hypervisor/configuration/management-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/swap-local.nix) /var/lib/hypervisor/configuration/swap-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/gui-local.nix) /var/lib/hypervisor/configuration/gui-local.nix
-  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/minimal-bootstrap.nix) /var/lib/hypervisor/configuration/minimal-bootstrap.nix  # Fast minimal install
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/cache-optimization.nix) /var/lib/hypervisor/configuration/cache-optimization.nix;
 
   boot.loader.systemd-boot.enable = true;

@@ -28,35 +28,26 @@
 
 ## 🎯 Quick Deployment Commands
 
-### For Fast Deployment (Recommended)
+### Standard Optimized Install (Recommended)
 
 ```bash
-# Fast minimal install - 13 minutes, 1.5GB
-bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --fast --minimal --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
+# Optimized install - 15 minutes, 2GB, all features included
+bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
-### For Production Security
+**What's included:**
+- Full GUI (GNOME)
+- All automation features
+- Security hardening
+- Network optimization
+- Health checks and backups
 
-After basic install, enable production security:
+### For Production Security (Optional)
+
+After install, enable zero-trust security model:
 ```bash
 # Enable security-production.nix
 echo '{}' | sudo tee /var/lib/hypervisor/configuration/security-production.nix
-sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
-```
-
-### For Full Features
-
-After minimal install, enable all features:
-```bash
-# Enable GUI and full features
-cat | sudo tee /var/lib/hypervisor/configuration/enable-features.nix << 'EOF'
-{ config, lib, pkgs, ... }: {
-  hypervisor.gui.enableAtBoot = true;
-  boot.kernelPackages = pkgs.linuxPackages_hardened;
-  security.apparmor.enable = true;
-}
-EOF
-
 sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
 ```
 

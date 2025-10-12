@@ -8,7 +8,7 @@
 
 **Features:**
 - 🔒 Zero-trust security model with polkit-based access control
-- ⚡ 60% faster installation with optimized binary caching
+- ⚡ Optimized installation with parallel downloads (15 min, 2GB)
 - 🤖 Enterprise automation (health checks, backups, updates, monitoring)
 - 🌐 Network performance optimization with intelligent bridge setup
 - 📊 99.5% uptime with automated self-healing
@@ -31,62 +31,22 @@
 
 **Perfect for:** Fresh installs, automated deployments, USB boots
 
-#### 🎯 **Standard Install** (Full features, ~30 min, ~3GB)
-Everything included, GUI ready, hardened kernel. Best for first-time users with good internet.
-```bash
-bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
-```
-
-#### ⚡ **Fast Install** (Recommended for most users, ~15 min, ~2GB)
-Same features as Standard, 50% faster with parallel downloads. Best balance.
+**Single command installs everything:**
 ```bash
 bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
-#### 🚀 **Minimal Install** (Fastest, ~13 min, ~1.5GB)
-Console-only, essentials for VM management. Add GUI later. Best for slow internet or headless servers.
-```bash
-bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --fast --minimal --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
-```
-
-<details>
-<summary><b>📊 Mode Comparison</b></summary>
-
-| Feature | Standard | Fast | Minimal |
-|---------|----------|------|---------|
-| **Time** | 30 min | 15 min ⚡ | 13 min 🚀 |
-| **Download** | 3 GB | 2 GB | 1.5 GB |
-| **GUI** | ✅ Included | ✅ Included | ❌ Add later |
-| **Features** | All | All | Core only |
-| **Speed** | 1x | 2x faster | 2.3x faster |
-
-**Choose Fast if unsure** - best balance for most users.
-
-[Detailed comparison →](docs/INSTALL_MODES.md)
-</details>
-
 **What it does:**
 - ✅ Installs git if needed
 - ✅ Clones the repository  
-- ✅ Runs bootstrap installer
+- ✅ Runs optimized bootstrap installer (25 parallel downloads)
 - ✅ Migrates your existing users/settings
-- ✅ Automatically optimizes downloads (25 parallel connections)
-- ✅ Switches to new system
+- ✅ Switches to new system with all features enabled
 - ✅ Reboots automatically
 
-**Install Time Comparison:**
-- Standard: ~30 minutes, 3GB download
-- Fast (`--fast`): ~15 minutes, 2GB download (50% faster)
-- Minimal (`--fast --minimal`): ~13 minutes, 1.5GB download (60% faster, 50% less bandwidth)
+**Install time:** ~15 minutes | **Download:** ~2GB
 
 **That's it!** After reboot, you'll see the hypervisor menu. Skip to [After Installation](#after-installation).
-
-**Note:** Minimal mode installs essential packages only. Add GUI/extras later:
-```bash
-# Enable GUI after minimal install
-echo '{ hypervisor.gui.enableAtBoot = true; }' | sudo tee /var/lib/hypervisor/configuration/enable-gui.nix
-sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
-```
 
 ---
 
@@ -245,7 +205,7 @@ Then rebuild: `sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)
 - ✅ AppArmor and seccomp sandboxing
 
 ### Optimized Performance
-- ✅ 60% faster installation with optimized caching
+- ✅ Fast installation with parallel downloads (15 min, 2GB)
 - ✅ Network performance tuning (standard/jumbo frames)
 - ✅ Automatic interface detection and validation
 - ✅ Hardware offloading enabled by default

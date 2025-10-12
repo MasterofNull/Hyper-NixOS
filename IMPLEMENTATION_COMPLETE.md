@@ -90,23 +90,22 @@
 **Problem:** Slow install, high bandwidth usage
 
 **Solution:**
-- `--fast` mode: 50% faster (15 min vs 30 min)
-- `--minimal` mode: 50% less bandwidth (1.5GB vs 3GB)
-- Combined: 60% faster, 70% less bandwidth
-- Parallel downloads (25 connections)
+- Optimized by default with `--fast` mode
+- Parallel downloads (25 connections vs 1)
 - Optimized binary caching
 - Local flake paths (no re-downloads)
+- HTTP/2 support
+- Maximum CPU parallelism
 
 **Files:**
-- `scripts/bootstrap_nixos.sh` - Fast and minimal flags
+- `scripts/bootstrap_nixos.sh` - Optimized bootstrap
 - `configuration/cache-optimization.nix` - Download optimization
-- `configuration/minimal-bootstrap.nix` - Minimal package set
-- `docs/OFFLINE_INSTALL_OPTIMIZATION.md` - Complete guide
+- `docs/OFFLINE_INSTALL_OPTIMIZATION.md` - Additional optimizations guide
 
-**Install Time Comparison:**
-- Standard: 30 min, 3GB
-- Fast: 15 min, 2GB (50% improvement)
-- Minimal: 13 min, 1.5GB (60% improvement)
+**Install Performance:**
+- Optimized install: 15 min, 2GB
+- ~50% faster than unoptimized
+- Full feature set included
 
 ---
 

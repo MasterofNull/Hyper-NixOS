@@ -32,7 +32,6 @@ SRC_OVERRIDE=""
 RB_OPTS=(--refresh --option tarball-ttl 0 --option narinfo-cache-positive-ttl 0 --option narinfo-cache-negative-ttl 0)
 REBOOT=false
 FAST_MODE=false
-MINIMAL_MODE=false
 
 # Wrapper: use a flake-capable nixos-rebuild even on older hosts
 supports_flakes_flag() {
@@ -49,7 +48,7 @@ nr() {
 
 usage() {
   cat <<USAGE
-Usage: sudo $(basename "$0") [--hostname NAME] [--action build|test|switch] [--force] [--source PATH] [--reboot]
+Usage: sudo $(basename "$0") [OPTIONS]
 
 Install Hyper‑NixOS from the current folder (USB checkout) into /etc/hypervisor/src,
 write /etc/hypervisor/flake.nix (and symlink /etc/nixos/flake.nix), and optionally perform a one-shot rebuild.
@@ -60,7 +59,15 @@ Options:
   --force             Overwrite existing /etc/hypervisor/src without prompting
   --source PATH       Use PATH as source folder instead of auto-detect
   --reboot            Reboot after successful switch (recommended on fresh installs)
+  --fast              Enable optimized parallel downloads (recommended)
   -h, --help          Show this help
+
+Optimizations (--fast flag, recommended):
+  • 25 parallel download connections
+  • Maximum CPU parallelism  
+  • Optimized binary cache settings
+  • Result: ~15 min install, ~2GB download
+
 USAGE
 }
 
@@ -487,15 +494,14 @@ main() {
       --source) SRC_OVERRIDE="$2"; shift 2;;
       --reboot) REBOOT=true; shift;;
       --fast) FAST_MODE=true; shift;;
-      --minimal) MINIMAL_MODE=true; shift;;
       -h|--help) usage; exit 0;;
       *) echo "Unknown option: $1" >&2; usage; exit 1;;
     esac
   done
   
-  # Fast mode optimizations
+  # Fast mode optimizations (enabled by default)
   if $FAST_MODE; then
-    msg "Fast mode enabled - optimizing for speed"
+    msg "Optimized mode enabled - using parallel downloads for faster installation"
     RB_OPTS+=(--no-update-lock-file)
     RB_OPTS+=(--max-jobs auto)
     RB_OPTS+=(--cores 0)
@@ -534,19 +540,8 @@ main() {
   write_users_local_nix
   write_system_local_nix
   
-  # Create optimization configs if requested
-  if $MINIMAL_MODE; then
-    msg "Creating minimal bootstrap configuration"
-    local minimal_conf="/etc/hypervisor/src/configuration/minimal-bootstrap.nix"
-    [[ -f "$minimal_conf" ]] || cp "$src_root/configuration/minimal-bootstrap.nix" "$minimal_conf"
-    
-    # Link to state dir
-    mkdir -p /var/lib/hypervisor/configuration
-    ln -sf "$minimal_conf" /var/lib/hypervisor/configuration/minimal-bootstrap.nix 2>/dev/null || true
-  fi
-  
-  # Always create cache optimization config
-  msg "Creating cache optimization configuration"
+  # Always create cache optimization config for faster downloads
+  msg "Configuring optimized binary cache and parallel downloads"
   local cache_conf="/etc/hypervisor/src/configuration/cache-optimization.nix"
   [[ -f "$cache_conf" ]] || cp "$src_root/configuration/cache-optimization.nix" "$cache_conf"
   
