@@ -8,8 +8,14 @@ let
   enableWelcomeAtBoot = lib.attrByPath ["hypervisor" "firstBootWelcome" "enableAtBoot"] true config;
   # First-boot wizard disabled - users run "Install VMs" from main menu instead
   enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  # Disable GUI by default - users can enable it if they want graphical management
-  enableGuiAtBoot = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
+  # Detect if GUI is available in base system (for menu/dashboard to know)
+  baseSystemHasGui = config.services.xserver.enable or false;
+  # Check if user has explicit hypervisor GUI preference
+  # If not set, we respect base system configuration (don't override)
+  hasHypervisorGuiPreference = lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config;
+  hypervisorGuiRequested = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
+  # Only override if user has explicit preference, otherwise respect base system
+  enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else baseSystemHasGui;
   # Compatibility flags for NixOS versions (24.05 vs 24.11+)
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
@@ -105,20 +111,23 @@ in {
   environment.etc."libvirt/hooks/qemu".source = ../scripts/libvirt_hooks/qemu;
 
   # Boot Behavior Configuration:
-  # - First boot: Setup wizard runs (if enabled), then menu or GUI
-  # - Subsequent boots: Menu (if enabled) or GUI loads directly
-  # - To change: set hypervisor.menu.enableAtBoot, hypervisor.gui.enableAtBoot, etc.
-  # - Default: Console menu at boot (enableMenuAtBoot = true)
+  # - First boot: Setup wizard runs (if enabled), then VM selector
+  # - Subsequent boots: VM boot selector (if VMs exist) or main menu
+  # - VM selector shows: VMs list + "More Options" → main menu
+  # - Main menu has: "← Back to VM Boot Selector" option
+  # - Default: VM-first boot flow (enableMenuAtBoot = true)
   # - GUI available via menu: "More Options" → "GNOME Desktop"
   
   # Autologin configuration for appliance/kiosk mode
   # SECURITY NOTE: For production/multi-user systems, disable autologin!
   # See docs/SECURITY_MODEL.md for secure configurations
   # 
-  # Default: Autologin to management user (INSECURE but convenient)
+  # Console auto-login: Only if menu/wizard enabled AND (no GUI preference OR GUI explicitly disabled)
+  # This respects base system GUI configuration - we don't force console login if user wants GUI
   # Recommended: Create hypervisor-operator user without sudo access
   # See: /var/lib/hypervisor/configuration/security-kiosk.nix
-  services.getty.autologinUser = lib.mkIf (enableMenuAtBoot || enableWizardAtBoot) mgmtUser;
+  consoleAutoLoginEnabled = (enableMenuAtBoot || enableWizardAtBoot) && (!hasHypervisorGuiPreference || !enableGuiAtBoot);
+  services.getty.autologinUser = lib.mkIf consoleAutoLoginEnabled mgmtUser;
   
   # Create a default 'hypervisor' user only when used as the management user
   # Note: During bootstrap, the script will automatically detect existing users
@@ -400,20 +409,28 @@ in {
   sound.enable = false;
   hardware.opengl.enable = true;
 
-  # GUI management environment (Wayland GNOME) - DISABLED by default
-  # To enable: Create /var/lib/hypervisor/configuration/gui-local.nix with hypervisor.gui.enableAtBoot = true
-  services.xserver.enable = lib.mkIf enableGuiAtBoot true;
+  # GUI management environment (Wayland GNOME)
+  # Default: GNOME installed but NOT auto-started (available via menu)
+  # To auto-start GUI at boot: Create /var/lib/hypervisor/configuration/gui-local.nix with hypervisor.gui.enableAtBoot = true
+  # Using mkDefault so base system config is preserved (if user wants GNOME available)
+  # But we don't force it to start on boot
+  services.xserver.enable = lib.mkDefault (baseSystemHasGui || enableGuiAtBoot);
   # Display Manager (GDM) - prefer legacy xserver paths for compatibility
-  services.xserver.displayManager.gdm.enable = lib.mkIf (enableGuiAtBoot && hasOldDM) true;
-  services.xserver.displayManager.gdm.wayland = lib.mkIf (enableGuiAtBoot && hasOldDM) true;
+  # CRITICAL: Only enable display manager if GUI boot is explicitly requested
+  # This prevents auto-starting GUI even if base system has GNOME installed
+  services.xserver.displayManager.gdm.enable = lib.mkDefault (enableGuiAtBoot && hasOldDM);
+  services.xserver.displayManager.gdm.wayland = lib.mkDefault (enableGuiAtBoot && hasOldDM);
+  # Auto-login only if GUI boot is explicitly requested
   services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
-    enable = true;
+    enable = lib.mkDefault true;
     user = mgmtUser;
   };
   # Desktop Manager (GNOME) - support both old and new option paths
-  # Prefer legacy path for current target systems
-  services.xserver.desktopManager.gnome.enable = lib.mkIf (enableGuiAtBoot && hasOldDesk) true;
-  programs.xwayland.enable = lib.mkIf enableGuiAtBoot true;
+  # Use mkDefault to respect base system configuration
+  services.xserver.desktopManager.gnome.enable = lib.mkDefault (enableGuiAtBoot && hasOldDesk);
+  programs.xwayland.enable = lib.mkDefault enableGuiAtBoot;
+  # Desktop files - ALWAYS present so they work if user manually accesses GNOME
+  # Even if GUI boot is disabled, these allow easy menu access from GNOME session
   environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
     text = ''
       [Desktop Entry]
@@ -423,26 +440,71 @@ in {
       X-GNOME-Autostart-enabled=true
     '';
   };
-  environment.etc."xdg/applications/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
+  
+  # Application launcher icons - always available
+  environment.etc."xdg/applications/hypervisor-menu.desktop" = {
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Hypervisor Console Menu
+      Comment=Main hypervisor management menu
+      Exec=gnome-terminal -- /etc/hypervisor/scripts/menu.sh
+      Icon=utilities-terminal
+      Terminal=false
+      Categories=System;Utility;
+    '';
+  };
+  environment.etc."xdg/applications/hypervisor-dashboard.desktop" = {
     text = ''
       [Desktop Entry]
       Type=Application
       Name=Hypervisor Dashboard
-      Comment=Manage VMs and hypervisor tasks
+      Comment=GUI dashboard for VM and task management
       Exec=/etc/hypervisor/scripts/management_dashboard.sh
       Icon=computer
       Categories=System;Utility;
     '';
   };
-  environment.etc."xdg/applications/hypervisor-installer.desktop" = lib.mkIf enableGuiAtBoot {
+  environment.etc."xdg/applications/hypervisor-installer.desktop" = {
     text = ''
       [Desktop Entry]
       Type=Application
-      Name=Hypervisor Installer
-      Comment=Run first-boot setup/installer
-      Exec=/etc/hypervisor/scripts/setup_wizard.sh
+      Name=Hypervisor Setup Wizard
+      Comment=Run first-boot setup and configuration wizard
+      Exec=gnome-terminal -- /etc/hypervisor/scripts/setup_wizard.sh
       Icon=system-software-install
+      Terminal=false
+      Categories=System;Settings;
+    '';
+  };
+  environment.etc."xdg/applications/hypervisor-networking.desktop" = {
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Network Foundation Setup
+      Comment=Configure foundational networking (bridges, interfaces)
+      Exec=gnome-terminal -- sudo /etc/hypervisor/scripts/foundational_networking_setup.sh
+      Icon=network-wired
+      Terminal=false
+      Categories=System;Settings;Network;
+    '';
+  };
+  
+  # Create desktop shortcuts for quick access
+  environment.etc."skel/Desktop/Hypervisor-Menu.desktop" = {
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Hypervisor Console Menu
+      Comment=Main hypervisor management menu
+      Exec=gnome-terminal -- /etc/hypervisor/scripts/menu.sh
+      Icon=utilities-terminal
+      Terminal=false
       Categories=System;Utility;
     '';
+    mode = "0755";
+  };
+}
+  mode = "0755";
   };
 }
