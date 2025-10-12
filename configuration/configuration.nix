@@ -239,12 +239,13 @@ in {
   sound.enable = false;
   hardware.opengl.enable = true;
   services.xserver.enable = lib.mkDefault (baseSystemHasGui || enableGuiAtBoot);
-  services.xserver.displayManager.gdm.enable = lib.mkDefault (enableGuiAtBoot && hasOldDM);
-  services.xserver.displayManager.gdm.wayland = lib.mkDefault (enableGuiAtBoot && hasOldDM);
-  services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
+  # Enable GDM when GUI is requested (use old path for NixOS 24.05 compatibility)
+  services.xserver.displayManager.gdm.enable = lib.mkDefault enableGuiAtBoot;
+  services.xserver.displayManager.gdm.wayland = lib.mkDefault enableGuiAtBoot;
+  services.xserver.displayManager.autoLogin = lib.mkIf enableGuiAtBoot {
     enable = lib.mkDefault true; user = mgmtUser;
   };
-  services.xserver.desktopManager.gnome.enable = lib.mkDefault (enableGuiAtBoot && hasOldDesk);
+  services.xserver.desktopManager.gnome.enable = lib.mkDefault enableGuiAtBoot;
   programs.xwayland.enable = lib.mkDefault enableGuiAtBoot;
   environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
     text = ''
