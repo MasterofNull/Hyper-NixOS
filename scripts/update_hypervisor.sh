@@ -59,6 +59,8 @@ rm -f "$tmp"
 export NIX_CONFIG="experimental-features = nix-command flakes"
 # Refresh lock and rebuild with safe cache options
 nix flake lock --update-input hypervisor --flake /etc/nixos
+# Update all flake inputs to avoid NAR hash mismatches
+nix flake update --flake /etc/nixos
 nixos-rebuild switch --flake "/etc/nixos#$(hostname -s)" \
   --refresh --option tarball-ttl 0 \
   --option narinfo-cache-positive-ttl 0 \

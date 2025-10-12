@@ -190,10 +190,6 @@
     '';
   };
 
-  # Enable support for additional keyboard layouts and variants
-  # Users can switch layouts with: setxkbmap <layout>
-  services.xserver.xkb.extraLayouts = lib.mkIf config.services.xserver.enable {};
-
   # Enable NumLock on boot (console and X11)
   # Uncomment if desired:
   # services.xserver.displayManager.sessionCommands = ''
