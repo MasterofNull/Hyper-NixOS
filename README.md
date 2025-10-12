@@ -92,7 +92,11 @@ Boot from the ISO. On first boot, a setup wizard helps you configure networking 
 After reboot, you'll be **automatically logged in** to the console and the **first-boot setup wizard** will run:
 
 1. **Welcome Screen** - Overview of the wizard
-2. **Network Setup** - Create network bridge (optional)
+2. **Network Bridge Setup** - Intelligent bridge configuration (optional)
+   - Automatic physical interface detection
+   - Performance profile selection (Standard/Performance)
+   - MTU optimization (1500 standard, 9000 jumbo frames)
+   - Guided setup with validation
 3. **ISO Download** - Download and verify OS installer from 14 presets (optional)
 4. **VM Creation** - Create your first VM profile (optional)
 5. **Summary** - Shows what was configured
