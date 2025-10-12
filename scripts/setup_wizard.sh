@@ -47,36 +47,153 @@ $DIALOG --msgbox "╔═══════════════════�
 
 Welcome! This wizard will help you configure your hypervisor:
 
+✓ Foundational networking setup (REQUIRED FIRST)
 ✓ Network bridge with performance optimization
 ✓ OS installer download (14 verified distributions)
 ✓ First VM creation with secure defaults
 ✓ Security and performance tuning
 
+IMPORTANT: Networking must be configured first!
+Many processes depend on network availability:
+  • ISO downloads require internet connectivity
+  • Package installation needs network access
+  • VM creation requires network bridges
+  • Network discovery and DHCP configuration
+
 Everything is optional - you can skip any step.
 All settings can be changed later.
 
-Logs: $LOGFILE" 22 78
+Logs: $LOGFILE" 26 78
 
 # Track what was configured
 CONFIGURED_ITEMS=()
 
-# 1. Network bridge creation
-if $DIALOG --yesno "Step 1/3: Network Bridge\n\nCreate a secure network bridge (recommended)?\n\nThis enables VM networking with isolation." 14 70 ; then
-  log "User chose to create network bridge"
-  if /etc/hypervisor/scripts/bridge_helper.sh; then
-    log "SUCCESS: Network bridge created"
-    CONFIGURED_ITEMS+=("✓ Network bridge configured")
+# 0. FOUNDATIONAL NETWORKING - MUST BE FIRST
+log "Step 0: Foundational Networking Setup (CRITICAL)"
+
+# Check if networking is already configured
+NETWORK_READY=false
+if [[ -f /var/lib/hypervisor/.network_ready ]]; then
+  log "Network readiness marker found, checking status..."
+  if /etc/hypervisor/scripts/check_network_ready.sh -v 2>&1 | tee -a "$LOGFILE"; then
+    NETWORK_READY=true
+    log "Network foundation already configured"
+    
+    $DIALOG --yesno "Network Already Configured
+
+The foundational networking setup has already been completed.
+
+Would you like to:
+  YES = Review/reconfigure networking
+  NO  = Skip to next step (recommended)
+
+Continue to networking setup?" 12 70 || {
+      log "User chose to skip networking reconfiguration"
+      CONFIGURED_ITEMS+=("✓ Network foundation: already configured")
+    }
   else
-    log "WARNING: Network bridge creation failed or was skipped"
-    CONFIGURED_ITEMS+=("⚠ Network bridge: skipped/failed")
+    NETWORK_READY=false
+    log "Network marker exists but validation failed, will reconfigure"
   fi
+fi
+
+# Run foundational networking setup if needed
+if ! $NETWORK_READY; then
+  $DIALOG --msgbox "STEP 1/4: FOUNDATIONAL NETWORKING SETUP
+═══════════════════════════════════════════════════════
+
+WHY THIS MUST BE FIRST:
+────────────────────────────────────────────────────────
+
+This is the CRITICAL foundation for everything else:
+
+  ✓ Detects and validates network hardware
+  ✓ Configures high-performance network bridge
+  ✓ Automatically binds interfaces (no manual work!)
+  ✓ Sets up libvirt networking
+  ✓ Validates connectivity
+  ✓ Creates readiness marker for other services
+
+ALL of these depend on networking:
+────────────────────────────────────────────────────────
+  • Downloading ISOs
+  • Installing packages
+  • Creating VMs
+  • Network discovery
+  • DHCP configuration
+  • Security zones
+
+This wizard provides:
+────────────────────────────────────────────────────────
+  ✓ Automatic interface detection
+  ✓ Intelligent binding recommendations
+  ✓ Comprehensive guidance at every step
+  ✓ Full automation with safe defaults
+  ✓ Validation and connectivity testing
+
+Let's set up your network foundation!" 34 76
+
+  log "Running foundational networking setup..."
+  if /etc/hypervisor/scripts/foundational_networking_setup.sh 2>&1 | tee -a "$LOGFILE"; then
+    log "SUCCESS: Foundational networking configured"
+    CONFIGURED_ITEMS+=("✓ Network foundation: configured successfully")
+    NETWORK_READY=true
+  else
+    log "ERROR: Foundational networking setup failed"
+    CONFIGURED_ITEMS+=("✗ Network foundation: FAILED")
+    
+    $DIALOG --msgbox "CRITICAL: Networking Setup Failed
+═══════════════════════════════════════════════════════
+
+The foundational networking setup did not complete successfully.
+
+This is a CRITICAL step. Without networking:
+  ✗ Cannot download ISOs
+  ✗ Cannot install packages
+  ✗ VMs will have no network connectivity
+  ✗ Many features will not work
+
+What to do:
+────────────────────────────────────────────────────────
+1. Review the log for errors:
+   $LOGFILE
+
+2. Try running setup manually:
+   sudo /etc/hypervisor/scripts/foundational_networking_setup.sh
+
+3. Check your network hardware:
+   ip link show
+   
+4. Ensure physical connection (cable, WiFi, etc.)
+
+You can continue the wizard, but many features
+will not work without networking.
+
+Press OK to continue anyway..." 28 76
+  fi
+fi
+
+# Verify network readiness before proceeding
+if $NETWORK_READY; then
+  log "Network foundation verified, proceeding with wizard"
 else
-  log "User skipped network bridge creation"
-  CONFIGURED_ITEMS+=("○ Network bridge: skipped by user")
+  log "WARNING: Proceeding without network foundation (limited functionality)"
 fi
 
 # 2. Download OS installer ISOs
-if $DIALOG --yesno "Step 2/3: ISO Download\n\nDownload and verify an OS installer ISO (recommended)?\n\nWe auto-fetch checksums/signatures and verify authenticity." 16 80 ; then
+if ! $NETWORK_READY; then
+  log "Skipping ISO download due to missing network foundation"
+  CONFIGURED_ITEMS+=("○ ISO download: skipped (no network)")
+  $DIALOG --msgbox "Step 2/4: ISO Download - SKIPPED
+
+ISO downloads require network connectivity.
+
+Since networking was not successfully configured,
+this step will be skipped.
+
+You can download ISOs later from the main menu
+after fixing network configuration." 14 70
+elif $DIALOG --yesno "Step 2/4: ISO Download\n\nDownload and verify an OS installer ISO (recommended)?\n\nWe auto-fetch checksums/signatures and verify authenticity.\n\nNetwork is ready!" 16 80 ; then
   log "User chose to download ISO"
   if /etc/hypervisor/scripts/iso_manager.sh; then
     log "SUCCESS: ISO downloaded"
@@ -91,7 +208,20 @@ else
 fi
 
 # 3. Create your first VM
-if $DIALOG --yesno "Step 3/3: VM Creation\n\nCreate your first VM with secure defaults (recommended)?\n\nVirtio devices, Secure Boot (OVMF), and non-root QEMU will be used." 16 80 ; then
+if ! $NETWORK_READY; then
+  log "Showing network warning before VM creation"
+  $DIALOG --msgbox "Step 3/4: VM Creation - WARNING
+
+VMs can be created, but they will have NO NETWORK ACCESS
+without proper networking configuration.
+
+You can still create VMs, but they will be isolated and
+unable to reach the internet or other network devices.
+
+Recommendation: Configure networking first!" 14 70
+fi
+
+if $DIALOG --yesno "Step 3/4: VM Creation\n\nCreate your first VM with secure defaults (recommended)?\n\nVirtio devices, Secure Boot (OVMF), and non-root QEMU will be used.\n\n$(if ! $NETWORK_READY; then echo 'WARNING: Network not ready - VMs will have no network access!'; fi)" 18 80 ; then
   log "User chose to create first VM"
   if /etc/hypervisor/scripts/create_vm_wizard.sh /var/lib/hypervisor/vm_profiles /var/lib/hypervisor/isos; then
     log "SUCCESS: First VM created"
