@@ -238,14 +238,34 @@ in {
   hardware.pulseaudio.enable = false;
   sound.enable = false;
   hardware.opengl.enable = true;
-  services.xserver.enable = lib.mkDefault (baseSystemHasGui || enableGuiAtBoot);
-  services.xserver.displayManager.gdm.enable = lib.mkDefault (enableGuiAtBoot && hasOldDM);
-  services.xserver.displayManager.gdm.wayland = lib.mkDefault (enableGuiAtBoot && hasOldDM);
-  services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
-    enable = lib.mkDefault true; user = mgmtUser;
-  };
-  services.xserver.desktopManager.gnome.enable = lib.mkDefault (enableGuiAtBoot && hasOldDesk);
-  programs.xwayland.enable = lib.mkDefault enableGuiAtBoot;
+  # Enforce desired boot target only when an explicit hypervisor preference exists.
+  # This ensures headless (multi-user.target) when GUI is disabled via gui-local.nix,
+  # and graphical.target when explicitly enabled.
+  systemd.defaultUnit = lib.mkIf hasHypervisorGuiPreference
+    (lib.mkOverride 900 (if enableGuiAtBoot then "graphical.target" else "multi-user.target"));
+
+  # Old xserver.* option set (pre-24.11 style)
+  services.xserver.enable = lib.mkIf hasHypervisorGuiPreference (lib.mkOverride 900 enableGuiAtBoot);
+  services.xserver.displayManager.gdm.enable =
+    lib.mkIf (hasHypervisorGuiPreference && hasOldDM) (lib.mkOverride 900 enableGuiAtBoot);
+  services.xserver.displayManager.gdm.wayland =
+    lib.mkIf (hasHypervisorGuiPreference && hasOldDM) (lib.mkOverride 900 enableGuiAtBoot);
+  services.xserver.displayManager.autoLogin =
+    lib.mkIf (hasHypervisorGuiPreference && enableGuiAtBoot && hasOldDM) {
+      enable = lib.mkDefault true; user = mgmtUser;
+    };
+  services.xserver.desktopManager.gnome.enable =
+    lib.mkIf (hasHypervisorGuiPreference && hasOldDesk) (lib.mkOverride 900 enableGuiAtBoot);
+
+  # New services.displayManager/services.desktopManager option set (24.11+)
+  services.displayManager.gdm.enable =
+    lib.mkIf (hasHypervisorGuiPreference && hasNewDM) (lib.mkOverride 900 enableGuiAtBoot);
+  services.displayManager.gdm.wayland =
+    lib.mkIf (hasHypervisorGuiPreference && hasNewDM) (lib.mkOverride 900 enableGuiAtBoot);
+  services.desktopManager.gnome.enable =
+    lib.mkIf (hasHypervisorGuiPreference && hasNewDesk) (lib.mkOverride 900 enableGuiAtBoot);
+
+  programs.xwayland.enable = lib.mkIf hasHypervisorGuiPreference (lib.mkOverride 900 enableGuiAtBoot);
   environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
     text = ''
       [Desktop Entry]
