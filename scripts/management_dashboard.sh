@@ -20,29 +20,62 @@ list_vms() {
   shopt -u nullglob
 }
 
+get_gui_status() {
+  # Detect GUI environment
+  if command -v "$SCRIPTS/detect_gui_environment.sh" >/dev/null 2>&1; then
+    gui_json=$("$SCRIPTS/detect_gui_environment.sh" 2>/dev/null || echo '{}')
+    base_gui=$(echo "$gui_json" | jq -r '.base_system_gui // false' 2>/dev/null || echo "false")
+    hypervisor_gui=$(echo "$gui_json" | jq -r '.hypervisor_gui_enabled // false' 2>/dev/null || echo "false")
+    
+    if [[ "$hypervisor_gui" == "true" ]]; then
+      echo "GUI: Forced ON (override)"
+    elif [[ "$hypervisor_gui" == "false" ]] && [[ -f /var/lib/hypervisor/configuration/gui-local.nix ]]; then
+      echo "GUI: Forced OFF (override)"
+    elif [[ "$base_gui" == "true" ]]; then
+      echo "GUI: ON (base system)"
+    else
+      echo "GUI: OFF (no GUI installed)"
+    fi
+  else
+    echo "GUI: Unknown"
+  fi
+}
+
 show_menu() {
-  zenity --list --title="Hypervisor Dashboard" \
+  gui_status=$(get_gui_status)
+  
+  zenity --list --title="Hypervisor Dashboard - $gui_status" \
     --column=Action --column=Description \
     "vm_menu" "Open VM selector (TUI)" \
     "wizard" "Run first-boot setup wizard" \
+    "network_setup" "Network foundation setup" \
     "iso" "Open ISO manager" \
     "create" "Create VM wizard" \
     "update" "Update Hypervisor (pin latest)" \
-    "toggle_menu_on" "Enable menu at boot" \
-    "toggle_menu_off" "Disable menu at boot" \
+    "gui_status" "Show GUI environment status" \
+    "gui_auto" "GUI: Use base system default" \
+    "gui_force_on" "GUI: Force GNOME at boot" \
+    "gui_force_off" "GUI: Force console menu at boot" \
+    "toggle_menu_on" "Enable console menu at boot" \
+    "toggle_menu_off" "Disable console menu at boot" \
     "toggle_wizard_on" "Enable first-boot wizard at boot" \
     "toggle_wizard_off" "Disable first-boot wizard at boot" \
     "terminal" "Open terminal" \
-    --height=420 --width=640
+    --height=550 --width=680
 }
 
 run_action() {
   case "$1" in
     vm_menu)        $TERMINAL -- bash -lc "$SCRIPTS/menu.sh" & ;;
     wizard)         $TERMINAL -- bash -lc "$SCRIPTS/setup_wizard.sh" & ;;
+    network_setup)  $TERMINAL -- bash -lc "sudo $SCRIPTS/foundational_networking_setup.sh" & ;;
     iso)            $TERMINAL -- bash -lc "$SCRIPTS/iso_manager.sh" & ;;
     create)         $TERMINAL -- bash -lc "$SCRIPTS/create_vm_wizard.sh $STATE/vm_profiles $STATE/isos" & ;;
     update)         $TERMINAL -- bash -lc "$SCRIPTS/update_hypervisor.sh" & ;;
+    gui_status)     $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh status; read -p 'Press Enter to continue...'" & ;;
+    gui_auto)       $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh auto; read -p 'Press Enter to continue...'" & ;;
+    gui_force_on)   $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh on; read -p 'Press Enter to continue...'" & ;;
+    gui_force_off)  $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh off; read -p 'Press Enter to continue...'" & ;;
     toggle_menu_on) $TERMINAL -- bash -lc "$SCRIPTS/toggle_boot_features.sh menu on" & ;;
     toggle_menu_off)$TERMINAL -- bash -lc "$SCRIPTS/toggle_boot_features.sh menu off" & ;;
     toggle_wizard_on)$TERMINAL -- bash -lc "$SCRIPTS/toggle_boot_features.sh wizard on" & ;;

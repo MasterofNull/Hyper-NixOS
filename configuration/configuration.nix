@@ -8,8 +8,12 @@ let
   enableWelcomeAtBoot = lib.attrByPath ["hypervisor" "firstBootWelcome" "enableAtBoot"] true config;
   # First-boot wizard disabled - users run "Install VMs" from main menu instead
   enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  # Disable GUI by default - users can enable it if they want graphical management
-  enableGuiAtBoot = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
+  # Detect if GUI is enabled (either by user's base install or hypervisor config)
+  # Check both base system and hypervisor-specific settings
+  baseSystemHasGui = config.services.xserver.enable or false;
+  hypervisorGuiRequested = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
+  # Enable GUI if either base system has it OR hypervisor config requests it
+  enableGuiAtBoot = baseSystemHasGui || hypervisorGuiRequested;
   # Compatibility flags for NixOS versions (24.05 vs 24.11+)
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
@@ -400,20 +404,25 @@ in {
   sound.enable = false;
   hardware.opengl.enable = true;
 
-  # GUI management environment (Wayland GNOME) - DISABLED by default
-  # To enable: Create /var/lib/hypervisor/configuration/gui-local.nix with hypervisor.gui.enableAtBoot = true
-  services.xserver.enable = lib.mkIf enableGuiAtBoot true;
+  # GUI management environment (Wayland GNOME)
+  # Respects user's base system configuration - doesn't override if already enabled
+  # To explicitly enable via hypervisor: Create /var/lib/hypervisor/configuration/gui-local.nix with hypervisor.gui.enableAtBoot = true
+  # Using mkDefault so base system config takes precedence
+  services.xserver.enable = lib.mkDefault enableGuiAtBoot;
   # Display Manager (GDM) - prefer legacy xserver paths for compatibility
-  services.xserver.displayManager.gdm.enable = lib.mkIf (enableGuiAtBoot && hasOldDM) true;
-  services.xserver.displayManager.gdm.wayland = lib.mkIf (enableGuiAtBoot && hasOldDM) true;
-  services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
-    enable = true;
+  # Only configure if not already set by base system
+  services.xserver.displayManager.gdm.enable = lib.mkDefault (enableGuiAtBoot && hasOldDM);
+  services.xserver.displayManager.gdm.wayland = lib.mkDefault (enableGuiAtBoot && hasOldDM);
+  # Only auto-login for hypervisor management if requested and menu is enabled
+  # This respects base system login configuration
+  services.xserver.displayManager.autoLogin = lib.mkIf (hypervisorGuiRequested && enableMenuAtBoot && hasOldDM) {
+    enable = lib.mkDefault true;
     user = mgmtUser;
   };
   # Desktop Manager (GNOME) - support both old and new option paths
-  # Prefer legacy path for current target systems
-  services.xserver.desktopManager.gnome.enable = lib.mkIf (enableGuiAtBoot && hasOldDesk) true;
-  programs.xwayland.enable = lib.mkIf enableGuiAtBoot true;
+  # Use mkDefault to respect base system configuration
+  services.xserver.desktopManager.gnome.enable = lib.mkDefault (enableGuiAtBoot && hasOldDesk);
+  programs.xwayland.enable = lib.mkDefault enableGuiAtBoot;
   # Desktop files - ALWAYS present so they work if user manually accesses GNOME
   # Even if GUI boot is disabled, these allow easy menu access from GNOME session
   environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
