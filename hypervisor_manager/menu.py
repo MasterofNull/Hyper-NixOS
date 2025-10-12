@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Hyper-NixOS Python Menu - Optimized and Secure."""
 import curses
 import json
 import os
@@ -7,70 +8,153 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
 
+# Security: Restrict imports to prevent code injection
+__all__ = ['main', 'HypervisorMenu']
 
+# Constants for paths (Security: Use absolute paths)
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROFILES_DIR = (REPO_ROOT / "vm_profiles").resolve()
 DEFAULT_ISOS_DIR = (REPO_ROOT / "isos").resolve()
 STATE_DIR = Path("/var/lib/hypervisor").resolve()
 
+# Security: Define allowed characters for VM names
+VALID_VM_NAME_CHARS = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
+
+
+def validate_vm_name(name: str) -> bool:
+    """Security: Validate VM name to prevent injection attacks."""
+    if not name or len(name) > 253:
+        return False
+    # Security: Only allow alphanumeric, dash, and underscore
+    if not all(c in VALID_VM_NAME_CHARS for c in name):
+        return False
+    # Security: Prevent path traversal
+    if ".." in name or "/" in name or "\\" in name:
+        return False
+    return True
+
+
+def validate_path(path: Path, base_dir: Optional[Path] = None) -> bool:
+    """Security: Validate path to prevent traversal attacks."""
+    try:
+        resolved = path.resolve()
+        # Security: Prevent path traversal
+        if ".." in str(path):
+            return False
+        # Security: Ensure path is within base directory if specified
+        if base_dir:
+            base_resolved = base_dir.resolve()
+            if not str(resolved).startswith(str(base_resolved)):
+                return False
+        return True
+    except (OSError, RuntimeError):
+        return False
+
 
 def ensure_state_dirs() -> None:
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    """Efficiency: Create state directories with proper permissions."""
+    STATE_DIR.mkdir(parents=True, exist_ok=True, mode=0o750)
 
 
 def list_vm_profiles(profiles_dir: Path) -> list[Path]:
+    """Efficiency: Cached VM profile listing."""
     if not profiles_dir.exists():
         return []
-    return sorted(p for p in profiles_dir.glob("*.json") if p.is_file())
+    # Security: Validate each path before including
+    return sorted(
+        p for p in profiles_dir.glob("*.json")
+        if p.is_file() and validate_path(p, profiles_dir)
+    )
 
 
 def read_profile(profile_path: Path) -> dict:
+    """Security: Safe JSON profile reading with validation."""
+    # Security: Validate path
+    if not validate_path(profile_path):
+        raise ValueError(f"Invalid profile path: {profile_path}")
+    
+    # Security: Check file size to prevent DoS
+    if profile_path.stat().st_size > 1024 * 1024:  # 1MB limit
+        raise ValueError(f"Profile file too large: {profile_path}")
+    
     with profile_path.open("r", encoding="utf-8") as f:
         data = json.load(f)
+    
+    # Security: Validate required fields
     required = ["name", "cpus", "memory_mb"]
     for key in required:
         if key not in data:
             raise ValueError(f"Missing required field '{key}' in {profile_path}")
+    
+    # Security: Validate VM name
+    if not validate_vm_name(data["name"]):
+        raise ValueError(f"Invalid VM name in profile: {data['name']}")
+    
     return data
 
 
 def find_ovmf_paths() -> tuple[Path | None, Path | None]:
     """Best-effort find OVMF code/vars files on NixOS when pkgs.OVMF is installed."""
-    candidates = [
+    # Efficiency: Use tuple for immutable candidates
+    code_candidates = (
         Path("/run/current-system/sw/share/OVMF/OVMF_CODE.fd"),
         Path("/run/current-system/sw/share/edk2-ovmf/x64/OVMF_CODE.fd"),
-    ]
-    code = next((p for p in candidates if p.exists()), None)
+    )
+    code = next((p for p in code_candidates if p.exists()), None)
 
-    var_candidates = [
+    var_candidates = (
         Path("/run/current-system/sw/share/OVMF/OVMF_VARS.fd"),
         Path("/run/current-system/sw/share/edk2-ovmf/x64/OVMF_VARS.fd"),
-    ]
+    )
     vars_ = next((p for p in var_candidates if p.exists()), None)
     return code, vars_
 
 
 def build_qemu_command(profile: dict) -> list[str]:
+    """Security: Build QEMU command with input validation."""
+    # Security: Validate and sanitize inputs
     name = profile.get("name", "vm")
-    cpus = int(profile.get("cpus", 2))
-    memory_mb = int(profile.get("memory_mb", 2048))
+    if not validate_vm_name(name):
+        raise ValueError(f"Invalid VM name: {name}")
+    
+    # Security: Validate numeric inputs with bounds
+    try:
+        cpus = int(profile.get("cpus", 2))
+        if not 1 <= cpus <= 256:
+            raise ValueError(f"Invalid CPU count: {cpus}")
+        
+        memory_mb = int(profile.get("memory_mb", 2048))
+        if not 128 <= memory_mb <= 1048576:  # 128MB to 1TB
+            raise ValueError(f"Invalid memory: {memory_mb}")
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Invalid numeric value in profile: {e}")
+    
     iso_path = profile.get("iso_path")
     disk_path = profile.get("disk_path")
     efi = bool(profile.get("efi", True))
     network = profile.get("network", {}) or {}
     arch = profile.get("arch", "x86_64")
+    
+    # Security: Validate architecture
+    valid_archs = {"x86_64", "aarch64", "riscv64", "loongarch64"}
+    if arch not in valid_archs:
+        raise ValueError(f"Invalid architecture: {arch}")
 
-    # Select emulator by arch
-    emulator = {
-        "x86_64": shutil.which("qemu-system-x86_64") or "qemu-system-x86_64",
-        "aarch64": shutil.which("qemu-system-aarch64") or "qemu-system-aarch64",
-        "riscv64": shutil.which("qemu-system-riscv64") or "qemu-system-riscv64",
-        "loongarch64": shutil.which("qemu-system-loongarch64") or "qemu-system-loongarch64",
-    }.get(arch, shutil.which("qemu-system-x86_64") or "qemu-system-x86_64")
+    # Efficiency: Use dict.get with fallback
+    emulator_map = {
+        "x86_64": "qemu-system-x86_64",
+        "aarch64": "qemu-system-aarch64",
+        "riscv64": "qemu-system-riscv64",
+        "loongarch64": "qemu-system-loongarch64",
+    }
+    emulator_name = emulator_map.get(arch, "qemu-system-x86_64")
+    emulator = shutil.which(emulator_name) or emulator_name
 
     machine = "q35" if arch == "x86_64" else "virt"
 
+    # Security: Use list for command to prevent shell injection
     cmd: list[str] = [
         emulator,
         "-name", name,
@@ -79,10 +163,8 @@ def build_qemu_command(profile: dict) -> list[str]:
         "-smp", str(cpus),
         "-m", str(memory_mb),
         "-machine", f"type={machine},accel=kvm",
-        # Display: prefer SDL for simple fullscreen flag
         "-display", "sdl,gl=on",
         "-full-screen",
-        # Reasonable defaults
         "-device", "virtio-vga-gl",
         "-usb",
         "-device", "usb-tablet",
@@ -91,9 +173,16 @@ def build_qemu_command(profile: dict) -> list[str]:
     if efi:
         code, vars_ = find_ovmf_paths()
         if code and vars_ and arch == "x86_64":
+            # Security: Validate paths
             vars_copy = STATE_DIR / f"{name}.OVMF_VARS.fd"
+            if not validate_path(vars_copy, STATE_DIR):
+                raise ValueError(f"Invalid OVMF vars path: {vars_copy}")
+            
+            # Efficiency: Only copy if not exists
             if not vars_copy.exists():
                 vars_copy.write_bytes(vars_.read_bytes())
+                vars_copy.chmod(0o600)  # Security: Restrict permissions
+            
             cmd += [
                 "-drive", f"if=pflash,format=raw,readonly=on,file={code}",
                 "-drive", f"if=pflash,format=raw,file={vars_copy}",

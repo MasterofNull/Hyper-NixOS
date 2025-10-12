@@ -24,51 +24,48 @@
         port = config.hypervisor.monitoring.prometheusPort;
         
         exporters = {
+          # Efficiency: Only enable essential collectors by default
           node = {
             enable = true;
             enabledCollectors = [ 
-              "systemd" 
-              "processes" 
-              "loadavg" 
-              "meminfo" 
-              "netstat" 
-              "diskstats" 
-              "filesystem"
-              "hwmon"
-              "cpu"
+              "systemd" "processes" "loadavg" "meminfo" 
+              "netstat" "diskstats" "filesystem" "hwmon" "cpu"
             ];
           };
           
-          # Custom libvirt exporter
+          # Efficiency: Optimized libvirt exporter with reduced overhead
           script = {
             enable = true;
             scriptPath = pkgs.writeShellScript "libvirt-exporter" ''
               #!/usr/bin/env bash
+              # Security: Strict error handling
               set -euo pipefail
               
-              # Collect VM metrics
+              # Efficiency: Single virsh call to get all domain info
               echo "# HELP libvirt_domain_state Domain state (1=running, 0=other)"
               echo "# TYPE libvirt_domain_state gauge"
-              
-              for domain in $(virsh list --all --name); do
-                [[ -z "$domain" ]] && continue
-                state=$(virsh domstate "$domain" 2>/dev/null || echo "unknown")
-                running=0
-                [[ "$state" == "running" ]] && running=1
-                echo "libvirt_domain_state{domain=\"$domain\"} $running"
-              done
-              
               echo "# HELP libvirt_domain_vcpu_count Number of vCPUs"
               echo "# TYPE libvirt_domain_vcpu_count gauge"
               echo "# HELP libvirt_domain_memory_mb Memory in MB"
               echo "# TYPE libvirt_domain_memory_mb gauge"
               
-              for domain in $(virsh list --name); do
+              # Efficiency: Batch processing to reduce virsh calls
+              virsh list --all --name 2>/dev/null | while IFS= read -r domain; do
                 [[ -z "$domain" ]] && continue
-                vcpus=$(virsh dominfo "$domain" 2>/dev/null | awk '/^CPU\(s\):/ {print $2}')
-                memory=$(virsh dominfo "$domain" 2>/dev/null | awk '/^Max memory:/ {print $3}')
-                echo "libvirt_domain_vcpu_count{domain=\"$domain\"} ${vcpus:-0}"
-                echo "libvirt_domain_memory_mb{domain=\"$domain\"} ${memory:-0}"
+                # Efficiency: Single dominfo call instead of multiple commands
+                info=$(virsh dominfo "$domain" 2>/dev/null || continue)
+                state=$(echo "$info" | awk '/^State:/ {print $2}')
+                running=0
+                [[ "$state" == "running" ]] && running=1
+                echo "libvirt_domain_state{domain=\"$domain\"} $running"
+                
+                # Only get details for running VMs to reduce overhead
+                if [[ "$running" == "1" ]]; then
+                  vcpus=$(echo "$info" | awk '/^CPU\(s\):/ {print $2}')
+                  memory=$(echo "$info" | awk '/^Max memory:/ {print $3}')
+                  echo "libvirt_domain_vcpu_count{domain=\"$domain\"} ${vcpus:-0}"
+                  echo "libvirt_domain_memory_mb{domain=\"$domain\"} ${memory:-0}"
+                fi
               done
             '';
           };

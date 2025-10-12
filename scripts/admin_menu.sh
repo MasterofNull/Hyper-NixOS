@@ -7,36 +7,29 @@
 # Comprehensive administrative menu with full access to all tools and automation
 # Hierarchical structure for easy navigation
 #
-set -Eeuo pipefail
-IFS=$'\n\t'
-umask 077
-PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-trap 'exit $?' EXIT HUP INT TERM
 
-VERSION="2.0"
-BRANDING="Hyper-NixOS Admin v${VERSION}"
-
-ROOT="/etc/hypervisor"
-CONFIG_JSON="$ROOT/config.json"
-STATE_DIR="/var/lib/hypervisor"
-USER_PROFILES_DIR="$STATE_DIR/vm_profiles"
-ISOS_DIR="$STATE_DIR/isos"
-SCRIPTS_DIR="$ROOT/scripts"
-LOG_DIR="$STATE_DIR/logs"
-
-: "${DIALOG:=whiptail}"
-export DIALOG
-
-require() {
-  for bin in "$@"; do
-    command -v "$bin" >/dev/null 2>&1 || {
-      echo "Missing dependency: $bin" >&2
-      exit 1
-    }
-  done
+# Source common library for shared functions and security
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh" || {
+    echo "ERROR: Failed to load common library" >&2
+    exit 1
 }
 
-require "$DIALOG" jq virsh
+# Initialize logging for this script
+init_logging "admin_menu"
+
+# Script-specific configuration
+readonly BRANDING="Hyper-NixOS Admin v${HYPERVISOR_VERSION}"
+readonly ROOT="/etc/hypervisor"
+readonly CONFIG_JSON="$HYPERVISOR_CONFIG"
+readonly STATE_DIR="$HYPERVISOR_STATE"
+readonly USER_PROFILES_DIR="$HYPERVISOR_PROFILES"
+readonly ISOS_DIR="$HYPERVISOR_ISOS"
+readonly SCRIPTS_DIR="$HYPERVISOR_SCRIPTS"
+readonly LOG_DIR="$HYPERVISOR_LOGS"
+
+log_info "Admin menu started"
 
 # ============================================================================
 # MAIN ADMIN MENU
