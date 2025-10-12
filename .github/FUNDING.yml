@@ -1,0 +1,12 @@
+# Enable Sponsor button and donation links on GitHub
+# Replace the placeholders with your actual handles/links as you set them up.
+
+github: [MasterofNull]
+ko_fi: MasterofNull
+# open_collective: your-collective
+# liberapay: your-handle
+# patreon: your-handle
+custom:
+  - https://github.com/MasterofNull/Hyper-NixOS#-support--donations
+  # - https://paypal.me/your-handle
+  # - https://buy.stripe.com/your-payment-link

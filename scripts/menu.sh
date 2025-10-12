@@ -77,6 +77,8 @@ menu_vm_main() {
   entries+=("__SYS_CONFIG__" "System Configuration → [sudo]")
   entries+=("__ADMIN__" "🔧 Admin Management Environment → (full access)")
   entries+=("" "")
+  entries+=("__DONATE__" "❤ Support development (donate)")
+  entries+=("" "")
   if [[ -n "$owner_filter" ]]; then
     entries+=("__CLEAR_OWNER_FILTER__" "Show all owners (clear filter)")
   else
@@ -432,6 +434,9 @@ while true; do
       ;;
     "__ADMIN__")
       exec "$SCRIPTS_DIR/admin_menu.sh"
+      ;;
+    "__DONATE__")
+      "$SCRIPTS_DIR/donate.sh" || true
       ;;
     "__DESKTOP__")
       if systemctl is-enabled display-manager.service >/dev/null 2>&1; then

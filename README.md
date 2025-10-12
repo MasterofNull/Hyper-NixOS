@@ -5,6 +5,10 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![NixOS](https://img.shields.io/badge/NixOS-24.05-blue.svg)](https://nixos.org)
 [![Built with](https://img.shields.io/badge/Built%20with-Nix%20Flakes-purple.svg)](https://nixos.org/manual/nix/stable/command-ref/new-cli/nix3-flake.html)
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors)](https://github.com/sponsors/MasterofNull)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Tip%20Jar-FF5E5B?logo=kofi)](https://ko-fi.com/masterofnull)
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-00457C?logo=paypal)](https://paypal.me/masterofnull)
+[![Stripe](https://img.shields.io/badge/Stripe-Payment%20Link-635BFF?logo=stripe)](https://buy.stripe.com/REPLACE_LINK)
 
 **Features:**
 - 🎓 **Educational-first design** - Guided wizards teach professional skills
@@ -344,6 +348,25 @@ Then rebuild: `sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)
 **Note:** Autologin is enabled by default for both console and GUI modes to provide a seamless appliance experience. You can disable it if you need manual login for security reasons.
 
 **Next steps:** See [Quick Start Guide](docs/QUICKSTART_EXPANDED.md) to create your first VM.
+
+---
+
+## 💖 Support & Donations
+
+If this project helps you, consider supporting development to cover maintenance, docs, and improvements.
+
+- **GitHub Sponsors (recommended):** 0% platform fees, recurring or one‑time
+  - Link: https://github.com/sponsors/MasterofNull
+- **Stripe Payment Link:** low fees, clean checkout
+  - Link: https://buy.stripe.com/REPLACE_LINK
+- **Ko‑fi:** simple one‑time tips (0% platform fee; processor fees apply)
+  - Link: https://ko-fi.com/masterofnull
+- **PayPal:** widely available, easy one‑time donations
+  - Link: https://paypal.me/masterofnull
+
+Prefer a different platform (Open Collective, Liberapay)? Add it via `.github/FUNDING.yml` and the README.
+
+Note: Replace placeholders with your actual links if you use different handles.
 
 ---
 
