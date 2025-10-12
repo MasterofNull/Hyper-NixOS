@@ -9,69 +9,47 @@
 #
 # Repository: https://github.com/MasterofNull/Hyper-NixOS
 #
-set -Eeuo pipefail
-IFS=$'\n\t'
-umask 077
-PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-trap 'exit $?' EXIT HUP INT TERM
-IFS=$'\n\t'
-umask 077
 
-# Version and branding
-VERSION="2.0"
-BRANDING="Hyper-NixOS v${VERSION} | © 2024-2025 MasterofNull"
+# Source common library for shared functions and security
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh" || {
+    echo "ERROR: Failed to load common library" >&2
+    exit 1
+}
 
-ROOT="/etc/hypervisor"
-CONFIG_JSON="$ROOT/config.json"
-STATE_DIR="/var/lib/hypervisor"
-TEMPLATE_PROFILES_DIR="$ROOT/vm_profiles"   # read-only templates
-USER_PROFILES_DIR="$STATE_DIR/vm_profiles"  # user-created profiles
-ISOS_DIR="$STATE_DIR/isos"                  # stateful ISO library
-SCRIPTS_DIR="$ROOT/scripts"
-LAST_VM_FILE="$STATE_DIR/last_vm"
-OWNER_FILTER_FILE="$STATE_DIR/owner_filter"
+# Initialize logging for this script
+init_logging "menu"
 
-: "${DIALOG:=whiptail}"
-export DIALOG
-# Allow LOG_DIR override via environment; prefer /var/lib for write access under sandboxed service
-LOG_DIR="${LOG_DIR:-}"
-LOG_FILE=""
-AUTOSTART_SECS=5
-LOG_ENABLED=true
-BOOT_SELECTOR_ENABLE=false
-BOOT_SELECTOR_TIMEOUT=8
-BOOT_SELECTOR_EXIT_AFTER_START=true
-if [[ -f "$CONFIG_JSON" ]]; then
-  AUTOSTART_SECS=$(jq -r '.features.autostart_timeout_sec // 5' "$CONFIG_JSON" 2>/dev/null || echo 5)
-  LOG_ENABLED=$(jq -r '.logging.enabled // true' "$CONFIG_JSON" 2>/dev/null || echo true)
-  if [[ -z "$LOG_DIR" ]]; then
-    LOG_DIR=$(jq -r '.logging.dir // "/var/lib/hypervisor/logs"' "$CONFIG_JSON" 2>/dev/null || echo "/var/lib/hypervisor/logs")
-  fi
-  BOOT_SELECTOR_ENABLE=$(jq -r '.features.boot_selector_enable // false' "$CONFIG_JSON" 2>/dev/null || echo false)
-  BOOT_SELECTOR_TIMEOUT=$(jq -r '.features.boot_selector_timeout_sec // 8' "$CONFIG_JSON" 2>/dev/null || echo 8)
-  BOOT_SELECTOR_EXIT_AFTER_START=$(jq -r '.features.boot_selector_exit_after_start // true' "$CONFIG_JSON" 2>/dev/null || echo true)
-fi
+# Script-specific configuration
+readonly ROOT="/etc/hypervisor"
+readonly TEMPLATE_PROFILES_DIR="$ROOT/vm_profiles"
+readonly USER_PROFILES_DIR="$HYPERVISOR_PROFILES"
+readonly ISOS_DIR="$HYPERVISOR_ISOS"
+readonly SCRIPTS_DIR="$HYPERVISOR_SCRIPTS"
+readonly LAST_VM_FILE="$HYPERVISOR_STATE/last_vm"
+readonly OWNER_FILTER_FILE="$HYPERVISOR_STATE/owner_filter"
+readonly BRANDING="$HYPERVISOR_BRANDING"
+
+# Load menu-specific configuration
+AUTOSTART_SECS=$(json_get "$HYPERVISOR_CONFIG" ".features.autostart_timeout_sec" "5")
+BOOT_SELECTOR_ENABLE=$(json_get "$HYPERVISOR_CONFIG" ".features.boot_selector_enable" "false")
+BOOT_SELECTOR_TIMEOUT=$(json_get "$HYPERVISOR_CONFIG" ".features.boot_selector_timeout_sec" "8")
+BOOT_SELECTOR_EXIT_AFTER_START=$(json_get "$HYPERVISOR_CONFIG" ".features.boot_selector_exit_after_start" "true")
+
+# Load owner filter if available
 if [[ -z "${OWNER_FILTER:-}" && -f "$OWNER_FILTER_FILE" ]]; then
   OWNER_FILTER=$(cat "$OWNER_FILTER_FILE" 2>/dev/null || true)
   export OWNER_FILTER
 fi
-[[ -z "$LOG_DIR" ]] && LOG_DIR="/var/lib/hypervisor/logs"
-LOG_FILE="$LOG_DIR/menu.log"
-mkdir -p "$LOG_DIR"
-log() { $LOG_ENABLED && printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG_FILE" || true; }
 
-require() {
-  for bin in "$@"; do
-    command -v "$bin" >/dev/null 2>&1 || {
-      echo "Missing dependency: $bin" >&2
-      exit 1
-    }
-  done
-}
+# Additional dependencies for menu
+require curl sha256sum
 
-require "$DIALOG" jq curl virsh sha256sum
-
+# Ensure required directories exist
 mkdir -p "$USER_PROFILES_DIR" "$ISOS_DIR"
+
+log_info "Menu started"
 
 menu_vm_main() {
   local entries=()
