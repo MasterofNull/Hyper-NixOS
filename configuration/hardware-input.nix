@@ -57,6 +57,10 @@
     layout = lib.mkDefault "us";
     variant = lib.mkDefault "";
     options = lib.mkDefault "terminate:ctrl_alt_bksp";  # Ctrl+Alt+Backspace to restart X
+
+    # Enable support for additional keyboard layouts and variants
+    # Users can switch layouts with: setxkbmap <layout>
+    extraLayouts = {};
   };
 
   # Console keyboard configuration
@@ -190,9 +194,7 @@
     '';
   };
 
-  # Enable support for additional keyboard layouts and variants
-  # Users can switch layouts with: setxkbmap <layout>
-  services.xserver.xkb.extraLayouts = lib.mkIf config.services.xserver.enable {};
+  # extraLayouts moved into the xkb block above to avoid duplicate attribute definitions
 
   # Enable NumLock on boot (console and X11)
   # Uncomment if desired:
