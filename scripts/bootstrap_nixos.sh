@@ -254,6 +254,7 @@ escape_nix_string() {
 detect_primary_users() {
   # Print login-capable non-system users, skip builders and nologin shells
   # Criteria: uid >= 1000, < 65534, shell not nologin/false, exclude nobody and nixbld*
+  # Preserve username exactly as-is (do not lowercase)
   awk -F: '($3 >= 1000 && $3 < 65534 && $1 != "nobody" && $1 !~ /^nixbld[0-9]+$/ && $7 !~ /nologin|false/) { print $1 }' /etc/passwd || true
 }
 
@@ -335,13 +336,15 @@ write_users_local_nix() {
         msg "You will need to set a password after installation for sudo access" >&2
         msg "Run: sudo passwd $user" >&2
       fi
-      # Emit Nix stanza
-      echo "    ${user} = {"
+      # Emit Nix stanza with quoted attribute key to preserve case and characters
+      escUser=$(escape_nix_string "$user")
+      echo "    \"$escUser\" = {"
       echo "      isNormalUser = true;"
       echo -n "      extraGroups = ["
       for g in $groups; do echo -n " \"$g\""; done
       echo " ];"
       echo "      createHome = true;"
+      echo "      name = \"$escUser\";"
       if [[ -n "$hash" ]]; then
         local esc; esc=$(escape_nix_string "$hash")
         echo "      hashedPassword = \"$esc\";"

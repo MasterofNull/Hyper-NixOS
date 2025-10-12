@@ -83,7 +83,7 @@ menu_vm_main() {
     entries+=("__SET_OWNER_FILTER__" "Filter by owner…")
   fi
   entries+=("" "")
-  entries+=("__GNOME__" "Start GNOME session [sudo]")
+  entries+=("__DESKTOP__" "Start GUI Desktop session [sudo]")
   entries+=("__EXIT__" "Exit")
   $DIALOG --title "$BRANDING - Main Menu" --menu "Select a VM to start, or choose an action" 22 90 14 "${entries[@]}" 3>&1 1>&2 2>&3
 }
@@ -427,20 +427,20 @@ while true; do
   choice=$(menu_vm_main || true)
   case "$choice" in
     "__VM_SELECTOR__")
-      exec "$SCRIPTS_DIR/vm_boot_selector.sh"
+      # Re-enter the built-in boot selector
+      boot_vm_selector || true
       ;;
     "__ADMIN__")
       exec "$SCRIPTS_DIR/admin_menu.sh"
       ;;
-    "__GNOME__")
-      if systemctl is-enabled gdm.service >/dev/null 2>&1; then
-        $DIALOG --msgbox "Starting GNOME (graphical target for this session)." 10 70
-        sudo systemctl start gdm.service || $DIALOG --msgbox "Failed to start GDM" 8 50
+    "__DESKTOP__")
+      if systemctl is-enabled display-manager.service >/dev/null 2>&1; then
+        $DIALOG --msgbox "Starting GUI Desktop (graphical target for this session)." 10 70
+        sudo systemctl start display-manager.service || $DIALOG --msgbox "Failed to start Display Manager" 8 50
         sudo systemctl isolate graphical.target || true
       else
-        $DIALOG --yesno "GDM is not enabled. Enable and start GNOME now?" 10 70 && {
-          sudo systemctl enable gdm.service || true
-          sudo systemctl start gdm.service || $DIALOG --msgbox "Failed to start GDM" 8 50
+        $DIALOG --yesno "Display Manager is not enabled. Start GUI Desktop for this session?" 10 70 && {
+          sudo systemctl start display-manager.service || $DIALOG --msgbox "Failed to start Display Manager" 8 50
           sudo systemctl isolate graphical.target || true
         }
       fi
