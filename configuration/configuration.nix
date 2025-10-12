@@ -24,6 +24,7 @@ in {
     ./monitoring.nix
     ./backup.nix
     ./automation.nix  # Automated health checks, backups, updates, monitoring
+    ./alerting.nix    # Alert system (email, webhooks)
   ]
   ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix
   ++ lib.optional (builtins.pathExists ./cache-optimization.nix) ./cache-optimization.nix  # Always load for faster downloads

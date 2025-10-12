@@ -640,6 +640,22 @@ main() {
   
   log "Health check complete. Status: $OVERALL_STATUS"
   
+  # Send alerts if critical errors found
+  if [[ $CRITICAL_ERRORS -gt 0 ]] && [[ -x /etc/hypervisor/scripts/alert_manager.sh ]]; then
+    local alert_msg="Health check found $CRITICAL_ERRORS critical error(s)"
+    /etc/hypervisor/scripts/alert_manager.sh critical \
+      "System Health Check Failed" \
+      "$alert_msg - Check $HEALTH_LOG for details" \
+      "health_check_critical" \
+      300
+  elif [[ $WARNINGS -gt 0 ]] && [[ -x /etc/hypervisor/scripts/alert_manager.sh ]]; then
+    /etc/hypervisor/scripts/alert_manager.sh warning \
+      "System Health Warnings" \
+      "Health check found $WARNINGS warning(s) - Check $HEALTH_LOG" \
+      "health_check_warning" \
+      3600
+  fi
+  
   # Exit code based on status
   case "$OVERALL_STATUS" in
     OK)     exit 0 ;;
