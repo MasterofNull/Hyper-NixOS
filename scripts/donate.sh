@@ -18,13 +18,19 @@ PAYPAL_URL="https://paypal.me/masterofnull"
 STRIPE_URL="https://buy.stripe.com/REPLACE_LINK"
 README_URL="https://github.com/MasterofNull/Hyper-NixOS#-support--donations"
 
-# Load optional donation links from config.json if present
+# Load optional donation links from config.json if present and enabled
 if [[ -f "$HYPERVISOR_CONFIG" ]] && jq -e '.donate? != null' "$HYPERVISOR_CONFIG" >/dev/null 2>&1; then
-  SPONSORS_URL=$(json_get "$HYPERVISOR_CONFIG" '.donate.github_sponsors' "$SPONSORS_URL")
-  KO_FI_URL=$(json_get "$HYPERVISOR_CONFIG" '.donate.ko_fi' "$KO_FI_URL")
-  PAYPAL_URL=$(json_get "$HYPERVISOR_CONFIG" '.donate.paypal' "$PAYPAL_URL")
-  STRIPE_URL=$(json_get "$HYPERVISOR_CONFIG" '.donate.stripe' "$STRIPE_URL")
-  README_URL=$(json_get "$HYPERVISOR_CONFIG" '.donate.readme' "$README_URL")
+  enabled=$(json_get "$HYPERVISOR_CONFIG" '.donate.enable' "true")
+  if [[ "$enabled" == "true" || "$enabled" == "True" ]]; then
+    SPONSORS_URL=$(json_get "$HYPERVISOR_CONFIG" '.donate.github_sponsors' "$SPONSORS_URL")
+    KO_FI_URL=$(json_get "$HYPERVISOR_CONFIG" '.donate.ko_fi' "$KO_FI_URL")
+    PAYPAL_URL=$(json_get "$HYPERVISOR_CONFIG" '.donate.paypal' "$PAYPAL_URL")
+    STRIPE_URL=$(json_get "$HYPERVISOR_CONFIG" '.donate.stripe' "$STRIPE_URL")
+    README_URL=$(json_get "$HYPERVISOR_CONFIG" '.donate.readme' "$README_URL")
+  else
+    $DIALOG --msgbox "Donations are disabled by configuration." 8 50
+    exit 0
+  fi
 fi
 
 open_url() {

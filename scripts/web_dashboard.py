@@ -13,12 +13,35 @@ import json
 import os
 from pathlib import Path
 
-app = Flask(__name__, 
-            static_folder='/var/www/hypervisor/static',
-            template_folder='/var/www/hypervisor/templates')
+app = Flask(
+    __name__,
+    static_folder='/var/www/hypervisor/static',
+    template_folder='/var/www/hypervisor/templates',
+)
 
 SCRIPT_DIR = '/etc/hypervisor/scripts'
 STATE_DIR = '/var/lib/hypervisor'
+CONFIG_PATH = '/etc/hypervisor/config.json'
+
+def load_donate_config():
+    default = {
+        'enable': True,
+        'github_sponsors': 'https://github.com/sponsors/MasterofNull',
+        'stripe': 'https://buy.stripe.com/REPLACE_LINK',
+        'ko_fi': 'https://ko-fi.com/masterofnull',
+        'paypal': 'https://paypal.me/masterofnull',
+        'readme': 'https://github.com/MasterofNull/Hyper-NixOS#-support--donations',
+    }
+    try:
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, 'r') as f:
+                cfg = json.load(f)
+            donate = cfg.get('donate', {}) or {}
+            # merge defaults with provided
+            default.update({k: donate.get(k, v) for k, v in default.items()})
+    except Exception:
+        pass
+    return default
 
 def run_command(cmd, capture_output=True):
     """Execute shell command and return result"""
@@ -39,7 +62,8 @@ def run_command(cmd, capture_output=True):
 @app.route('/')
 def index():
     """Main dashboard page"""
-    return render_template('dashboard.html')
+    donate = load_donate_config()
+    return render_template('dashboard.html', donate=donate)
 
 @app.route('/api/system/info')
 def system_info():
