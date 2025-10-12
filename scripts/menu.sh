@@ -109,19 +109,18 @@ menu_vm_main() {
 
 menu_more() {
   local choices=(
-    0 "Setup wizard (recommended)"
-    1 "Create VM (wizard)"
-    2 "VM setup workflow (guided end-to-end)"
-    3 "ISO manager (download/validate/attach)"
-    4 "Cloud image manager (cloud-init images)"
-    5 "Hardware detect & VFIO suggestions"
-    6 "VFIO configure (bind & Nix)"
-    7 "Define/Start from JSON"
-    8 "Edit VM profile"
-    9 "Delete VM"
-    10 "Bridge helper"
-    11 "Network helper (firewall & DHCP)"
-    12 "Zone manager (bridges & base rules)"
+    0 "🚀 Install VMs - Complete guided workflow (RECOMMENDED)"
+    1 "Create VM (wizard only)"
+    2 "ISO manager (download/validate/attach)"
+    3 "Cloud image manager (cloud-init images)"
+    4 "Hardware detect & VFIO suggestions"
+    5 "VFIO configure (bind & Nix)"
+    6 "Define/Start from JSON"
+    7 "Edit VM profile"
+    8 "Delete VM"
+    9 "Bridge helper"
+    10 "Network helper (firewall & DHCP)"
+    11 "Zone manager (bridges & base rules)"
     13 "Snapshots & backups"
     14 "Per-VM firewall (inbound rules)"
     15 "SPICE/VNC launcher"
@@ -446,9 +445,9 @@ while true; do
         mchoice=$(menu_more || true)
         case "$mchoice" in
           0) "$SCRIPTS_DIR/install_vm_workflow.sh" || true;;
-          1) iso_manager || true;;
-          2) "$SCRIPTS_DIR/image_manager.sh" || true;;
-          3) create_vm_wizard || true;;
+          1) create_vm_wizard || true;;
+          2) iso_manager || true;;
+          3) "$SCRIPTS_DIR/image_manager.sh" || true;;
           4) "$SCRIPTS_DIR/hardware_detect.sh" | ${PAGER:-less};;
           5) "$SCRIPTS_DIR/vfio_workflow.sh" || true;;
           6) p=$(select_profile || true) || continue; "$SCRIPTS_DIR/validate_profile.sh" "$p" || true; "$SCRIPTS_DIR/json_to_libvirt_xml_and_define.sh" "$p" || true;;
