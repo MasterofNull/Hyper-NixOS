@@ -5,12 +5,12 @@
 
 {
   imports = [
-    ./centralized-logging.nix
-    ./resource-quotas.nix
+    ../monitoring/logging.nix
+    ./quotas.nix
     ./network-isolation.nix
     ./storage-quotas.nix
-    ./snapshot-lifecycle.nix
-    ./vm-encryption.nix
+    ./snapshots.nix
+    ./encryption.nix
   ];
   
   # Install enterprise management tools
