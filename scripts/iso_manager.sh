@@ -340,7 +340,7 @@ scan_local_isos() {
   sel=$($DIALOG --checklist "Select ISOs to import into $ISOS_DIR" 22 80 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
   [[ -z "$sel" ]] && return 0
   for p in $sel; do
-    p=${p%"}; p=${p#"}
+    p=${p%\"}; p=${p#\"}
     [[ -f "$p" ]] || continue
     cp -v "$p" "$ISOS_DIR/" || true
     store_sidecar_checksum "$ISOS_DIR/$(basename "$p")"
@@ -396,7 +396,7 @@ mount_network_share_and_scan() {
   sel=$($DIALOG --checklist "Select ISOs to import" 22 80 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
   [[ -z "$sel" ]] && return 0
   for p in $sel; do
-    p=${p%"}; p=${p#"}
+    p=${p%\"}; p=${p#\"}
     [[ -f "$p" ]] || continue
     cp -v "$p" "$ISOS_DIR/" || true
     store_sidecar_checksum "$ISOS_DIR/$(basename "$p")"
@@ -488,16 +488,7 @@ while true; do
     7) list_isos | ${PAGER:-less} ;;
     8) scan_local_isos ;;
     9) mount_network_share_and_scan ;;
-    10)
-      $DIALOG --msgbox "ISO Manager Tips:
-
-- Use presets for verified OS downloads (with mirrors)
-- Import from USB/network via scan options
-- A sidecar .sha256 is generated for offline integrity
-- Attach ISOs to VM profiles or create a new VM via the wizard
-
-Docs: More Options -> Docs & Help" 16 70
-      ;;
+    10) $DIALOG --msgbox 'See documentation for help' 8 50 ;;
     11) exit 0 ;;
   esac
 done
