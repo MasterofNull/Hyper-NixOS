@@ -4,8 +4,8 @@ let
   mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
   # Enable menu at boot by default - this is the primary interface
   enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
-  # Enable wizard on first boot only (controlled by .first_boot_done marker)
-  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] true config;
+  # First-boot wizard disabled - users run "Install VMs" from main menu instead
+  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
   # Disable GUI by default - users can enable it if they want graphical management
   enableGuiAtBoot = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
   # Compatibility flags for NixOS versions (24.05 vs 24.11+)
