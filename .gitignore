@@ -9,9 +9,9 @@
 result
 result-*
 
-# Development reference (optional for minimal releases)
-# Uncomment to exclude from git:
-# dev-reference/
+# Development reference (internal development notes and reports)
+# Excluded from git to keep repository clean and focused
+dev-reference/
 
 # Local configuration overrides
 /var/lib/hypervisor/
