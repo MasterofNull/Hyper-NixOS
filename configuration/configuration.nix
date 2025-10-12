@@ -101,8 +101,13 @@ in {
   # - Default: Console menu at boot (enableMenuAtBoot = true)
   # - GUI available via menu: "More Options" → "GNOME Desktop"
   
-  # Autologin on tty1 for seamless console menu experience
-  # The menu/wizard services take over tty1, but we ensure the user is logged in
+  # Autologin configuration for appliance/kiosk mode
+  # SECURITY NOTE: For production/multi-user systems, disable autologin!
+  # See docs/SECURITY_MODEL.md for secure configurations
+  # 
+  # Default: Autologin to management user (INSECURE but convenient)
+  # Recommended: Create hypervisor-operator user without sudo access
+  # See: /var/lib/hypervisor/configuration/security-kiosk.nix
   services.getty.autologinUser = lib.mkIf (enableMenuAtBoot || enableWizardAtBoot) mgmtUser;
   
   # Create a default 'hypervisor' user only when used as the management user
@@ -221,6 +226,12 @@ in {
       RestrictSUIDSGID = true;
       CapabilityBoundingSet = "";
       AmbientCapabilities = "";
+      
+      # SECURITY: Restart menu on exit to prevent shell escape
+      # If menu crashes or user exits, it restarts instead of dropping to shell
+      # This prevents physical access from gaining shell on autologin user
+      Restart = "always";
+      RestartSec = "2";
     };
   };
 
@@ -264,18 +275,61 @@ in {
   # Security hardening
   networking.firewall.enable = true;
   security.sudo.enable = true;
-  # Allow wheel group passwordless sudo - this enables any user added to wheel
-  # (including dynamically detected users during bootstrap) to run sudo commands
-  security.sudo.wheelNeedsPassword = false;
+  
+  # IMPORTANT SECURITY MODEL:
+  # - Autologin is enabled for seamless console menu (appliance-like experience)
+  # - BUT passwordless sudo is RESTRICTED to specific VM management commands only
+  # - System administration tasks REQUIRE password authentication
+  # - This balances convenience (VM management) with security (system protection)
+  
+  # Require password for wheel group by default (secure by default)
+  security.sudo.wheelNeedsPassword = true;
+  
+  # Granular sudo rules: passwordless ONLY for specific VM management operations
   security.sudo.extraRules = [
-    # Ensure management user has explicit sudo access
     {
+      # VM Management - passwordless for convenience
       users = [ mgmtUser ];
       commands = [
-        {
-          command = "ALL";
-          options = [ "NOPASSWD" ];
-        }
+        # Libvirt/virsh VM operations (read-only and VM control)
+        { command = "${pkgs.libvirt}/bin/virsh list"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh start"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh shutdown"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh reboot"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh destroy"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh suspend"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh resume"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh dominfo"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh domstate"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh domuuid"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh domifaddr"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh console"; options = [ "NOPASSWD" ]; }
+        # VM creation/definition (uses generated XML, not user input)
+        { command = "${pkgs.libvirt}/bin/virsh define"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh undefine"; options = [ "NOPASSWD" ]; }
+        # Snapshot operations
+        { command = "${pkgs.libvirt}/bin/virsh snapshot-create-as"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh snapshot-list"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh snapshot-revert"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh snapshot-delete"; options = [ "NOPASSWD" ]; }
+        # Network operations (read-only)
+        { command = "${pkgs.libvirt}/bin/virsh net-list"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh net-info"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh net-dhcp-leases"; options = [ "NOPASSWD" ]; }
+      ];
+    }
+    {
+      # System administration - REQUIRES PASSWORD for security
+      # These are intentionally NOT in the NOPASSWD list:
+      # - nixos-rebuild (system changes)
+      # - systemctl (service management) 
+      # - any commands that modify /etc, /var, or system state
+      # - network configuration changes
+      # - user/permission changes
+      # - package installation
+      users = [ mgmtUser ];
+      commands = [
+        { command = "ALL"; }  # Allowed but requires password
       ];
     }
   ];

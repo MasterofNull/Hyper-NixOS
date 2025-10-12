@@ -260,6 +260,10 @@ write_users_local_nix() {
   fi
   
   msg "Detected user(s) to carry over: ${users[*]}"
+  
+  # Security note: Users will need passwords for system administration
+  msg "Note: Passwordless sudo is restricted to VM operations only"
+  msg "System administration (nixos-rebuild, systemctl, etc.) requires password"
 
   # If multiple, prefer interactive choice when TUI available; otherwise take the first
   local selected=("${users[@]}")
@@ -302,7 +306,14 @@ write_users_local_nix() {
       for g in wheel kvm libvirtd video input; do
         if ! grep -qE "(^| )$g( |$)" <<<"$groups"; then groups+="$g "; fi
       done
-      msg "User '$user' will be added to groups: $groups (wheel provides sudo access)"
+      msg "User '$user' will be added to groups: $groups (wheel provides sudo with password)"
+      
+      # Check if user has a valid password hash
+      if [[ -z "$hash" ]]; then
+        msg "WARNING: User '$user' has no password set"
+        msg "You will need to set a password after installation for sudo access"
+        msg "Run: sudo passwd $user"
+      fi
       # Emit Nix stanza
       echo "    ${user} = {"
       echo "      isNormalUser = true;"

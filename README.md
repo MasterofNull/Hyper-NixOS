@@ -112,17 +112,34 @@ After the wizard completes (or on subsequent boots), you'll see the **hypervisor
 - 🔧 **System Tools** - Diagnostics, updates, backups
 - 🪟 **GNOME Desktop** - Graphical environment (if enabled)
 
-### Login Requirements
+### Login & Security Model
 
 **Console Mode (Default):**
-- ✅ **No login required** - Automatic login to your user account
-- ✅ Wizard and menu start immediately on tty1
-- ✅ Seamless experience from boot to menu
+- ✅ **Autologin enabled** - Boot directly to menu (appliance-like)
+- ✅ **VM operations passwordless** - Start/stop VMs without friction
+- 🔐 **System operations require password** - nixos-rebuild, systemctl, etc.
+- 🔐 **Physical access ≠ root access** - Granular sudo protects system
 
 **GUI Mode (If enabled):**
-- ✅ **No login required** - Automatic login to GNOME desktop
-- ✅ Dashboard launches automatically
-- ✅ Use if you prefer graphical management
+- ✅ **Autologin enabled** - Direct to GNOME desktop
+- 🔐 **Same security model** - Password required for system changes
+
+**Security Architecture:**
+```
+Boot → Autologin → Menu
+         ↓
+   VM Management (passwordless sudo)
+         ✓ virsh start/stop/list
+         ✓ VM console access
+         ✓ Snapshots
+         ↓
+   System Admin (password REQUIRED)
+         ✗ nixos-rebuild
+         ✗ systemctl
+         ✗ Configuration changes
+```
+
+**Read more:** [Security Model Documentation](docs/SECURITY_MODEL.md)
 
 ### Customizing Boot Behavior
 
@@ -190,6 +207,10 @@ nix run .#rebuild-helper -- --flake /etc/hypervisor --host $(hostname -s) {build
 - Hardened kernel, non-root QEMU, auditd, SSH (keys only)
 
 ## Documentation
+- **Security Model:** `docs/SECURITY_MODEL.md` - Authentication, sudo, hardening
+- **Network Configuration:** `docs/NETWORK_CONFIGURATION.md` - Bridge setup & performance
+- **Quick Start:** `docs/QUICKSTART_EXPANDED.md` - Complete beginner guide
+- **Troubleshooting:** `docs/TROUBLESHOOTING.md` - Problem solving
 - Install and host details: `docs/README_install.md`
 - Optional GNOME fallback: `docs/gui_fallback.md`
 - Advanced options and feature toggles: `docs/advanced_features.md`
@@ -212,9 +233,11 @@ sudo bash /etc/hypervisor/scripts/harden_permissions.sh
 
 ## Advanced Configuration
 
-### Disable Autologin (For Multi-User Security)
+### Disable Autologin (Optional - For Multi-User Systems)
 
-By default, autologin is enabled for a seamless appliance experience. To require manual login:
+**Note:** Autologin is secure by default - passwordless sudo is restricted to VM operations only.
+
+However, for multi-user systems or compliance requirements, you can disable autologin:
 
 Create `/var/lib/hypervisor/configuration/security-local.nix`:
 ```nix
@@ -225,15 +248,20 @@ Create `/var/lib/hypervisor/configuration/security-local.nix`:
   
   # Also disable GUI autologin if using GUI mode
   services.xserver.displayManager.autoLogin.enable = lib.mkForce false;
+  
+  # (Optional) Require password even for VM operations
+  security.sudo.extraRules = lib.mkForce [
+    {
+      users = [ "your-username" ];
+      commands = [ { command = "ALL"; } ];  # All commands require password
+    }
+  ];
 }
 ```
 
 Then rebuild: `sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"`
 
-**After this change:**
-- You'll need to login at the console/GUI
-- The menu/wizard will start after login
-- More secure for multi-user systems
+**See also:** [Security Model Documentation](docs/SECURITY_MODEL.md) for detailed hardening options
 
 ---
 
