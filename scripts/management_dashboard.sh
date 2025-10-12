@@ -8,7 +8,50 @@ IFS=$'\n\t'
 ROOT=/etc/hypervisor
 SCRIPTS=$ROOT/scripts
 STATE=/var/lib/hypervisor
-: "${TERMINAL:=x-terminal-emulator}"
+
+# Pick a terminal emulator dynamically (DE-agnostic, Wayland-friendly)
+TERM_CMD=""; TERM_MODE="plain"
+detect_terminal() {
+  if [[ -n "${TERMINAL:-}" ]] && command -v "$TERMINAL" >/dev/null 2>&1; then
+    TERM_CMD="$TERMINAL"; TERM_MODE="plain"; return 0
+  fi
+  for t in footclient foot kitty wezterm alacritty xfce4-terminal konsole gnome-terminal xterm; do
+    if command -v "$t" >/dev/null 2>&1; then
+      TERM_CMD="$t"
+      case "$t" in
+        gnome-terminal) TERM_MODE="dashdash";;
+        wezterm)        TERM_MODE="start";;
+        *)              TERM_MODE="plain";;
+      esac
+      return 0
+    fi
+  done
+  TERM_CMD="" # no GUI terminal available
+}
+
+run_in_terminal() {
+  local cmd="$1"
+  if [[ -n "$TERM_CMD" ]]; then
+    case "$TERM_MODE" in
+      dashdash) "$TERM_CMD" -- bash -lc "$cmd" & ;;
+      start)    "$TERM_CMD" start -- bash -lc "$cmd" & ;;
+      *)        "$TERM_CMD" -e bash -lc "$cmd" & ;;
+    esac
+  else
+    # Fallback: run in background without opening a terminal
+    bash -lc "$cmd" &
+  fi
+}
+
+# Pick list dialog tool (zenity preferred, fallback to yad)
+ZENITY="zenity"
+detect_dialog() {
+  if ! command -v zenity >/dev/null 2>&1 && command -v yad >/dev/null 2>&1; then
+    ZENITY=yad
+  else
+    ZENITY=zenity
+  fi
+}
 
 list_vms() {
   shopt -s nullglob
@@ -44,11 +87,6 @@ get_gui_status() {
 show_menu() {
   gui_status=$(get_gui_status)
   
-  if ! command -v zenity >/dev/null 2>&1 && command -v yad >/dev/null 2>&1; then
-    ZENITY=yad
-  else
-    ZENITY=zenity
-  fi
   "$ZENITY" --list --title="Hypervisor Dashboard - $gui_status" \
     --column=Action --column=Description \
     "vm_menu" "Open VM selector (TUI)" \
@@ -70,20 +108,20 @@ show_menu() {
 
 run_action() {
   case "$1" in
-    vm_menu)        $TERMINAL -e bash -lc "$SCRIPTS/menu.sh" & ;;
-    wizard)         $TERMINAL -e bash -lc "$SCRIPTS/setup_wizard.sh" & ;;
-    network_setup)  $TERMINAL -e bash -lc "sudo $SCRIPTS/foundational_networking_setup.sh" & ;;
-    iso)            $TERMINAL -e bash -lc "$SCRIPTS/iso_manager.sh" & ;;
-    create)         $TERMINAL -e bash -lc "$SCRIPTS/create_vm_wizard.sh $STATE/vm_profiles $STATE/isos" & ;;
-    update)         $TERMINAL -e bash -lc "$SCRIPTS/update_hypervisor.sh" & ;;
-    gui_status)     $TERMINAL -e bash -lc "sudo $SCRIPTS/toggle_gui.sh status; read -p 'Press Enter to continue...'" & ;;
-    gui_auto)       $TERMINAL -e bash -lc "sudo $SCRIPTS/toggle_gui.sh auto; read -p 'Press Enter to continue...'" & ;;
-    gui_force_off)  $TERMINAL -e bash -lc "sudo $SCRIPTS/toggle_gui.sh off; read -p 'Press Enter to continue...'" & ;;
-    toggle_menu_on) $TERMINAL -e bash -lc "$SCRIPTS/toggle_boot_features.sh menu on" & ;;
-    toggle_menu_off)$TERMINAL -e bash -lc "$SCRIPTS/toggle_boot_features.sh menu off" & ;;
-    toggle_wizard_on)$TERMINAL -e bash -lc "$SCRIPTS/toggle_boot_features.sh wizard on" & ;;
-    toggle_wizard_off)$TERMINAL -e bash -lc "$SCRIPTS/toggle_boot_features.sh wizard off" & ;;
-    terminal)       $TERMINAL & ;;
+    vm_menu)        run_in_terminal "$SCRIPTS/menu.sh" ;;
+    wizard)         run_in_terminal "$SCRIPTS/setup_wizard.sh" ;;
+    network_setup)  run_in_terminal "sudo $SCRIPTS/foundational_networking_setup.sh" ;;
+    iso)            run_in_terminal "$SCRIPTS/iso_manager.sh" ;;
+    create)         run_in_terminal "$SCRIPTS/create_vm_wizard.sh $STATE/vm_profiles $STATE/isos" ;;
+    update)         run_in_terminal "$SCRIPTS/update_hypervisor.sh" ;;
+    gui_status)     run_in_terminal "sudo $SCRIPTS/toggle_gui.sh status; read -p 'Press Enter to continue...'" ;;
+    gui_auto)       run_in_terminal "sudo $SCRIPTS/toggle_gui.sh auto; read -p 'Press Enter to continue...'" ;;
+    gui_force_off)  run_in_terminal "sudo $SCRIPTS/toggle_gui.sh off; read -p 'Press Enter to continue...'" ;;
+    toggle_menu_on) run_in_terminal "$SCRIPTS/toggle_boot_features.sh menu on" ;;
+    toggle_menu_off)run_in_terminal "$SCRIPTS/toggle_boot_features.sh menu off" ;;
+    toggle_wizard_on)run_in_terminal "$SCRIPTS/toggle_boot_features.sh wizard on" ;;
+    toggle_wizard_off)run_in_terminal "$SCRIPTS/toggle_boot_features.sh wizard off" ;;
+    terminal)       run_in_terminal "bash -l" ;;
     *) : ;;
   esac
 }
@@ -105,17 +143,22 @@ if [[ "${1:-}" == "--autostart" ]]; then
     last_vm="$STATE/last_vm"
     default=""
     [[ -f "$last_vm" ]] && default=$(cat "$last_vm" 2>/dev/null || true)
-    sel=$(zenity --list --title="Select VM (auto in 8s)" --timeout=8 \
+    detect_dialog
+    sel=$("$ZENITY" --list --title="Select VM (auto in 8s)" --timeout=8 \
       --column=Path --column=Name "${ZLIST[@]}" 2>/dev/null || true)
     if [[ -n "$sel" ]]; then
-      $TERMINAL -e bash -lc "$SCRIPTS/json_to_libvirt_xml_and_define.sh '$sel'"
+      detect_terminal
+      run_in_terminal "$SCRIPTS/json_to_libvirt_xml_and_define.sh '$sel'"
       exit 0
     elif [[ -n "$default" && -f "$default" ]]; then
-      $TERMINAL -e bash -lc "$SCRIPTS/json_to_libvirt_xml_and_define.sh '$default'"
+      detect_terminal
+      run_in_terminal "$SCRIPTS/json_to_libvirt_xml_and_define.sh '$default'"
       exit 0
     fi
   fi
 fi
 
+detect_terminal
+detect_dialog
 sel=$(show_menu || true)
 run_action "$sel"

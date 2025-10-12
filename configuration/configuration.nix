@@ -54,7 +54,7 @@ in {
   };
   environment.systemPackages = with pkgs; [
     qemu_full OVMF jq python3 python3Packages.jsonschema curl newt dialog nano
-    libvirt virt-manager pciutils ripgrep
+    libvirt virt-manager pciutils ripgrep yad
     looking-glass-client gnupg swtpm openssh xorriso nfs-utils
   ];
   environment.etc."hypervisor/vm_profiles".source = ../vm_profiles;

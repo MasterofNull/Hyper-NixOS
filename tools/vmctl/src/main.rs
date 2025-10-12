@@ -192,10 +192,12 @@ fn gen_xml(p: &Profile) -> String {
         "  <devices>\n    <emulator>{}</emulator>\n",
         emulator
     ));
-    if let Some(disk_gb) = p.disk_gb {
-        let _ = disk_gb;
-    }
-    xml.push_str("    <disk type='file' device='disk'>\n      <driver name='qemu' type='qcow2'/>\n      <source file='REPLACEME_QCOW'/>\n      <target dev='vda' bus='virtio'/>\n    </disk>\n");
+    // Primary disk (standardized qcow path under state directory)
+    let qcow_path = format!("/var/lib/hypervisor/disks/{}.qcow2", name);
+    xml.push_str(&format!(
+        "    <disk type='file' device='disk'>\n      <driver name='qemu' type='qcow2'/>\n      <source file='{}'/>\n      <target dev='vda' bus='virtio'/>\n    </disk>\n",
+        escape(&qcow_path)
+    ));
     if let Some(iso) = p.iso_path.as_ref() {
         xml.push_str(&format!("    <disk type='file' device='cdrom'>\n      <source file='{}'/>\n      <target dev='sda' bus='sata'/>\n      <readonly/>\n    </disk>\n", escape(iso)));
     }

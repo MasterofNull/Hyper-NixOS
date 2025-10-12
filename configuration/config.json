@@ -76,10 +76,10 @@
       ]
     },
     {
-      "name": "NixOS 24.05 graphical",
-      "url": "https://channels.nixos.org/nixos-24.05/latest-nixos-gnome-x86_64-linux.iso",
+      "name": "NixOS 24.05 minimal",
+      "url": "https://channels.nixos.org/nixos-24.05/latest-nixos-minimal-x86_64-linux.iso",
       "checksum_urls": [
-        "https://channels.nixos.org/nixos-24.05/latest-nixos-gnome-x86_64-linux.iso.sha256"
+        "https://channels.nixos.org/nixos-24.05/latest-nixos-minimal-x86_64-linux.iso.sha256"
       ],
       "signature_urls": [],
       "gpg_key_urls": []

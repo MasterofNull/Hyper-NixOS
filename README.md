@@ -31,9 +31,63 @@
 
 ## 🚀 Installation (Choose ONE method)
 
-### Method 1: One-Liner Install (Recommended - Works anywhere)
+### Prerequisites: Fresh NixOS Install (bare metal)
 
-**Perfect for:** Fresh installs, automated deployments, USB boots
+If you are starting from a blank machine, first install a minimal NixOS system using the official installer.
+
+1) Boot latest NixOS install media (graphical or minimal)
+
+2) Connect to network and open a root shell
+
+3) Partition and format your target disk (example: single-disk, EFI system)
+```bash
+# WARNING: This destroys data on /dev/sda. Adjust device names for your system.
+export DISK=/dev/sda
+parted --script "$DISK" \
+  mklabel gpt \
+  mkpart ESP fat32 1MiB 513MiB \
+  set 1 esp on \
+  mkpart nixos 513MiB 100%
+mkfs.fat -F32 -n EFI ${DISK}1
+mkfs.ext4 -L nixos ${DISK}2
+mount ${DISK}2 /mnt
+mkdir -p /mnt/boot
+mount ${DISK}1 /mnt/boot
+```
+
+4) Generate a base configuration
+```bash
+nixos-generate-config --root /mnt
+```
+
+5) Set your user and one password for login and sudo
+
+Edit `/mnt/etc/nixos/configuration.nix` to add a normal user and set a password (the same password will be used for login and sudo). Replace `yourname` below and set a password hash now or set it interactively after first boot.
+
+Simple (set password after boot):
+```nix
+{ config, pkgs, ... }:
+{
+  users.users.yourname = {
+    isNormalUser = true;
+    extraGroups = [ "wheel" ]; # sudo group
+    initialPassword = "changeme"; # Change after first boot: passwd yourname
+  };
+  services.openssh.enable = true; # optional
+}
+```
+
+6) Install the base system
+```bash
+nixos-install
+reboot
+```
+
+7) Log in as your user and run the Quick Install below. The hypervisor will respect your existing user and use it for management (wheel group is required). Use one strong password for both sign-in and sudo.
+
+### Method 1: One-Liner Install (Recommended - Works on a fresh system)
+
+**Perfect for:** Fresh installs after base NixOS installation, automated deployments, USB boots
 
 **Single command installs everything:**
 ```bash
@@ -212,7 +266,7 @@ After reboot, you'll be **automatically logged in** to the console and see the *
 - 🖥️ **Start VMs** - Launch your existing virtual machines
 - 📦 **ISO Manager** - Download/validate/attach OS installation images
 - ⚙️ **More Options** - Advanced tools, diagnostics, updates, backups
-- 🪟 **GNOME Desktop** - Graphical environment (if enabled)
+- 🖥️ **Desktop session** - Optional graphical desktop (if enabled by your base system)
 
 ### 🚀 Install Your First VM
 
@@ -251,8 +305,8 @@ Select **"More Options" → "Install VMs"** from the main menu to start the comp
 - 🔐 **System operations require password** - nixos-rebuild, systemctl, etc.
 - 🔐 **Physical access ≠ root access** - Granular sudo protects system
 
-**GUI Mode (If enabled):**
-- ✅ **Autologin enabled** - Direct to GNOME desktop
+**GUI Mode (If enabled by your base system):**
+- ✅ **Autologin enabled** - Direct to your desktop session
 - 🔐 **Same security model** - Password required for system changes
 
 **Security Architecture:**
@@ -349,8 +403,8 @@ sudo bash /etc/hypervisor/scripts/install_vm_workflow.sh
 cat /var/lib/hypervisor/logs/install_vm.log
 ```
 
-### If GNOME GUI loads instead of console menu
-If the GNOME desktop environment starts instead of the console menu:
+### If a Desktop loads instead of console menu
+If a graphical desktop starts instead of the console menu:
 ```bash
 # Check if GUI is enabled in local config
 cat /var/lib/hypervisor/configuration/gui-local.nix
