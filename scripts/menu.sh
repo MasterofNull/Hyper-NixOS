@@ -77,7 +77,11 @@ menu_vm_main() {
   entries+=("__SYS_CONFIG__" "System Configuration → [sudo]")
   entries+=("__ADMIN__" "🔧 Admin Management Environment → (full access)")
   entries+=("" "")
-  entries+=("__DONATE__" "❤ Support development (donate)")
+  local donate_enabled
+  donate_enabled=$(json_get "$HYPERVISOR_CONFIG" ".donate.enable" "true")
+  if [[ "$donate_enabled" == "true" || "$donate_enabled" == "True" ]]; then
+    entries+=("__DONATE__" "❤ Support development (donate)")
+  fi
   entries+=("" "")
   if [[ -n "$owner_filter" ]]; then
     entries+=("__CLEAR_OWNER_FILTER__" "Show all owners (clear filter)")

@@ -438,6 +438,7 @@
             </div>
 
         <!-- Support Development -->
+        {% if donate.enable %}
         <div class="card">
           <div class="card-header">
             <div class="card-title">💖 Support This Project</div>
@@ -447,13 +448,14 @@
               If Hyper-NixOS is useful to you, consider supporting ongoing development.
             </p>
             <div style="display:flex; flex-wrap: wrap; gap: 0.5rem;">
-              <a class="btn btn-start" style="background:#db2777" href="https://github.com/sponsors/MasterofNull" target="_blank" rel="noopener">❤ GitHub Sponsors</a>
-              <a class="btn" style="background:#FF5E5B;color:white" href="https://ko-fi.com/masterofnull" target="_blank" rel="noopener">☕ Ko‑fi</a>
-              <a class="btn" style="background:#00457C;color:white" href="https://paypal.me/masterofnull" target="_blank" rel="noopener">💳 PayPal</a>
-              <a class="btn" style="background:#635BFF;color:white" href="https://buy.stripe.com/REPLACE_LINK" target="_blank" rel="noopener">⚡ Stripe</a>
+              <a class="btn btn-start" style="background:#db2777" href="{{ donate.github_sponsors }}" target="_blank" rel="noopener">❤ GitHub Sponsors</a>
+              <a class="btn" style="background:#FF5E5B;color:white" href="{{ donate.ko_fi }}" target="_blank" rel="noopener">☕ Ko‑fi</a>
+              <a class="btn" style="background:#00457C;color:white" href="{{ donate.paypal }}" target="_blank" rel="noopener">💳 PayPal</a>
+              <a class="btn" style="background:#635BFF;color:white" href="{{ donate.stripe }}" target="_blank" rel="noopener">⚡ Stripe</a>
             </div>
           </div>
         </div>
+        {% endif %}
         </div>
     </div>
     
@@ -461,8 +463,10 @@
         <strong>Hyper-NixOS v2.0</strong> | © 2024-2025 MasterofNull | GPL v3.0<br>
         Production-Ready Hypervisor with Educational Focus<br>
         <a href="https://github.com/MasterofNull/Hyper-NixOS" style="color: #3b82f6;">GitHub</a> |
-        <a href="/docs" style="color: #3b82f6;">Documentation</a> |
-        <a href="https://github.com/sponsors/MasterofNull" style="color: #db2777;">Sponsor</a>
+        <a href="/docs" style="color: #3b82f6;">Documentation</a>
+        {% if donate.enable %} |
+        <a href="{{ donate.github_sponsors }}" style="color: #db2777;">Sponsor</a>
+        {% endif %}
     </div>
     
     <script>

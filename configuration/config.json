@@ -16,6 +16,14 @@
     "boot_autostart_delay_between_groups_ms": 2500,
     "boot_autostart_groups_order": ["core", "network", "apps"]
   },
+  "donate": {
+    "enable": true,
+    "github_sponsors": "https://github.com/sponsors/MasterofNull",
+    "stripe": "https://buy.stripe.com/REPLACE_LINK",
+    "ko_fi": "https://ko-fi.com/masterofnull",
+    "paypal": "https://paypal.me/masterofnull",
+    "readme": "https://github.com/MasterofNull/Hyper-NixOS#-support--donations"
+  },
   "network_zones": {
     "secure":    { "bridge": "br-secure",    "allow_hostdev": true,  "dhcp_cidr": "192.168.10.1/24", "dhcp_reservations": {} },
     "untrusted": { "bridge": "br-untrusted", "allow_hostdev": false, "dhcp_cidr": "192.168.20.1/24", "dhcp_reservations": {} }
