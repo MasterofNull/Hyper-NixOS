@@ -14,9 +14,6 @@
       # Enable cgroup resource management
       package = pkgs.qemu_kvm;
       
-      # VNC for console access
-      vncListen = "127.0.0.1";
-      
       # Security
       runAsRoot = false;
     };
