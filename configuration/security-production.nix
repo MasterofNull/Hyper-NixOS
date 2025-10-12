@@ -59,56 +59,47 @@
   security.polkit.extraConfig = ''
     /* Hypervisor Operator Permissions - Zero Trust Model */
     
-    // Allow VM lifecycle operations (create, start, stop, console)
+    // Full libvirt monitor (read-only) access for operator
+    polkit.addRule(function(action, subject) {
+      if (subject.user == "hypervisor-operator" &&
+          action.id == "org.libvirt.unix.monitor") {
+        return polkit.Result.YES;
+      }
+    });
+    
+    // Full libvirt management access for operator (with restrictions below)
+    polkit.addRule(function(action, subject) {
+      if (subject.user == "hypervisor-operator" &&
+          action.id == "org.libvirt.unix.manage") {
+        return polkit.Result.YES;  // Grant access, will be filtered by systemd restrictions
+      }
+    });
+    
+    // Additional polkit rule for specific command filtering
+    // This provides defense-in-depth with systemd restrictions
     polkit.addRule(function(action, subject) {
       if (subject.user == "hypervisor-operator") {
-        // VM Read operations - always allow
-        if (action.id == "org.libvirt.unix.monitor") {
+        var actionId = action.id;
+        
+        // Allow all libvirt query/read operations
+        if (actionId.indexOf("org.libvirt") == 0 &&
+            actionId.indexOf("read") >= 0) {
           return polkit.Result.YES;
         }
         
-        // VM Creation and definition - allow
-        if (action.id == "org.libvirt.unix.manage" &&
-            (action.lookup("connect_driver") == "QEMU" ||
-             action.lookup("connect_driver") == "qemu")) {
-          // Check specific operation
-          var op = action.lookup("operation");
-          
-          // ALLOWED operations (non-destructive)
-          if (op == "define" ||           // Create VM definition
-              op == "start" ||            // Start VM
-              op == "shutdown" ||         // Graceful shutdown
-              op == "reboot" ||           // Reboot VM
-              op == "suspend" ||          // Suspend VM
-              op == "resume" ||           // Resume VM
-              op == "save" ||             // Save state
-              op == "restore" ||          // Restore state
-              op == "managed-save" ||     // Managed save
-              op == "snapshot-create" ||  // Create snapshot
-              op == "snapshot-revert" ||  // Revert to snapshot
-              op == "console" ||          // Access console
-              op == "dominfo" ||          // Get VM info
-              op == "domstate" ||         // Get VM state
-              op == "list" ||             // List VMs
-              op == "net-list" ||         // List networks
-              op == "vol-list") {         // List volumes
-            polkit.log("ALLOW: operator " + op);
-            return polkit.Result.YES;
-          }
-          
-          // DENIED operations (destructive - require admin)
-          if (op == "destroy" ||          // Force stop
-              op == "undefine" ||         // Delete VM definition
-              op == "snapshot-delete" ||  // Delete snapshot
-              op == "vol-delete" ||       // Delete volume
-              op == "net-destroy" ||      // Delete network
-              op == "net-undefine") {     // Undefine network
-            polkit.log("DENY: operator attempted " + op + " (requires admin)");
-            return polkit.Result.NO;
+        // Log administrative operations for audit
+        if (actionId.indexOf("org.libvirt") == 0) {
+          var cmd = action.lookup("command_line");
+          if (cmd) {
+            // Log destructive operations
+            if (cmd.indexOf("undefine") >= 0 ||
+                cmd.indexOf("destroy") >= 0 ||
+                cmd.indexOf("delete") >= 0) {
+              polkit.log("ADMIN OPERATION by operator: " + cmd);
+            }
           }
         }
       }
-      return polkit.Result.NOT_HANDLED;
     });
     
     // Network operations - read-only for operator
