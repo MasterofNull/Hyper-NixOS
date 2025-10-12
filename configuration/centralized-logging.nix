@@ -159,7 +159,7 @@
   
   # Environment for log access
   environment.systemPackages = with pkgs; [
-    syslog-ng
+    syslogng
     lnav  # Advanced log viewer
     multitail  # Multi-file tail
   ];
