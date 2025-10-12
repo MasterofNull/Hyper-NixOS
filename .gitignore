@@ -1,11 +1,20 @@
-result/
-result-*/*
-.direnv/
-.envrc
-.nix-result
+# Development and temporary files
+*.backup
+*.log
 *.swp
-*.swo
-__pycache__/
-*.pyc
-isos/*.iso
-isos/*.sha256
+*~
+.DS_Store
+
+# Build artifacts
+result
+result-*
+
+# Development reference (optional for minimal releases)
+# Uncomment to exclude from git:
+# dev-reference/
+
+# Local configuration overrides
+/var/lib/hypervisor/
+
+# Nix build outputs
+.direnv/

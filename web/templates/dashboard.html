@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyper-NixOS Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border-bottom: 2px solid #3b82f6;
+        }
+        
+        .header h1 {
+            color: #60a5fa;
+            font-size: 1.8rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .header .subtitle {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        .help-banner {
+            background: #1e3a8a;
+            padding: 1rem 2rem;
+            border-left: 4px solid #3b82f6;
+            margin: 1rem 2rem;
+            border-radius: 4px;
+        }
+        
+        .help-banner h3 {
+            color: #60a5fa;
+            margin-bottom: 0.5rem;
+        }
+        
+        .help-banner p {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            border: 1px solid #334155;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #334155;
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+        
+        .help-icon {
+            background: #3b82f6;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-in-items: center;
+            justify-content: center;
+            cursor: help;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .metric {
+            margin: 0.75rem 0;
+        }
+        
+        .metric-label {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #10b981;
+        }
+        
+        .metric-value.warning {
+            color: #f59e0b;
+        }
+        
+        .metric-value.critical {
+            color: #ef4444;
+        }
+        
+        .vm-list {
+            list-style: none;
+        }
+        
+        .vm-item {
+            background: #0f172a;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            border-left: 4px solid #3b82f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .vm-item.running {
+            border-left-color: #10b981;
+        }
+        
+        .vm-item.stopped {
+            border-left-color: #6b7280;
+        }
+        
+        .vm-name {
+            font-weight: 600;
+            color: #e2e8f0;
+            font-size: 1.1rem;
+        }
+        
+        .vm-stats {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+        
+        .vm-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-start {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-start:hover {
+            background: #059669;
+        }
+        
+        .btn-stop {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-stop:hover {
+            background: #dc2626;
+        }
+        
+        .btn-restart {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-restart:hover {
+            background: #d97706;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-running {
+            background: #10b98120;
+            color: #10b981;
+        }
+        
+        .status-stopped {
+            background: #6b728020;
+            color: #9ca3af;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 300px;
+            background-color: #1e293b;
+            color: #e2e8f0;
+            text-align: left;
+            border-radius: 6px;
+            padding: 1rem;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid #3b82f6;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #94a3b8;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+            font-size: 0.85rem;
+            border-top: 1px solid #334155;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Hyper-NixOS Dashboard</h1>
+        <div class="subtitle">Production Hypervisor Management | © 2024-2025 MasterofNull</div>
+    </div>
+    
+    <div class="help-banner">
+        <h3>📚 Learning Dashboard</h3>
+        <p>
+            <strong>Hover over any ? icon to learn what each metric means and why it matters.</strong>
+            This dashboard teaches you professional monitoring practices while you manage your VMs.
+            Commands shown work on any Linux system!
+        </p>
+    </div>
+    
+    <div class="container">
+        <!-- System Overview -->
+        <div class="grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">System Overview</div>
+                    <div class="tooltip">
+                        <span class="help-icon">?</span>
+                        <span class="tooltiptext">
+                            <strong>What:</strong> Current system resource usage<br><br>
+                            <strong>Why:</strong> Know your system health at a glance<br><br>
+                            <strong>How to check manually:</strong><br>
+                            • uptime (shows load)<br>
+                            • free -h (shows memory)<br>
+                            • df -h (shows disk)<br><br>
+                            <strong>Healthy ranges:</strong><br>
+                            • CPU: <70% average<br>
+                            • RAM: <80% used<br>
+                            • Disk: <85% full
+                        </span>
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Hostname</div>
+                    <div class="metric-value" id="hostname">Loading...</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Uptime</div>
+                    <div class="metric-value" id="uptime">Loading...</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">CPU Cores</div>
+                    <div class="metric-value" id="cpu-count">Loading...</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Resources</div>
+                    <div class="tooltip">
+                        <span class="help-icon">?</span>
+                        <span class="tooltiptext">
+                            <strong>Memory:</strong> RAM available for VMs and processes<br><br>
+                            <strong>Disk:</strong> Storage for VM images and data<br><br>
+                            <strong>Capacity Planning:</strong><br>
+                            Watch trends over time. If steadily increasing, plan upgrades before hitting 90%.<br><br>
+                            <strong>Commands:</strong><br>
+                            • free -h (memory)<br>
+                            • df -h (disk)
+                        </span>
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Memory Usage</div>
+                    <div class="metric-value" id="memory">Loading...</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Disk Usage</div>
+                    <div class="metric-value" id="disk">Loading...</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Health Status</div>
+                    <div class="tooltip">
+                        <span class="help-icon">?</span>
+                        <span class="tooltiptext">
+                            <strong>What:</strong> Latest automated health check results<br><br>
+                            <strong>Why:</strong> Proactive problem detection<br><br>
+                            <strong>Checks:</strong><br>
+                            • Hardware (CPU, RAM, disk)<br>
+                            • Services (libvirt, networking)<br>
+                            • VMs (running, stopped)<br>
+                            • Security (firewall, audit)<br><br>
+                            <strong>Run manually:</strong><br>
+                            sudo /etc/hypervisor/scripts/system_health_check.sh<br><br>
+                            <strong>Auto-runs:</strong> Daily at midnight
+                        </span>
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Status</div>
+                    <div class="metric-value" id="health-status">Checking...</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Last Check</div>
+                    <div class="metric-value" style="font-size: 1rem;" id="health-time">Unknown</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- VM Management -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Virtual Machines</div>
+                <div class="tooltip">
+                    <span class="help-icon">?</span>
+                    <span class="tooltiptext">
+                        <strong>VM Management:</strong><br><br>
+                        <strong>States:</strong><br>
+                        • Running (green) - VM is on<br>
+                        • Stopped (gray) - VM is off<br><br>
+                        <strong>Actions:</strong><br>
+                        • Start - Power on VM<br>
+                        • Shutdown - Graceful stop (like clicking shutdown)<br>
+                        • Restart - Reboot VM<br>
+                        • Force Stop - Hard power off (use sparingly)<br><br>
+                        <strong>Commands (CLI):</strong><br>
+                        • virsh list --all (list VMs)<br>
+                        • virsh start &lt;vm&gt; (start)<br>
+                        • virsh shutdown &lt;vm&gt; (stop)<br>
+                        • virsh console &lt;vm&gt; (connect)<br><br>
+                        <strong>Professional Tip:</strong><br>
+                        Always use shutdown, not destroy.
+                        Destroy is like pulling the power cord - risks data corruption.
+                    </span>
+                </div>
+            </div>
+            <div id="vm-list" class="loading">Loading VMs...</div>
+        </div>
+        
+        <!-- Learning Resources -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📖 Learn & Grow</div>
+            </div>
+            <div style="padding: 0.5rem 0;">
+                <p style="margin-bottom: 1rem; color: #cbd5e1;">
+                    Hyper-NixOS includes interactive learning wizards to help you master hypervisor management:
+                </p>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li style="padding: 0.75rem; background: #0f172a; margin: 0.5rem 0; border-radius: 4px; border-left: 3px solid #3b82f6;">
+                        <strong style="color: #60a5fa;">🧪 Guided System Testing</strong><br>
+                        <span style="color: #94a3b8; font-size: 0.85rem;">
+                            Learn testing and validation • Run: sudo /etc/hypervisor/scripts/guided_system_test.sh
+                        </span>
+                    </li>
+                    <li style="padding: 0.75rem; background: #0f172a; margin: 0.5rem 0; border-radius: 4px; border-left: 3px solid #10b981;">
+                        <strong style="color: #34d399;">💾 Guided Backup Verification</strong><br>
+                        <span style="color: #94a3b8; font-size: 0.85rem;">
+                            Master disaster recovery • Run: sudo /etc/hypervisor/scripts/guided_backup_verification.sh
+                        </span>
+                    </li>
+                    <li style="padding: 0.75rem; background: #0f172a; margin: 0.5rem 0; border-radius: 4px; border-left: 3px solid #f59e0b;">
+                        <strong style="color: #fbbf24;">📊 Guided Metrics Viewer</strong><br>
+                        <span style="color: #94a3b8; font-size: 0.85rem;">
+                            Understand performance monitoring • Run: sudo /etc/hypervisor/scripts/guided_metrics_viewer.sh
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <strong>Hyper-NixOS v2.0</strong> | © 2024-2025 MasterofNull | GPL v3.0<br>
+        Production-Ready Hypervisor with Educational Focus<br>
+        <a href="https://github.com/MasterofNull/Hyper-NixOS" style="color: #3b82f6;">GitHub</a> |
+        <a href="/docs" style="color: #3b82f6;">Documentation</a>
+    </div>
+    
+    <script>
+        // Auto-refresh every 5 seconds
+        let refreshInterval;
+        
+        function updateSystemInfo() {
+            fetch('/api/system/info')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('hostname').textContent = data.data.hostname;
+                        document.getElementById('uptime').textContent = data.data.uptime;
+                        document.getElementById('cpu-count').textContent = data.data.cpu_count;
+                        document.getElementById('memory').textContent = data.data.memory;
+                        document.getElementById('disk').textContent = data.data.disk;
+                        
+                        // Color code based on usage
+                        colorCodeMetric('memory', data.data.memory);
+                        colorCodeMetric('disk', data.data.disk);
+                    }
+                })
+                .catch(err => console.error('Error fetching system info:', err));
+        }
+        
+        function colorCodeMetric(id, value) {
+            const element = document.getElementById(id);
+            const match = value.match(/(\d+)%/);
+            if (match) {
+                const percent = parseInt(match[1]);
+                element.className = 'metric-value';
+                if (percent > 85) {
+                    element.classList.add('critical');
+                } else if (percent > 70) {
+                    element.classList.add('warning');
+                }
+            }
+        }
+        
+        function updateVMs() {
+            fetch('/api/vms/list')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        renderVMs(data.data);
+                    }
+                })
+                .catch(err => console.error('Error fetching VMs:', err));
+        }
+        
+        function renderVMs(vms) {
+            const container = document.getElementById('vm-list');
+            
+            if (vms.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;">No VMs created yet. Create one using the console menu!</div>';
+                return;
+            }
+            
+            container.innerHTML = '<ul class="vm-list">' + vms.map(vm => `
+                <li class="vm-item ${vm.state.toLowerCase()}">
+                    <div>
+                        <div class="vm-name">${vm.name}</div>
+                        <div class="vm-stats">
+                            <span class="status-badge status-${vm.state.toLowerCase()}">${vm.state}</span>
+                            ${vm.cpu} CPUs • ${vm.memory}
+                        </div>
+                    </div>
+                    <div class="vm-actions">
+                        ${vm.state === 'running' ? `
+                            <button class="btn btn-restart" onclick="controlVM('${vm.name}', 'reboot')">Restart</button>
+                            <button class="btn btn-stop" onclick="controlVM('${vm.name}', 'shutdown')">Shutdown</button>
+                        ` : `
+                            <button class="btn btn-start" onclick="controlVM('${vm.name}', 'start')">Start</button>
+                        `}
+                    </div>
+                </li>
+            `).join('') + '</ul>';
+        }
+        
+        function controlVM(name, action) {
+            const actionText = {
+                'start': 'Starting',
+                'shutdown': 'Shutting down',
+                'reboot': 'Rebooting',
+                'destroy': 'Force stopping'
+            }[action];
+            
+            console.log(`${actionText} VM: ${name}`);
+            
+            fetch(`/api/vms/${name}/${action}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log(`Success: ${actionText} ${name}`);
+                        // Refresh VM list after a short delay
+                        setTimeout(updateVMs, 2000);
+                    } else {
+                        console.error(`Failed to ${action} VM:`, data.error);
+                        alert(`Failed to ${action} ${name}: ${data.error || 'Unknown error'}`);
+                    }
+                })
+                .catch(err => {
+                    console.error(`Error ${action} VM:`, err);
+                    alert(`Error: ${err}`);
+                });
+        }
+        
+        function updateHealth() {
+            fetch('/api/health/status')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const status = data.data.status || 'Unknown';
+                        const timestamp = data.data.timestamp || 'Unknown';
+                        
+                        document.getElementById('health-status').textContent = status;
+                        document.getElementById('health-time').textContent = new Date(timestamp).toLocaleString();
+                        
+                        // Color code health status
+                        const element = document.getElementById('health-status');
+                        element.className = 'metric-value';
+                        if (status === 'OK') {
+                            element.style.color = '#10b981';
+                        } else if (status === 'WARN') {
+                            element.classList.add('warning');
+                        } else if (status === 'ERROR') {
+                            element.classList.add('critical');
+                        }
+                    }
+                })
+                .catch(err => console.error('Error fetching health status:', err));
+        }
+        
+        // Initial load
+        updateSystemInfo();
+        updateVMs();
+        updateHealth();
+        
+        // Auto-refresh every 5 seconds
+        refreshInterval = setInterval(() => {
+            updateSystemInfo();
+            updateVMs();
+            updateHealth();
+        }, 5000);
+    </script>
+</body>
+</html>

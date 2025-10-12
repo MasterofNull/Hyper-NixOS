@@ -54,6 +54,24 @@ xml_escape() {
 }
 require jq virsh qemu-img
 
+# Pre-flight checks before VM creation
+if [[ -f /etc/hypervisor/scripts/preflight_check.sh ]]; then
+  raw_name=$(jq -r '.name' "$PROFILE_JSON")
+  vm_memory=$(jq -r '.memory_mb // 4096' "$PROFILE_JSON")
+  vm_cpus=$(jq -r '.cpus // 2' "$PROFILE_JSON")
+  vm_disk=$(jq -r '.disk_gb // 20' "$PROFILE_JSON")
+  iso_path=$(jq -r '.iso_path // "null"' "$PROFILE_JSON")
+  
+  echo "Running pre-flight checks..."
+  if ! /etc/hypervisor/scripts/preflight_check.sh vm-create "$vm_disk" "$raw_name" "$vm_memory" "$vm_cpus" "$iso_path"; then
+    echo ""
+    echo "Pre-flight checks failed. Cannot proceed with VM creation."
+    echo "Fix the issues above and try again."
+    exit 1
+  fi
+  echo ""
+fi
+
 raw_name=$(jq -r '.name' "$PROFILE_JSON")
 
 # Validate VM name: 1-64 chars, alphanumeric + . _ -

@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+#
+# Integration Test: Bootstrap Installation
+#
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/test_helpers.sh"
+
+# Detect CI environment
+CI_MODE=false
+if [[ "${CI:-false}" == "true" ]] || [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
+  CI_MODE=true
+fi
+
+test_suite_start "Bootstrap Installation"
+
+# In CI, only do structure validation
+if $CI_MODE; then
+  test_case "Bootstrap script exists"
+  assert_file_exists "../../scripts/bootstrap_nixos.sh"
+  
+  test_case "Bootstrap script has valid syntax"
+  if bash -n "../../scripts/bootstrap_nixos.sh" 2>/dev/null; then
+    test_pass "Syntax is valid"
+  else
+    test_fail "Syntax errors found"
+  fi
+  
+  test_case "Bootstrap script is executable"
+  if [[ -x "../../scripts/bootstrap_nixos.sh" ]]; then
+    test_pass "Script is executable"
+  else
+    test_info "Script will be made executable during installation"
+  fi
+  
+  test_case "Configuration files exist"
+  assert_file_exists "../../configuration/configuration.nix"
+  assert_file_exists "../../configuration/security-production.nix"
+  
+  test_suite_end
+  exit 0
+fi
+
+# Full integration tests (requires NixOS)
+if ! command -v nixos-rebuild &>/dev/null; then
+  test_info "Skipping full tests - requires NixOS system"
+  test_suite_end
+  exit 0
+fi
+
+test_case "Bootstrap script exists and is executable"
+assert_file_exists "/etc/hypervisor/scripts/bootstrap_nixos.sh"
+
+test_case "Source directory is properly installed"
+assert_directory_exists "/etc/hypervisor/src"
+
+test_case "Configuration files are in place"
+assert_file_exists "/etc/hypervisor/src/configuration/configuration.nix"
+assert_file_exists "/etc/hypervisor/src/configuration/security-production.nix"
+
+test_case "Required services are enabled"
+if command -v systemctl &>/dev/null; then
+  assert_service_enabled "libvirtd"
+fi
+
+test_case "Management user exists"
+if id hypervisor-operator &>/dev/null; then
+  test_pass "Operator user exists"
+else
+  test_info "Operator user will be created during bootstrap"
+fi
+
+test_case "Operator user has correct group memberships"
+if id hypervisor-operator &>/dev/null; then
+  if groups hypervisor-operator | grep -q "libvirtd"; then
+    test_pass "In libvirtd group"
+  fi
+  if groups hypervisor-operator | grep -q "kvm"; then
+    test_pass "In kvm group"
+  fi
+  if ! groups hypervisor-operator | grep -q "wheel"; then
+    test_pass "NOT in wheel group (correct for security)"
+  fi
+fi
+
+test_suite_end

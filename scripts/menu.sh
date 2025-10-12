@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+#
+# Hyper-NixOS Main Menu
+# Copyright (C) 2024-2025 MasterofNull
+# Licensed under GPL v3.0
+#
+# Boot-time console menu for VM management, ISO downloads, system tools.
+# Runs with restricted permissions for security (polkit-based access control).
+#
+# Repository: https://github.com/MasterofNull/Hyper-NixOS
+#
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
@@ -6,6 +16,10 @@ PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 trap 'exit $?' EXIT HUP INT TERM
 IFS=$'\n\t'
 umask 077
+
+# Version and branding
+VERSION="2.0"
+BRANDING="Hyper-NixOS v${VERSION} | © 2024-2025 MasterofNull"
 
 ROOT="/etc/hypervisor"
 CONFIG_JSON="$ROOT/config.json"
@@ -93,7 +107,7 @@ menu_vm_main() {
   entries+=("__TOGGLE_WIZARD_ON" "Enable first-boot wizard at boot")
   entries+=("__TOGGLE_WIZARD_OFF" "Disable first-boot wizard at boot")
   entries+=("__EXIT__" "Exit")
-  $DIALOG --title "Hypervisor - VMs" --menu "Select a VM to start, or choose an action" 22 90 14 "${entries[@]}" 3>&1 1>&2 2>&3
+  $DIALOG --title "$BRANDING" --menu "Select a VM to start, or choose an action" 22 90 14 "${entries[@]}" 3>&1 1>&2 2>&3
 }
 
 menu_more() {
@@ -131,9 +145,12 @@ menu_more() {
     30 "Bulk Operations (manage multiple VMs)"
     31 "Help & Learning Center (tutorials, guides, FAQ)"
     32 "Interactive Tutorial (hands-on learning)"
-    33 "Back"
+    33 "🎓 Guided System Testing (Learn + Verify)"
+    34 "📊 Guided Metrics Viewer (Learn Performance)"
+    35 "💾 Guided Backup Verification (Learn DR)"
+    36 "Back"
   )
-  $DIALOG --title "Hypervisor - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
+  $DIALOG --title "$BRANDING - More Options" --menu "Choose an option" 22 90 14 "${choices[@]}" 3>&1 1>&2 2>&3
 }
 
 select_profile() {
@@ -150,7 +167,7 @@ select_profile() {
     $DIALOG --msgbox "No VM profiles found in\n$USER_PROFILES_DIR or $TEMPLATE_PROFILES_DIR" 10 70
     return 1
   fi
-  $DIALOG --title "Select VM" --menu "VM Profiles" 22 90 12 "${entries[@]}" 3>&1 1>&2 2>&3
+  $DIALOG --title "$BRANDING - Select VM" --menu "VM Profiles" 22 90 12 "${entries[@]}" 3>&1 1>&2 2>&3
 }
 
 quick_start_last() {
@@ -337,7 +354,7 @@ boot_vm_selector() {
   # Show one-shot menu with timeout; on timeout, autostart default_profile
   local choice default_base
   default_base=$(basename -- "$default_profile")
-  choice=$($DIALOG --title "Hypervisor - Select VM to Boot" \
+  choice=$($DIALOG --title "$BRANDING - Boot Selector" \
     --menu "Select a VM to start (timeout ${BOOT_SELECTOR_TIMEOUT}s). Default: ${default_base}" \
     22 90 14 "${entries[@]}" --timeout "$BOOT_SELECTOR_TIMEOUT" 3>&1 1>&2 2>&3 || true)
 
@@ -464,7 +481,10 @@ while true; do
           30) "$SCRIPTS_DIR/bulk_operations.sh" || true;;
           31) "$SCRIPTS_DIR/help_assistant.sh" || true;;
           32) "$SCRIPTS_DIR/interactive_tutorial.sh" || true;;
-          33|*) break;;
+          33) "$SCRIPTS_DIR/guided_system_test.sh" || true;;
+          34) "$SCRIPTS_DIR/guided_metrics_viewer.sh" || true;;
+          35) "$SCRIPTS_DIR/guided_backup_verification.sh" || true;;
+          36|*) break;;
         esac
       done
       ;;

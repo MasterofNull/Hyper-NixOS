@@ -2,9 +2,12 @@
 
 let
   mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
-  enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] false config;
-  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  enableGuiAtBoot = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] true config;
+  # Enable menu at boot by default - this is the primary interface
+  enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
+  # Enable wizard on first boot only (controlled by .first_boot_done marker)
+  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] true config;
+  # Disable GUI by default - users can enable it if they want graphical management
+  enableGuiAtBoot = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
   # Compatibility flags for NixOS versions (24.05 vs 24.11+)
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
@@ -17,19 +20,27 @@ in {
     ./hardware-input.nix
     ../scripts/vfio-boot.nix
     ./security.nix
+    ./security-production.nix  # Production security model (default)
     ./monitoring.nix
     ./backup.nix
+    ./automation.nix  # Automated health checks, backups, updates, monitoring
+    ./alerting.nix    # Alert system (email, webhooks)
+    ./web-dashboard.nix  # Web dashboard (optional, localhost only by default)
   ]
+  ++ lib.optional (builtins.pathExists ./enterprise-features.nix) ./enterprise-features.nix
   ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix
+  ++ lib.optional (builtins.pathExists ./cache-optimization.nix) ./cache-optimization.nix  # Always load for faster downloads
   # Load local, host-specific overrides from /var/lib to avoid mutating the flake input
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/performance.nix) /var/lib/hypervisor/configuration/performance.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/perf-local.nix) /var/lib/hypervisor/configuration/perf-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/security-local.nix) /var/lib/hypervisor/configuration/security-local.nix
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/security-strict.nix) /var/lib/hypervisor/configuration/security-strict.nix  # Optional: Maximum security
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/users-local.nix) /var/lib/hypervisor/configuration/users-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/system-local.nix) /var/lib/hypervisor/configuration/system-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/management-local.nix) /var/lib/hypervisor/configuration/management-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/swap-local.nix) /var/lib/hypervisor/configuration/swap-local.nix
-  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/gui-local.nix) /var/lib/hypervisor/configuration/gui-local.nix;
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/gui-local.nix) /var/lib/hypervisor/configuration/gui-local.nix
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/cache-optimization.nix) /var/lib/hypervisor/configuration/cache-optimization.nix;
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -91,7 +102,25 @@ in {
   # Install libvirt hook for per-VM slice limits
   environment.etc."libvirt/hooks/qemu".source = ../scripts/libvirt_hooks/qemu;
 
+  # Boot Behavior Configuration:
+  # - First boot: Setup wizard runs (if enabled), then menu or GUI
+  # - Subsequent boots: Menu (if enabled) or GUI loads directly
+  # - To change: set hypervisor.menu.enableAtBoot, hypervisor.gui.enableAtBoot, etc.
+  # - Default: Console menu at boot (enableMenuAtBoot = true)
+  # - GUI available via menu: "More Options" → "GNOME Desktop"
+  
+  # Autologin configuration for appliance/kiosk mode
+  # SECURITY NOTE: For production/multi-user systems, disable autologin!
+  # See docs/SECURITY_MODEL.md for secure configurations
+  # 
+  # Default: Autologin to management user (INSECURE but convenient)
+  # Recommended: Create hypervisor-operator user without sudo access
+  # See: /var/lib/hypervisor/configuration/security-kiosk.nix
+  services.getty.autologinUser = lib.mkIf (enableMenuAtBoot || enableWizardAtBoot) mgmtUser;
+  
   # Create a default 'hypervisor' user only when used as the management user
+  # Note: During bootstrap, the script will automatically detect existing users
+  # and add them to users-local.nix with wheel group membership for sudo access
   users.users = lib.mkIf (mgmtUser == "hypervisor") {
     hypervisor = {
       isNormalUser = true;
@@ -205,6 +234,12 @@ in {
       RestrictSUIDSGID = true;
       CapabilityBoundingSet = "";
       AmbientCapabilities = "";
+      
+      # SECURITY: Restart menu on exit to prevent shell escape
+      # If menu crashes or user exits, it restarts instead of dropping to shell
+      # This prevents physical access from gaining shell on autologin user
+      Restart = "always";
+      RestartSec = "2";
     };
   };
 
@@ -248,15 +283,61 @@ in {
   # Security hardening
   networking.firewall.enable = true;
   security.sudo.enable = true;
-  security.sudo.wheelNeedsPassword = false;
+  
+  # IMPORTANT SECURITY MODEL:
+  # - Autologin is enabled for seamless console menu (appliance-like experience)
+  # - BUT passwordless sudo is RESTRICTED to specific VM management commands only
+  # - System administration tasks REQUIRE password authentication
+  # - This balances convenience (VM management) with security (system protection)
+  
+  # Require password for wheel group by default (secure by default)
+  security.sudo.wheelNeedsPassword = true;
+  
+  # Granular sudo rules: passwordless ONLY for specific VM management operations
   security.sudo.extraRules = [
     {
+      # VM Management - passwordless for convenience
       users = [ mgmtUser ];
       commands = [
-        {
-          command = "ALL";
-          options = [ "NOPASSWD" ];
-        }
+        # Libvirt/virsh VM operations (read-only and VM control)
+        { command = "${pkgs.libvirt}/bin/virsh list"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh start"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh shutdown"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh reboot"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh destroy"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh suspend"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh resume"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh dominfo"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh domstate"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh domuuid"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh domifaddr"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh console"; options = [ "NOPASSWD" ]; }
+        # VM creation/definition (uses generated XML, not user input)
+        { command = "${pkgs.libvirt}/bin/virsh define"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh undefine"; options = [ "NOPASSWD" ]; }
+        # Snapshot operations
+        { command = "${pkgs.libvirt}/bin/virsh snapshot-create-as"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh snapshot-list"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh snapshot-revert"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh snapshot-delete"; options = [ "NOPASSWD" ]; }
+        # Network operations (read-only)
+        { command = "${pkgs.libvirt}/bin/virsh net-list"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh net-info"; options = [ "NOPASSWD" ]; }
+        { command = "${pkgs.libvirt}/bin/virsh net-dhcp-leases"; options = [ "NOPASSWD" ]; }
+      ];
+    }
+    {
+      # System administration - REQUIRES PASSWORD for security
+      # These are intentionally NOT in the NOPASSWD list:
+      # - nixos-rebuild (system changes)
+      # - systemctl (service management) 
+      # - any commands that modify /etc, /var, or system state
+      # - network configuration changes
+      # - user/permission changes
+      # - package installation
+      users = [ mgmtUser ];
+      commands = [
+        { command = "ALL"; }  # Allowed but requires password
       ];
     }
   ];

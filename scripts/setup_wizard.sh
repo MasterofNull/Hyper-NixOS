@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+#
+# Hyper-NixOS First-Boot Setup Wizard
+# Copyright (C) 2024-2025 MasterofNull
+# Licensed under GPL v3.0
+#
+# Guides users through initial system configuration:
+# - Network bridge setup with optimization
+# - ISO downloads with verification
+# - First VM creation
+# - Security and performance settings
+#
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
@@ -6,24 +17,92 @@ PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 trap 'exit $?' EXIT HUP INT TERM
 : "${DIALOG:=whiptail}"
 
-require() { for b in $DIALOG jq; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done; }
+VERSION="2.0"
+
+LOGFILE="/var/lib/hypervisor/logs/first_boot.log"
+mkdir -p "$(dirname "$LOGFILE")"
+
+log() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE"
+}
+
+require() { 
+  for b in $DIALOG jq; do 
+    if ! command -v "$b" >/dev/null 2>&1; then
+      log "ERROR: Missing required command: $b"
+      echo "Missing $b" >&2
+      exit 1
+    fi
+  done
+}
 require
 
-$DIALOG --msgbox "Welcome to Hypervisor Suite Setup Wizard\n\nWe will configure a secure-by-default hypervisor with sensible features enabled. You can adjust any setting later." 14 78
+log "=== First-Boot Setup Wizard Started ==="
+
+$DIALOG --msgbox "╔════════════════════════════════════════════════════════════════╗
+║         Hyper-NixOS v${VERSION} - First-Boot Setup Wizard         ║
+║                  © 2024-2025 MasterofNull                      ║
+║                  Licensed under GPL v3.0                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+Welcome! This wizard will help you configure your hypervisor:
+
+✓ Network bridge with performance optimization
+✓ OS installer download (14 verified distributions)
+✓ First VM creation with secure defaults
+✓ Security and performance tuning
+
+Everything is optional - you can skip any step.
+All settings can be changed later.
+
+Logs: $LOGFILE" 22 78
+
+# Track what was configured
+CONFIGURED_ITEMS=()
 
 # 1. Network bridge creation
-if $DIALOG --yesno "Create a secure network bridge (recommended)?\n\nThis enables VM networking with isolation." 12 70 ; then
-  /etc/hypervisor/scripts/bridge_helper.sh || true
+if $DIALOG --yesno "Step 1/3: Network Bridge\n\nCreate a secure network bridge (recommended)?\n\nThis enables VM networking with isolation." 14 70 ; then
+  log "User chose to create network bridge"
+  if /etc/hypervisor/scripts/bridge_helper.sh; then
+    log "SUCCESS: Network bridge created"
+    CONFIGURED_ITEMS+=("✓ Network bridge configured")
+  else
+    log "WARNING: Network bridge creation failed or was skipped"
+    CONFIGURED_ITEMS+=("⚠ Network bridge: skipped/failed")
+  fi
+else
+  log "User skipped network bridge creation"
+  CONFIGURED_ITEMS+=("○ Network bridge: skipped by user")
 fi
 
 # 2. Download OS installer ISOs
-if $DIALOG --yesno "Download and verify an OS installer ISO (recommended)?\n\nWe auto-fetch checksums/signatures and verify authenticity." 14 80 ; then
-  /etc/hypervisor/scripts/iso_manager.sh || true
+if $DIALOG --yesno "Step 2/3: ISO Download\n\nDownload and verify an OS installer ISO (recommended)?\n\nWe auto-fetch checksums/signatures and verify authenticity." 16 80 ; then
+  log "User chose to download ISO"
+  if /etc/hypervisor/scripts/iso_manager.sh; then
+    log "SUCCESS: ISO downloaded"
+    CONFIGURED_ITEMS+=("✓ OS installer ISO downloaded")
+  else
+    log "WARNING: ISO download failed or was skipped"
+    CONFIGURED_ITEMS+=("⚠ ISO download: skipped/failed")
+  fi
+else
+  log "User skipped ISO download"
+  CONFIGURED_ITEMS+=("○ ISO download: skipped by user")
 fi
 
 # 3. Create your first VM
-if $DIALOG --yesno "Create your first VM with secure defaults (recommended)?\n\nVirtio devices, Secure Boot (OVMF), and non-root QEMU will be used." 14 80 ; then
-  /etc/hypervisor/scripts/create_vm_wizard.sh /var/lib/hypervisor/vm_profiles /var/lib/hypervisor/isos || true
+if $DIALOG --yesno "Step 3/3: VM Creation\n\nCreate your first VM with secure defaults (recommended)?\n\nVirtio devices, Secure Boot (OVMF), and non-root QEMU will be used." 16 80 ; then
+  log "User chose to create first VM"
+  if /etc/hypervisor/scripts/create_vm_wizard.sh /var/lib/hypervisor/vm_profiles /var/lib/hypervisor/isos; then
+    log "SUCCESS: First VM created"
+    CONFIGURED_ITEMS+=("✓ First VM profile created")
+  else
+    log "WARNING: VM creation failed or was skipped"
+    CONFIGURED_ITEMS+=("⚠ VM creation: skipped/failed")
+  fi
+else
+  log "User skipped VM creation"
+  CONFIGURED_ITEMS+=("○ VM creation: skipped by user")
 fi
 
 # Security toggles (recommended enabled)
@@ -48,10 +127,16 @@ fi
 /etc/hypervisor/scripts/preflight_check.sh || true
 /etc/hypervisor/scripts/detect_and_adjust.sh || true
 
-$DIALOG --msgbox "Setup complete. You can revisit any step via the main menu.\n\nDocs: /etc/hypervisor/docs" 12 78
+# Show summary of what was configured
+SUMMARY=$(printf "%s\n" "${CONFIGURED_ITEMS[@]}")
+log "=== Setup Summary ==="
+log "$SUMMARY"
+
+$DIALOG --msgbox "Basic Setup Complete!\n\n$SUMMARY\n\nYou can revisit any step via the main menu.\n\nDocs: /etc/hypervisor/docs" 20 78
 
 # Advanced mode (optional)
-if $DIALOG --yesno "Advanced mode: apply best‑practice secure/performance settings now and optionally rebuild?\n\nDefaults favor security and robustness; you can override each choice." 14 78 ; then
+if $DIALOG --yesno "Advanced Configuration (Optional)\n\nApply best-practice security/performance settings now?\n\nDefaults favor security and robustness.\nYou can skip this and configure later." 16 78 ; then
+  log "User chose advanced configuration"
   # Gather choices
   sf=1; mt=0; hp=1; smt=1
   $DIALOG --yesno "Enable strict firewall (default‑deny)?\nRecommended: Yes (secure)." 10 70 && sf=1 || sf=0
@@ -77,13 +162,46 @@ NIX
 }
 NIX
 
-  if $DIALOG --yesno "Attempt to rebuild now (nixos-rebuild switch)?" 10 70 ; then
-    if ! sudo nixos-rebuild switch; then
-      $DIALOG --msgbox "Rebuild failed. Please review /etc/hypervisor/src/configuration/*.nix and try again." 10 70
+  log "Advanced settings written: sf=$sf mt=$mt hp=$hp smt=$smt"
+  CONFIGURED_ITEMS+=("✓ Advanced security/performance configured")
+  
+  if $DIALOG --yesno "Attempt to rebuild now (nixos-rebuild switch)?\n\nThis will apply the new settings immediately." 12 70 ; then
+    log "User chose to rebuild now"
+    if sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)" 2>&1 | tee -a "$LOGFILE"; then
+      log "SUCCESS: System rebuilt with new configuration"
+      CONFIGURED_ITEMS+=("✓ System rebuilt successfully")
+      $DIALOG --msgbox "Rebuild successful!\n\nNew configuration is now active." 10 70
+    else
+      log "ERROR: Rebuild failed"
+      $DIALOG --msgbox "Rebuild failed!\n\nPlease review:\n- $LOGFILE\n- /etc/hypervisor/src/configuration/*.nix\n\nYou can try again later from the main menu." 14 70
     fi
   else
-    $DIALOG --msgbox "Written: /etc/hypervisor/src/configuration/security-local.nix and perf-local.nix. Rebuild when ready." 10 78
+    log "User skipped rebuild"
+    CONFIGURED_ITEMS+=("⚠ Rebuild skipped - settings not yet active")
+    $DIALOG --msgbox "Configuration written to:\n- /etc/hypervisor/src/configuration/security-local.nix\n- /etc/hypervisor/src/configuration/perf-local.nix\n\nRun 'sudo nixos-rebuild switch' to apply." 14 78
   fi
+else
+  log "User skipped advanced configuration"
 fi
 
-$DIALOG --msgbox "Setup complete. See /etc/hypervisor/src/docs for guides and warnings." 10 70
+# Final summary
+FINAL_SUMMARY=$(printf "%s\n" "${CONFIGURED_ITEMS[@]}")
+log "=== Final Summary ==="
+log "$FINAL_SUMMARY"
+log "=== First-Boot Setup Wizard Completed ==="
+
+$DIALOG --msgbox "╔════════════════════════════════════════════════════════════════╗
+║              First-Boot Setup Complete!                        ║
+╚════════════════════════════════════════════════════════════════╝
+
+What was configured:
+$FINAL_SUMMARY
+
+Next steps:
+• The main menu will now load
+• Create VMs from the console menu
+• Access documentation: /etc/hypervisor/docs
+• View logs: $LOGFILE
+
+Hyper-NixOS v${VERSION}
+https://github.com/MasterofNull/Hyper-NixOS" 24 78

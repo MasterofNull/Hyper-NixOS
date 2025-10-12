@@ -1,5 +1,11 @@
 {
-  description = "Hypervisor Suite - bootable NixOS with VM menu";
+  description = "Hyper-NixOS: Production-ready NixOS hypervisor with zero-trust security and enterprise automation";
+
+  # Project metadata
+  # Author: MasterofNull
+  # License: GPL v3.0
+  # Repository: https://github.com/MasterofNull/Hyper-NixOS
+  # Version: 2.0 (Production Release)
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
