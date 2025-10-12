@@ -36,7 +36,7 @@
       SMTP_SERVER="smtp.gmail.com"
       SMTP_PORT=587
       SMTP_USER="your-email@gmail.com"
-      SMTP_PASS="your-app-password"
+      SMTP_PASS="CHANGEME_YOUR_APP_PASSWORD"
       
       # Webhook Alerts (Slack, Discord, Teams, etc.)
       WEBHOOK_ENABLED=false

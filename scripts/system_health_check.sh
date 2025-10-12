@@ -13,7 +13,15 @@ PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 HEALTH_LOG="/var/lib/hypervisor/logs/health-$(date +%Y%m%d-%H%M%S).log"
 HEALTH_STATUS="/var/lib/hypervisor/health-status.json"
-mkdir -p "$(dirname "$HEALTH_LOG")"
+
+# Only create directories if we have permission
+if [[ -w /var/lib/hypervisor ]] || [[ ! -e /var/lib/hypervisor ]]; then
+  mkdir -p "$(dirname "$HEALTH_LOG")" 2>/dev/null || true
+else
+  # Fallback to /tmp if we can't write to /var/lib
+  HEALTH_LOG="/tmp/health-$(date +%Y%m%d-%H%M%S).log"
+  HEALTH_STATUS="/tmp/health-status.json"
+fi
 
 # Colors for output
 RED='\033[0;31m'

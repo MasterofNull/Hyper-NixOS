@@ -15,22 +15,30 @@ ALERT_CONFIG="/var/lib/hypervisor/configuration/alerts.conf"
 ALERT_LOG="/var/lib/hypervisor/logs/alerts.log"
 ALERT_COOLDOWN_DIR="/var/lib/hypervisor/alert-cooldowns"
 
-mkdir -p "$(dirname "$ALERT_LOG")" "$ALERT_COOLDOWN_DIR"
+# Only create directories if writable
+if [[ -w /var/lib/hypervisor ]] || [[ ! -e /var/lib/hypervisor ]]; then
+  mkdir -p "$(dirname "$ALERT_LOG")" "$ALERT_COOLDOWN_DIR" 2>/dev/null || true
+fi
 
-# Default configuration
+# Default configuration (NO SECRETS HERE!)
 EMAIL_ENABLED=false
 EMAIL_TO=""
 EMAIL_FROM="hypervisor@$(hostname)"
 SMTP_SERVER=""
 SMTP_PORT=587
 SMTP_USER=""
-SMTP_PASS=""
+SMTP_PASS=""  # Loaded from config file only
 
 WEBHOOK_ENABLED=false
-WEBHOOK_URL=""
+WEBHOOK_URL=""  # Loaded from config file only
 
-# Load configuration if exists
-[[ -f "$ALERT_CONFIG" ]] && source "$ALERT_CONFIG"
+# Load configuration if exists (this is where secrets come from)
+if [[ -f "$ALERT_CONFIG" ]]; then
+  # Source config file securely
+  set +u  # Allow undefined variables from config
+  source "$ALERT_CONFIG"
+  set -u
+fi
 
 log_alert() {
   local timestamp=$(date -Iseconds)
@@ -247,10 +255,10 @@ Configuration:
   SMTP_SERVER="smtp.gmail.com"
   SMTP_PORT=587
   SMTP_USER="your@email.com"
-  SMTP_PASS="your-password"
+  SMTP_PASS='CHANGE_ME_ACTUAL_PASSWORD'
   
   WEBHOOK_ENABLED=true
-  WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK"
+  WEBHOOK_URL='https://hooks.slack.com/services/YOUR/WEBHOOK'
 EOF
 }
 

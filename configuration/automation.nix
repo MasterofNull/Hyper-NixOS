@@ -280,6 +280,29 @@
     };
   };
 
+  # Backup verification service
+  systemd.services.hypervisor-backup-verification = {
+    description = "Automated Backup Verification";
+    
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/automated_backup_verification.sh";
+      User = "root";
+      StandardOutput = "journal";
+      StandardError = "journal";
+    };
+  };
+  
+  systemd.timers.hypervisor-backup-verification = {
+    description = "Weekly Backup Verification";
+    wantedBy = [ "timers.target" ];
+    
+    timerConfig = {
+      OnCalendar = "Sun 03:00";  # Sunday 3 AM
+      Persistent = true;
+    };
+  };
+  
   # Enable all timers by default
   systemd.targets.hypervisor-automation = {
     description = "Hypervisor Automation Target";
@@ -291,6 +314,7 @@
       "hypervisor-storage-cleanup.timer"
       "hypervisor-metrics.timer"
       "hypervisor-vm-cleanup.timer"
+      "hypervisor-backup-verification.timer"
     ];
   };
 
