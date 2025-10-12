@@ -21,9 +21,17 @@ async fn main() -> Result<()> {
     let client = Client::builder()
         .use_rustls_tls()
         .https_only(true)
+        .timeout(std::time::Duration::from_secs(60))
+        .connect_timeout(std::time::Duration::from_secs(10))
+        .pool_max_idle_per_host(2)
         .build()?;
 
-    let resp = client.get(url).send().await?.error_for_status()?;
+    let resp = client
+        .get(url)
+        .header("User-Agent", "isoctl/1.0 (+Hyper-NixOS)")
+        .send()
+        .await?
+        .error_for_status()?;
     let len = resp.content_length().unwrap_or(0);
     let pb = ProgressBar::new(len);
     pb.set_style(

@@ -37,7 +37,9 @@ in {
   boot.loader.efi.canTouchEfiVariables = true;
   networking.hostName = lib.mkDefault "hypervisor";
   time.timeZone = lib.mkDefault "UTC";
-  boot.kernelPackages = pkgs.linuxPackages_hardened;
+  # Prefer latest stable kernel; allow override to hardened
+  boot.kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
+  # Security-conscious users can set boot.kernelPackages = pkgs.linuxPackages_hardened; in local overlays
   security.auditd.enable = true;
   boot.kernel.sysctl = {
     "kernel.unprivileged_userns_clone" = 0;
@@ -54,7 +56,7 @@ in {
   };
   environment.systemPackages = with pkgs; [
     qemu_full OVMF jq python3 python3Packages.jsonschema curl newt dialog nano
-    libvirt virt-manager gnome.zenity gnome.gnome-terminal pciutils
+    libvirt virt-manager gnome.zenity gnome.gnome-terminal pciutils ripgrep
     looking-glass-client gnupg swtpm openssh xorriso nfs-utils
   ];
   environment.etc."hypervisor/vm_profiles".source = ../vm_profiles;

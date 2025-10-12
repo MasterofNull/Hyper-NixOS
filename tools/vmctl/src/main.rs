@@ -223,15 +223,21 @@ fn gen_xml(p: &Profile) -> String {
         );
     }
     if let Some(hostdevs) = p.hostdevs.as_ref() {
+        let re = regex::Regex::new(r"^(?i)([0-9a-f]{4}):([0-9a-f]{2}):([0-9a-f]{2})\.([0-7])$").unwrap();
         for bdf in hostdevs {
-            if !bdf
-                .chars()
-                .all(|c| c.is_ascii_hexdigit() || c == ':' || c == '.')
-            {
+            if let Some(caps) = re.captures(bdf) {
+                let domain = &caps[1];
+                let bus = &caps[2];
+                let slot = &caps[3];
+                let func = &caps[4];
+                xml.push_str(&format!(
+                    "    <hostdev mode='subsystem' type='pci' managed='yes'>\n      <source>\n        <address domain='0x{}' bus='0x{}' slot='0x{}' function='0x{}'/>\n      </source>\n    </hostdev>\n",
+                    domain, bus, slot, func
+                ));
+            } else {
+                // Skip invalid BDF input safely
                 continue;
             }
-            xml.push_str(&format!("    <hostdev mode='subsystem' type='pci' managed='yes'>\n      <source>\n        <address domain='0x{}' bus='0x{}' slot='0x{}' function='0x{}'/>\n      </source>\n    </hostdev>\n",
-                &bdf[0..4], &bdf[5..7], &bdf[8..10], &bdf[11..12]));
         }
     }
     xml.push_str("  </devices>\n</domain>\n");

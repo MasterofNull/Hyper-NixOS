@@ -131,7 +131,8 @@
         # Warn if low disk space
         AVAIL_GB=$(df -BG /var/lib/hypervisor | awk 'NR==2 {print $4}' | tr -d 'G')
         if [[ $AVAIL_GB -lt 20 ]]; then
-          log "WARNING: Low disk space (${AVAIL_GB}GB available)"
+          # Note: ''${...} escapes Nix interpolation to keep Bash variable expansion
+          log "WARNING: Low disk space (''${AVAIL_GB}GB available)"
           log "Consider:"
           log "  - Deleting old VMs: virsh undefine <vm>"
           log "  - Deleting old snapshots: virsh snapshot-delete <vm> <snapshot>"
