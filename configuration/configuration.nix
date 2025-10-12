@@ -43,7 +43,6 @@ in {
     # Security Configuration
     # ─────────────────────────────────────────────────────────────
     ./security/base.nix
-    ./security/production.nix
     ./security/profiles.nix
     ./security/kernel-hardening.nix
     ./security/firewall.nix

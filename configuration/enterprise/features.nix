@@ -61,10 +61,5 @@
     };
   };
   
-  # Create directory structure
-  systemd.tmpfiles.rules = [
-    "d /var/lib/hypervisor/templates 0755 root root -"
-    "d /var/lib/hypervisor/reports 0755 root root -"
-    "d /var/lib/hypervisor/keys 0700 root root -"
-  ];
+  # Note: Directory structure is managed in core/directories.nix
 }

@@ -79,26 +79,14 @@
   security.apparmor.enable = lib.mkForce true;
   security.apparmor.packages = [ pkgs.apparmor-profiles ];
   
-  # Kernel hardening
+  # Kernel hardening overrides (stricter than default)
+  # Note: Base hardening is in security/kernel-hardening.nix
   boot.kernel.sysctl = {
-    # Prevent information leaks
-    "kernel.dmesg_restrict" = 1;
-    "kernel.kptr_restrict" = 2;
+    # Stricter performance event restriction (default is 2, strict is 3)
+    "kernel.perf_event_paranoid" = lib.mkForce 3;
     
-    # Restrict kernel pointers in /proc
-    "kernel.perf_event_paranoid" = 3;
-    
-    # Disable unprivileged BPF
-    "kernel.unprivileged_bpf_disabled" = 1;
-    
-    # Enable ASLR
-    "kernel.randomize_va_space" = 2;
-    
-    # Restrict ptrace
-    "kernel.yama.ptrace_scope" = 2;
-    
-    # Restrict userfaultfd
-    "vm.unprivileged_userfaultfd" = 0;
+    # Stricter userfaultfd restriction (default is 0, force it)
+    "vm.unprivileged_userfaultfd" = lib.mkForce 0;
   };
   
   # Disable USB automount (prevent BadUSB attacks)
@@ -107,50 +95,24 @@
   # Disable Bluetooth (attack surface reduction)
   hardware.bluetooth.enable = lib.mkForce false;
   
-  # Stricter SSH configuration
-  services.openssh = {
-    settings = {
-      # Only key-based auth
-      PasswordAuthentication = lib.mkForce false;
-      PermitRootLogin = lib.mkForce "no";
-      
-      # Stricter ciphers
-      Ciphers = [
-        "chacha20-poly1305@openssh.com"
-        "aes256-gcm@openssh.com"
-      ];
-      
-      # Stricter MACs
-      Macs = [
-        "hmac-sha2-512-etm@openssh.com"
-        "hmac-sha2-256-etm@openssh.com"
-      ];
-      
-      # Stricter key exchange
-      KexAlgorithms = [
-        "curve25519-sha256"
-        "curve25519-sha256@libssh.org"
-      ];
-      
-      # Limit connections
-      MaxAuthTries = 2;
-      MaxSessions = 2;
-      LoginGraceTime = 30;
-    };
+  # Enable strict SSH mode (configured in security/ssh.nix)
+  hypervisor.security.sshStrictMode = true;
+  
+  # Override SSH with even stricter settings
+  services.openssh.settings = {
+    # Stricter connection limits
+    MaxAuthTries = lib.mkForce 2;
+    MaxSessions = lib.mkForce 2;
+    LoginGraceTime = lib.mkForce 30;
   };
   
-  # Firewall: deny all by default, explicit allowlist only
+  # Enable strict firewall mode (configured in security/firewall.nix)
+  hypervisor.security.strictFirewall = true;
+  
+  # Additional firewall restrictions
   networking.firewall = {
-    enable = true;
-    allowedTCPPorts = [ ];  # Empty - add explicitly as needed
-    allowedUDPPorts = [ ];  # Empty - add explicitly as needed
-    
-    # Drop all other traffic
-    rejectPackets = true;
-    
-    # Log dropped packets for forensics
-    logRefusedConnections = true;
-    logRefusedPackets = true;
+    # Reject packets instead of just dropping
+    rejectPackets = lib.mkForce true;
   };
   
   # Disable unnecessary services
