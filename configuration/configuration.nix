@@ -4,10 +4,11 @@ let
   enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
   enableWelcomeAtBoot = lib.attrByPath ["hypervisor" "firstBootWelcome" "enableAtBoot"] true config;
   enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  baseSystemHasGui = config.services.xserver.enable or false;
+  # Fix: Don't reference config.services.xserver.enable here as it creates circular dependency
+  # Only use explicit hypervisor GUI preference
   hasHypervisorGuiPreference = lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config;
   hypervisorGuiRequested = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
-  enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else baseSystemHasGui;
+  enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else false;
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
   # Enable console autologin only when not booting to a GUI Desktop
@@ -240,7 +241,7 @@ in {
   hardware.pulseaudio.enable = false;
   sound.enable = false;
   hardware.opengl.enable = true;
-  services.xserver.enable = lib.mkDefault (baseSystemHasGui || enableGuiAtBoot);
+  services.xserver.enable = lib.mkDefault enableGuiAtBoot;
   # Do not force any specific display manager; respect the system's previous generation
   services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
     enable = lib.mkDefault true; user = mgmtUser;
