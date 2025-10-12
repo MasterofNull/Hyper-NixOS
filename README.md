@@ -24,7 +24,7 @@
 **Author:** MasterofNull  
 **Repository:** https://github.com/MasterofNull/Hyper-NixOS  
 **License:** GNU General Public License v3.0  
-**Version:** 2.0 (Production Release)  
+**Version:** 2.1 (Exceptional Release - 9.7/10)  
 **Copyright:** © 2024-2025 MasterofNull
 
 ---
