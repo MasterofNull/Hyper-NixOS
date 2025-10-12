@@ -2,13 +2,13 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-# Simple dashboard to launch hypervisor tools from GNOME
+# Simple dashboard to launch hypervisor tools from any desktop environment
 # --autostart: if VMs exist, offer selection with timeout; if none, open dashboard
 
 ROOT=/etc/hypervisor
 SCRIPTS=$ROOT/scripts
 STATE=/var/lib/hypervisor
-: "${TERMINAL:=gnome-terminal}"
+: "${TERMINAL:=x-terminal-emulator}"
 
 list_vms() {
   shopt -s nullglob
@@ -44,7 +44,12 @@ get_gui_status() {
 show_menu() {
   gui_status=$(get_gui_status)
   
-  zenity --list --title="Hypervisor Dashboard - $gui_status" \
+  if ! command -v zenity >/dev/null 2>&1 && command -v yad >/dev/null 2>&1; then
+    ZENITY=yad
+  else
+    ZENITY=zenity
+  fi
+  "$ZENITY" --list --title="Hypervisor Dashboard - $gui_status" \
     --column=Action --column=Description \
     "vm_menu" "Open VM selector (TUI)" \
     "wizard" "Run first-boot setup wizard" \
@@ -65,19 +70,19 @@ show_menu() {
 
 run_action() {
   case "$1" in
-    vm_menu)        $TERMINAL -- bash -lc "$SCRIPTS/menu.sh" & ;;
-    wizard)         $TERMINAL -- bash -lc "$SCRIPTS/setup_wizard.sh" & ;;
-    network_setup)  $TERMINAL -- bash -lc "sudo $SCRIPTS/foundational_networking_setup.sh" & ;;
-    iso)            $TERMINAL -- bash -lc "$SCRIPTS/iso_manager.sh" & ;;
-    create)         $TERMINAL -- bash -lc "$SCRIPTS/create_vm_wizard.sh $STATE/vm_profiles $STATE/isos" & ;;
-    update)         $TERMINAL -- bash -lc "$SCRIPTS/update_hypervisor.sh" & ;;
-    gui_status)     $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh status; read -p 'Press Enter to continue...'" & ;;
-    gui_auto)       $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh auto; read -p 'Press Enter to continue...'" & ;;
-    gui_force_off)  $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh off; read -p 'Press Enter to continue...'" & ;;
-    toggle_menu_on) $TERMINAL -- bash -lc "$SCRIPTS/toggle_boot_features.sh menu on" & ;;
-    toggle_menu_off)$TERMINAL -- bash -lc "$SCRIPTS/toggle_boot_features.sh menu off" & ;;
-    toggle_wizard_on)$TERMINAL -- bash -lc "$SCRIPTS/toggle_boot_features.sh wizard on" & ;;
-    toggle_wizard_off)$TERMINAL -- bash -lc "$SCRIPTS/toggle_boot_features.sh wizard off" & ;;
+    vm_menu)        $TERMINAL -e bash -lc "$SCRIPTS/menu.sh" & ;;
+    wizard)         $TERMINAL -e bash -lc "$SCRIPTS/setup_wizard.sh" & ;;
+    network_setup)  $TERMINAL -e bash -lc "sudo $SCRIPTS/foundational_networking_setup.sh" & ;;
+    iso)            $TERMINAL -e bash -lc "$SCRIPTS/iso_manager.sh" & ;;
+    create)         $TERMINAL -e bash -lc "$SCRIPTS/create_vm_wizard.sh $STATE/vm_profiles $STATE/isos" & ;;
+    update)         $TERMINAL -e bash -lc "$SCRIPTS/update_hypervisor.sh" & ;;
+    gui_status)     $TERMINAL -e bash -lc "sudo $SCRIPTS/toggle_gui.sh status; read -p 'Press Enter to continue...'" & ;;
+    gui_auto)       $TERMINAL -e bash -lc "sudo $SCRIPTS/toggle_gui.sh auto; read -p 'Press Enter to continue...'" & ;;
+    gui_force_off)  $TERMINAL -e bash -lc "sudo $SCRIPTS/toggle_gui.sh off; read -p 'Press Enter to continue...'" & ;;
+    toggle_menu_on) $TERMINAL -e bash -lc "$SCRIPTS/toggle_boot_features.sh menu on" & ;;
+    toggle_menu_off)$TERMINAL -e bash -lc "$SCRIPTS/toggle_boot_features.sh menu off" & ;;
+    toggle_wizard_on)$TERMINAL -e bash -lc "$SCRIPTS/toggle_boot_features.sh wizard on" & ;;
+    toggle_wizard_off)$TERMINAL -e bash -lc "$SCRIPTS/toggle_boot_features.sh wizard off" & ;;
     terminal)       $TERMINAL & ;;
     *) : ;;
   esac
@@ -103,10 +108,10 @@ if [[ "${1:-}" == "--autostart" ]]; then
     sel=$(zenity --list --title="Select VM (auto in 8s)" --timeout=8 \
       --column=Path --column=Name "${ZLIST[@]}" 2>/dev/null || true)
     if [[ -n "$sel" ]]; then
-      gnome-terminal -- bash -lc "$SCRIPTS/json_to_libvirt_xml_and_define.sh '$sel'"
+      $TERMINAL -e bash -lc "$SCRIPTS/json_to_libvirt_xml_and_define.sh '$sel'"
       exit 0
     elif [[ -n "$default" && -f "$default" ]]; then
-      gnome-terminal -- bash -lc "$SCRIPTS/json_to_libvirt_xml_and_define.sh '$default'"
+      $TERMINAL -e bash -lc "$SCRIPTS/json_to_libvirt_xml_and_define.sh '$default'"
       exit 0
     fi
   fi

@@ -56,7 +56,7 @@ in {
   };
   environment.systemPackages = with pkgs; [
     qemu_full OVMF jq python3 python3Packages.jsonschema curl newt dialog nano
-    libvirt virt-manager gnome.zenity gnome.gnome-terminal pciutils ripgrep
+    libvirt virt-manager pciutils ripgrep
     looking-glass-client gnupg swtpm openssh xorriso nfs-utils
   ];
   environment.etc."hypervisor/vm_profiles".source = ../vm_profiles;
@@ -243,12 +243,11 @@ in {
   sound.enable = false;
   hardware.opengl.enable = true;
   services.xserver.enable = lib.mkDefault (baseSystemHasGui || enableGuiAtBoot);
-  services.xserver.displayManager.gdm.enable = lib.mkDefault (enableGuiAtBoot && hasOldDM);
-  services.xserver.displayManager.gdm.wayland = lib.mkDefault (enableGuiAtBoot && hasOldDM);
+  # Do not force any specific display manager; respect the system's previous generation
   services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
     enable = lib.mkDefault true; user = mgmtUser;
   };
-  services.xserver.desktopManager.gnome.enable = lib.mkDefault (enableGuiAtBoot && hasOldDesk);
+  # Wayland-first: enable Xwayland only if GUI is enabled for compatibility
   programs.xwayland.enable = lib.mkDefault enableGuiAtBoot;
   environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
     text = ''
@@ -264,9 +263,9 @@ in {
     Type=Application
     Name=Hypervisor Console Menu
     Comment=Main hypervisor management menu
-    Exec=gnome-terminal -- /etc/hypervisor/scripts/menu.sh
+    Exec=/etc/hypervisor/scripts/menu.sh
     Icon=utilities-terminal
-    Terminal=false
+    Terminal=true
     Categories=System;Utility;
   '';
   environment.etc."xdg/applications/hypervisor-dashboard.desktop".text = ''
@@ -283,9 +282,9 @@ in {
     Type=Application
     Name=Hypervisor Setup Wizard
     Comment=Run first-boot setup and configuration wizard
-    Exec=gnome-terminal -- /etc/hypervisor/scripts/setup_wizard.sh
+    Exec=/etc/hypervisor/scripts/setup_wizard.sh
     Icon=system-software-install
-    Terminal=false
+    Terminal=true
     Categories=System;Settings;
   '';
   environment.etc."xdg/applications/hypervisor-networking.desktop".text = ''
@@ -293,9 +292,9 @@ in {
     Type=Application
     Name=Network Foundation Setup
     Comment=Configure foundational networking (bridges, interfaces)
-    Exec=gnome-terminal -- sudo /etc/hypervisor/scripts/foundational_networking_setup.sh
+    Exec=sudo /etc/hypervisor/scripts/foundational_networking_setup.sh
     Icon=network-wired
-    Terminal=false
+    Terminal=true
     Categories=System;Settings;Network;
   '';
   environment.etc."skel/Desktop/Hypervisor-Menu.desktop" = {
@@ -304,9 +303,9 @@ in {
       Type=Application
       Name=Hypervisor Console Menu
       Comment=Main hypervisor management menu
-      Exec=gnome-terminal -- /etc/hypervisor/scripts/menu.sh
+      Exec=/etc/hypervisor/scripts/menu.sh
       Icon=utilities-terminal
-      Terminal=false
+      Terminal=true
       Categories=System;Utility;
     '';
     mode = "0755";
