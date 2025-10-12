@@ -4,10 +4,15 @@ let
   enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
   enableWelcomeAtBoot = lib.attrByPath ["hypervisor" "firstBootWelcome" "enableAtBoot"] true config;
   enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  baseSystemHasGui = config.services.xserver.enable or false;
+  # Boot Architecture: Headless console menu by default, GUI only on explicit request
+  # This hypervisor is designed to boot to a TUI menu for VM management (minimal resources).
+  # GUI desktop environment is opt-in via hypervisor.gui.enableAtBoot = true
+  # 
+  # IMPORTANT: Do NOT read config.services.xserver.enable here - it creates circular dependency
+  # and violates the "headless by default" architecture by trying to preserve previous GUI state.
   hasHypervisorGuiPreference = lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config;
   hypervisorGuiRequested = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
-  enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else baseSystemHasGui;
+  enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else false;
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
   # Enable console autologin only when not booting to a GUI Desktop
@@ -240,7 +245,7 @@ in {
   hardware.pulseaudio.enable = false;
   sound.enable = false;
   hardware.opengl.enable = true;
-  services.xserver.enable = lib.mkDefault (baseSystemHasGui || enableGuiAtBoot);
+  services.xserver.enable = lib.mkDefault enableGuiAtBoot;
   # Do not force any specific display manager; respect the system's previous generation
   services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
     enable = lib.mkDefault true; user = mgmtUser;
