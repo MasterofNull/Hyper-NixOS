@@ -358,7 +358,7 @@
         echo "✓ Quota expanded"
         echo ""
         echo "To apply to VM disks, run:"
-        echo "  qemu-img resize /path/to/disk.qcow2 ${new_quota}G"
+        echo "  qemu-img resize /path/to/disk.qcow2 ''${new_quota}G"
       }
       
       # Set alert threshold
