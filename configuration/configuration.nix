@@ -43,20 +43,7 @@ in {
   # Prefer latest stable kernel; allow override to hardened
   boot.kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
   # Security-conscious users can set boot.kernelPackages = pkgs.linuxPackages_hardened; in local overlays
-  security.auditd.enable = true;
-  boot.kernel.sysctl = {
-    "kernel.unprivileged_userns_clone" = 0;
-    "kernel.kptr_restrict" = 2;
-    "kernel.yama.ptrace_scope" = 1;
-    "net.ipv4.conf.all.rp_filter" = 1;
-    "net.ipv4.conf.default.rp_filter" = 1;
-    "fs.protected_hardlinks" = 1;
-    "fs.protected_symlinks" = 1;
-    "fs.protected_fifos" = 2;
-    "kernel.kexec_load_disabled" = 1;
-    "kernel.dmesg_restrict" = 1;
-    "kernel.unprivileged_bpf_disabled" = 1;
-  };
+  # Note: Security hardening (auditd, sysctl) is configured in security-production.nix
   environment.systemPackages = with pkgs; [
     qemu_full OVMF jq python3 python3Packages.jsonschema curl newt dialog nano
     libvirt virt-manager pciutils ripgrep yad
