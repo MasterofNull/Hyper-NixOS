@@ -1,0 +1,29 @@
+# Production Release Files
+# Essential files for production deployment
+
+## Core Files (Required)
+README.md
+LICENSE
+VERSION
+CREDITS.md
+flake.nix
+flake.lock
+
+## Configuration (Required)
+configuration/
+scripts/
+vm_profiles/
+
+## Documentation (Required)
+docs/
+
+## Exclude from Production Release
+.git/
+.github/
+dev-reference/
+*.backup
+*.log
+*.swp
+*~
+.DS_Store
+.production-release-files
