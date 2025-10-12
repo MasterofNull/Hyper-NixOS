@@ -286,7 +286,7 @@
         #!/usr/bin/env bash
         set -euo pipefail
         
-        : "$\{DIALOG:=whiptail}"
+        : "''${DIALOG:=whiptail}"
         
         show_backups() {
           find "${config.hypervisor.backup.destination}" -name metadata.json -type f | \
@@ -368,12 +368,12 @@
         
         # Interactive restore
         entries=($(show_backups))
-        if [[ "$\{#entries[@]}" -eq 0 ]]; then
+        if [[ "''${#entries[@]}" -eq 0 ]]; then
           $DIALOG --msgbox "No backups found" 8 40
           exit 0
         fi
         
-        backup=$($DIALOG --menu "Select backup to restore:" 20 70 12 "$\{entries[@]}" 3>&1 1>&2 2>&3) || exit 0
+        backup=$($DIALOG --menu "Select backup to restore:" 20 70 12 "''${entries[@]}" 3>&1 1>&2 2>&3) || exit 0
         
         restore_vm "$backup"
       '';
