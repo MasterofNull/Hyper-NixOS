@@ -33,54 +33,40 @@ if [[ "$state" == "status" ]]; then
   echo "GUI Environment Status:"
   echo "======================="
   echo ""
-  echo "Base System GUI: $base_has_gui"
+  echo "Base System GUI Present: $base_has_gui"
   
   if [[ -f "$FILE" ]]; then
     gui_enabled=$(sed -n 's/.*hypervisor\.gui\.enableAtBoot\s*=\s*\(true\|false\).*/\1/p' "$FILE" | head -n1 || echo "not set")
     echo "Hypervisor Override: ACTIVE (gui-local.nix exists)"
     echo "Override Setting: hypervisor.gui.enableAtBoot = $gui_enabled"
-    echo ""
-    if [[ "$gui_enabled" == "true" ]]; then
-      echo "Result: GNOME will start on boot (OVERRIDING base system)"
-    elif [[ "$gui_enabled" == "false" ]]; then
-      echo "Result: Console menu on boot (OVERRIDING base system)"
-    fi
-    echo ""
-    echo "To remove override and respect base system:"
-    echo "  sudo $0 auto"
   else
     echo "Hypervisor Override: NONE (no gui-local.nix)"
-    echo "Configuration: Using base system default (respecting your choice)"
-    echo ""
-    if $base_has_gui; then
-      echo "Result: GNOME will start (from your NixOS installation)"
-      echo ""
-      echo "Your base system has GNOME configured. This is respected."
-      echo ""
-      echo "To override and force console menu:"
-      echo "  sudo $0 off"
-    else
-      echo "Result: Console menu on boot (from your NixOS installation)"
-      echo ""
-      echo "Your base system has no GUI. This is respected."
-      echo ""
-      echo "To override and enable GNOME:"
-      echo "  sudo $0 on"
-    fi
   fi
-  
-  # Show current target
+
+  # Show current target and effective behavior
   current_target=$(systemctl get-default 2>/dev/null || echo "unknown")
   echo ""
   echo "Current default target: $current_target"
+  if [[ -f "$FILE" ]]; then
+    if [[ "$gui_enabled" == "true" ]]; then
+      echo "Effective boot behavior: GNOME (graphical.target)"
+    elif [[ "$gui_enabled" == "false" ]]; then
+      echo "Effective boot behavior: Console menu (multi-user.target)"
+    else
+      echo "Effective boot behavior: $current_target"
+    fi
+  else
+    echo "Effective boot behavior: $current_target"
+  fi
   
   exit 0
 fi
 
-if [[ ! "$state" =~ ^(off|auto)$ ]]; then
+if [[ ! "$state" =~ ^(on|off|auto)$ ]]; then
   echo "Usage: $0 {off|auto|status}" >&2
   echo ""
   echo "  off    - Force console menu at boot (override base system)"
+  echo "  on     - Force GNOME at boot (override base system)"
   echo "  auto   - Remove override, use base system default"
   echo "  status - Show current configuration"
   exit 2
@@ -105,7 +91,7 @@ if [[ "$state" == "auto" ]]; then
   else
     echo "Base system has no GUI - console menu will start on boot"
   fi
-else
+elif [[ "$state" == "off" ]]; then
   cat >"$FILE" <<NIX
 { config, lib, pkgs, ... }:
 {
@@ -118,6 +104,18 @@ else
 }
 NIX
   echo "Forcing console menu at boot (override)..."
+else
+  cat >"$FILE" <<NIX
+{ config, lib, pkgs, ... }:
+{
+  # Force GUI at boot (hypervisor override)
+  hypervisor.gui.enableAtBoot = true;
+  
+  # Disable console menu at boot to avoid TTY conflicts
+  hypervisor.menu.enableAtBoot = false;
+}
+NIX
+  echo "Forcing GNOME at boot (override)..."
 fi
 
 if [[ "$state" != "auto" ]] || [[ -f "$FILE" ]]; then

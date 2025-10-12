@@ -4,15 +4,14 @@ let
   enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
   enableWelcomeAtBoot = lib.attrByPath ["hypervisor" "firstBootWelcome" "enableAtBoot"] true config;
   enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  baseSystemHasGui = config.services.xserver.enable or false;
-  hasHypervisorGuiPreference = lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config;
+  # Only enable GUI when explicitly requested via hypervisor override
   hypervisorGuiRequested = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
-  enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else baseSystemHasGui;
+  enableGuiAtBoot = hypervisorGuiRequested;
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
   hasNewDesk = lib.hasAttrByPath ["services" "desktopManager" "gnome"] config;
   hasOldDesk = lib.hasAttrByPath ["services" "xserver" "desktopManager" "gnome"] config;
-  consoleAutoLoginEnabled = (enableMenuAtBoot || enableWizardAtBoot) && (!hasHypervisorGuiPreference || !enableGuiAtBoot);
+  consoleAutoLoginEnabled = (enableMenuAtBoot || enableWizardAtBoot) && (!enableGuiAtBoot);
 in {
   system.stateVersion = "24.05";
   imports = [
@@ -34,6 +33,9 @@ in {
     ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/cache-optimization.nix) /var/lib/hypervisor/configuration/cache-optimization.nix;
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  # Ensure we land in the correct target by default
+  systemd.defaultUnit =
+    (if enableGuiAtBoot then (lib.mkOverride 900 "graphical.target") else (lib.mkOverride 900 "multi-user.target"));
   networking.hostName = lib.mkDefault "hypervisor";
   time.timeZone = lib.mkDefault "UTC";
   boot.kernelPackages = pkgs.linuxPackages_hardened;
@@ -112,7 +114,7 @@ in {
     wantedBy = lib.optional enableMenuAtBoot "multi-user.target";
     after = [ "network-online.target" "libvirtd.service" ];
     wants = [ "network-online.target" "libvirtd.service" ];
-    conflicts = [ "getty@tty1.service" ];
+    conflicts = [ "getty@tty1.service" "display-manager.service" ];
     serviceConfig = {
       Type = "simple";
       ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/menu.sh";
@@ -149,7 +151,7 @@ in {
     after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
     before = [ "hypervisor-menu.service" ];
     wants = [ "network-online.target" ];
-    conflicts = [ "getty@tty1.service" ];
+    conflicts = [ "getty@tty1.service" "display-manager.service" ];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/first_boot_welcome.sh";
@@ -173,7 +175,7 @@ in {
     after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
     before = [ "hypervisor-menu.service" ];
     wants = [ "network-online.target" ];
-    conflicts = [ "getty@tty1.service" ];
+    conflicts = [ "getty@tty1.service" "display-manager.service" ];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash -c 'if [ ! -f /var/lib/hypervisor/.first_boot_done ]; then ${pkgs.bash}/bin/bash /etc/hypervisor/scripts/setup_wizard.sh || true; ${pkgs.coreutils}/bin/touch /var/lib/hypervisor/.first_boot_done; fi'";
@@ -238,7 +240,8 @@ in {
   hardware.pulseaudio.enable = false;
   sound.enable = false;
   hardware.opengl.enable = true;
-  services.xserver.enable = lib.mkDefault (baseSystemHasGui || enableGuiAtBoot);
+  # Do not enable the GUI unless explicitly requested via hypervisor override
+  services.xserver.enable = lib.mkDefault enableGuiAtBoot;
   services.xserver.displayManager.gdm.enable = lib.mkDefault (enableGuiAtBoot && hasOldDM);
   services.xserver.displayManager.gdm.wayland = lib.mkDefault (enableGuiAtBoot && hasOldDM);
   services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
