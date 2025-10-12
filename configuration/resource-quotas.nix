@@ -16,6 +16,12 @@
       
       # Security
       runAsRoot = false;
+      
+      # VNC security - only listen on localhost
+      # This prevents VMs from being accessible from the network
+      verbatimConfig = ''
+        vnc_listen = "127.0.0.1"
+      '';
     };
   };
   
