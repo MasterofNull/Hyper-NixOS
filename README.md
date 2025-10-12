@@ -14,6 +14,7 @@
 - 🎓 **Educational-first design** - Guided wizards teach professional skills
 - 🔒 Zero-trust security model with polkit-based access control
 - ⚡ Optimized installation with parallel downloads (15 min, 2GB)
+- 🚀 **Smart Sync** - Only downloads changed files (10-50x faster updates!)
 - 🧪 Automated testing + CI/CD pipeline
 - 🔔 Proactive alerting (email, webhooks, Slack/Discord)
 - 🌐 Web dashboard with real-time monitoring
@@ -404,7 +405,28 @@ Note: Replace placeholders with your actual links if you use different handles.
 
 ## Quick Reference
 
-### Update the system
+### 🚀 NEW: Fast Development Updates (Recommended)
+
+```bash
+# Smart update: validate, sync only changed files, rebuild
+sudo bash /etc/hypervisor/scripts/dev_update_hypervisor.sh
+
+# Check what needs updating (no changes)
+sudo bash /etc/hypervisor/scripts/dev_update_hypervisor.sh --check-only
+
+# Sync files without rebuild (fast!)
+sudo bash /etc/hypervisor/scripts/dev_update_hypervisor.sh --skip-rebuild
+```
+
+**Benefits:**
+- ⚡ **10-50x faster** than full git clone for updates
+- 💾 **Saves bandwidth** - only downloads changed files
+- ✅ **Validates** before and after updates
+- 🎯 **Perfect for development** - rapid iterations
+
+**See [Smart Sync Guide](docs/SMART_SYNC_GUIDE.md) for details**
+
+### Update the system (traditional)
 ```bash
 sudo bash /etc/hypervisor/scripts/update_hypervisor.sh
 ```
@@ -463,6 +485,7 @@ nix run .#rebuild-helper -- --flake /etc/hypervisor --host $(hostname -s) {build
 
 ## Documentation
 - **Security Model:** `docs/SECURITY_MODEL.md` - Authentication, sudo, hardening
+- **Smart Sync Guide:** `docs/SMART_SYNC_GUIDE.md` - Fast development updates
 - **Network Configuration:** `docs/NETWORK_CONFIGURATION.md` - Bridge setup & performance
 - **Quick Start:** `docs/QUICKSTART_EXPANDED.md` - Complete beginner guide
 - **Troubleshooting:** `docs/TROUBLESHOOTING.md` - Problem solving
