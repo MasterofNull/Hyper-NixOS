@@ -356,10 +356,10 @@ boot_vm_selector() {
   if [[ -z "$choice" ]]; then
     # Timed out or canceled: start autostart set by priority
     local delay_ms sleep_secs
-    delay_ms=$(jq -r '.features.boot_autostart_delay_ms // 1500' "$CONFIG_JSON" 2>/dev/null || echo 1500)
+    delay_ms=$(jq -r '.features.boot_autostart_delay_ms // 1500' "$HYPERVISOR_CONFIG" 2>/dev/null || echo 1500)
     local autolist prio path group groups_order delay_group_ms last_group=""
-    delay_group_ms=$(jq -r '.features.boot_autostart_delay_between_groups_ms // 2500' "$CONFIG_JSON" 2>/dev/null || echo 2500)
-    mapfile -t groups_order < <(jq -r '.features.boot_autostart_groups_order[]? // empty' "$CONFIG_JSON" 2>/dev/null || true)
+    delay_group_ms=$(jq -r '.features.boot_autostart_delay_between_groups_ms // 2500' "$HYPERVISOR_CONFIG" 2>/dev/null || echo 2500)
+    mapfile -t groups_order < <(jq -r '.features.boot_autostart_groups_order[]? // empty' "$HYPERVISOR_CONFIG" 2>/dev/null || true)
     autolist=$(for f in "$USER_PROFILES_DIR"/*.json; do [[ -f "$f" ]] || continue; a=$(jq -r '.autostart // false' "$f" 2>/dev/null || echo false); [[ "$a" == true || "$a" == True ]] || continue; p=$(jq -r '.autostart_priority // 50' "$f" 2>/dev/null || echo 50); g=$(jq -r '.autostart_group // ""' "$f" 2>/dev/null || echo ""); printf '%s\t%03d\t%s\n' "$g" "$p" "$f"; done | sort -t $'\t' -k1,1 -k2,2n)
     if (( ${#groups_order[@]} )); then
       # reorder autolist by groups_order

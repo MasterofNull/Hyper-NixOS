@@ -10,8 +10,6 @@ let
   enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else baseSystemHasGui;
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
-  hasNewDesk = lib.hasAttrByPath ["services" "desktopManager" "gnome"] config;
-  hasOldDesk = lib.hasAttrByPath ["services" "xserver" "desktopManager" "gnome"] config;
   # Enable console autologin only when not booting to a GUI Desktop
   consoleAutoLoginEnabled = (enableMenuAtBoot || enableWizardAtBoot) && (!enableGuiAtBoot);
 in {
@@ -255,7 +253,6 @@ in {
       Type=Application
       Name=Hypervisor Dashboard
       Exec=/etc/hypervisor/scripts/management_dashboard.sh --autostart
-      X-GNOME-Autostart-enabled=true
     '';
   };
   environment.etc."xdg/applications/hypervisor-menu.desktop".text = ''
