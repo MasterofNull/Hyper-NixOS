@@ -16,7 +16,7 @@
 {
   # Create dedicated operator user with NO sudo access
   users.users.hypervisor-operator = {
-    isNormalUser = true;
+    isNormalUser = lib.mkForce true;
     description = "Hypervisor Operator (Zero-Trust)";
     uid = 999;  # Consistent UID for auditing
     
