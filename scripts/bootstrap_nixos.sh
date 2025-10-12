@@ -552,8 +552,18 @@ main() {
   mkdir -p /var/lib/hypervisor/configuration
   ln -sf "$cache_conf" /var/lib/hypervisor/configuration/cache-optimization.nix 2>/dev/null || true
 
-  # No need to update flake lock since we're using a local path input
-  # that references files already present at /etc/hypervisor/src
+  # Refresh flake inputs to avoid stale input hashes and nar mismatches
+  # Even though we use a local path input for the hypervisor source, updating
+  # the host flake lock ensures nixpkgs and other inputs are coherent.
+  msg "Refreshing flake inputs (nix flake update) to prevent nar hash mismatches"
+  mkdir -p /var/lib/hypervisor/logs 2>/dev/null || true
+  if ! nix \
+      --option tarball-ttl 0 \
+      --option narinfo-cache-positive-ttl 0 \
+      --option narinfo-cache-negative-ttl 0 \
+      flake update /etc/hypervisor 2>&1 | tee -a /var/lib/hypervisor/logs/bootstrap-update.log; then
+    msg "Flake update failed; proceeding with current lock file"
+  fi
 
   if [[ -n "$ACTION" ]]; then
     export NIX_CONFIG="experimental-features = nix-command flakes"
