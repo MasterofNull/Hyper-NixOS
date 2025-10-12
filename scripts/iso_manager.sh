@@ -489,7 +489,7 @@ while true; do
     9) mount_network_share_and_scan ;;
     10)
       tmp_msg=$(mktemp)
-      cat > "$tmp_msg" <<'MSG'
+      cat > "$tmp_msg" <<'HELPMSG'
 Tips:
 
 - Use presets for verified OS downloads (with mirrors).
@@ -498,7 +498,7 @@ Tips:
 - Attach ISOs to VM profiles or create a new VM via the wizard.
 
 Docs: More Options -> Docs & Help
-MSG
+HELPMSG
       msg=$(cat "$tmp_msg")
       $DIALOG --msgbox "$msg" 16 70
       rm -f "$tmp_msg"

@@ -17,7 +17,7 @@ fi
 
 # Prefer strict JSON Schema validation when available
 if command -v python3 >/dev/null 2>&1; then
-  python3 - "$schema" "$profile" <<'PY' || {
+  if python3 - "$schema" "$profile" <<'PY'
 import json, sys
 try:
     from jsonschema import validate
@@ -36,7 +36,9 @@ except ValidationError as e:
     print(f"Schema validation failed: {e.message}")
     sys.exit(1)
 PY
-  if [[ $? -ne 0 ]]; then
+  then
+    : # Validation passed
+  else
     $DIALOG --msgbox "Profile failed schema validation" 8 50
     exit 1
   fi
