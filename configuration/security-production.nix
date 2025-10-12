@@ -16,9 +16,10 @@
 {
   # Create dedicated operator user with NO sudo access
   users.users.hypervisor-operator = {
-    isNormalUser = lib.mkForce true;
+    isSystemUser = true;
     description = "Hypervisor Operator (Zero-Trust)";
     uid = 999;  # Consistent UID for auditing
+    group = "hypervisor-operator";
     
     # Groups for VM management - NO wheel group
     extraGroups = [
@@ -34,6 +35,9 @@
     createHome = true;
     home = "/var/lib/hypervisor-operator";
   };
+
+  # Create the corresponding group
+  users.groups.hypervisor-operator = {};
 
   # Autologin to operator user (not admin!)
   services.getty.autologinUser = lib.mkForce "hypervisor-operator";
