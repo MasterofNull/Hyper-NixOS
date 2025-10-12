@@ -8,12 +8,13 @@ let
   enableWelcomeAtBoot = lib.attrByPath ["hypervisor" "firstBootWelcome" "enableAtBoot"] true config;
   # First-boot wizard disabled - users run "Install VMs" from main menu instead
   enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  # Detect if GUI is enabled (either by user's base install or hypervisor config)
-  # Check both base system and hypervisor-specific settings
+  # Detect if GUI is available in base system (for menu/dashboard to know)
   baseSystemHasGui = config.services.xserver.enable or false;
+  # GUI at boot is ONLY enabled if explicitly requested via hypervisor config
+  # Having GNOME installed != wanting it to auto-start on boot
+  # Default: Console menu on boot, GNOME available via menu selection
   hypervisorGuiRequested = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
-  # Enable GUI if either base system has it OR hypervisor config requests it
-  enableGuiAtBoot = baseSystemHasGui || hypervisorGuiRequested;
+  enableGuiAtBoot = hypervisorGuiRequested;
   # Compatibility flags for NixOS versions (24.05 vs 24.11+)
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
@@ -119,10 +120,11 @@ in {
   # SECURITY NOTE: For production/multi-user systems, disable autologin!
   # See docs/SECURITY_MODEL.md for secure configurations
   # 
-  # Default: Autologin to management user (INSECURE but convenient)
+  # Default: Autologin to management user for console menu (INSECURE but convenient)
+  # Only auto-login to console (getty) if NOT booting into GUI
   # Recommended: Create hypervisor-operator user without sudo access
   # See: /var/lib/hypervisor/configuration/security-kiosk.nix
-  services.getty.autologinUser = lib.mkIf (enableMenuAtBoot || enableWizardAtBoot) mgmtUser;
+  services.getty.autologinUser = lib.mkIf ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot) mgmtUser;
   
   # Create a default 'hypervisor' user only when used as the management user
   # Note: During bootstrap, the script will automatically detect existing users
@@ -405,17 +407,18 @@ in {
   hardware.opengl.enable = true;
 
   # GUI management environment (Wayland GNOME)
-  # Respects user's base system configuration - doesn't override if already enabled
-  # To explicitly enable via hypervisor: Create /var/lib/hypervisor/configuration/gui-local.nix with hypervisor.gui.enableAtBoot = true
-  # Using mkDefault so base system config takes precedence
-  services.xserver.enable = lib.mkDefault enableGuiAtBoot;
+  # Default: GNOME installed but NOT auto-started (available via menu)
+  # To auto-start GUI at boot: Create /var/lib/hypervisor/configuration/gui-local.nix with hypervisor.gui.enableAtBoot = true
+  # Using mkDefault so base system config is preserved (if user wants GNOME available)
+  # But we don't force it to start on boot
+  services.xserver.enable = lib.mkDefault (baseSystemHasGui || enableGuiAtBoot);
   # Display Manager (GDM) - prefer legacy xserver paths for compatibility
-  # Only configure if not already set by base system
+  # CRITICAL: Only enable display manager if GUI boot is explicitly requested
+  # This prevents auto-starting GUI even if base system has GNOME installed
   services.xserver.displayManager.gdm.enable = lib.mkDefault (enableGuiAtBoot && hasOldDM);
   services.xserver.displayManager.gdm.wayland = lib.mkDefault (enableGuiAtBoot && hasOldDM);
-  # Only auto-login for hypervisor management if requested and menu is enabled
-  # This respects base system login configuration
-  services.xserver.displayManager.autoLogin = lib.mkIf (hypervisorGuiRequested && enableMenuAtBoot && hasOldDM) {
+  # Auto-login only if GUI boot is explicitly requested
+  services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
     enable = lib.mkDefault true;
     user = mgmtUser;
   };
