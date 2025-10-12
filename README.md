@@ -89,13 +89,15 @@ Boot from the ISO. On first boot, a setup wizard helps you configure networking 
 
 ### First Boot Experience
 
-After reboot, the **first-boot setup wizard** will automatically run:
+After reboot, you'll be **automatically logged in** to the console and the **first-boot setup wizard** will run:
 
 1. **Welcome Screen** - Overview of the wizard
 2. **Network Setup** - Create network bridge (optional)
-3. **ISO Download** - Download and verify OS installer (optional)
+3. **ISO Download** - Download and verify OS installer from 14 presets (optional)
 4. **VM Creation** - Create your first VM profile (optional)
 5. **Summary** - Shows what was configured
+
+**No login required!** The system automatically logs you in and starts the wizard.
 
 **The wizard shows clear progress and feedback at each step!**
 
@@ -105,6 +107,18 @@ After the wizard completes (or on subsequent boots), you'll see the **hypervisor
 - ⚙️ **Create VMs** - Set up new virtual machines
 - 🔧 **System Tools** - Diagnostics, updates, backups
 - 🪟 **GNOME Desktop** - Graphical environment (if enabled)
+
+### Login Requirements
+
+**Console Mode (Default):**
+- ✅ **No login required** - Automatic login to your user account
+- ✅ Wizard and menu start immediately on tty1
+- ✅ Seamless experience from boot to menu
+
+**GUI Mode (If enabled):**
+- ✅ **No login required** - Automatic login to GNOME desktop
+- ✅ Dashboard launches automatically
+- ✅ Use if you prefer graphical management
 
 ### Customizing Boot Behavior
 
@@ -117,12 +131,14 @@ Want to change what loads at boot? Create `/var/lib/hypervisor/configuration/gui
   hypervisor.gui.enableAtBoot = true;
   hypervisor.menu.enableAtBoot = false;
   
-  # Disable first-boot wizard
+  # Disable first-boot wizard (after it runs once)
   hypervisor.firstBootWizard.enableAtBoot = false;
 }
 ```
 
 Then rebuild: `sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"`
+
+**Note:** Autologin is enabled by default for both console and GUI modes to provide a seamless appliance experience. You can disable it if you need manual login for security reasons.
 
 **Next steps:** See [Quick Start Guide](docs/QUICKSTART_EXPANDED.md) to create your first VM.
 
@@ -189,6 +205,33 @@ sudo bash /etc/hypervisor/scripts/relax_permissions.sh
 # ... perform updates, GC, or generation cleanup ...
 sudo bash /etc/hypervisor/scripts/harden_permissions.sh
 ```
+
+## Advanced Configuration
+
+### Disable Autologin (For Multi-User Security)
+
+By default, autologin is enabled for a seamless appliance experience. To require manual login:
+
+Create `/var/lib/hypervisor/configuration/security-local.nix`:
+```nix
+{ config, lib, ... }:
+{
+  # Disable autologin - require manual login
+  services.getty.autologinUser = lib.mkForce null;
+  
+  # Also disable GUI autologin if using GUI mode
+  services.xserver.displayManager.autoLogin.enable = lib.mkForce false;
+}
+```
+
+Then rebuild: `sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"`
+
+**After this change:**
+- You'll need to login at the console/GUI
+- The menu/wizard will start after login
+- More secure for multi-user systems
+
+---
 
 ## Troubleshooting
 

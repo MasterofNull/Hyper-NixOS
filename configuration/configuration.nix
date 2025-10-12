@@ -101,6 +101,10 @@ in {
   # - Default: Console menu at boot (enableMenuAtBoot = true)
   # - GUI available via menu: "More Options" → "GNOME Desktop"
   
+  # Autologin on tty1 for seamless console menu experience
+  # The menu/wizard services take over tty1, but we ensure the user is logged in
+  services.getty.autologinUser = lib.mkIf (enableMenuAtBoot || enableWizardAtBoot) mgmtUser;
+  
   # Create a default 'hypervisor' user only when used as the management user
   # Note: During bootstrap, the script will automatically detect existing users
   # and add them to users-local.nix with wheel group membership for sudo access
