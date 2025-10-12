@@ -111,10 +111,11 @@ in {
   environment.etc."libvirt/hooks/qemu".source = ../scripts/libvirt_hooks/qemu;
 
   # Boot Behavior Configuration:
-  # - First boot: Setup wizard runs (if enabled), then menu or GUI
-  # - Subsequent boots: Menu (if enabled) or GUI loads directly
-  # - To change: set hypervisor.menu.enableAtBoot, hypervisor.gui.enableAtBoot, etc.
-  # - Default: Console menu at boot (enableMenuAtBoot = true)
+  # - First boot: Setup wizard runs (if enabled), then VM selector
+  # - Subsequent boots: VM boot selector (if VMs exist) or main menu
+  # - VM selector shows: VMs list + "More Options" → main menu
+  # - Main menu has: "← Back to VM Boot Selector" option
+  # - Default: VM-first boot flow (enableMenuAtBoot = true)
   # - GUI available via menu: "More Options" → "GNOME Desktop"
   
   # Autologin configuration for appliance/kiosk mode

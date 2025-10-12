@@ -93,6 +93,7 @@ menu_vm_main() {
     fi
   done
   shopt -u nullglob
+  entries+=("__VM_SELECTOR__" "← Back to VM Boot Selector")
   entries+=("__GNOME__" "Start GNOME management session (fallback GUI)")
   entries+=("__MORE__" "More Options (setup, ISO, VFIO, tools)")
   entries+=("__UPDATE__" "Update Hypervisor (pin to latest)")
@@ -104,7 +105,7 @@ menu_vm_main() {
   entries+=("__TOGGLE_MENU_ON" "Enable menu at boot")
   entries+=("__TOGGLE_MENU_OFF" "Disable menu at boot")
   entries+=("__EXIT__" "Exit")
-  $DIALOG --title "$BRANDING" --menu "Select a VM to start, or choose an action" 22 90 14 "${entries[@]}" 3>&1 1>&2 2>&3
+  $DIALOG --title "$BRANDING - Main Menu" --menu "Select a VM to start, or choose an action" 22 90 14 "${entries[@]}" 3>&1 1>&2 2>&3
 }
 
 menu_more() {
@@ -427,6 +428,9 @@ fi
 while true; do
   choice=$(menu_vm_main || true)
   case "$choice" in
+    "__VM_SELECTOR__")
+      exec "$SCRIPTS_DIR/vm_boot_selector.sh"
+      ;;
     "__GNOME__")
       if systemctl is-enabled gdm.service >/dev/null 2>&1; then
         $DIALOG --msgbox "Starting GNOME (graphical target for this session)." 10 70

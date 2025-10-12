@@ -54,7 +54,6 @@ show_menu() {
     "update" "Update Hypervisor (pin latest)" \
     "gui_status" "Show GUI environment status" \
     "gui_auto" "GUI: Use base system default" \
-    "gui_force_on" "GUI: Force GNOME at boot" \
     "gui_force_off" "GUI: Force console menu at boot" \
     "toggle_menu_on" "Enable console menu at boot" \
     "toggle_menu_off" "Disable console menu at boot" \
@@ -74,7 +73,6 @@ run_action() {
     update)         $TERMINAL -- bash -lc "$SCRIPTS/update_hypervisor.sh" & ;;
     gui_status)     $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh status; read -p 'Press Enter to continue...'" & ;;
     gui_auto)       $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh auto; read -p 'Press Enter to continue...'" & ;;
-    gui_force_on)   $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh on; read -p 'Press Enter to continue...'" & ;;
     gui_force_off)  $TERMINAL -- bash -lc "sudo $SCRIPTS/toggle_gui.sh off; read -p 'Press Enter to continue...'" & ;;
     toggle_menu_on) $TERMINAL -- bash -lc "$SCRIPTS/toggle_boot_features.sh menu on" & ;;
     toggle_menu_off)$TERMINAL -- bash -lc "$SCRIPTS/toggle_boot_features.sh menu off" & ;;

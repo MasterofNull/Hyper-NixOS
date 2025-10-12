@@ -77,10 +77,9 @@ if [[ "$state" == "status" ]]; then
   exit 0
 fi
 
-if [[ ! "$state" =~ ^(on|off|auto)$ ]]; then
-  echo "Usage: $0 {on|off|auto|status}" >&2
+if [[ ! "$state" =~ ^(off|auto)$ ]]; then
+  echo "Usage: $0 {off|auto|status}" >&2
   echo ""
-  echo "  on     - Force GNOME desktop at boot (override base system)"
   echo "  off    - Force console menu at boot (override base system)"
   echo "  auto   - Remove override, use base system default"
   echo "  status - Show current configuration"
@@ -106,18 +105,6 @@ if [[ "$state" == "auto" ]]; then
   else
     echo "Base system has no GUI - console menu will start on boot"
   fi
-elif [[ "$state" == "on" ]]; then
-  cat >"$FILE" <<NIX
-{ config, lib, pkgs, ... }:
-{
-  # Force GNOME desktop at boot (hypervisor override)
-  hypervisor.gui.enableAtBoot = true;
-  
-  # Disable console menu when GUI is forced
-  hypervisor.menu.enableAtBoot = false;
-}
-NIX
-  echo "Forcing GNOME desktop at boot (override)..."
 else
   cat >"$FILE" <<NIX
 { config, lib, pkgs, ... }:
@@ -143,9 +130,6 @@ if [[ "$state" != "auto" ]] || [[ -f "$FILE" ]]; then
     echo ""
     if [[ "$state" == "auto" ]]; then
       echo "Using base system default boot behavior"
-    elif [[ "$state" == "on" ]]; then
-      echo "GNOME will start on next boot (forced)"
-      echo "To switch to console: sudo systemctl isolate multi-user.target"
     else
       echo "Console menu will start on next boot (forced)"
       echo "To access GNOME: select 'GNOME Desktop' from menu"

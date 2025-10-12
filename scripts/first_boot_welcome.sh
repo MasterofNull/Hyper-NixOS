@@ -39,26 +39,27 @@ $DIALOG --title "Welcome to Hyper-NixOS!" --msgbox "╔════════�
 
 🎉 System is ready! Here's how to get started:
 
-✨ RECOMMENDED: Select \"Install VMs\" from the main menu
+✨ RECOMMENDED: Select \"Install VMs\" from \"More Options\"
    → Complete guided workflow for your first VM
    → Downloads verified OS ISOs (14+ distributions)
    → Configures network bridges automatically
    → Creates VM with validation and hints
    → Launches VM immediately with console access
 
-💡 OR explore the menu options yourself:
-   • Start VMs - Launch your existing virtual machines
-   • ISO Manager - Download/import OS installation images
-   • More Options - System tools, updates, diagnostics
+💡 Boot Flow:
+   • VMs exist → VM Boot Selector (auto-select with timer)
+   • No VMs → Main Menu
+   • From selector → \"More Options\" for setup/tools
+   • From menu → \"← Back to VM Boot Selector\"
 
 📚 Documentation: /etc/hypervisor/docs
 📝 Logs: /var/lib/hypervisor/logs
 🔧 Support: https://github.com/MasterofNull/Hyper-NixOS/issues
 
-💬 TIP: Press ESC or Cancel anytime to return to main menu
+💬 TIP: Press ESC or Cancel anytime to navigate menus
 
 This welcome message will only appear once.
-Proceeding to main menu in 3 seconds..." 30 72 || true
+Proceeding to setup in 3 seconds..." 32 72 || true
 
 # Mark as shown
 touch "$MARKER_FILE"
