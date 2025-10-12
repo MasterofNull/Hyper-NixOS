@@ -31,44 +31,8 @@
     };
   };
 
-  # Automated backups
-  systemd.services.hypervisor-backup = {
-    description = "Automated VM Backup";
-    after = [ "libvirtd.service" ];
-    
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/automated_backup.sh backup running";
-      User = "root";
-      StandardOutput = "journal";
-      StandardError = "journal";
-      
-      # Backup configuration via environment
-      Environment = [
-        "BACKUP_DIR=/var/lib/hypervisor/backups"
-        "RETENTION_DAYS=30"
-        "MAX_BACKUPS_PER_VM=5"
-        "COMPRESS_BACKUPS=true"
-        "VERIFY_BACKUPS=true"
-      ];
-      
-      # Resource limits for backup process
-      Nice = 10;  # Lower priority
-      IOSchedulingClass = "idle";  # Don't impact VM performance
-    };
-  };
-
-  # Backup timer - run nightly at 2 AM
-  systemd.timers.hypervisor-backup = {
-    description = "Nightly VM Backup";
-    wantedBy = [ "timers.target" ];
-    
-    timerConfig = {
-      OnCalendar = "02:00";  # 2 AM daily
-      Persistent = true;
-      RandomizedDelaySec = "30min";  # Randomize up to 30 minutes
-    };
-  };
+  # Note: hypervisor-backup service is defined in backup.nix module
+  # This automation module provides additional backup-related services
 
   # Update checker
   systemd.services.hypervisor-update-check = {
@@ -310,7 +274,6 @@
     wantedBy = [ "multi-user.target" ];
     wants = [
       "hypervisor-health-check.timer"
-      "hypervisor-backup.timer"
       "hypervisor-update-check.timer"
       "hypervisor-storage-cleanup.timer"
       "hypervisor-metrics.timer"

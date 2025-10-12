@@ -129,7 +129,7 @@
       };
       
       # Open firewall for Prometheus (localhost only by default)
-      networking.firewall.interfaces."lo".allowedTCPPorts = [ 
+      networking.firewall.interfaces."lo".allowedTCPPorts = lib.mkAfter [ 
         config.hypervisor.monitoring.prometheusPort 
       ];
     })

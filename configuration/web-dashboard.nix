@@ -9,13 +9,9 @@ let
 in
 {
   # Runtime user for the web dashboard (non-login)
-  users.users.hypervisor-operator = {
-    isSystemUser = true;
-    group = "hypervisor-operator";
-    extraGroups = [ "libvirtd" "kvm" ];
-    shell = pkgs.shadow.nologin;
-  };
-  users.groups.hypervisor-operator = {};
+  # Note: hypervisor-operator user is defined in security-production.nix
+  # Ensure the user has the necessary group memberships for web dashboard
+  users.users.hypervisor-operator.extraGroups = lib.mkAfter [ "libvirtd" "kvm" ];
   
   # Web dashboard service
   systemd.services.hypervisor-web-dashboard = {
@@ -27,7 +23,7 @@ in
       Type = "simple";
       ExecStart = "${py}/bin/python3 /etc/hypervisor/scripts/web_dashboard.py";
       
-      # Run as operator user for security
+      # Run as operator user for security (defined in security-production.nix)
       User = "hypervisor-operator";
       
       # Security hardening
@@ -72,7 +68,7 @@ in
   
   # Firewall: Allow web dashboard on localhost only by default
   # For external access, use nginx/apache reverse proxy with authentication
-  networking.firewall.interfaces."lo".allowedTCPPorts = [ 8080 ];
+  networking.firewall.interfaces."lo".allowedTCPPorts = lib.mkAfter [ 8080 ];
   
   # Optional: Nginx reverse proxy with authentication
   # Uncomment to enable external access with password protection
