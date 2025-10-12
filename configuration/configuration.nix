@@ -27,6 +27,7 @@ in {
     ./alerting.nix    # Alert system (email, webhooks)
     ./web-dashboard.nix  # Web dashboard (optional, localhost only by default)
   ]
+  ++ lib.optional (builtins.pathExists ./enterprise-features.nix) ./enterprise-features.nix
   ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix
   ++ lib.optional (builtins.pathExists ./cache-optimization.nix) ./cache-optimization.nix  # Always load for faster downloads
   # Load local, host-specific overrides from /var/lib to avoid mutating the flake input
