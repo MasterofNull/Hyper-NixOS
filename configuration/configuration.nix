@@ -240,9 +240,9 @@ in {
   hardware.pulseaudio.enable = false;
   sound.enable = false;
   hardware.opengl.enable = true;
-  services.xserver.enable = lib.mkDefault (baseSystemHasGui || enableGuiAtBoot);
-  # Do not force any specific display manager; respect the system's previous generation
-  services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
+  services.xserver.enable = lib.mkIf hasHypervisorGuiPreference (lib.mkDefault hypervisorGuiRequested);
+  # Do not force any specific display manager; enable autologin only when GUI requested/enabled
+  services.xserver.displayManager.autoLogin = lib.mkIf enableGuiAtBoot {
     enable = lib.mkDefault true; user = mgmtUser;
   };
   # Wayland-first: enable Xwayland only if GUI is enabled for compatibility
