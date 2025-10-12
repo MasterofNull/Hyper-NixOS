@@ -31,20 +31,39 @@
 
 **Perfect for:** Fresh installs, automated deployments, USB boots
 
-**Standard Install** (Full features, ~30 min, ~3GB download):
+#### 🎯 **Standard Install** (Full features, ~30 min, ~3GB)
+Everything included, GUI ready, hardened kernel. Best for first-time users with good internet.
 ```bash
 bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
-**⚡ Fast Install** (Optimized, ~15 min, ~2GB download):
+#### ⚡ **Fast Install** (Recommended for most users, ~15 min, ~2GB)
+Same features as Standard, 50% faster with parallel downloads. Best balance.
 ```bash
 bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
-**🚀 Minimal Install** (Fastest, ~13 min, ~1.5GB download):
+#### 🚀 **Minimal Install** (Fastest, ~13 min, ~1.5GB)
+Console-only, essentials for VM management. Add GUI later. Best for slow internet or headless servers.
 ```bash
 bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --fast --minimal --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
+
+<details>
+<summary><b>📊 Mode Comparison</b></summary>
+
+| Feature | Standard | Fast | Minimal |
+|---------|----------|------|---------|
+| **Time** | 30 min | 15 min ⚡ | 13 min 🚀 |
+| **Download** | 3 GB | 2 GB | 1.5 GB |
+| **GUI** | ✅ Included | ✅ Included | ❌ Add later |
+| **Features** | All | All | Core only |
+| **Speed** | 1x | 2x faster | 2.3x faster |
+
+**Choose Fast if unsure** - best balance for most users.
+
+[Detailed comparison →](docs/INSTALL_MODES.md)
+</details>
 
 **What it does:**
 - ✅ Installs git if needed
