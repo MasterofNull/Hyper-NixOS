@@ -47,25 +47,14 @@ if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
   gui_available=true
 fi
 
-# Detect desktop environment
-if [[ -n "${GNOME_DESKTOP_SESSION_ID:-}" ]] || [[ "${XDG_CURRENT_DESKTOP:-}" == *"GNOME"* ]]; then
-  desktop_environment="GNOME"
-elif [[ "${XDG_CURRENT_DESKTOP:-}" == *"KDE"* ]]; then
-  desktop_environment="KDE"
-elif [[ "${XDG_CURRENT_DESKTOP:-}" == *"XFCE"* ]]; then
-  desktop_environment="XFCE"
-elif systemctl is-active --quiet gdm.service 2>/dev/null; then
-  desktop_environment="GNOME"
-  gui_available=true
+# Detect desktop environment (generic)
+if [[ -n "${XDG_CURRENT_DESKTOP:-}" ]]; then
+  desktop_environment="${XDG_CURRENT_DESKTOP}"
 fi
 
-# Detect display manager
-if systemctl is-active --quiet gdm.service 2>/dev/null; then
-  display_manager="GDM"
-elif systemctl is-active --quiet sddm.service 2>/dev/null; then
-  display_manager="SDDM"
-elif systemctl is-active --quiet lightdm.service 2>/dev/null; then
-  display_manager="LightDM"
+# Detect display manager (generic)
+if systemctl is-active --quiet display-manager.service 2>/dev/null; then
+  display_manager="display-manager"
 fi
 
 # Check if hypervisor GUI is explicitly enabled
@@ -78,7 +67,7 @@ fi
 
 # Check if base system has GUI (before hypervisor config)
 base_system_gui=false
-if systemctl list-unit-files | grep -q "gdm.service\|sddm.service\|lightdm.service"; then
+if systemctl list-unit-files | grep -q "display-manager.service"; then
   base_system_gui=true
 fi
 
