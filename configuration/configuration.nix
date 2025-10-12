@@ -21,8 +21,8 @@ in {
   system.stateVersion = "24.05";
   imports = [
     ./hardware-configuration.nix ./hardware-input.nix ../scripts/vfio-boot.nix
-    ./security.nix ./security-production.nix ./monitoring.nix ./backup.nix
-    ./automation.nix ./alerting.nix ./web-dashboard.nix
+    ./security.nix ./security-production.nix ./security-profiles.nix
+    ./monitoring.nix ./backup.nix ./automation.nix ./alerting.nix ./web-dashboard.nix
   ] ++ lib.optional (builtins.pathExists ./enterprise-features.nix) ./enterprise-features.nix
     ++ lib.optional (builtins.pathExists ./performance.nix) ./performance.nix
     ++ lib.optional (builtins.pathExists ./cache-optimization.nix) ./cache-optimization.nix
@@ -56,25 +56,8 @@ in {
   environment.etc."hypervisor/docs".source = ../docs;
   environment.etc."hypervisor/vm_profile.schema.json".source = ../configuration/vm_profile.schema.json;
   environment.etc."libvirt/hooks/qemu".source = ../scripts/libvirt_hooks/qemu;
-  services.getty.autologinUser = lib.mkIf consoleAutoLoginEnabled mgmtUser;
-  users.users = lib.mkIf (mgmtUser == "hypervisor") {
-    hypervisor = {
-      isNormalUser = true;
-      extraGroups = [ "wheel" "kvm" "libvirtd" "video" "input" ];
-      createHome = false;
-    };
-  };
-  systemd.tmpfiles.rules = [
-    "d /var/lib/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
-    "d /var/lib/hypervisor/isos 0750 ${mgmtUser} ${mgmtUser} - -"
-    "d /var/lib/hypervisor/disks 0750 ${mgmtUser} ${mgmtUser} - -"
-    "d /var/lib/hypervisor/xml 0750 ${mgmtUser} ${mgmtUser} - -"
-    "d /var/lib/hypervisor/vm_profiles 0750 ${mgmtUser} ${mgmtUser} - -"
-    "d /var/lib/hypervisor/gnupg 0700 ${mgmtUser} ${mgmtUser} - -"
-    "d /var/lib/hypervisor/backups 0750 ${mgmtUser} ${mgmtUser} - -"
-    "d /var/log/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
-    "d /var/lib/hypervisor/logs 0750 ${mgmtUser} ${mgmtUser} - -"
-  ];
+  # Note: User management, autologin, sudo rules, and directory ownership
+  # are configured in security-profiles.nix based on active profile
   services.logrotate = {
     enable = true;
     settings = {
@@ -91,15 +74,8 @@ in {
       };
     };
   };
+  # Note: libvirtd security configuration is in security-production.nix
   virtualisation.libvirtd.enable = true;
-  virtualisation.libvirtd.qemu.runAsRoot = false;
-  virtualisation.libvirtd.extraConfig = ''
-    security_driver = "apparmor"
-    dynamic_ownership = 1
-    clear_emulator_capabilities = 1
-    seccomp_sandbox = 1
-    namespaces = [ "mount", "uts", "ipc", "pid", "net" ]
-  '';
   systemd.services.hypervisor-menu = {
     description = "Boot-time Hypervisor VM Menu";
     wantedBy = lib.optional (enableMenuAtBoot && !enableGuiAtBoot) "multi-user.target";
@@ -186,45 +162,8 @@ in {
     };
     unitConfig.ConditionPathExists = "!/var/lib/hypervisor/.first_boot_done";
   };
-  networking.firewall.enable = true;
+  # Note: Firewall, SSH, and sudo configuration are in security-production.nix
   security.sudo.enable = true;
-  security.sudo.wheelNeedsPassword = true;
-  security.sudo.extraRules = [
-    {
-      users = [ mgmtUser ];
-      commands = [
-        { command = "${pkgs.libvirt}/bin/virsh list"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh start"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh shutdown"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh reboot"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh destroy"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh suspend"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh resume"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh dominfo"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh domstate"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh domuuid"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh domifaddr"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh console"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh define"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh undefine"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh snapshot-create-as"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh snapshot-list"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh snapshot-revert"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh snapshot-delete"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh net-list"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh net-info"; options = [ "NOPASSWD" ]; }
-        { command = "${pkgs.libvirt}/bin/virsh net-dhcp-leases"; options = [ "NOPASSWD" ]; }
-      ];
-    }
-    { users = [ mgmtUser ]; commands = [ { command = "ALL"; } ]; }
-  ];
-  services.openssh = {
-    enable = true;
-    settings = {
-      PasswordAuthentication = false; PermitRootLogin = "no";
-      X11Forwarding = false; KbdInteractiveAuthentication = false;
-    };
-  };
   security.apparmor.enable = true;
   security.apparmor.policies."qemu-system-x86_64".profile = builtins.readFile ../configuration/apparmor/qemu-system-x86_64;
   boot.kernelParams = [ "apparmor=1" "security=apparmor" ];
