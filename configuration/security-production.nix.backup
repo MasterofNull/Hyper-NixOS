@@ -1,11 +1,8 @@
 { config, lib, pkgs, ... }:
 
-# Production Security Model (DEFAULT)
+# Production/Compliance Security Model
 # Zero-trust approach with granular permissions
 # 
-# This is the default security configuration for Hyper-NixOS.
-# For even stricter security, see security-strict.nix
-#
 # Philosophy:
 # - Operator can perform VM lifecycle operations (create, start, stop, console)
 # - Operator CANNOT delete VMs or perform destructive operations

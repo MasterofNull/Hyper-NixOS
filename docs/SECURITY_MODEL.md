@@ -257,9 +257,9 @@ These commands **require password authentication**:
 ### Entry Points
 
 #### Console/Physical Access
-- **Risk:** Medium (with new model), High (with old model)
-- **Mitigation:** Passwordless sudo restricted to VM operations only
-- **Monitoring:** Physical security, console logging
+- **Risk:** Low (with production model)
+- **Mitigation:** Operator has no sudo access, polkit-controlled operations
+- **Monitoring:** Physical security, console logging, audit trail
 
 #### SSH (Remote Access)
 - **Risk:** Low
@@ -289,83 +289,50 @@ These commands **require password authentication**:
 
 ---
 
-## Hardening Options
+## Security Levels
 
-### Level 1: Default (Balanced)
+### Default: Production (Zero-Trust)
 
 **Current configuration:**
-- ✅ Autologin enabled
+- ✅ Dedicated operator user (no sudo access)
 - ✅ Sudo restricted to VM operations
 - ✅ Password required for system changes
 - ✅ Firewall enabled
 - ✅ SSH keys only
 
-**Suitable for:** Home lab, trusted environment
+**Suitable for:** All environments (home lab, SMB, enterprise, compliance)
 
-### Level 2: Enhanced Security
+**Note:** This is the only security model. There is no "balanced" or "permissive" mode.
 
-Add to `/var/lib/hypervisor/configuration/security-local.nix`:
-```nix
-{ config, lib, ... }:
-{
-  # Disable autologin - require manual login
-  services.getty.autologinUser = lib.mkForce null;
-  
-  # Require password even for VM operations
-  security.sudo.wheelNeedsPassword = true;
-  security.sudo.extraRules = lib.mkForce [
-    {
-      users = [ config.users.users.hypervisor.name ];
-      commands = [
-        { command = "ALL"; }  # All commands require password
-      ];
-    }
-  ];
-  
-  # Enable audit logging
-  security.auditd.enable = true;
-  security.audit.rules = [
-    "-a always,exit -F arch=b64 -S execve"  # Log all command execution
-  ];
-}
+---
+
+### Optional Enhancement: Strict Mode
+
+For ultra-high-security environments requiring maximum hardening:
+
+**Enable strict mode:**
+```bash
+echo '{}' | sudo tee /var/lib/hypervisor/configuration/security-strict.nix
+sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
 ```
 
-**Suitable for:** Multi-user environment, compliance requirements
+**What strict mode adds:**
+- ❌ No autologin (manual login required)
+- ❌ No polkit (sudo required for all VM operations)
+- ✅ Password required every time (timestamp_timeout=0)
+- ✅ Enhanced audit logging (logs everything)
+- ✅ Stricter file permissions (0750 on sensitive dirs)
+- ✅ Additional AppArmor profiles
+- ✅ Kernel hardening (ASLR, ptrace restrictions, etc.)
+- ✅ Disabled USB automount (BadUSB protection)
+- ✅ Disabled Bluetooth (attack surface reduction)
+- ✅ Stricter SSH ciphers and key exchange
+- ✅ Firewall with explicit allowlist only
+- ✅ All systemd services maximally hardened
 
-### Level 3: Maximum Security
+**Configuration file:** `configuration/security-strict.nix`
 
-Additional hardening:
-```nix
-{
-  # All from Level 2, plus:
-  
-  # Disable SSH password fallback completely
-  services.openssh.settings.PasswordAuthentication = false;
-  services.openssh.settings.ChallengeResponseAuthentication = false;
-  
-  # Restrict SSH to specific IPs
-  services.openssh.settings.ListenAddress = [ "192.168.1.10" ];
-  
-  # Firewall: deny everything except SSH from specific subnet
-  networking.firewall.extraCommands = ''
-    iptables -A INPUT -s 192.168.1.0/24 -p tcp --dport 22 -j ACCEPT
-    iptables -A INPUT -p tcp --dport 22 -j DROP
-  '';
-  
-  # Enable disk encryption (requires setup during install)
-  boot.initrd.luks.devices = {
-    cryptroot = {
-      device = "/dev/sda2";
-      allowDiscards = true;
-    };
-  };
-  
-  # Require YubiKey for sudo (advanced)
-  security.pam.services.sudo.u2fAuth = true;
-}
-```
-
-**Suitable for:** Production environment, high-security requirements
+**Suitable for:** Banking, healthcare (HIPAA), government, classified data
 
 ---
 
@@ -503,4 +470,6 @@ sudo systemctl edit getty@tty1
 
 # Method 2: NixOS config (requires rebuild)
 # Edit security-local.nix as shown above
+```
+shown above
 ```

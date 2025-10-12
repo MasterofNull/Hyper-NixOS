@@ -20,6 +20,7 @@ in {
     ./hardware-input.nix
     ../scripts/vfio-boot.nix
     ./security.nix
+    ./security-production.nix  # Production security model (default)
     ./monitoring.nix
     ./backup.nix
     ./automation.nix  # Automated health checks, backups, updates, monitoring
@@ -30,7 +31,7 @@ in {
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/performance.nix) /var/lib/hypervisor/configuration/performance.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/perf-local.nix) /var/lib/hypervisor/configuration/perf-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/security-local.nix) /var/lib/hypervisor/configuration/security-local.nix
-  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/security-production.nix) /var/lib/hypervisor/configuration/security-production.nix
+  ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/security-strict.nix) /var/lib/hypervisor/configuration/security-strict.nix  # Optional: Maximum security
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/users-local.nix) /var/lib/hypervisor/configuration/users-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/system-local.nix) /var/lib/hypervisor/configuration/system-local.nix
   ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/management-local.nix) /var/lib/hypervisor/configuration/management-local.nix
