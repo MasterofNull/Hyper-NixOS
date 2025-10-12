@@ -2,9 +2,12 @@
 
 let
   mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
-  enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] false config;
-  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  enableGuiAtBoot = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] true config;
+  # Enable menu at boot by default - this is the primary interface
+  enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
+  # Enable wizard on first boot only (controlled by .first_boot_done marker)
+  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] true config;
+  # Disable GUI by default - users can enable it if they want graphical management
+  enableGuiAtBoot = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
   # Compatibility flags for NixOS versions (24.05 vs 24.11+)
   hasNewDM = lib.hasAttrByPath ["services" "displayManager"] config;
   hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
@@ -91,6 +94,13 @@ in {
   # Install libvirt hook for per-VM slice limits
   environment.etc."libvirt/hooks/qemu".source = ../scripts/libvirt_hooks/qemu;
 
+  # Boot Behavior Configuration:
+  # - First boot: Setup wizard runs (if enabled), then menu or GUI
+  # - Subsequent boots: Menu (if enabled) or GUI loads directly
+  # - To change: set hypervisor.menu.enableAtBoot, hypervisor.gui.enableAtBoot, etc.
+  # - Default: Console menu at boot (enableMenuAtBoot = true)
+  # - GUI available via menu: "More Options" → "GNOME Desktop"
+  
   # Create a default 'hypervisor' user only when used as the management user
   # Note: During bootstrap, the script will automatically detect existing users
   # and add them to users-local.nix with wheel group membership for sudo access

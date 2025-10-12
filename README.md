@@ -87,12 +87,42 @@ Boot from the ISO. On first boot, a setup wizard helps you configure networking 
 
 ## After Installation
 
-After reboot, you'll see the hypervisor boot menu with options to:
+### First Boot Experience
+
+After reboot, the **first-boot setup wizard** will automatically run:
+
+1. **Welcome Screen** - Overview of the wizard
+2. **Network Setup** - Create network bridge (optional)
+3. **ISO Download** - Download and verify OS installer (optional)
+4. **VM Creation** - Create your first VM profile (optional)
+5. **Summary** - Shows what was configured
+
+**The wizard shows clear progress and feedback at each step!**
+
+After the wizard completes (or on subsequent boots), you'll see the **hypervisor console menu** with:
 - 🖥️ **Start VMs** - Launch your virtual machines
 - 📦 **Download ISOs** - Get OS installation images  
 - ⚙️ **Create VMs** - Set up new virtual machines
 - 🔧 **System Tools** - Diagnostics, updates, backups
-- 🪟 **GNOME Desktop** - Graphical fallback environment
+- 🪟 **GNOME Desktop** - Graphical environment (if enabled)
+
+### Customizing Boot Behavior
+
+Want to change what loads at boot? Create `/var/lib/hypervisor/configuration/gui-local.nix`:
+
+```nix
+{ config, lib, ... }:
+{
+  # Enable GNOME at boot instead of console menu
+  hypervisor.gui.enableAtBoot = true;
+  hypervisor.menu.enableAtBoot = false;
+  
+  # Disable first-boot wizard
+  hypervisor.firstBootWizard.enableAtBoot = false;
+}
+```
+
+Then rebuild: `sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"`
 
 **Next steps:** See [Quick Start Guide](docs/QUICKSTART_EXPANDED.md) to create your first VM.
 
@@ -108,6 +138,19 @@ sudo bash /etc/hypervisor/scripts/update_hypervisor.sh
 ### Rebuild after config changes
 ```bash
 sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
+```
+
+### Re-run the first-boot wizard
+```bash
+# Remove the marker file
+sudo rm /var/lib/hypervisor/.first_boot_done
+# Then reboot, or run manually:
+sudo bash /etc/hypervisor/scripts/setup_wizard.sh
+```
+
+### View wizard logs
+```bash
+cat /var/lib/hypervisor/logs/first_boot.log
 ```
 
 ### Rebuild helper (alternative)
