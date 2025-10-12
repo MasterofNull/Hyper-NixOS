@@ -98,7 +98,7 @@ in {
         postrotate = "systemctl reload hypervisor-menu.service 2>/dev/null || true";
       };
       "/var/log/hypervisor/*.log" = {
-        frequency = "daily"; rotate = 7; compress = true;
+        frequency = "daily"; rotate = lib.mkDefault 7; compress = true;
         compresscmd = "${pkgs.gzip}/bin/gzip"; compressext = ".gz";
         missingok = true; notifempty = true;
       };
