@@ -4,8 +4,12 @@ let
   enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
   enableWelcomeAtBoot = lib.attrByPath ["hypervisor" "firstBootWelcome" "enableAtBoot"] true config;
   enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  # Fix: Don't reference config.services.xserver.enable here as it creates circular dependency
-  # Only use explicit hypervisor GUI preference
+  # Boot Architecture: Headless console menu by default, GUI only on explicit request
+  # This hypervisor is designed to boot to a TUI menu for VM management (minimal resources).
+  # GUI desktop environment is opt-in via hypervisor.gui.enableAtBoot = true
+  # 
+  # IMPORTANT: Do NOT read config.services.xserver.enable here - it creates circular dependency
+  # and violates the "headless by default" architecture by trying to preserve previous GUI state.
   hasHypervisorGuiPreference = lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config;
   hypervisorGuiRequested = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
   enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else false;

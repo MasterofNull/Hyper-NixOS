@@ -35,10 +35,26 @@ Removed the circular reference by:
 - **Lines Modified**: 7-11, 244
 - **Behavior Change**: The X server will now only be enabled if explicitly requested via `hypervisor.gui.enableAtBoot`, rather than trying to preserve existing X server settings (which caused the circular dependency)
 
+## Design Intent
+This hypervisor system is designed with a specific boot pattern:
+- **Default Mode**: Headless console with interactive menu (`hypervisor-menu.service`)
+  - Autologin to operator user
+  - Full VM management via TUI menu
+  - Minimal resource usage
+- **Optional GUI Mode**: Full desktop environment for advanced management
+  - Only enabled when user explicitly sets `hypervisor.gui.enableAtBoot = true`
+  - Provides graphical dashboard and GUI tools
+  - Higher resource usage
+
+The previous code incorrectly tried to detect and preserve the system's GUI state from previous boots, which:
+1. Created circular dependencies (causing infinite recursion)
+2. Violated the intended architecture of "headless by default, GUI on demand"
+
 ## Impact
 - ✅ Fixes infinite recursion error
-- ✅ Simplifies configuration logic
-- ⚠️ Users who relied on X server being auto-detected from previous configuration may need to explicitly set `hypervisor.gui.enableAtBoot = true;` in their local config
+- ✅ Enforces the correct boot architecture: headless console menu by default
+- ✅ GUI desktop environment only starts when explicitly requested via `hypervisor.gui.enableAtBoot = true`
+- ✅ No longer attempts to preserve previous system GUI state (which was conceptually wrong for this hypervisor use case)
 
 ## Testing
 To verify the fix works:
