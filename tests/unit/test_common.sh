@@ -12,19 +12,92 @@ SCRIPTS_DIR="$(cd "$TEST_DIR/../../scripts" && pwd)"
 # Source test framework
 source "$TEST_DIR/../lib/test_framework.sh"
 
+# Setup test environment before sourcing common.sh
+TEST_TEMP_DIR=$(mktemp -d -t hypervisor-test.XXXXXX)
+export HYPERVISOR_LOGS="$TEST_TEMP_DIR/logs"
+export HYPERVISOR_DATA="$TEST_TEMP_DIR/data"
+export HYPERVISOR_CONFIG="$TEST_TEMP_DIR/config"
+export HYPERVISOR_STATE="$TEST_TEMP_DIR"
+export HYPERVISOR_ROOT="$TEST_TEMP_DIR"
+mkdir -p "$HYPERVISOR_LOGS" "$HYPERVISOR_DATA" "$HYPERVISOR_CONFIG"
+
+# Pre-set the log file to avoid hardcoded path
+export LOG_FILE="$HYPERVISOR_LOGS/script.log"
+touch "$LOG_FILE"
+
+# Mock dependencies for CI
+if [[ "${CI:-false}" == "true" ]] || [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
+    export CI_MODE=true
+    # Create mock binaries for missing dependencies
+    mkdir -p "$TEST_TEMP_DIR/bin"
+    export PATH="$TEST_TEMP_DIR/bin:$PATH"
+    
+    # Mock jq if not available
+    if ! command -v jq >/dev/null 2>&1; then
+        cat > "$TEST_TEMP_DIR/bin/jq" << 'EOF'
+#!/bin/bash
+# Mock jq for testing
+echo "{}"
+EOF
+        chmod +x "$TEST_TEMP_DIR/bin/jq"
+    fi
+    
+    # Mock virsh if not available
+    if ! command -v virsh >/dev/null 2>&1; then
+        cat > "$TEST_TEMP_DIR/bin/virsh" << 'EOF'
+#!/bin/bash
+# Mock virsh for testing
+echo "Mock virsh output"
+EOF
+        chmod +x "$TEST_TEMP_DIR/bin/virsh"
+    fi
+fi
+
+# Override require function for testing to prevent early exit
+require() {
+    # Mock require function for testing
+    # Just log what was required but don't fail
+    local missing=()
+    for bin in "$@"; do
+        if ! command -v "$bin" >/dev/null 2>&1; then
+            missing+=("$bin")
+        fi
+    done
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        echo "NOTE: Would require: ${missing[*]} (mocked for testing)" >&2
+    fi
+}
+
+# Export the override
+export -f require
+
+# Save the current PATH
+ORIGINAL_PATH="$PATH"
+
 # Source the library being tested
 source "$SCRIPTS_DIR/lib/common.sh"
 source "$SCRIPTS_DIR/lib/exit_codes.sh"
+
+# Restore our test PATH if in CI mode
+if [[ "${CI_MODE:-false}" == "true" ]]; then
+    export PATH="$TEST_TEMP_DIR/bin:$PATH"
+fi
+
+# Restore the real require function from common.sh for actual tests
+unset -f require
+source <(declare -f require | sed '1s/require/_real_require/')
+require() {
+    _real_require "$@"
+}
 
 # Test suite
 test_suite "common.sh library"
 
 # Setup function
 setup() {
-    # Create temporary directory for tests
-    TEST_TEMP_DIR=$(mktemp -d -t hypervisor-test.XXXXXX)
-    export HYPERVISOR_LOGS="$TEST_TEMP_DIR/logs"
-    mkdir -p "$HYPERVISOR_LOGS"
+    # Test temp directory already created above
+    # Just ensure directories exist
+    mkdir -p "$HYPERVISOR_LOGS" "$HYPERVISOR_DATA" "$HYPERVISOR_CONFIG"
 }
 
 # Teardown function
