@@ -30,11 +30,11 @@ check_file() {
   echo -n "• $name... "
   if [[ -f "$ROOT_DIR/$file" ]]; then
     echo -e "${GREEN}✓${NC}"
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
     return 0
   else
     echo -e "${RED}✗ MISSING${NC}"
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
     return 1
   fi
 }
@@ -63,13 +63,13 @@ check_file "Enterprise Quick Start" "ENTERPRISE_QUICK_START.md"
 echo ""
 echo "━━━ Directories ━━━"
 check_dir "Scripts" "scripts"
-check_dir "Configuration" "configuration"
+check_dir "Modules" "modules"
 check_dir "Tests" "tests"
 check_dir "Documentation" "docs"
 
 echo ""
 echo "━━━ Critical Scripts ━━━"
-check_file "Bootstrap script" "scripts/bootstrap_nixos.sh"
+check_file "System installer" "scripts/system_installer.sh"
 check_file "Menu script" "scripts/menu.sh"
 check_file "Setup wizard" "scripts/setup_wizard.sh"
 check_file "Test runner" "tests/run_all_tests.sh"
@@ -84,26 +84,25 @@ check_file "Monitoring prometheus" "modules/monitoring/prometheus.nix"
 check_file "Cache optimization" "modules/core/cache-optimization.nix"
 
 echo ""
-echo "━━━ Enterprise Features ━━━"
+echo "━━━ Additional Modules ━━━"
 check_file "Centralized logging" "modules/monitoring/logging.nix"
-check_file "Resource quotas" "modules/enterprise/quotas.nix"
-check_file "Network isolation" "modules/enterprise/network-isolation.nix"
-check_file "Storage quotas" "modules/enterprise/storage-quotas.nix"
-check_file "Snapshot lifecycle" "modules/enterprise/snapshots.nix"
-check_file "VM encryption" "modules/enterprise/encryption.nix"
-check_file "Enterprise features" "modules/enterprise/features.nix"
+check_file "Virtualization" "modules/virtualization/libvirt.nix"
+check_file "GUI desktop" "modules/gui/desktop.nix"
+check_file "Web dashboard" "modules/web/dashboard.nix"
+check_file "Network firewall" "modules/network-settings/firewall.nix"
+check_file "Storage encryption" "modules/storage-management/encryption.nix"
 
 echo ""
 echo "━━━ Management Scripts ━━━"
-check_file "VM templates" "scripts/vm_templates.sh"
 check_file "VM scheduler" "scripts/vm_scheduler.sh"
 check_file "VM clone" "scripts/vm_clone.sh"
-check_file "Audit viewer" "scripts/audit_viewer.sh"
-check_file "Resource reporter" "scripts/resource_reporter.sh"
+check_file "Security audit" "scripts/quick_security_audit.sh"
+check_file "Health checks" "scripts/enhanced_health_checks.sh"
 
 echo ""
 echo "━━━ Documentation ━━━"
-check_file "Enterprise features guide" "docs/ENTERPRISE_FEATURES.md"
+check_file "Script reference" "docs/SCRIPT_REFERENCE.md"
+check_file "User guide" "docs/USER_GUIDE.md"
 check_file "Educational philosophy" "docs/EDUCATIONAL_PHILOSOPHY.md"
 
 echo ""
@@ -118,10 +117,10 @@ for script in "$ROOT_DIR"/scripts/*.sh; do
     name=$(basename "$script")
     if bash -n "$script" 2>/dev/null; then
       echo -e "• $name... ${GREEN}✓${NC}"
-      ((PASSED++))
+      PASSED=$((PASSED + 1))
     else
       echo -e "• $name... ${RED}✗ SYNTAX ERROR${NC}"
-      ((FAILED++))
+      FAILED=$((FAILED + 1))
       syntax_errors=1
     fi
   fi
