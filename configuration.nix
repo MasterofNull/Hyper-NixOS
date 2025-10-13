@@ -44,13 +44,19 @@ in {
     ./modules/core/cache-optimization.nix
     
     # ─────────────────────────────────────────────────────────────
+    # Network Configuration
+    # ─────────────────────────────────────────────────────────────
+    ./modules/network-settings/base.nix
+    ./modules/network-settings/firewall.nix
+    ./modules/network-settings/ssh.nix
+    ./modules/network-settings/isolation.nix
+    
+    # ─────────────────────────────────────────────────────────────
     # Security Configuration
     # ─────────────────────────────────────────────────────────────
     ./modules/security/base.nix
     ./modules/security/profiles.nix
     ./modules/security/kernel-hardening.nix
-    ./modules/security/firewall.nix
-    ./modules/security/ssh.nix
     
     # ─────────────────────────────────────────────────────────────
     # Virtualization Configuration
@@ -82,12 +88,23 @@ in {
     # ─────────────────────────────────────────────────────────────
     ./modules/web/dashboard.nix
     
+    # ─────────────────────────────────────────────────────────────
+    # VM Management
+    # ─────────────────────────────────────────────────────────────
+    ./modules/vm-management/resource-quotas.nix
+    ./modules/vm-management/snapshots.nix
+    ./modules/vm-management/scheduling.nix
+    
+    # ─────────────────────────────────────────────────────────────
+    # Storage Management
+    # ─────────────────────────────────────────────────────────────
+    ./modules/storage-management/quotas.nix
+    ./modules/storage-management/encryption.nix
+    
   # ─────────────────────────────────────────────────────────────
   # Optional Modules (conditionally loaded)
   # ─────────────────────────────────────────────────────────────
-  ] ++ lib.optional (builtins.pathExists ./modules/enterprise/features.nix) 
-      ./modules/enterprise/features.nix
-    ++ lib.optional (builtins.pathExists ./modules/virtualization/performance.nix) 
+  ] ++ lib.optional (builtins.pathExists ./modules/virtualization/performance.nix) 
       ./modules/virtualization/performance.nix
   
   # ─────────────────────────────────────────────────────────────
@@ -127,7 +144,8 @@ in {
     # Avoid racing the Display Manager for VT1
     conflicts = [ "getty@tty1.service" "display-manager.service" ];
     
-    serviceConfig = {
+    # Base serviceConfig - can be overridden by security modules
+    serviceConfig = lib.mkDefault {
       Type = "simple";
       ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/menu.sh";
       WorkingDirectory = "/etc/hypervisor";
