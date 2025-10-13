@@ -14,7 +14,8 @@
     };
     
     # Enable IP forwarding for routing between networks
-    firewall.enable = true;
+    # Note: Firewall configuration is handled by modules/security/firewall.nix
+    nat.internalInterfaces = lib.mkDefault [ "virbr+" ];
   };
   
   # Bridge utilities for network management

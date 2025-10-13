@@ -5,8 +5,8 @@
 
 {
   # Bootloader
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.systemd-boot.enable = lib.mkDefault true;
+  boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
   
   # Kernel selection
   # Prefer latest stable kernel; allow override to hardened
@@ -16,5 +16,5 @@
   # Note: Users can override with: boot.kernelPackages = pkgs.linuxPackages_hardened;
   
   # Hardware acceleration
-  hardware.opengl.enable = true;
+  hardware.opengl.enable = lib.mkDefault true;
 }

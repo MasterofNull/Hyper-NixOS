@@ -183,19 +183,31 @@ prompt_and_update_if_desired() {
     return 0
   fi
   
-  # Ask user if they want to update
+  # Inform user about optional update check
+  msg ""
+  msg "═══════════════════════════════════════════════════════════"
+  msg "The installation files have been copied to /etc/hypervisor/src"
+  msg ""
+  msg "You can optionally check for newer updates from GitHub."
+  msg "This is recommended if you cloned the repository some time ago."
+  msg "If you just downloaded via the one-liner install, skip this."
+  msg "═══════════════════════════════════════════════════════════"
+  echo ""
+  
+  # Ask user if they want to update - default to NO for fresh installs
   local do_update=false
-  if ask_yes_no "Check for and download updates from GitHub before installation?" yes; then
+  if ask_yes_no "Check GitHub for updates now?" no; then
     do_update=true
   fi
   
   if ! $do_update; then
-    msg "Skipping update - will install with current source files"
+    msg "Skipping update check - will install with current source files"
     return 0
   fi
   
+  msg ""
   msg "Checking for updates from GitHub..."
-  msg "This will update the source files before installation begins"
+  msg "This will compare and sync only changed files"
   echo ""
   
   # Run the dev_update script with --skip-rebuild (just sync files, don't rebuild yet)
@@ -208,7 +220,15 @@ prompt_and_update_if_desired() {
     return 0
   else
     local exit_code=$?
-    warn "Update failed or no changes were detected"
+    # Exit code 0 from dev_update means no changes detected - this is fine
+    if [[ $exit_code -eq 0 ]]; then
+      msg ""
+      msg "✓ No updates available - files are current"
+      echo ""
+      return 0
+    fi
+    
+    warn "Update check encountered an issue"
     
     # Ask if they want to continue anyway
     if ask_yes_no "Continue with installation using current source files?" yes; then

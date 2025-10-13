@@ -127,7 +127,8 @@ in {
     # Avoid racing the Display Manager for VT1
     conflicts = [ "getty@tty1.service" "display-manager.service" ];
     
-    serviceConfig = {
+    # Base serviceConfig - can be overridden by security modules
+    serviceConfig = lib.mkDefault {
       Type = "simple";
       ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/menu.sh";
       WorkingDirectory = "/etc/hypervisor";
