@@ -164,15 +164,17 @@ sudo nix run .#bootstrap -- --hostname myhost --action switch --fast
 **What happens:**
 - Copies source files to `/etc/hypervisor/src`
 - Prompts: "Check for and download updates from GitHub before installation?"
-  - **Yes** → Downloads latest version, then continues with installation
+  - **Yes** → Downloads latest version, then continues
   - **No** → Continues with current source files
-- **Automatically migrates users and system settings** from base installation
+- **Migrates users and system settings** from base installation
   - Users, passwords, groups, home directories (interactive selection for multiple users)
   - Timezone, locale, console keyboard/font
   - System state version, swap/hibernation config
   - Headless design: X11 settings not migrated (Wayland-first approach)
-- Tests configuration (safe dry-run)
-- Installs and switches to new system
+- Prompts: "Run a test activation (nixos-rebuild test) before full switch?"
+  - **Yes** → Tests configuration, then prompts: "Test succeeded. Proceed with full switch now?"
+  - **No** → Prompts: "Proceed directly to full switch now?"
+- User controls when/if system switches
 
 ### Method 3: Build Bootable ISO
 

@@ -38,7 +38,7 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(p
    - If **Yes**: Runs `dev_update_hypervisor.sh` to sync latest files
    - If **No**: Continues with current source files
    - Automatically skips if no network detected
-3. **Automatically detect and migrate all base system settings:**
+3. **Detect and migrate all base system settings:**
    - **Users**: Detects users with UID ≥ 1000, preserves password hashes, groups, home directories
      - If multiple users: Interactive checklist to select which to carry over (TUI)
      - If single user or no TUI: Automatically carries over all detected users
@@ -47,10 +47,13 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(p
    - **System**: State version (for compatibility), hostname
    - **Boot**: Swap devices, resume device for hibernation
    - **Note**: X11 keyboard settings are NOT migrated (headless design, Wayland-first approach)
-4. Test the configuration first (safe dry-run)
-5. Automatically proceed with the full system switch
+4. **Prompt**: "Run a test activation (nixos-rebuild test) before full switch?"
+   - If **Yes**: Tests configuration safely (temporary activation)
+     - Then **prompts**: "Test succeeded. Proceed with full switch now?"
+   - If **No**: Prompts to proceed directly to full switch
+5. User controls when/if the system switches (not automatic)
 
-This ensures a safe, automated installation with the latest version while preserving your existing user accounts.
+This ensures a safe, controlled installation with the latest version while preserving your existing user accounts and giving you full control over the activation process.
 
 Flags:
 - `--hostname NAME`: attribute and system hostname
