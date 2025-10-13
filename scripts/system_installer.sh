@@ -565,6 +565,12 @@ write_system_local_nix() {
   if [[ -z "$keymap" ]]; then
     keymap=$(localectl status 2>/dev/null | awk '/VC Keymap:/ {print $3; exit}' || true)
   fi
+  # Treat common placeholders from localectl as unset to avoid invalid keymap
+  case "${keymap,,}" in
+    "(unset)"|"unset"|"n/a"|"-")
+      keymap=""
+      ;;
+  esac
   
   # Discover swap by label/uuid only if not provided by nixos-option
   if [[ -z "$swap_device" ]]; then
