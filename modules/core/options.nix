@@ -54,6 +54,11 @@
 
     # Web dashboard options
     web = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable the web dashboard";
+      };
       port = lib.mkOption {
         type = lib.types.port;
         default = 8080;

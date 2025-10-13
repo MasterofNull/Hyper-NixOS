@@ -16,7 +16,44 @@ The infinite recursion was caused by **circular dependencies in module evaluatio
 
 ## Files Fixed
 
-### 1. `modules/gui/desktop.nix`
+### 1. `modules/web/dashboard.nix`
+**Problem**: Direct access to `config.hypervisor.web.port` at module top-level
+```nix
+# BEFORE (INCORRECT)
+{
+  networking.firewall.interfaces."lo".allowedTCPPorts = lib.mkAfter [ config.hypervisor.web.port ];
+}
+```
+
+**Fix**: Added enable option and wrapped configuration in conditional
+```nix
+# AFTER (CORRECT)
+{
+  config = lib.mkIf config.hypervisor.web.enable {
+    networking.firewall.interfaces."lo".allowedTCPPorts = lib.mkAfter [ config.hypervisor.web.port ];
+    # ... rest of configuration
+  };
+}
+```
+
+### 2. `modules/core/options.nix`
+**Added**: Web dashboard enable option with proper default
+```nix
+web = {
+  enable = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    description = "Enable the web dashboard";
+  };
+  port = lib.mkOption {
+    type = lib.types.port;
+    default = 8080;
+    description = "Port for the web dashboard";
+  };
+};
+```
+
+### 3. `modules/gui/desktop.nix`
 **Problem**: Top-level `let` binding accessing `config` values
 ```nix
 # BEFORE (INCORRECT)
@@ -137,6 +174,8 @@ By moving `config` access inside the `config` section or directly into condition
 ✅ **FIXED**: All identified circular dependencies have been resolved. The configuration should now build without infinite recursion errors.
 
 ## Files Modified
+- `modules/web/dashboard.nix` ⭐ **Primary fix for the reported issue**
+- `modules/core/options.nix` ⭐ **Added missing enable option**
 - `modules/gui/desktop.nix`
 - `modules/core/directories.nix` 
 - `modules/core/keymap-sanitizer.nix`
