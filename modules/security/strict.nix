@@ -21,7 +21,8 @@
   services.getty.autologinUser = lib.mkForce null;
   
   # Remove polkit rules - EVERYTHING requires sudo with password
-  security.polkit.enable = lib.mkForce false;
+  # EXCEPTION: Keep polkit enabled if libvirtd is enabled (it's required)
+  security.polkit.enable = lib.mkForce config.virtualisation.libvirtd.enable;
   
   # Stricter sudo timeout (must re-authenticate frequently)
   security.sudo.extraConfig = lib.mkAfter ''
@@ -183,11 +184,13 @@
       
       RESTRICTIONS:
       - No autologin (manual login required)
-      - No polkit (sudo required for all operations)
+      - No polkit (sudo required for all operations)*
       - Password required for every sudo command
       - Enhanced audit logging
       - Stricter kernel parameters
       - Reduced attack surface (disabled services)
+      
+      *Polkit is kept enabled when libvirtd is active (required dependency)
       
       If this is too restrictive, remove:
       /var/lib/hypervisor/configuration/security-strict.nix
