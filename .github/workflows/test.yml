@@ -104,7 +104,7 @@ jobs:
             "scripts/bootstrap_nixos.sh"
             "scripts/menu.sh"
             "configuration/configuration.nix"
-            "configuration/security-production.nix"
+            "configuration/security/profiles.nix"
             "tests/run_all_tests.sh"
           )
           

@@ -545,8 +545,8 @@ main() {
   
   # Always create cache optimization config for faster downloads
   msg "Configuring optimized binary cache and parallel downloads"
-  local cache_conf="/etc/hypervisor/src/configuration/cache-optimization.nix"
-  [[ -f "$cache_conf" ]] || cp "$src_root/configuration/cache-optimization.nix" "$cache_conf"
+  local cache_conf="/etc/hypervisor/src/configuration/core/cache-optimization.nix"
+  [[ -f "$cache_conf" ]] || cp "$src_root/configuration/core/cache-optimization.nix" "$cache_conf"
   
   # Link to state dir
   mkdir -p /var/lib/hypervisor/configuration

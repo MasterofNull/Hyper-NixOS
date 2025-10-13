@@ -37,7 +37,7 @@ if $CI_MODE; then
   
   test_case "Configuration files exist"
   assert_file_exists "../../configuration/configuration.nix"
-  assert_file_exists "../../configuration/security-production.nix"
+  assert_file_exists "../../configuration/security/profiles.nix"
   
   test_suite_end
   exit 0
@@ -58,7 +58,7 @@ assert_directory_exists "/etc/hypervisor/src"
 
 test_case "Configuration files are in place"
 assert_file_exists "/etc/hypervisor/src/configuration/configuration.nix"
-assert_file_exists "/etc/hypervisor/src/configuration/security-production.nix"
+assert_file_exists "/etc/hypervisor/src/configuration/security/profiles.nix"
 
 test_case "Required services are enabled"
 if command -v systemctl &>/dev/null; then
