@@ -15,6 +15,11 @@ Before making ANY changes or recommendations:
 ### **RULE 2: Documentation Structure is Sacred**
 NEVER reorganize the documentation structure without explicit user request. The current structure is:
 
+**CRITICAL**: Some files must exist in ROOT directory for GitHub CI/CD checks:
+- `CREDITS.md` - Required by automated checks
+- `ENTERPRISE_QUICK_START.md` - Required by automated checks
+These are copies of files in `docs/` - keep both in sync!
+
 ```
 docs/
 ├── README.md                          ← Navigation hub
@@ -239,6 +244,7 @@ Before completing any documentation task:
 3. **Make major architectural changes** without documenting rationale
 4. **Ignore existing patterns** documented in context files
 5. **Skip updating documentation** after making changes
+6. **Delete CI/CD required files** (`CREDITS.md`, `ENTERPRISE_QUICK_START.md` in root)
 
 ### **ALWAYS DO THIS:**
 1. **Read context documents** before making recommendations
@@ -246,6 +252,7 @@ Before completing any documentation task:
 3. **Update all affected documentation** consistently
 4. **Preserve historical context** while adding new information
 5. **Consider hysteresis** - build on existing work
+6. **Maintain CI/CD files** - Keep root copies in sync with docs versions
 
 ## 📊 **Success Metrics**
 

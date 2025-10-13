@@ -27,6 +27,8 @@
 ✅ flake.nix (1,963 bytes) - Nix flake definition
 ✅ README.md (14,716 bytes) - Project documentation
 ✅ LICENSE (35,149 bytes) - GPL v3.0 license
+✅ CREDITS.md (4,740 bytes) - Credits and attributions (CI/CD required)
+✅ ENTERPRISE_QUICK_START.md (9,092 bytes) - Enterprise guide (CI/CD required)
 ✅ hardware-configuration.nix - Hardware configuration placeholder
 ✅ modules/ directory - 40 NixOS module files
 ✅ docs/ directory - 50 documentation files
