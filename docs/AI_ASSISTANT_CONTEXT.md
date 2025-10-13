@@ -191,6 +191,57 @@ if [[ "${CI:-false}" == "true" ]]; then
 fi
 ```
 
+## Recent Fixes & Patterns (Updated 2025-10-13)
+
+### CI Test Environment Issues
+When tests fail in CI but work locally, check for:
+
+1. **Readonly Variables in Libraries**
+```bash
+# Problem: Libraries declare readonly variables
+readonly HYPERVISOR_ROOT="/etc/hypervisor"
+
+# Solution in tests: Remove readonly before sourcing
+sed -i 's/^readonly HYPERVISOR_/HYPERVISOR_/g' "$TEMP/lib.sh"
+```
+
+2. **Exit Calls in Utility Functions**
+```bash
+# Problem: Function calls exit directly
+require() {
+    # ...
+    exit 1  # This terminates the test script!
+}
+
+# Solution: Use subshell in tests
+(require nonexistent_command) || echo "Failed as expected"
+```
+
+3. **Strict Error Handling Inheritance**
+```bash
+# Problem: Library sets strict mode
+set -Eeuo pipefail  # This affects test execution
+
+# Solution: Disable after sourcing
+source common.sh
+set +e  # Allow test failures
+```
+
+### Nix Configuration Patterns
+Always use proper scoping for library functions:
+
+```nix
+# ❌ Wrong
+mkIf (elem "feature" list)
+
+# ✅ Correct  
+mkIf (lib.elem "feature" list)
+
+# ✅ Also correct (with proper import)
+with lib;
+mkIf (elem "feature" list)
+```
+
 ## Known Patterns & Solutions
 
 ### Infinite Recursion Prevention
@@ -293,6 +344,8 @@ hyper-nixos/
 3. Build failures → Check syntax with --show-trace
 4. VM won't start → Check logs and resources
 5. CI test failures → See CI/CD Testing Considerations above
+6. Undefined Nix variables → Add `lib.` prefix to standard functions
+7. Test scripts exiting early → Use subshells for commands that may exit
 
 ### Debug Commands
 ```bash
