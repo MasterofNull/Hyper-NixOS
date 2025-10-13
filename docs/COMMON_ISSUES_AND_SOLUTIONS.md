@@ -7,6 +7,7 @@ This document catalogs common issues encountered in Hyper-NixOS, their root caus
 - [Critical Issues](#critical-issues)
 - [Permission and Privilege Issues](#permission-and-privilege-issues)
 - [Module and Configuration Issues](#module-and-configuration-issues)
+- [CI/CD and Testing Issues](#cicd-and-testing-issues)
 
 ## 🚨 **Critical Issues**
 
