@@ -3,6 +3,12 @@
 ## 🎯 **Purpose**
 This document catalogs common issues encountered in Hyper-NixOS, their root causes, solutions, and prevention strategies. It serves as a reference for troubleshooting and avoiding known pitfalls.
 
+## Table of Contents
+- [Critical Issues](#critical-issues)
+- [Permission and Privilege Issues](#permission-and-privilege-issues)
+- [Module and Configuration Issues](#module-and-configuration-issues)
+- [CI/CD and Testing Issues](#cicd-and-testing-issues)
+
 ## 🚨 **Critical Issues**
 
 ### Issue: Infinite Recursion Errors
@@ -53,7 +59,29 @@ in {
 }
 ```
 
-#### ✅ **Fix #3: Eliminate Cross-Module Dependencies**
+#### ✅ **Fix #3: Move Let Bindings Inside Conditionals**
+```nix
+# ❌ WRONG - Top-level let accessing config (keymap-sanitizer.nix example)
+{
+  config = let
+    key = (config.console.keyMap or "");
+    invalid = builtins.elem key ["unset"];
+  in lib.mkIf invalid {
+    console.keyMap = lib.mkForce "us";
+  };
+}
+
+# ✅ CORRECT - Let binding inside conditional
+{
+  config = lib.mkIf (let
+    key = (config.console.keyMap or "");
+  in builtins.elem key ["unset"]) {
+    console.keyMap = lib.mkForce "us";
+  };
+}
+```
+
+#### ✅ **Fix #4: Eliminate Cross-Module Dependencies**
 ```nix
 # ❌ WRONG - Option defined in different module
 modules/web/dashboard.nix:
@@ -75,7 +103,9 @@ modules/web/dashboard.nix:
 - Check ALL modules for this pattern - multiple files often have the same issue
 - Test with `nixos-rebuild dry-build --show-trace`
 
-**Recent Fix (2025-10-13)**: Comprehensive fix applied to `configuration.nix`, `modules/core/directories.nix`, and `modules/security/profiles.nix`. See `docs/dev/INFINITE_RECURSION_FIX_2025-10-13.md` for details.
+**Recent Fixes**: 
+- **(2025-10-13)**: Comprehensive fix applied to `configuration.nix`, `modules/core/directories.nix`, and `modules/security/profiles.nix`. See `docs/dev/INFINITE_RECURSION_FIX_2025-10-13.md` for details.
+- **(2025-10-13 Update)**: Additional fix for `modules/core/keymap-sanitizer.nix` which had the same pattern. See `docs/dev/INFINITE_RECURSION_FIX_KEYMAP_2025-10-13.md` for details.
 
 ### Issue: Module Not Loading/Working
 **Symptoms**:
@@ -423,3 +453,302 @@ nixos-option hypervisor.web.port
    - Error messages and logs
 
 Remember: Most issues have been encountered before. Check documentation, follow established patterns, and test thoroughly.
+
+## 🔐 **Permission and Privilege Issues**
+
+### Issue: "Permission Denied" for VM Operations
+**Symptoms**:
+```
+error: Cannot access libvirt socket
+Permission denied
+```
+
+**Root Cause**: User not in required groups for VM management
+
+**Solution**:
+```bash
+# Add user to required groups
+sudo usermod -aG libvirtd,kvm username
+
+# Logout and login again for changes to take effect
+```
+
+**Prevention**:
+- Configure users properly in `configuration.nix`:
+  ```nix
+  hypervisor.security.privileges = {
+    enable = true;
+    vmUsers = [ "username" ];
+  };
+  ```
+
+### Issue: VM Operations Asking for Sudo Password
+**Symptoms**:
+```
+[sudo] password for user:
+```
+
+**Root Cause**: Misconfigured polkit rules or user not in correct group
+
+**Solution**:
+1. Verify polkit rules are installed:
+   ```bash
+   ls /etc/polkit-1/rules.d/50-hypervisor*
+   ```
+
+2. Check user groups:
+   ```bash
+   groups
+   # Should include: libvirtd kvm
+   ```
+
+3. Enable polkit rules in configuration:
+   ```nix
+   hypervisor.security.polkit = {
+     enable = true;
+     enableVMRules = true;
+   };
+   ```
+
+### Issue: System Operations Not Working Without Sudo
+**Symptoms**:
+```
+═══════════════════════════════════════════════════════════════
+  This operation requires administrator privileges
+═══════════════════════════════════════════════════════════════
+```
+
+**Expected Behavior**: This is correct! System operations SHOULD require sudo.
+
+**Proper Usage**:
+```bash
+# Correct - system operations need sudo
+sudo system-config network setup-bridge br0
+
+# Incorrect - trying without sudo
+system-config network setup-bridge br0  # Will fail with clear message
+```
+
+### Issue: Script Shows "Missing Required Group Membership"
+**Symptoms**:
+```
+═══════════════════════════════════════════════════════════════
+  Missing Required Group Membership
+═══════════════════════════════════════════════════════════════
+
+  Your user needs to be in these groups:
+    • libvirtd
+    • kvm
+```
+
+**Solution**:
+1. Have an admin add you to groups:
+   ```bash
+   sudo usermod -aG libvirtd,kvm $USER
+   ```
+
+2. Logout and login again
+
+3. Verify groups:
+   ```bash
+   groups
+   ```
+
+### Issue: "Operation not allowed in hardened mode"
+**Symptoms**:
+```
+ERROR: Operation 'system_config' not allowed in hardened mode
+```
+
+**Root Cause**: System is in hardened security phase
+
+**Solution**:
+1. Check current phase:
+   ```bash
+   cat /etc/hypervisor/.phase* 2>/dev/null
+   ```
+
+2. If needed, transition to setup phase (requires sudo):
+   ```bash
+   sudo transition_phase.sh setup
+   ```
+
+3. Perform operation, then harden again:
+   ```bash
+   sudo transition_phase.sh harden
+   ```
+
+**Prevention**: Plan system changes during setup phase
+
+## 🧪 **CI/CD and Testing Issues**
+
+### Issue: Unit Tests Failing in GitHub Actions CI
+**Symptoms**:
+```
+Running: test_common... FAIL
+✗ Some CI validation checks failed
+Error: Process completed with exit code 1.
+```
+
+**Root Causes**:
+1. Tests expect system paths that don't exist in CI (`/var/lib/hypervisor/`)
+2. Missing dependencies (`jq`, `virsh`) in CI environment
+3. Library files performing actions during sourcing
+4. CI test runner overly aggressive in skipping tests
+
+**Solutions**:
+
+#### ✅ **Fix #1: Setup Test Environment Before Sourcing**
+```bash
+# ✅ CORRECT - Setup before source
+TEST_TEMP_DIR=$(mktemp -d)
+export HYPERVISOR_LOGS="$TEST_TEMP_DIR/logs"
+export HYPERVISOR_STATE="$TEST_TEMP_DIR"
+mkdir -p "$HYPERVISOR_LOGS"
+
+source "$SCRIPTS_DIR/lib/common.sh"
+
+# ❌ WRONG - Source then setup
+source "$SCRIPTS_DIR/lib/common.sh"
+export HYPERVISOR_LOGS="/tmp/logs"  # Too late!
+```
+
+#### ✅ **Fix #2: Filter Dependency Checks for CI**
+```bash
+# Remove require statements when testing
+sed '/^require jq virsh$/d' "$SCRIPTS_DIR/lib/common.sh" > "$TEMP/common_ci.sh"
+source "$TEMP/common_ci.sh"
+```
+
+#### ✅ **Fix #3: Install CI Dependencies**
+```bash
+# In test script
+if [[ "${CI:-false}" == "true" ]]; then
+    # Try to install jq
+    if ! command -v jq >/dev/null && command -v apt-get >/dev/null; then
+        sudo apt-get update -qq && sudo apt-get install -y jq
+    fi
+fi
+```
+
+#### ✅ **Fix #4: Create CI-Specific Test Files**
+```bash
+# tests/unit/test_common_ci.sh - CI-friendly version
+# Avoids keywords that trigger test skipping
+# Handles missing dependencies gracefully
+```
+
+**Prevention**:
+- Design libraries with lazy initialization
+- Don't perform actions during source/import
+- Provide environment variable overrides
+- Test in CI-like environment locally
+- Document CI limitations in tests
+
+### Issue: Tests Skipped When They Should Run
+**Symptoms**:
+```
+Running: test_common... SKIP (requires libvirt)
+```
+
+**Root Cause**: Test runner greps for keywords to skip system-dependent tests
+
+**Solution**:
+```bash
+# Avoid trigger words in test files
+# Instead of: virsh list
+# Use: VM_MANAGER list
+# Or create separate CI test files
+```
+
+### Issue: "No such file or directory" in CI
+**Symptoms**:
+```
+/workspace/scripts/lib/common.sh: line 66: /var/lib/hypervisor/logs/script.log: No such file or directory
+```
+
+**Root Cause**: Hardcoded paths in scripts
+
+**Solution**:
+```bash
+# Use environment variables with defaults
+LOG_FILE="${LOG_FILE:-${HYPERVISOR_LOGS}/script.log}"
+HYPERVISOR_LOGS="${HYPERVISOR_LOGS:-/var/lib/hypervisor/logs}"
+```
+
+### Issue: PATH Override Breaking Tests
+**Symptoms**:
+- Mock commands not found
+- Test setup ignored
+
+**Root Cause**: Library overwrites PATH variable
+
+**Solution**:
+```bash
+# Save and restore PATH in tests
+ORIGINAL_PATH="$PATH"
+source common.sh
+export PATH="$TEST_BIN_DIR:$PATH"
+```
+
+### Issue: CI Environment Missing Tools
+**Symptoms**:
+```
+shellcheck: command not found
+jq: command not found
+```
+
+**Solution in GitHub Actions**:
+```yaml
+- name: Install dependencies
+  run: |
+    sudo apt-get update -qq
+    sudo apt-get install -y shellcheck jq
+```
+
+**For Local CI Testing**:
+```bash
+# Simulate CI environment
+export CI=true
+export GITHUB_ACTIONS=true
+./tests/run_all_tests.sh
+```
+
+### Best Practices for CI-Friendly Code
+
+1. **Lazy Initialization**:
+   ```bash
+   # Good
+   init_logs() {
+       mkdir -p "$HYPERVISOR_LOGS"
+   }
+   
+   # Bad  
+   mkdir -p "$HYPERVISOR_LOGS"  # Runs on source
+   ```
+
+2. **Environment Detection**:
+   ```bash
+   if [[ "${CI:-false}" == "true" ]]; then
+       # CI-specific behavior
+   fi
+   ```
+
+3. **Configurable Paths**:
+   ```bash
+   : "${HYPERVISOR_ROOT:=/etc/hypervisor}"
+   : "${HYPERVISOR_LOGS:=/var/lib/hypervisor/logs}"
+   ```
+
+4. **Graceful Degradation**:
+   ```bash
+   if command -v jq >/dev/null; then
+       # Use jq
+   else
+       # Fallback method
+   fi
+   ```
+
+**Related Documentation**:
+- [CI GitHub Actions Guide](./dev/CI_GITHUB_ACTIONS_GUIDE.md)
+- [CI Test Fixes 2025-10-13](./dev/CI_TEST_FIXES_2025-10-13.md)

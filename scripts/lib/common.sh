@@ -233,8 +233,294 @@ load_config() {
     fi
 }
 
+# Performance monitoring
+SCRIPT_START_TIME=""
+SCRIPT_METRICS_ENABLED="${SCRIPT_METRICS_ENABLED:-false}"
+
+# Start script timer
+script_timer_start() {
+    SCRIPT_START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
+    log_debug "Script timer started at $SCRIPT_START_TIME"
+}
+
+# End script timer and log duration
+script_timer_end() {
+    local label="${1:-Script execution}"
+    if [[ -n "$SCRIPT_START_TIME" ]]; then
+        local end_time=$(date +%s.%N 2>/dev/null || date +%s)
+        local duration=$(awk "BEGIN {print $end_time - $SCRIPT_START_TIME}")
+        log_info "$label time: ${duration}s"
+        
+        # Write metrics if enabled
+        if [[ "$SCRIPT_METRICS_ENABLED" == "true" ]]; then
+            local metrics_file="${HYPERVISOR_LOGS}/script_metrics.csv"
+            if [[ ! -f "$metrics_file" ]]; then
+                echo "timestamp,script,operation,duration" > "$metrics_file"
+            fi
+            echo "$(date -Iseconds),${BASH_SOURCE[-1]##*/},$label,$duration" >> "$metrics_file"
+        fi
+    fi
+}
+
+# Measure function execution time
+measure_function() {
+    local func_name="$1"
+    shift
+    local start_time=$(date +%s.%N 2>/dev/null || date +%s)
+    
+    # Execute the function with its arguments
+    "$func_name" "$@"
+    local result=$?
+    
+    if [[ "$SCRIPT_METRICS_ENABLED" == "true" ]]; then
+        local end_time=$(date +%s.%N 2>/dev/null || date +%s)
+        local duration=$(awk "BEGIN {print $end_time - $start_time}")
+        log_debug "Function $func_name took ${duration}s"
+    fi
+    
+    return $result
+}
+
+# Phase detection functions
+get_security_phase() {
+    if [[ -f /etc/hypervisor/.phase2_hardened ]]; then
+        echo "hardened"
+    elif [[ -f /etc/hypervisor/.phase1_setup ]]; then
+        echo "setup"
+    else
+        # Fresh install defaults to setup
+        echo "setup"
+    fi
+}
+
+# Check if operation is allowed in current phase
+is_operation_allowed() {
+    local operation="$1"
+    local phase
+    phase=$(get_security_phase)
+    
+    case "$phase" in
+        setup)
+            # All operations allowed in setup
+            return 0
+            ;;
+        hardened)
+            # Check operation whitelist
+            case "$operation" in
+                # VM operations
+                vm_start|vm_stop|vm_pause|vm_resume|vm_status|vm_console)
+                    return 0
+                    ;;
+                # Backup operations
+                backup_create|backup_restore|backup_list)
+                    return 0
+                    ;;
+                # Monitoring operations
+                monitoring_view|log_view|metrics_view)
+                    return 0
+                    ;;
+                # Restricted operations
+                vm_create|vm_delete|vm_modify|system_config|network_config|user_modify)
+                    return 1
+                    ;;
+                *)
+                    # Unknown operations default to denied in hardened mode
+                    return 1
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+# Phase-aware permission check wrapper
+check_phase_permission() {
+    local operation="$1"
+    local phase
+    phase=$(get_security_phase)
+    
+    if ! is_operation_allowed "$operation"; then
+        log_error "Operation '$operation' not allowed in $phase mode"
+        if [[ "$phase" == "hardened" ]]; then
+            die "Operation not permitted in hardened mode. Use 'transition_phase.sh setup' to enable setup mode."
+        fi
+        return 1
+    fi
+    
+    # Log security-sensitive operations
+    if [[ "$phase" == "setup" ]]; then
+        log_warn "Setup mode operation: $operation (will be restricted in hardened mode)"
+    fi
+    
+    return 0
+}
+
+# Phase-aware directory permissions
+get_phase_permissions() {
+    local type="$1"  # file, dir, or script
+    local phase
+    phase=$(get_security_phase)
+    
+    case "$phase:$type" in
+        setup:file)    echo "0644" ;;
+        setup:dir)     echo "0755" ;;
+        setup:script)  echo "0755" ;;
+        hardened:file) echo "0640" ;;
+        hardened:dir)  echo "0750" ;;
+        hardened:script) echo "0750" ;;
+        *)             echo "0644" ;;
+    esac
+}
+
+# Initialize security phase
+SECURITY_PHASE=$(get_security_phase)
+export SECURITY_PHASE
+
+# Log current phase
+log_info "Security phase: $SECURITY_PHASE"
+
 # Auto-load configuration
 load_config
 
 # Efficiency: Pre-check common dependencies
 require jq virsh
+
+# ============================================================================
+# Privilege Management Functions
+# ============================================================================
+
+# Check if script requires sudo
+check_sudo_requirement() {
+    local requires_sudo="${REQUIRES_SUDO:-false}"
+    local operation="${OPERATION_TYPE:-unknown}"
+    
+    if [[ "$requires_sudo" == "true" ]] && [[ $EUID -ne 0 ]]; then
+        log_error "This operation requires administrator privileges"
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        echo "  This operation requires administrator privileges" >&2
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        echo "" >&2
+        echo "  Operation: $operation" >&2
+        echo "  Script: $(basename "$0")" >&2
+        echo "" >&2
+        echo "  Please run with sudo:" >&2
+        echo "    sudo $0 $*" >&2
+        echo "" >&2
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        return 1
+    fi
+    
+    if [[ "$requires_sudo" == "true" ]]; then
+        log_warn "Running with sudo: $(basename "$0") (user: ${SUDO_USER:-root})"
+    fi
+    
+    return 0
+}
+
+# Check if user is in required groups for VM operations
+check_vm_group_membership() {
+    local required_groups=("libvirtd" "kvm")
+    local missing_groups=()
+    
+    for group in "${required_groups[@]}"; do
+        if ! groups 2>/dev/null | grep -q "\b$group\b"; then
+            missing_groups+=("$group")
+        fi
+    done
+    
+    if [[ ${#missing_groups[@]} -gt 0 ]]; then
+        log_error "Missing required group membership for VM operations"
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        echo "  Missing Required Group Membership" >&2
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        echo "" >&2
+        echo "  Your user needs to be in these groups:" >&2
+        for group in "${missing_groups[@]}"; do
+            echo "    • $group" >&2
+        done
+        echo "" >&2
+        echo "  To add yourself to these groups, run:" >&2
+        echo "    sudo usermod -aG ${missing_groups[*]} $USER" >&2
+        echo "" >&2
+        echo "  Then logout and login again for changes to take effect." >&2
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        return 1
+    fi
+    
+    return 0
+}
+
+# Get actual username (works even under sudo)
+get_actual_user() {
+    if [[ -n "$SUDO_USER" ]]; then
+        echo "$SUDO_USER"
+    else
+        echo "${USER:-$(whoami)}"
+    fi
+}
+
+# Check if running under sudo
+is_running_as_sudo() {
+    [[ $EUID -eq 0 ]] || [[ -n "$SUDO_USER" ]]
+}
+
+# Determine if operation requires sudo
+operation_requires_sudo() {
+    local operation="$1"
+    
+    # Operations that don't require sudo
+    local no_sudo_ops=(
+        # VM Management
+        "vm_start" "vm_stop" "vm_restart" "vm_pause" "vm_resume"
+        "vm_status" "vm_console" "vm_list" "vm_info" "vm_create"
+        
+        # Monitoring
+        "vm_metrics" "vm_logs" "resource_usage" "health_check"
+        
+        # User operations
+        "snapshot_create" "snapshot_list" "snapshot_revert"
+        "backup_create" "backup_list" "backup_restore"
+        
+        # Read operations
+        "config_view" "log_view" "status_view"
+    )
+    
+    for op in "${no_sudo_ops[@]}"; do
+        if [[ "$operation" == "$op" ]]; then
+            return 1  # Does not require sudo
+        fi
+    done
+    
+    return 0  # Requires sudo
+}
+
+# Show sudo warning for interactive operations
+show_sudo_warning() {
+    local operation="$1"
+    local description="$2"
+    
+    if [[ -t 0 ]]; then  # Only if interactive
+        cat >&2 <<EOF
+╔═══════════════════════════════════════════════════════════════╗
+║              ADMINISTRATOR PRIVILEGES REQUIRED                ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  Operation: $operation                                        ║
+║  Description: $description                                    ║
+║                                                               ║
+║  This operation requires sudo because it will:                ║
+║    • Modify system configuration                              ║
+║    • Change system-wide settings                              ║
+║    • Access restricted resources                              ║
+║                                                               ║
+║  You will be prompted for your password.                     ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+Press Enter to continue or Ctrl+C to cancel...
+EOF
+        read -r
+    fi
+}
+
+# Export privilege management functions
+export -f check_sudo_requirement check_vm_group_membership get_actual_user is_running_as_sudo operation_requires_sudo show_sudo_warning
