@@ -45,13 +45,39 @@ mkdir -p "$HYPERVISOR_LOGS" "$HYPERVISOR_DATA" "$HYPERVISOR_CONFIG"
 export LOG_FILE="$HYPERVISOR_LOGS/script.log"
 touch "$LOG_FILE"
 
+# Create a dummy config file for load_config
+echo '{"test": true}' > "$HYPERVISOR_CONFIG/config.json"
+
 # Create a modified common.sh for CI testing
 # This removes the dependency check line that would fail in CI
+# and converts readonly variables to regular variables
 cp "$SCRIPTS_DIR/lib/common.sh" "$TEST_TEMP_DIR/common_ci.sh"
+
+# Remove the require line
 sed -i '/^require jq.*$/d' "$TEST_TEMP_DIR/common_ci.sh"
+
+# Remove the auto-load config line that fails in CI
+sed -i '/^load_config$/d' "$TEST_TEMP_DIR/common_ci.sh"
+
+# Convert readonly variables to regular ones so we can override them
+sed -i 's/^readonly HYPERVISOR_ROOT=/HYPERVISOR_ROOT=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_STATE=/HYPERVISOR_STATE=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_SCRIPTS=/HYPERVISOR_SCRIPTS=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_CONFIG=/HYPERVISOR_CONFIG=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_PROFILES=/HYPERVISOR_PROFILES=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_ISOS=/HYPERVISOR_ISOS=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_DISKS=/HYPERVISOR_DISKS=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_LOGS=/HYPERVISOR_LOGS=/g' "$TEST_TEMP_DIR/common_ci.sh"
 
 # Source the modified common.sh
 source "$TEST_TEMP_DIR/common_ci.sh"
+
+# Re-export our test paths to override the defaults
+export HYPERVISOR_LOGS="$TEST_TEMP_DIR/logs"
+export HYPERVISOR_DATA="$TEST_TEMP_DIR/data"
+export HYPERVISOR_CONFIG="$TEST_TEMP_DIR/config"
+export HYPERVISOR_STATE="$TEST_TEMP_DIR"
+export HYPERVISOR_ROOT="$TEST_TEMP_DIR"
 source "$SCRIPTS_DIR/lib/exit_codes.sh"
 
 # Test suite
