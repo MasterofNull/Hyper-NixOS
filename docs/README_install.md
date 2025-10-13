@@ -40,12 +40,13 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(p
    - Automatically skips if no network detected
 3. **Automatically detect and migrate all base system settings:**
    - **Users**: Detects users with UID ≥ 1000, preserves password hashes, groups, home directories
+     - If multiple users: Interactive checklist to select which to carry over (TUI)
+     - If single user or no TUI: Automatically carries over all detected users
    - **Locale**: Timezone, locale settings
    - **Console**: Console keymap and font (for headless/TUI operation)
    - **System**: State version (for compatibility), hostname
    - **Boot**: Swap devices, resume device for hibernation
    - **Note**: X11 keyboard settings are NOT migrated (headless design, Wayland-first approach)
-   - No manual input required - all settings detected automatically
 4. Test the configuration first (safe dry-run)
 5. Automatically proceed with the full system switch
 

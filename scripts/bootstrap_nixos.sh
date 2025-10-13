@@ -364,14 +364,26 @@ write_users_local_nix() {
     return 0
   fi
   
-  msg "Automatically carrying over user(s) from base installation: ${users[*]}"
+  msg "Detected user(s) to carry over: ${users[*]}"
   
   # Security note: Users will need passwords for system administration
   msg "Note: Passwordless sudo is restricted to VM operations only"
   msg "System administration (nixos-rebuild, systemctl, etc.) requires password"
 
-  # Automatically select all detected users (no prompt needed)
+  # If multiple, prefer interactive choice when TUI available; otherwise take all
   local selected=("${users[@]}")
+  if (( ${#users[@]} > 1 )) && [[ -n "$DIALOG" && -t 1 ]]; then
+    local items=()
+    for u in "${users[@]}"; do items+=("$u" " " on); done
+    local picked
+    picked=$("$DIALOG" --checklist "Select user(s) to carry over" 18 70 8 "${items[@]}" 3>&1 1>&2 2>&3 || true)
+    if [[ -n "$picked" ]]; then
+      # whiptail/dialog returns quoted names; normalize
+      read -r -a selected <<<"$picked"
+      # Strip quotes from each entry
+      for i in "${!selected[@]}"; do selected[$i]="${selected[$i]//\"/}"; done
+    fi
+  fi
 
   {
     echo '{ config, lib, pkgs, ... }:'

@@ -167,7 +167,7 @@ sudo nix run .#bootstrap -- --hostname myhost --action switch --fast
   - **Yes** → Downloads latest version, then continues with installation
   - **No** → Continues with current source files
 - **Automatically migrates users and system settings** from base installation
-  - Users, passwords, groups, home directories
+  - Users, passwords, groups, home directories (interactive selection for multiple users)
   - Timezone, locale, console keyboard/font
   - System state version, swap/hibernation config
   - Headless design: X11 settings not migrated (Wayland-first approach)
