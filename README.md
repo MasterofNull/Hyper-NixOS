@@ -166,6 +166,7 @@ sudo nix run .#bootstrap -- --hostname myhost --action switch --fast
 - Prompts: "Check for and download updates from GitHub before installation?"
   - **Yes** → Downloads latest version, then continues with installation
   - **No** → Continues with current source files
+- **Automatically detects and carries over all users** from base installation
 - Tests configuration (safe dry-run)
 - Installs and switches to new system
 

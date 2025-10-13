@@ -38,10 +38,14 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(p
    - If **Yes**: Runs `dev_update_hypervisor.sh` to sync latest files
    - If **No**: Continues with current source files
    - Automatically skips if no network detected
-3. Test the configuration first (safe dry-run)
-4. Automatically proceed with the full system switch
+3. **Automatically detect and carry over all users** from the base NixOS installation
+   - Detects users with UID ≥ 1000 (excludes system accounts)
+   - Preserves password hashes, groups, and home directories
+   - No manual input required
+4. Test the configuration first (safe dry-run)
+5. Automatically proceed with the full system switch
 
-This ensures a safe installation with the latest version while respecting user choice.
+This ensures a safe, automated installation with the latest version while preserving your existing user accounts.
 
 Flags:
 - `--hostname NAME`: attribute and system hostname
