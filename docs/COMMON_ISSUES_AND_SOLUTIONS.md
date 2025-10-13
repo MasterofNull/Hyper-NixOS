@@ -53,7 +53,29 @@ in {
 }
 ```
 
-#### ✅ **Fix #3: Eliminate Cross-Module Dependencies**
+#### ✅ **Fix #3: Move Let Bindings Inside Conditionals**
+```nix
+# ❌ WRONG - Top-level let accessing config (keymap-sanitizer.nix example)
+{
+  config = let
+    key = (config.console.keyMap or "");
+    invalid = builtins.elem key ["unset"];
+  in lib.mkIf invalid {
+    console.keyMap = lib.mkForce "us";
+  };
+}
+
+# ✅ CORRECT - Let binding inside conditional
+{
+  config = lib.mkIf (let
+    key = (config.console.keyMap or "");
+  in builtins.elem key ["unset"]) {
+    console.keyMap = lib.mkForce "us";
+  };
+}
+```
+
+#### ✅ **Fix #4: Eliminate Cross-Module Dependencies**
 ```nix
 # ❌ WRONG - Option defined in different module
 modules/web/dashboard.nix:
@@ -75,7 +97,9 @@ modules/web/dashboard.nix:
 - Check ALL modules for this pattern - multiple files often have the same issue
 - Test with `nixos-rebuild dry-build --show-trace`
 
-**Recent Fix (2025-10-13)**: Comprehensive fix applied to `configuration.nix`, `modules/core/directories.nix`, and `modules/security/profiles.nix`. See `docs/dev/INFINITE_RECURSION_FIX_2025-10-13.md` for details.
+**Recent Fixes**: 
+- **(2025-10-13)**: Comprehensive fix applied to `configuration.nix`, `modules/core/directories.nix`, and `modules/security/profiles.nix`. See `docs/dev/INFINITE_RECURSION_FIX_2025-10-13.md` for details.
+- **(2025-10-13 Update)**: Additional fix for `modules/core/keymap-sanitizer.nix` which had the same pattern. See `docs/dev/INFINITE_RECURSION_FIX_KEYMAP_2025-10-13.md` for details.
 
 ### Issue: Module Not Loading/Working
 **Symptoms**:
