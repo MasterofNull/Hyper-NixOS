@@ -1,9 +1,0 @@
-Per-VM Firewall
-
-- Use Per-VM firewall in More Options to open inbound TCP/UDP ports for a VM.
-- The tool targets the VM IP (if known) or the VM’s bridge as a fallback.
-- Rules are applied to the host iptables FORWARD chain.
-
-Tips
-- Prefer targeting specific VM IPs. Ensure VMs obtain an IP (cloud-init or DHCP).
-- Consider making persistent rules via your host firewall configuration.

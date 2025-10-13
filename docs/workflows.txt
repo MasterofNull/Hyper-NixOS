@@ -1,7 +1,0 @@
-Workflows
-
-- End-to-end VM setup workflow: selection -> download ISO -> profile -> deploy -> launch
-- ISO manager: presets with mirrors and signatures, local/USB/network scans
-- Cloud image manager: download cloud images verified via checksums/signatures
-- Create VM wizard: resources, zone/bridge, ISO or cloud image, advanced options
-- Deploy: converts profile JSON to libvirt XML and starts the VM
