@@ -8,13 +8,14 @@ let
   py = pkgs.python3.withPackages (ps: [ ps.flask ps.requests ]);
 in
 {
-  # Runtime user for the web dashboard (non-login)
-  # Note: hypervisor-operator user is defined in security-production.nix
-  # Ensure the user has the necessary group memberships for web dashboard
-  users.users.hypervisor-operator.extraGroups = lib.mkAfter [ "libvirtd" "kvm" ];
+  config = lib.mkIf config.hypervisor.web.enable {
+    # Runtime user for the web dashboard (non-login)
+    # Note: hypervisor-operator user is defined in security-production.nix
+    # Ensure the user has the necessary group memberships for web dashboard
+    users.users.hypervisor-operator.extraGroups = lib.mkAfter [ "libvirtd" "kvm" ];
   
-  # Web dashboard service
-  systemd.services.hypervisor-web-dashboard = {
+    # Web dashboard service
+    systemd.services.hypervisor-web-dashboard = {
     description = "Hyper-NixOS Web Dashboard";
     after = [ "network.target" "libvirtd.service" ];
     wantedBy = [ "multi-user.target" ];
@@ -51,29 +52,29 @@ in
       StandardOutput = "journal";
       StandardError = "journal";
     };
-  };
-  
-  # Create web directory structure
-  systemd.tmpfiles.rules = [
+    };
+    
+    # Create web directory structure
+    systemd.tmpfiles.rules = [
     "d /var/www/hypervisor 0755 root root - -"
     "d /var/www/hypervisor/templates 0755 root root - -"
     "d /var/www/hypervisor/static 0755 root root - -"
-  ];
-  
-  # Install template to the Flask template directory
-  environment.etc."var/www/hypervisor/templates/dashboard.html" = {
+    ];
+    
+    # Install template to the Flask template directory
+    environment.etc."var/www/hypervisor/templates/dashboard.html" = {
     source = ../../web/templates/dashboard.html;
     mode = "0644";
-  };
-  
-  # Firewall: Allow web dashboard on localhost only by default
-  # For external access, use nginx/apache reverse proxy with authentication
-  networking.firewall.interfaces."lo".allowedTCPPorts = lib.mkAfter [ config.hypervisor.web.port ];
-  
-  # Optional: Nginx reverse proxy with authentication
-  # Uncomment to enable external access with password protection
-  /*
-  services.nginx = {
+    };
+    
+    # Firewall: Allow web dashboard on localhost only by default
+    # For external access, use nginx/apache reverse proxy with authentication
+    networking.firewall.interfaces."lo".allowedTCPPorts = [ config.hypervisor.web.port ];
+    
+    # Optional: Nginx reverse proxy with authentication
+    # Uncomment to enable external access with password protection
+    /*
+    services.nginx = {
     enable = true;
     recommendedProxySettings = true;
     
@@ -89,6 +90,7 @@ in
         };
       };
     };
+    };
+    */
   };
-  */
 }
