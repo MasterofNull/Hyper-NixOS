@@ -7,6 +7,9 @@
   # Enable libvirt virtualization
   virtualisation.libvirtd.enable = true;
 
+  # Enable Polkit (required by libvirtd)
+  security.polkit.enable = true;
+
   # Ensure required groups exist
   users.groups.libvirtd = {};
   users.groups.kvm = {};
