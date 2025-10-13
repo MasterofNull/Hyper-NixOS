@@ -287,7 +287,7 @@ fi
 
 # Check for setuid/setgid
 echo -n "Checking for setuid/setgid files... "
-local setuid_files=$(find scripts/ configuration/ -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null | wc -l)
+local setuid_files=$(find scripts/ modules/ -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null | wc -l)
 if [[ $setuid_files -eq 0 ]]; then
   check_pass "No setuid/setgid files"
 else
@@ -336,7 +336,7 @@ fi
 # Check for API keys
 echo -n "Checking for API keys... "
 if grep -rE "api[_-]key=.*['\"][A-Za-z0-9]{20}" \
-   scripts/ configuration/ 2>/dev/null; then
+   scripts/ modules/ 2>/dev/null; then
   check_fail "Hardcoded API keys found!"
 else
   check_pass "No hardcoded API keys"
@@ -344,7 +344,7 @@ fi
 
 # Check for private keys
 echo -n "Checking for private keys... "
-if grep -r "BEGIN.*PRIVATE KEY" scripts/ configuration/ web/ 2>/dev/null; then
+if grep -r "BEGIN.*PRIVATE KEY" scripts/ modules/ web/ 2>/dev/null; then
   check_fail "Private keys found in code!"
 else
   check_pass "No private keys in code"

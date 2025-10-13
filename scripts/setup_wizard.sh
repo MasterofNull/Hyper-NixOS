@@ -274,7 +274,7 @@ if $DIALOG --yesno "Advanced Configuration (Optional)\n\nApply best-practice sec
   $DIALOG --yesno "Enable Hugepages (can improve performance; reduces flexibility)?\nRecommended: Yes (most hosts)." 10 78 && hp=1 || hp=0
   $DIALOG --yesno "Disable SMT/Hyper‑Threading (mitigates side‑channels; may reduce throughput)?\nRecommended: Yes (secure); No (throughput)." 12 78 && smt=1 || smt=0
 
-  mkdir -p /etc/hypervisor/src/configuration
+  mkdir -p /etc/hypervisor/src/modules
   # Write security-local.nix
   cat > /etc/hypervisor/src/modules/security-local.nix <<NIX
 { config, lib, pkgs, ... }:
