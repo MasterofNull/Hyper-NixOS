@@ -1,5 +1,31 @@
 # Hyper-NixOS Release Notes
 
+## Version 1.0.1 - Bug Fixes
+*Release Date: October 13, 2025*
+
+### 🐛 Bug Fixes
+
+#### CI/CD Improvements
+- **Fixed**: `test_common_ci` failing in GitHub Actions due to readonly variable conflicts
+- **Fixed**: Test script termination when testing failure cases with `require` function
+- **Fixed**: Strict error handling from sourced libraries affecting test execution
+
+#### Build System
+- **Fixed**: Nix configuration build error: `undefined variable 'elem'` at line 345
+- **Improvement**: Added proper `lib.` prefix for standard Nix library functions
+
+### 📝 Documentation Updates
+- Updated CI test fixes documentation with latest solutions
+- Added new troubleshooting entries for common CI/CD issues
+- Enhanced best practices for writing CI-friendly tests
+
+### 🔧 Technical Details
+- Modified test framework to handle readonly variables in test environments
+- Implemented subshell isolation for tests that may call `exit`
+- Improved error handling in CI test scripts
+
+---
+
 ## Version 1.0.0 - Initial Release
 *Release Date: January 1, 2025*
 

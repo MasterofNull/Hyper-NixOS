@@ -162,6 +162,43 @@ fi
 systemctl status libvirtd
 ```
 
+## Additional Fixes Applied (2025-10-13 Update)
+
+### 5. Readonly Variable Conflicts
+
+**Issue**: The `test_common_ci.sh` was still failing because:
+- `common.sh` declared path variables as `readonly`, preventing test overrides
+- The `require` function called `exit 1` directly, terminating the test script
+
+**Solution**:
+```bash
+# Convert readonly variables to regular ones
+sed -i 's/^readonly HYPERVISOR_ROOT=/HYPERVISOR_ROOT=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_STATE=/HYPERVISOR_STATE=/g' "$TEST_TEMP_DIR/common_ci.sh"
+# ... (similar for all HYPERVISOR_* variables)
+
+# Use subshell for tests that might exit
+(require nonexistent_command_xyz 2>/dev/null)
+assert_failure "Should fail for missing commands"
+```
+
+### 6. Nix Configuration Error
+
+**Issue**: Quick start installation failed with:
+```
+error: undefined variable 'elem'
+at configuration.nix:345:25
+```
+
+**Solution**: Added `lib.` prefix to the `elem` function:
+```nix
+# Before:
+grafana = lib.mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+
+# After:
+grafana = lib.mkIf (lib.elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+```
+
 ## Current Status
 
 All CI tests now pass with appropriate skipping:
@@ -169,6 +206,7 @@ All CI tests now pass with appropriate skipping:
 - Unit tests run successfully ✓
 - Security scans pass ✓
 - Syntax validation passes ✓
+- Nix configuration builds without errors ✓
 
 The system is ready for deployment with functioning CI/CD pipeline.
 
