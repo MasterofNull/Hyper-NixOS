@@ -3,15 +3,9 @@
 # Desktop Environment Configuration
 # Pure Wayland/Sway GUI (NO X11 - security risk)
 
-let
-  mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
-  enableGuiAtBoot = 
-    if lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config 
-    then lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config 
-    else false;
-in {
+{
   # Sway window manager (pure Wayland, no X11)
-  programs.sway = lib.mkIf enableGuiAtBoot {
+  programs.sway = lib.mkIf config.hypervisor.gui.enableAtBoot {
     enable = true;
     wrapperFeatures.gtk = true;
     extraPackages = with pkgs; [
@@ -26,7 +20,7 @@ in {
   };
   
   # greetd display manager for Wayland autologin
-  services.greetd = lib.mkIf enableGuiAtBoot {
+  services.greetd = lib.mkIf config.hypervisor.gui.enableAtBoot {
     enable = true;
     settings = {
       default_session = {
@@ -35,7 +29,7 @@ in {
       };
       initial_session = {
         command = "sway";
-        user = mgmtUser;
+        user = config.hypervisor.management.userName;
       };
     };
   };
@@ -89,7 +83,7 @@ in {
   '';
   
   # Auto-start dashboard when GUI boots
-  environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf enableGuiAtBoot {
+  environment.etc."xdg/autostart/hypervisor-dashboard.desktop" = lib.mkIf config.hypervisor.gui.enableAtBoot {
     text = ''
       [Desktop Entry]
       Type=Application

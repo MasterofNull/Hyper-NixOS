@@ -4,12 +4,7 @@
 # Consolidated directory creation and permissions management
 # Manages /var/lib/hypervisor and related directories
 
-let
-  mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
-  activeProfile = lib.attrByPath ["hypervisor" "security" "profile"] "headless" config;
-  isHeadless = activeProfile == "headless";
-  isManagement = activeProfile == "management";
-in {
+{
   systemd.tmpfiles.rules = lib.mkMerge [
     # ═══════════════════════════════════════════════════════════════
     # Common Directories (all profiles)
@@ -26,7 +21,7 @@ in {
     # Headless Profile Directories
     # Zero-trust: root:libvirtd ownership, operator has group access
     # ═══════════════════════════════════════════════════════════════
-    (lib.mkIf isHeadless [
+    (lib.mkIf (config.hypervisor.security.profile == "headless") [
       "d /var/lib/hypervisor 0755 root libvirtd - -"
       "d /var/lib/hypervisor/isos 0775 root libvirtd - -"
       "d /var/lib/hypervisor/disks 0770 root libvirtd - -"
@@ -46,15 +41,15 @@ in {
     # Management Profile Directories
     # Management user has full ownership
     # ═══════════════════════════════════════════════════════════════
-    (lib.mkIf isManagement [
-      "d /var/lib/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
-      "d /var/lib/hypervisor/isos 0750 ${mgmtUser} ${mgmtUser} - -"
-      "d /var/lib/hypervisor/disks 0750 ${mgmtUser} ${mgmtUser} - -"
-      "d /var/lib/hypervisor/xml 0750 ${mgmtUser} ${mgmtUser} - -"
-      "d /var/lib/hypervisor/vm_profiles 0750 ${mgmtUser} ${mgmtUser} - -"
-      "d /var/lib/hypervisor/gnupg 0700 ${mgmtUser} ${mgmtUser} - -"
-      "d /var/lib/hypervisor/backups 0750 ${mgmtUser} ${mgmtUser} - -"
-      "d /var/lib/hypervisor/logs 0750 ${mgmtUser} ${mgmtUser} - -"
+    (lib.mkIf (config.hypervisor.security.profile == "management") [
+      "d /var/lib/hypervisor 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+      "d /var/lib/hypervisor/isos 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+      "d /var/lib/hypervisor/disks 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+      "d /var/lib/hypervisor/xml 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+      "d /var/lib/hypervisor/vm_profiles 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+      "d /var/lib/hypervisor/gnupg 0700 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+      "d /var/lib/hypervisor/backups 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+      "d /var/lib/hypervisor/logs 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
       "d /var/lib/hypervisor/templates 0755 root root -"
       "d /var/lib/hypervisor/reports 0755 root root -"
       "d /var/lib/hypervisor/keys 0700 root root -"

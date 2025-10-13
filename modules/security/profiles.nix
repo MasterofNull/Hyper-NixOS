@@ -8,23 +8,7 @@
 #
 # Select profile via: hypervisor.security.profile option
 
-let
-  mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
-  enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
-  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  enableGuiAtBoot = 
-    if lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config 
-    then lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config 
-    else false;
-  
-  # Determine active profile
-  # Default to "headless" for production zero-trust operations
-  # Use "management" for system administration with expanded sudo
-  activeProfile = lib.attrByPath ["hypervisor" "security" "profile"] "headless" config;
-  
-  isHeadless = activeProfile == "headless";
-  isManagement = activeProfile == "management";
-in {
+{
   options.hypervisor.security.profile = lib.mkOption {
     type = lib.types.enum [ "headless" "management" ];
     default = "headless";
@@ -40,7 +24,7 @@ in {
     # PROFILE: HEADLESS ZERO-TRUST
     # For production VM operations only
     # ═══════════════════════════════════════════════════════════════
-    (lib.mkIf isHeadless {
+    (lib.mkIf (config.hypervisor.security.profile == "headless") {
       # Create dedicated operator user with NO sudo access
       users.users.hypervisor-operator = {
         isSystemUser = true;
@@ -57,7 +41,7 @@ in {
 
       # Autologin to operator user (only when menu/wizard boots and GUI is disabled)
       services.getty.autologinUser = lib.mkIf 
-        ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
+        ((config.hypervisor.menu.enableAtBoot || config.hypervisor.firstBootWizard.enableAtBoot) && !config.hypervisor.gui.enableAtBoot)
         "hypervisor-operator";
 
       # Disable GUI autologin
@@ -181,9 +165,9 @@ in {
     # PROFILE: MANAGEMENT
     # For system administration with expanded sudo privileges
     # ═══════════════════════════════════════════════════════════════
-    (lib.mkIf isManagement {
+    (lib.mkIf (config.hypervisor.security.profile == "management") {
       # Management user with sudo privileges
-      users.users = lib.optionalAttrs (mgmtUser == "hypervisor") {
+      users.users = lib.optionalAttrs (config.hypervisor.management.userName == "hypervisor") {
         hypervisor = {
           isNormalUser = true;
           extraGroups = [ "wheel" "kvm" "libvirtd" "video" "input" ];
@@ -193,14 +177,14 @@ in {
 
       # Conditional autologin for management convenience
       services.getty.autologinUser = lib.mkIf 
-        ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
-        mgmtUser;
+        ((config.hypervisor.menu.enableAtBoot || config.hypervisor.firstBootWizard.enableAtBoot) && !config.hypervisor.gui.enableAtBoot)
+        config.hypervisor.management.userName;
 
       # Sudo with NOPASSWD for VM operations
       security.sudo.wheelNeedsPassword = true;
       security.sudo.extraRules = [
         {
-          users = [ mgmtUser ];
+          users = [ config.hypervisor.management.userName ];
           commands = [
             { command = "${pkgs.libvirt}/bin/virsh list"; options = [ "NOPASSWD" ]; }
             { command = "${pkgs.libvirt}/bin/virsh start"; options = [ "NOPASSWD" ]; }
@@ -225,20 +209,20 @@ in {
             { command = "${pkgs.libvirt}/bin/virsh net-dhcp-leases"; options = [ "NOPASSWD" ]; }
           ];
         }
-        { users = [ mgmtUser ]; commands = [ { command = "ALL"; } ]; }
+        { users = [ config.hypervisor.management.userName ]; commands = [ { command = "ALL"; } ]; }
       ];
 
       # Directory ownership: management user
       systemd.tmpfiles.rules = [
-        "d /var/lib/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/isos 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/disks 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/xml 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/vm_profiles 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/gnupg 0700 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/backups 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/log/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/logs 0750 ${mgmtUser} ${mgmtUser} - -"
+        "d /var/lib/hypervisor 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+        "d /var/lib/hypervisor/isos 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+        "d /var/lib/hypervisor/disks 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+        "d /var/lib/hypervisor/xml 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+        "d /var/lib/hypervisor/vm_profiles 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+        "d /var/lib/hypervisor/gnupg 0700 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+        "d /var/lib/hypervisor/backups 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+        "d /var/log/hypervisor 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
+        "d /var/lib/hypervisor/logs 0750 ${config.hypervisor.management.userName} ${config.hypervisor.management.userName} - -"
       ];
     })
   ];
