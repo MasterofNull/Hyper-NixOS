@@ -164,9 +164,32 @@ All operations go through the unified `hv` command:
 ### Testing Requirements
 - Unit tests for functions
 - Integration tests for features
+- CI/CD compatibility testing
 - Security impact assessment
 - Performance benchmarking
 - Documentation review
+
+### CI/CD Testing Considerations
+1. **Environment Detection**: Always check `CI` environment variable
+2. **Path Management**: Use configurable paths, not hardcoded
+3. **Dependency Handling**: Mock or install missing tools
+4. **Test Structure**: Setup environment BEFORE sourcing libraries
+5. **Graceful Degradation**: Skip system-dependent tests in CI
+
+Example CI-friendly test:
+```bash
+# Setup test environment first
+export HYPERVISOR_LOGS="$TEST_DIR/logs"
+mkdir -p "$HYPERVISOR_LOGS"
+
+# Then source libraries
+source common.sh
+
+# Handle CI limitations
+if [[ "${CI:-false}" == "true" ]]; then
+    # Mock system commands or skip tests
+fi
+```
 
 ## Known Patterns & Solutions
 
@@ -269,6 +292,7 @@ hyper-nixos/
 2. Infinite recursion → Review module patterns
 3. Build failures → Check syntax with --show-trace
 4. VM won't start → Check logs and resources
+5. CI test failures → See CI/CD Testing Considerations above
 
 ### Debug Commands
 ```bash

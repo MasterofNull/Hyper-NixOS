@@ -188,7 +188,7 @@ bash -x script.sh  # Debug mode
 - [ ] Scripts pass validation
 - [ ] Documentation updated
 - [ ] Security review if needed
-- [ ] Tests pass
+- [ ] Tests pass locally AND in CI
 
 ### Test Commands
 ```bash
@@ -200,7 +200,62 @@ hv dev test --component security
 
 # Validation only
 hv dev validate
+
+# Test in CI-like environment
+export CI=true
+./tests/run_all_tests.sh
 ```
+
+### CI/CD Testing Guidelines
+
+#### Writing CI-Friendly Tests
+1. **Environment Setup BEFORE Sourcing**:
+   ```bash
+   # ✅ CORRECT
+   export HYPERVISOR_LOGS="$TEST_DIR/logs"
+   mkdir -p "$HYPERVISOR_LOGS"
+   source common.sh
+   
+   # ❌ WRONG
+   source common.sh
+   export HYPERVISOR_LOGS="$TEST_DIR/logs"
+   ```
+
+2. **Handle Missing Dependencies**:
+   ```bash
+   if [[ "${CI:-false}" == "true" ]]; then
+       # Mock or skip features requiring system tools
+   fi
+   ```
+
+3. **Avoid Hardcoded Paths**:
+   ```bash
+   # Use environment variables
+   : "${HYPERVISOR_ROOT:=/etc/hypervisor}"
+   : "${LOG_FILE:=$HYPERVISOR_LOGS/script.log}"
+   ```
+
+4. **Don't Execute During Source**:
+   ```bash
+   # ✅ GOOD - Lazy initialization
+   init_system() { mkdir -p "$HYPERVISOR_LOGS"; }
+   
+   # ❌ BAD - Runs immediately
+   mkdir -p "$HYPERVISOR_LOGS"
+   ```
+
+#### CI Environment Limitations
+- No systemd/libvirtd
+- Limited filesystem access
+- No sudo without explicit setup
+- PATH may be overridden
+- Missing system tools (jq, virsh, etc.)
+
+#### Debugging CI Failures
+1. Check GitHub Actions logs
+2. Run locally with CI=true
+3. Look for path/permission errors
+4. Verify all dependencies mocked/installed
 
 ## Troubleshooting
 

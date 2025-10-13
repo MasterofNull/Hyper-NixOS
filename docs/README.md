@@ -76,6 +76,8 @@ Welcome to Hyper-NixOS - A comprehensive, security-focused virtualization platfo
 - [**Development Guide**](dev/DEVELOPMENT_GUIDE.md) - Contributing to Hyper-NixOS
 - [**Code Standards**](dev/CODE_STANDARDS.md) - Coding conventions
 - [**Testing Guide**](dev/TESTING_GUIDE.md) - Test procedures
+- [**CI/CD Guide**](dev/CI_GITHUB_ACTIONS_GUIDE.md) - GitHub Actions and CI testing
+- [**CI Test Fixes**](dev/CI_TEST_FIXES_2025-10-13.md) - Recent CI troubleshooting
 
 #### API & Integration
 - [**API Reference**](dev/API_REFERENCE.md) - REST/GraphQL APIs
