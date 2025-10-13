@@ -27,9 +27,10 @@ in {
   # ═══════════════════════════════════════════════════════════════
   # TTY Auto-Login Configuration
   # ═══════════════════════════════════════════════════════════════
-  # Enable TTY autologin when booting to console menu (not GUI)
+  # Enable TTY autologin for headless console menu startup (not GUI)
   # This provides appliance-like behavior for dedicated hypervisor hosts
-  services.getty.autologinUser = lib.mkIf consoleAutoLoginEnabled mgmtUser;
+  # Condition matches hypervisor-menu.service: enableMenuAtBoot && !enableGuiAtBoot
+  services.getty.autologinUser = lib.mkIf (enableMenuAtBoot && !enableGuiAtBoot) mgmtUser;
   
   # ═══════════════════════════════════════════════════════════════
   # Module Imports - Organized by Topic
