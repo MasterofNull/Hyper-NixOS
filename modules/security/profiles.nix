@@ -59,7 +59,7 @@ in {
       services.getty.autologinUser = "hypervisor-operator";
 
       # Disable GUI autologin
-      services.xserver.displayManager.autoLogin.enable = lib.mkForce false;
+      services.displayManager.autoLogin.enable = lib.mkForce false;
 
       # ALL sudo requires password
       security.sudo.wheelNeedsPassword = true;
