@@ -1,5 +1,74 @@
 # Hyper-NixOS Project Development History
 
+## 🚨 PRIORITY NOTICE FOR AI AGENTS 🚨
+
+**CRITICAL**: When making ANY changes to this project, you MUST:
+
+1. **UPDATE THIS DOCUMENT FIRST** - Add your changes to the "Recent AI Agent Contributions" section below
+2. **UPDATE AI_ASSISTANT_CONTEXT.md** - Add any new patterns, fixes, or important context
+3. **CHECK AI_DOCUMENTATION_PROTOCOL.md** - Follow the established documentation standards
+
+### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
+
+#### 2025-10-13: CI Test Fixes and Build Errors
+**Agent**: Claude
+**Issues Fixed**:
+1. **CI Test Failure**: `test_common_ci` failing due to:
+   - Readonly variable conflicts in `common.sh`
+   - `require` function calling `exit 1` directly
+   - Strict error handling affecting test execution
+   
+2. **Nix Build Error**: `undefined variable 'elem'` at configuration.nix:345
+   - Fixed by adding `lib.` prefix: `lib.elem`
+
+**Files Modified**:
+- `tests/unit/test_common_ci.sh` - Added sed replacements for readonly vars, disabled strict mode
+- `configuration.nix` - Fixed elem reference
+- `docs/dev/CI_TEST_FIXES_2025-10-13.md` - Updated with new fixes
+- `docs/COMMON_ISSUES_AND_SOLUTIONS.md` - Added new troubleshooting entries
+- `docs/RELEASE_NOTES.md` - Added version 1.0.1 entry
+
+**Key Learnings**:
+- Always check if library variables are readonly before trying to override in tests
+- Nix standard library functions need `lib.` prefix unless imported with `with lib;`
+- Use subshells in tests for commands that might call `exit`
+
+---
+
+### Documentation Priority Order
+
+When working on this project, ALWAYS update documentation in this order:
+
+1. **THIS FILE** (PROJECT_DEVELOPMENT_HISTORY.md) - Record what you did
+2. **AI_ASSISTANT_CONTEXT.md** - Update patterns and context for future agents
+3. **Issue-specific docs** (e.g., CI_TEST_FIXES_*.md) - Detailed technical solutions
+4. **COMMON_ISSUES_AND_SOLUTIONS.md** - User-facing troubleshooting
+5. **RELEASE_NOTES.md** - Version history for users
+
+### Quick Reference for AI Agents
+
+**Before Starting Work**:
+```bash
+# Check these files first:
+cat docs/AI_ASSISTANT_CONTEXT.md      # Understand the project
+cat docs/dev/PROJECT_DEVELOPMENT_HISTORY.md  # See recent changes
+grep -r "TODO\|FIXME\|XXX" .         # Find pending work
+```
+
+**After Making Changes**:
+```bash
+# Run tests
+export CI=true && bash tests/run_all_tests.sh
+
+# Validate structure  
+bash tests/ci_validation.sh
+
+# Check syntax
+find scripts/ -name "*.sh" -exec bash -n {} \;
+```
+
+---
+
 ## Development Timeline
 
 ### Phase 1: Initial Problem Solving

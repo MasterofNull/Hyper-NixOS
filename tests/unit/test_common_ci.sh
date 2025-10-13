@@ -45,13 +45,43 @@ mkdir -p "$HYPERVISOR_LOGS" "$HYPERVISOR_DATA" "$HYPERVISOR_CONFIG"
 export LOG_FILE="$HYPERVISOR_LOGS/script.log"
 touch "$LOG_FILE"
 
+# Create a dummy config file for load_config
+echo '{"test": true}' > "$HYPERVISOR_CONFIG/config.json"
+
 # Create a modified common.sh for CI testing
 # This removes the dependency check line that would fail in CI
+# and converts readonly variables to regular variables
 cp "$SCRIPTS_DIR/lib/common.sh" "$TEST_TEMP_DIR/common_ci.sh"
+
+# Remove the require line
 sed -i '/^require jq.*$/d' "$TEST_TEMP_DIR/common_ci.sh"
+
+# Remove the auto-load config line that fails in CI
+sed -i '/^load_config$/d' "$TEST_TEMP_DIR/common_ci.sh"
+
+# Convert readonly variables to regular ones so we can override them
+sed -i 's/^readonly HYPERVISOR_ROOT=/HYPERVISOR_ROOT=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_STATE=/HYPERVISOR_STATE=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_SCRIPTS=/HYPERVISOR_SCRIPTS=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_CONFIG=/HYPERVISOR_CONFIG=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_PROFILES=/HYPERVISOR_PROFILES=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_ISOS=/HYPERVISOR_ISOS=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_DISKS=/HYPERVISOR_DISKS=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_LOGS=/HYPERVISOR_LOGS=/g' "$TEST_TEMP_DIR/common_ci.sh"
 
 # Source the modified common.sh
 source "$TEST_TEMP_DIR/common_ci.sh"
+
+# Re-export our test paths to override the defaults
+export HYPERVISOR_LOGS="$TEST_TEMP_DIR/logs"
+export HYPERVISOR_DATA="$TEST_TEMP_DIR/data"
+export HYPERVISOR_CONFIG="$TEST_TEMP_DIR/config"
+export HYPERVISOR_STATE="$TEST_TEMP_DIR"
+export HYPERVISOR_ROOT="$TEST_TEMP_DIR"
+
+# Disable strict error handling for tests since we test failure cases
+set +e
+
 source "$SCRIPTS_DIR/lib/exit_codes.sh"
 
 # Test suite
@@ -87,19 +117,19 @@ test_validate_vm_name() {
 test_validate_vm_name_invalid() {
     test "validate_vm_name with invalid names"
     
-    validate_vm_name "vm with spaces" || true
+    validate_vm_name "vm with spaces"
     assert_failure "Should reject names with spaces"
     
-    validate_vm_name "../evil" || true
+    validate_vm_name "../evil"
     assert_failure "Should reject path traversal attempts"
     
-    validate_vm_name "/absolute/path" || true
+    validate_vm_name "/absolute/path"
     assert_failure "Should reject absolute paths"
     
-    validate_vm_name "vm@special" || true
+    validate_vm_name "vm@special"
     assert_failure "Should reject special characters"
     
-    validate_vm_name "" || true
+    validate_vm_name ""
     assert_failure "Should reject empty names"
 }
 
@@ -120,10 +150,10 @@ test_validate_path() {
 test_validate_path_invalid() {
     test "validate_path with invalid paths"
     
-    validate_path "/tmp/../etc/passwd" || true
+    validate_path "/tmp/../etc/passwd"
     assert_failure "Should reject path traversal"
     
-    validate_path "/outside/path" "/restricted" || true
+    validate_path "/outside/path" "/restricted"
     assert_failure "Should reject paths outside base directory"
 }
 
@@ -218,8 +248,8 @@ test_require() {
     require bash test
     assert_success "Should succeed for existing commands"
     
-    # Test with non-existent command
-    require nonexistent_command_xyz 2>/dev/null || true
+    # Test with non-existent command in subshell to prevent exit
+    (require nonexistent_command_xyz 2>/dev/null)
     assert_failure "Should fail for missing commands"
 }
 
@@ -302,6 +332,7 @@ test_measure_function() {
 
 # Run all tests
 run_all_tests() {
+    echo "Starting test suite..."
     test_validate_vm_name
     test_validate_vm_name_invalid
     test_validate_path
@@ -311,10 +342,15 @@ run_all_tests() {
     test_make_temp_dir
     test_logging
     test_require
+    echo "After test_require, running test_exit_with_error..."
     test_exit_with_error
+    echo "After test_exit_with_error, running test_get_exit_code_description..."
     test_get_exit_code_description
+    echo "After test_get_exit_code_description, running test_performance_monitoring..."
     test_performance_monitoring
+    echo "After test_performance_monitoring, running test_measure_function..."
     test_measure_function
+    echo "All tests completed"
 }
 
 # Main execution

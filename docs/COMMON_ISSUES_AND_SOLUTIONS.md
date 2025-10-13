@@ -749,6 +749,76 @@ export GITHUB_ACTIONS=true
    fi
    ```
 
+### Issue: test_common_ci Still Failing After Initial Fixes (Update 2025-10-13)
+**Symptoms**:
+```
+Running in CI mode - installing dependencies
+
+TEST SUITE: common.sh library (CI)
+[Test exits with code 1 without output]
+```
+
+**Root Causes**:
+1. `common.sh` declares path variables as `readonly`, preventing test overrides
+2. The `require` function calls `exit 1` directly, terminating the test script
+3. Strict error handling (`set -e`) from sourced library affects test execution
+
+**Solutions**:
+
+#### ✅ **Fix #1: Remove Readonly Declarations in Test Environment**
+```bash
+# Convert readonly variables to regular ones
+sed -i 's/^readonly HYPERVISOR_ROOT=/HYPERVISOR_ROOT=/g' "$TEST_TEMP_DIR/common_ci.sh"
+sed -i 's/^readonly HYPERVISOR_STATE=/HYPERVISOR_STATE=/g' "$TEST_TEMP_DIR/common_ci.sh"
+# ... repeat for all HYPERVISOR_* variables
+
+# Then re-export test paths to override
+export HYPERVISOR_ROOT="$TEST_TEMP_DIR"
+```
+
+#### ✅ **Fix #2: Use Subshells for Tests That May Exit**
+```bash
+# ✅ CORRECT - Subshell prevents script termination
+(require nonexistent_command_xyz 2>/dev/null)
+assert_failure "Should fail for missing commands"
+
+# ❌ WRONG - Will exit the entire test script
+require nonexistent_command_xyz 2>/dev/null
+assert_failure "Should fail for missing commands"
+```
+
+#### ✅ **Fix #3: Disable Strict Error Handling for Tests**
+```bash
+# After sourcing common.sh which sets -e
+set +e  # Disable exit on error for test execution
+```
+
+**Prevention**: Design libraries to be test-friendly with configurable behavior and avoid exit calls in utility functions.
+
+### Issue: Nix Configuration Build Error - Undefined Variable
+**Symptoms**:
+```
+error: undefined variable 'elem'
+       at /nix/store/.../configuration.nix:345:25:
+          344|     # Grafana (if monitoring feature enabled)
+          345|     grafana = lib.mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+```
+
+**Root Cause**: Missing `lib.` prefix for standard Nix library functions
+
+**Solution**:
+
+#### ✅ **Fix: Add lib. Prefix to Standard Functions**
+```nix
+# ❌ WRONG - elem is not in scope
+grafana = lib.mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+
+# ✅ CORRECT - Use lib.elem
+grafana = lib.mkIf (lib.elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+```
+
+**Prevention**: Always use `lib.` prefix for standard library functions unless explicitly imported with `with lib;`
+
 **Related Documentation**:
 - [CI GitHub Actions Guide](./dev/CI_GITHUB_ACTIONS_GUIDE.md)
 - [CI Test Fixes 2025-10-13](./dev/CI_TEST_FIXES_2025-10-13.md)
