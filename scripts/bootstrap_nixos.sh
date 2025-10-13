@@ -156,12 +156,14 @@ copy_repo_to_etc() {
     if [[ "$src_real" == "$dst_real"* ]]; then
       local stage
       stage=$(mktemp -d -t hypervisor-stage.XXXXXX)
-      rsync -a --exclude ".git/" --exclude "result" --exclude "target/" "$src_root/" "$stage/"
+      rsync -a --no-specials --exclude ".git/" --exclude "result" --exclude "target/" \
+        --exclude "var/" --exclude "*.socket" "$src_root/" "$stage/"
       # Now populate destination from the staged snapshot
-      rsync -a --delete "$stage/" "$dst_root/"
+      rsync -a --no-specials --delete "$stage/" "$dst_root/"
       rm -rf -- "$stage"
     else
-      rsync -a --delete --exclude ".git/" --exclude "result" --exclude "target/" "$src_root/" "$dst_root/"
+      rsync -a --no-specials --delete --exclude ".git/" --exclude "result" --exclude "target/" \
+        --exclude "var/" --exclude "*.socket" "$src_root/" "$dst_root/"
     fi
   else
     # Fallback: copy via a temporary stage if needed
@@ -181,6 +183,14 @@ copy_repo_to_etc() {
       shopt -u dotglob
     fi
   fi
+  
+  # Remove any special files (sockets, pipes, devices) that may have been copied
+  # These cannot be included in Nix flake inputs and will cause errors
+  msg "Cleaning up special files (sockets, pipes, devices)..."
+  find "$dst_root" -type s -delete 2>/dev/null || true  # sockets
+  find "$dst_root" -type p -delete 2>/dev/null || true  # named pipes
+  find "$dst_root" -type b -delete 2>/dev/null || true  # block devices
+  find "$dst_root" -type c -delete 2>/dev/null || true  # character devices
   # Permissive defaults for build/rebuild usability; optional hardening provided separately
   chown -R root:root "$dst_root" || true
   find "$dst_root" -type d -exec chmod 0755 {} + 2>/dev/null || true
