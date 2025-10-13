@@ -63,7 +63,8 @@
 
   # Console keyboard configuration
   # Use direct keymap for console (avoids XKB dependency issues)
-  console.keyMap = lib.mkDefault "us";
+  # Note: Using mkForce to prevent empty/null values that cause loadkeys errors
+  console.keyMap = lib.mkForce "us";
 
   # ACPI events handling (lid, power button, keyboard hotkeys)
   services.acpid = {
