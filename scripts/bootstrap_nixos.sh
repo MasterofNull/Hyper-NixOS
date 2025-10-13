@@ -290,10 +290,13 @@ copy_repo_to_etc() {
   
   # Remove .git directory to prevent Nix from trying to use git during flake evaluation
   # When using path: inputs, Nix will try to run git if it detects a .git directory,
-  # but git is not available in the build sandbox, causing "No such file or directory" errors
+  # but git may not be available in all contexts, causing "No such file or directory" errors
   msg "Ensuring no .git directories exist (prevents git-related flake evaluation errors)..."
   rm -rf "$dst_root/.git" 2>/dev/null || true
   find "$dst_root" -type d -name ".git" -exec rm -rf {} + 2>/dev/null || true
+  
+  # Also ensure /etc/hypervisor itself has no .git directory
+  rm -rf /etc/hypervisor/.git 2>/dev/null || true
   # Permissive defaults for build/rebuild usability; optional hardening provided separately
   chown -R root:root "$dst_root" || true
   find "$dst_root" -type d -exec chmod 0755 {} + 2>/dev/null || true
@@ -313,6 +316,11 @@ write_host_flake() {
   local system="$1"; shift
   local hostname="$1"; shift
   local flake_path="/etc/hypervisor/flake.nix"
+  
+  # Ensure /etc/hypervisor exists and has no .git directory
+  mkdir -p /etc/hypervisor
+  rm -rf /etc/hypervisor/.git 2>/dev/null || true
+  
   install -m 0644 /dev/null "$flake_path"
   # Use path input to /etc/hypervisor/src to avoid downloading the repo again
   # since we've already copied it locally. This optimizes the quick install process.
