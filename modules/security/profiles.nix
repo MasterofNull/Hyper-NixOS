@@ -25,15 +25,6 @@ let
   isHeadless = activeProfile == "headless";
   isManagement = activeProfile == "management";
 in {
-  options.hypervisor.security.profile = lib.mkOption {
-    type = lib.types.enum [ "headless" "management" ];
-    default = "headless";
-    description = ''
-      Security operational profile:
-      - headless: Zero-trust VM operations (polkit-based, no sudo)
-      - management: System administration (sudo with expanded privileges)
-    '';
-  };
 
   config = lib.mkMerge [
     # ═══════════════════════════════════════════════════════════════

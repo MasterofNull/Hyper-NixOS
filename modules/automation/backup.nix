@@ -1,42 +1,5 @@
 { config, lib, pkgs, ... }:
 {
-  options.hypervisor.backup = {
-    enable = lib.mkEnableOption "Enable automated VM backup system";
-    
-    schedule = lib.mkOption {
-      type = lib.types.str;
-      default = "daily";
-      description = "Backup schedule (daily, weekly, or custom systemd calendar format)";
-    };
-    
-    retention = lib.mkOption {
-      type = lib.types.attrsOf lib.types.int;
-      default = {
-        daily = 7;
-        weekly = 4;
-        monthly = 3;
-      };
-      description = "Backup retention policy";
-    };
-    
-    destination = lib.mkOption {
-      type = lib.types.path;
-      default = "/var/lib/hypervisor/backups";
-      description = "Backup destination directory";
-    };
-    
-    encrypt = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Encrypt backups using GPG";
-    };
-    
-    compression = lib.mkOption {
-      type = lib.types.enum [ "none" "gzip" "bzip2" "xz" "zstd" ];
-      default = "zstd";
-      description = "Compression algorithm for backups";
-    };
-  };
 
   config = lib.mkIf config.hypervisor.backup.enable {
     # Create backup script
