@@ -4,11 +4,9 @@
 # Pure Wayland/Sway GUI (NO X11 - security risk)
 
 let
-  mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
-  enableGuiAtBoot = 
-    if lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config 
-    then lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config 
-    else false;
+  # Access config values safely within the config section
+  mgmtUser = config.hypervisor.management.userName;
+  enableGuiAtBoot = config.hypervisor.gui.enableAtBoot or false;
 in {
   # Sway window manager (pure Wayland, no X11)
   programs.sway = lib.mkIf enableGuiAtBoot {

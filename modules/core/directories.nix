@@ -5,8 +5,9 @@
 # Manages /var/lib/hypervisor and related directories
 
 let
-  mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
-  activeProfile = lib.attrByPath ["hypervisor" "security" "profile"] "headless" config;
+  # Access config values safely within the config section
+  mgmtUser = config.hypervisor.management.userName;
+  activeProfile = config.hypervisor.security.profile;
   isHeadless = activeProfile == "headless";
   isManagement = activeProfile == "management";
 in {

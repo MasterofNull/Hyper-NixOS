@@ -173,11 +173,21 @@
           
           # Weekly backups (keep one per week)
           local weekly_keep=${config.hypervisor.backup.retention.weekly}
-          # TODO: Implement weekly retention logic
+          if [[ $weekly_keep -gt 0 ]]; then
+            find "$backup_dir" -name "weekly-*.tar.gz" -type f -printf '%T@ %p\n' | \
+              sort -rn | tail -n +$((weekly_keep + 1)) | cut -d' ' -f2- | \
+              xargs -r rm -f
+            log "Kept $weekly_keep most recent weekly backups"
+          fi
           
           # Monthly backups (keep one per month)
           local monthly_keep=${config.hypervisor.backup.retention.monthly}
-          # TODO: Implement monthly retention logic
+          if [[ $monthly_keep -gt 0 ]]; then
+            find "$backup_dir" -name "monthly-*.tar.gz" -type f -printf '%T@ %p\n' | \
+              sort -rn | tail -n +$((monthly_keep + 1)) | cut -d' ' -f2- | \
+              xargs -r rm -f
+            log "Kept $monthly_keep most recent monthly backups"
+          fi
           
           log "Retention policy applied"
         }

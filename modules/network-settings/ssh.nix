@@ -61,9 +61,9 @@
         ];
         
         # Connection limits (strict mode)
-        MaxAuthTries = lib.mkIf config.hypervisor.security.sshStrictMode 2;
-        MaxSessions = lib.mkIf config.hypervisor.security.sshStrictMode 2;
-        LoginGraceTime = lib.mkIf config.hypervisor.security.sshStrictMode 30;
+        MaxAuthTries = if config.hypervisor.security.sshStrictMode then 2 else lib.mkDefault 6;
+        MaxSessions = if config.hypervisor.security.sshStrictMode then 2 else lib.mkDefault 10;
+        LoginGraceTime = if config.hypervisor.security.sshStrictMode then 30 else lib.mkDefault 120;
       };
     };
     

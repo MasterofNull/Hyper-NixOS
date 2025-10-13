@@ -68,7 +68,7 @@ in
   
   # Firewall: Allow web dashboard on localhost only by default
   # For external access, use nginx/apache reverse proxy with authentication
-  networking.firewall.interfaces."lo".allowedTCPPorts = lib.mkAfter [ 8080 ];
+  networking.firewall.interfaces."lo".allowedTCPPorts = lib.mkAfter [ config.hypervisor.web.port ];
   
   # Optional: Nginx reverse proxy with authentication
   # Uncomment to enable external access with password protection
