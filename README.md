@@ -609,7 +609,7 @@ Built with ❤️ using:
 
 Special thanks to the open-source community for these amazing tools.
 
-**See [CREDITS.md](CREDITS.md) for full attributions.**
+**See [CREDITS.md](docs/CREDITS.md) for full attributions.**
 
 ---
 
