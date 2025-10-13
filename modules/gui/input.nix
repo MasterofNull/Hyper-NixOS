@@ -53,7 +53,9 @@
   };
 
   # Keyboard configuration for Wayland
-  services.xkb = lib.mkIf config.programs.sway.enable {
+  # Note: Even though we're using Wayland/Sway, services.xserver.xkb is the
+  # canonical place for XKB configuration in NixOS (used by console.useXkbConfig)
+  services.xserver.xkb = lib.mkIf config.programs.sway.enable {
     layout = lib.mkDefault "us";
     variant = lib.mkDefault "";
   };
