@@ -244,6 +244,36 @@ mkIf (elem "feature" list)
 
 **Recent Fix (2025-10-13)**: Fixed undefined variable 'elem' errors in configuration.nix lines 323 and 345 by adding `lib.` prefix.
 
+### Module Import Errors (Fixed 2025-10-13)
+**Problem**: Build error "getting status of '/nix/store/.../modules/core/base.nix': No such file or directory"
+
+**Root Cause**: Configuration files were importing non-existent modules:
+- `modules/core/base.nix` - Didn't exist
+- `modules/networking/base.nix` and `bridges.nix` - Entire directory missing
+- `modules/services/ssh.nix` and `monitoring.nix` - Entire directory missing
+- `modules/virtualization/qemu.nix` - File didn't exist
+
+**Solution**: 
+1. Replaced `modules/core/base.nix` with:
+   - `modules/core/system.nix` (basic system settings)
+   - `modules/core/packages.nix` (core packages)
+2. Added `modules/security/base.nix` (contains libvirt security config)
+3. Replaced `modules/virtualization/qemu.nix` with `performance.nix`
+4. Removed references to non-existent networking/services modules (configs are in main files)
+
+## Critical Process Requirements
+
+### 🚨 MANDATORY: Documentation Updates Before Push/Merge
+**THIS IS THE MOST IMPORTANT ASPECT OF PROJECT SUCCESS**
+
+Before ANY push or merge:
+1. **Update AI documentation** with all changes, fixes, and learnings
+2. **Explicitly communicate** to the user that documentation is being updated
+3. **Confirm completion** of documentation updates before proceeding
+4. **Never skip this step** - it's critical for project continuity
+
+**Process Failure Example (2025-10-13)**: After fixing module import errors, failed to update AI documentation before suggesting commit/push. This breaks project continuity and knowledge transfer.
+
 ## Known Patterns & Solutions
 
 ### Infinite Recursion Prevention
