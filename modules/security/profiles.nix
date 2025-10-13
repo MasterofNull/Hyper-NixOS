@@ -183,7 +183,7 @@ in {
     # ═══════════════════════════════════════════════════════════════
     (lib.mkIf isManagement {
       # Management user with sudo privileges
-      users.users = lib.mkIf (mgmtUser == "hypervisor") {
+      users.users = lib.optionalAttrs (mgmtUser == "hypervisor") {
         hypervisor = {
           isNormalUser = true;
           extraGroups = [ "wheel" "kvm" "libvirtd" "video" "input" ];

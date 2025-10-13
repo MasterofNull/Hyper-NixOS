@@ -43,6 +43,7 @@ in {
     # ─────────────────────────────────────────────────────────────
     # Core System Configuration
     # ─────────────────────────────────────────────────────────────
+    ./modules/core/options.nix
     ./modules/core/boot.nix
     ./modules/core/system.nix
     ./modules/core/packages.nix
