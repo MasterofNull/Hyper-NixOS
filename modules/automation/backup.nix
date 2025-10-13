@@ -1,42 +1,6 @@
 { config, lib, pkgs, ... }:
 {
-  options.hypervisor.backup = {
-    enable = lib.mkEnableOption "Enable automated VM backup system";
-    
-    schedule = lib.mkOption {
-      type = lib.types.str;
-      default = "daily";
-      description = "Backup schedule (daily, weekly, or custom systemd calendar format)";
-    };
-    
-    retention = lib.mkOption {
-      type = lib.types.attrsOf lib.types.int;
-      default = {
-        daily = 7;
-        weekly = 4;
-        monthly = 3;
-      };
-      description = "Backup retention policy";
-    };
-    
-    destination = lib.mkOption {
-      type = lib.types.path;
-      default = "/var/lib/hypervisor/backups";
-      description = "Backup destination directory";
-    };
-    
-    encrypt = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Encrypt backups using GPG";
-    };
-    
-    compression = lib.mkOption {
-      type = lib.types.enum [ "none" "gzip" "bzip2" "xz" "zstd" ];
-      default = "zstd";
-      description = "Compression algorithm for backups";
-    };
-  };
+  # Note: All options are now centralized in modules/core/options.nix
 
   config = lib.mkIf config.hypervisor.backup.enable {
     # Create backup script
@@ -168,11 +132,11 @@
           log "Applying retention policy..."
           
           # Daily backups
-          local daily_keep=${config.hypervisor.backup.retention.daily}
+          local daily_keep=${toString config.hypervisor.backup.retention.daily}
           find "$BACKUP_DIR" -name "*-*_*" -type d -mtime +$daily_keep -exec rm -rf {} + 2>/dev/null || true
           
           # Weekly backups (keep one per week)
-          local weekly_keep=${config.hypervisor.backup.retention.weekly}
+          local weekly_keep=${toString config.hypervisor.backup.retention.weekly}
           if [[ $weekly_keep -gt 0 ]]; then
             find "$backup_dir" -name "weekly-*.tar.gz" -type f -printf '%T@ %p\n' | \
               sort -rn | tail -n +$((weekly_keep + 1)) | cut -d' ' -f2- | \

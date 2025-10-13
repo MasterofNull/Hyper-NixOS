@@ -1,9 +1,6 @@
 { config, lib, pkgs, ... }:
 {
-  options.hypervisor.performance = {
-    enableHugepages = lib.mkEnableOption "Enable hugepages (can improve performance, reduces memory flexibility)";
-    disableSMT = lib.mkEnableOption "Disable SMT/Hyper-Threading (mitigates side-channels; can reduce throughput)";
-  };
+  # Note: All options are now centralized in modules/core/options.nix
 
   config = lib.mkMerge [
     (lib.mkIf config.hypervisor.performance.enableHugepages {

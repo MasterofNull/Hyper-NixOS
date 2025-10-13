@@ -9,16 +9,7 @@
 # Select profile via: hypervisor.security.profile option
 
 {
-  # Note: All config-dependent variables moved to individual config sections to avoid circular dependencies
-  options.hypervisor.security.profile = lib.mkOption {
-    type = lib.types.enum [ "headless" "management" ];
-    default = "headless";
-    description = ''
-      Security operational profile:
-      - headless: Zero-trust VM operations (polkit-based, no sudo)
-      - management: System administration (sudo with expanded privileges)
-    '';
-  };
+  # Note: All options are now centralized in modules/core/options.nix
 
   config = let
     mgmtUser = config.hypervisor.management.userName;

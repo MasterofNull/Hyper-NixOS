@@ -4,7 +4,7 @@
 # Consolidated SSH security settings
 
 {
-  options.hypervisor.security.sshStrictMode = lib.mkEnableOption "Enable strictest SSH configuration";
+  # Note: All options are now centralized in modules/core/options.nix
 
   config = {
     # ═══════════════════════════════════════════════════════════════
