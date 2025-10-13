@@ -25,6 +25,13 @@ in {
   system.stateVersion = "24.05";
   
   # ═══════════════════════════════════════════════════════════════
+  # TTY Auto-Login Configuration
+  # ═══════════════════════════════════════════════════════════════
+  # Enable TTY autologin when booting to console menu (not GUI)
+  # This provides appliance-like behavior for dedicated hypervisor hosts
+  services.getty.autologinUser = lib.mkIf consoleAutoLoginEnabled mgmtUser;
+  
+  # ═══════════════════════════════════════════════════════════════
   # Module Imports - Organized by Topic
   # ═══════════════════════════════════════════════════════════════
   imports = [
