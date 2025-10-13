@@ -17,14 +17,16 @@
         packages.iso = pkgs.nixos ({ config, pkgs, ... }: {
           imports = [ ./configuration.nix ];
         }).config.system.build.isoImage;
-        apps.bootstrap = {
+        apps.system-installer = {
           type = "app";
-          program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-bootstrap" ''
+          program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-system-installer" ''
             # Ensure git is in PATH for flake operations
             export PATH="${pkgs.git}/bin:$PATH"
-            exec ${pkgs.bash}/bin/bash ${./scripts/bootstrap_nixos.sh} "$@"
+            exec ${pkgs.bash}/bin/bash ${./scripts/system_installer.sh} "$@"
           '');
         };
+        # Keep 'bootstrap' as an alias for backwards compatibility
+        apps.bootstrap = self.apps.${system}.system-installer;
         apps.rebuild-helper = {
           type = "app";
           program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-rebuild" ''
@@ -34,7 +36,7 @@
           '');
         };
         defaultPackage = self.packages.${system}.iso;
-        defaultApp = self.apps.${system}.bootstrap;
+        defaultApp = self.apps.${system}.system-installer;
       }
     ) // {
       nixosConfigurations = {

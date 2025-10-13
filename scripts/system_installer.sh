@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Hyper-NixOS Bootstrap Installer
+# Hyper-NixOS System Installer
 # Copyright (C) 2024-2025 MasterofNull
 # Licensed under GPL v3.0
 #
@@ -23,7 +23,7 @@ cleanup() {
   exit "$ec"
 }
 trap cleanup EXIT HUP INT TERM
-TMPDIR=$(mktemp -d -t hypervisor-bootstrap.XXXXXX)
+TMPDIR=$(mktemp -d -t hypervisor-installer.XXXXXX)
 
 HOSTNAME_OVERRIDE=""
 ACTION=""   # build|test|switch
@@ -141,8 +141,8 @@ use_dialog() {
   fi
 }
 
-msg() { printf "[hypervisor-bootstrap] %s\n" "$*"; }
-warn() { printf "[hypervisor-bootstrap WARNING] %s\n" "$*" >&2; }
+msg() { printf "[system-installer] %s\n" "$*"; }
+warn() { printf "[system-installer WARNING] %s\n" "$*" >&2; }
 
 detect_system() {
   case "$(uname -m)" in
@@ -422,17 +422,34 @@ write_users_local_nix() {
     return 0
   fi
   
+  # Detect the invoking user (the one who ran sudo)
+  local invoking_user
+  invoking_user=$(detect_invoking_user)
+  
   msg "Detected user(s) to carry over: ${users[*]}"
+  if [[ -n "$invoking_user" && " ${users[*]} " =~ " $invoking_user " ]]; then
+    msg "Current user: $invoking_user (will be selected by default)"
+  fi
   
   # Security note: Users will need passwords for system administration
   msg "Note: Passwordless sudo is restricted to VM operations only"
   msg "System administration (nixos-rebuild, systemctl, etc.) requires password"
 
-  # If multiple, prefer interactive choice when TUI available; otherwise take all
+  # If only one user exists and it's the invoking user, auto-select it
+  # Otherwise, prefer interactive choice when TUI available
   local selected=("${users[@]}")
-  if (( ${#users[@]} > 1 )) && [[ -n "$DIALOG" && -t 1 ]]; then
+  if (( ${#users[@]} == 1 )); then
+    msg "Auto-selecting user: ${users[0]}"
+  elif (( ${#users[@]} > 1 )) && [[ -n "$DIALOG" && -t 1 ]]; then
     local items=()
-    for u in "${users[@]}"; do items+=("$u" " " on); done
+    # Preselect the invoking user, select all others by default too
+    for u in "${users[@]}"; do
+      if [[ "$u" == "$invoking_user" ]]; then
+        items+=("$u" "(current user)" on)
+      else
+        items+=("$u" " " on)
+      fi
+    done
     local picked
     picked=$("$DIALOG" --checklist "Select user(s) to carry over" 18 70 8 "${items[@]}" 3>&1 1>&2 2>&3 || true)
     if [[ -n "$picked" ]]; then

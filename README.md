@@ -146,19 +146,22 @@ git clone https://github.com/MasterofNull/Hyper-NixOS
 cd Hyper-NixOS
 ```
 
-2. **Run bootstrap:**
+2. **Run system installer:**
 ```bash
 # Default (prompts to update from GitHub, then installs):
-sudo nix run .#bootstrap
+sudo nix run .#system-installer
 
 # With custom hostname and fast mode:
-sudo nix run .#bootstrap -- --hostname myhost --fast
+sudo nix run .#system-installer -- --hostname myhost --fast
 
 # Offline mode (skip update prompt):
-sudo nix run .#bootstrap -- --skip-update-check --fast
+sudo nix run .#system-installer -- --skip-update-check --fast
 
 # Explicit action (build/test/switch):
-sudo nix run .#bootstrap -- --hostname myhost --action switch --fast
+sudo nix run .#system-installer -- --hostname myhost --action switch --fast
+
+# Legacy alias (for backwards compatibility):
+sudo nix run .#bootstrap
 ```
 
 **What happens:**
