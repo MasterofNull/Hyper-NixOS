@@ -1,18 +1,10 @@
 # Hyper-NixOS Master Configuration
 # Version: 1.0.0
 # 
-# 🚨 CRITICAL: MANDATORY REQUIREMENTS 🚨
-# 
-# BEFORE making ANY changes to this configuration:
-# 1. READ: /etc/hypervisor/docs/CRITICAL_REQUIREMENTS.md
-# 2. READ: /etc/hypervisor/docs/AI_ASSISTANT_CONTEXT.md
-# 3. UPDATE: Documentation MUST be synchronized with ALL changes
-# 4. COMPLY: Security review REQUIRED for all modifications
-# 
-# FAILURE TO COMPLY = AUTOMATIC REJECTION
-# 
 # This is the complete configuration including all features and modules.
 # Customize by editing the options below or using the setup wizard.
+# 
+# For help: Run 'hv help' or see /etc/hypervisor/docs/
 
 { config, lib, pkgs, ... }:
 
