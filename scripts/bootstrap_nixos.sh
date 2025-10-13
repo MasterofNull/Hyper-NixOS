@@ -450,48 +450,128 @@ write_system_local_nix() {
     fi
   fi
 
+  msg "Detecting base system settings to preserve..."
+  
   local host tz locale keymap swap_device resume_device swap_uuid
+  local extra_locale_settings console_font xkb_layout xkb_variant xkb_options
+  local state_version
+  
   host=$(hostname -s 2>/dev/null || echo hypervisor)
+  
   # Prefer nixos-option for accuracy; fall back if missing
   if command -v nixos-option >/dev/null 2>&1; then
     tz=$(nixos-option time.timeZone 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     locale=$(nixos-option i18n.defaultLocale 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     keymap=$(nixos-option console.keyMap 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+    console_font=$(nixos-option console.font 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+    xkb_layout=$(nixos-option services.xserver.xkb.layout 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+    xkb_variant=$(nixos-option services.xserver.xkb.variant 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+    xkb_options=$(nixos-option services.xserver.xkb.options 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+    state_version=$(nixos-option system.stateVersion 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     swap_device=$(nixos-option swapDevices 2>/dev/null | sed -n 's/.*\"\(\/dev[^\"\n]*\)\".*/\1/p' | head -n1 || true)
     resume_device=$(nixos-option boot.resumeDevice 2>/dev/null | sed -n 's/^[^=]*= \"\(\/dev[^\"\n]*\)\".*/\1/p' | head -n1 || true)
   fi
-  # Fallbacks
+  
+  # Fallback detection methods
   if [[ -z "$tz" && -L /etc/localtime ]]; then
     tz=$(readlink -f /etc/localtime | sed -n 's#^.*/zoneinfo/\(.*\)$#\1#p')
   fi
+  if [[ -z "$locale" ]]; then
+    locale=$(localectl status 2>/dev/null | awk '/System Locale:/ {sub(/.*LANG=/, ""); print $1; exit}' || true)
+  fi
+  if [[ -z "$keymap" ]]; then
+    keymap=$(localectl status 2>/dev/null | awk '/VC Keymap:/ {print $3; exit}' || true)
+  fi
+  if [[ -z "$xkb_layout" ]]; then
+    xkb_layout=$(localectl status 2>/dev/null | awk '/X11 Layout:/ {print $3; exit}' || true)
+  fi
+  
+  # Try to get i18n.extraLocaleSettings from existing config
+  if [[ -f /etc/nixos/configuration.nix ]]; then
+    extra_locale_settings=$(grep -A10 'i18n.extraLocaleSettings' /etc/nixos/configuration.nix 2>/dev/null | grep -v '^#' | head -n10 || true)
+  fi
+  
   # Discover swap by label/uuid only if not provided by nixos-option
   if [[ -z "$swap_device" ]]; then
     swap_uuid=$(blkid -t TYPE=swap -o value -s UUID 2>/dev/null | head -n1 || true)
   fi
 
+  msg "Migrating base system settings: hostname, timezone, locale, keyboard, and more..."
+
   {
     echo '{ config, lib, pkgs, ... }:'
     echo '{'
+    echo '  # Base system settings migrated from original NixOS installation'
+    echo ''
+    
+    # Hostname
     echo "  networking.hostName = lib.mkForce \"$(escape_nix_string "$host")\";"
-    if [[ -n "$tz" ]]; then echo "  time.timeZone = lib.mkForce \"$(escape_nix_string "$tz")\";"; fi
-    if [[ -n "$locale" ]]; then echo "  i18n.defaultLocale = lib.mkForce \"$(escape_nix_string "$locale")\";"; fi
-    if [[ -n "$keymap" ]]; then echo "  console.keyMap = lib.mkForce \"$(escape_nix_string "$keymap")\";"; fi
-    # Enable time synchronization by default for reliability during builds
-    echo '  services.timesyncd.enable = true;'
-    # Only emit swap/resume if not already in host config
+    echo ''
+    
+    # Time and locale
+    if [[ -n "$tz" ]]; then 
+      echo "  # Timezone"
+      echo "  time.timeZone = lib.mkForce \"$(escape_nix_string "$tz")\";"
+      echo "  services.timesyncd.enable = true;"
+      echo ''
+    fi
+    
+    if [[ -n "$locale" ]]; then 
+      echo "  # Locale settings"
+      echo "  i18n.defaultLocale = lib.mkForce \"$(escape_nix_string "$locale")\";"
+      echo ''
+    fi
+    
+    # Console settings
+    if [[ -n "$keymap" || -n "$console_font" ]]; then
+      echo "  # Console configuration"
+      if [[ -n "$keymap" ]]; then 
+        echo "  console.keyMap = lib.mkForce \"$(escape_nix_string "$keymap")\";"
+      fi
+      if [[ -n "$console_font" ]]; then 
+        echo "  console.font = lib.mkForce \"$(escape_nix_string "$console_font")\";"
+      fi
+      echo ''
+    fi
+    
+    # X11/Wayland keyboard layout (if different from console)
+    if [[ -n "$xkb_layout" ]]; then
+      echo "  # X11/Wayland keyboard layout"
+      echo "  services.xserver.xkb.layout = lib.mkForce \"$(escape_nix_string "$xkb_layout")\";"
+      if [[ -n "$xkb_variant" ]]; then 
+        echo "  services.xserver.xkb.variant = lib.mkForce \"$(escape_nix_string "$xkb_variant")\";"
+      fi
+      if [[ -n "$xkb_options" ]]; then 
+        echo "  services.xserver.xkb.options = lib.mkForce \"$(escape_nix_string "$xkb_options")\";"
+      fi
+      echo ''
+    fi
+    
+    # State version (important for compatibility)
+    if [[ -n "$state_version" ]]; then
+      echo "  # System state version (preserves compatibility)"
+      echo "  system.stateVersion = lib.mkDefault \"$(escape_nix_string "$state_version")\";"
+      echo ''
+    fi
+    
+    # Swap configuration (only if not already in hardware-configuration.nix)
     if [[ -z "$swap_device" && -n "$swap_uuid" ]]; then
-      echo '  swapDevices = ['
+      echo "  # Swap device configuration"
+      echo '  swapDevices = lib.mkDefault ['
       echo '    {'
       echo "      device = \"/dev/disk/by-uuid/$swap_uuid\";"
       echo '    }'
       echo '  ];'
-      # Optional: set resume to the same device if not declared
       if [[ -z "$resume_device" ]]; then
         echo "  boot.resumeDevice = lib.mkDefault \"/dev/disk/by-uuid/$swap_uuid\";"
       fi
+      echo ''
     elif [[ -n "$resume_device" ]]; then
+      echo "  # Resume device for hibernation"
       echo "  boot.resumeDevice = lib.mkDefault \"$resume_device\";"
+      echo ''
     fi
+    
     echo '}'
   } >"$dest_file"
 
@@ -500,7 +580,7 @@ write_system_local_nix() {
   cp "$dest_file" "$state_dir/system-local.nix"
 
   chmod 0644 "$dest_file" || true
-  msg "Wrote $dest_file"
+  msg "Wrote $dest_file with migrated system settings"
 }
 
 rebuild_menu() {

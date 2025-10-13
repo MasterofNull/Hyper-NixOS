@@ -38,10 +38,13 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(p
    - If **Yes**: Runs `dev_update_hypervisor.sh` to sync latest files
    - If **No**: Continues with current source files
    - Automatically skips if no network detected
-3. **Automatically detect and carry over all users** from the base NixOS installation
-   - Detects users with UID ≥ 1000 (excludes system accounts)
-   - Preserves password hashes, groups, and home directories
-   - No manual input required
+3. **Automatically detect and migrate all base system settings:**
+   - **Users**: Detects users with UID ≥ 1000, preserves password hashes, groups, home directories
+   - **Locale**: Timezone, locale, console keymap, console font
+   - **Keyboard**: X11/Wayland keyboard layout, variant, and options
+   - **System**: State version (for compatibility), hostname
+   - **Boot**: Swap devices, resume device for hibernation
+   - No manual input required - all settings detected automatically
 4. Test the configuration first (safe dry-run)
 5. Automatically proceed with the full system switch
 
