@@ -52,7 +52,7 @@ if ! command -v nixos-rebuild &>/dev/null; then
 fi
 
 test_case "Bootstrap script exists and is executable"
-assert_file_exists "/etc/hypervisor/scripts/bootstrap_nixos.sh"
+assert_file_exists "/etc/hypervisor/scripts/system_installer.sh"
 
 test_case "Source directory is properly installed"
 assert_directory_exists "/etc/hypervisor/src"

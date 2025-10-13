@@ -225,7 +225,7 @@ calculate_file_sha() {
 }
 
 # Compare local and remote files
-# Note: This function skips files that bootstrap_nixos.sh excludes during installation
+# Note: This function skips files that system_installer.sh excludes during installation
 # to prevent false positives when comparing after a fresh install.
 # Excluded paths: .git/, result/, target/, tools/target/, var/, *.socket
 compare_files() {
@@ -251,7 +251,7 @@ compare_files() {
     verbose "Checking: $path"
     
     # Skip files that bootstrap excludes (build artifacts, git metadata, etc.)
-    # These paths match the exclusions in bootstrap_nixos.sh copy_repo_to_etc function
+    # These paths match the exclusions in system_installer.sh copy_repo_to_etc function
     if [[ "$path" == .git/* ]] || \
        [[ "$path" == result/* ]] || \
        [[ "$path" == target/* ]] || \
@@ -441,7 +441,7 @@ full_clone() {
     
     mkdir -p "$LOCAL_ROOT"
     
-    # Use same exclusions as bootstrap_nixos.sh for consistency
+    # Use same exclusions as system_installer.sh for consistency
     if command -v rsync >/dev/null 2>&1; then
       rsync -a --exclude ".git/" --exclude "result" --exclude "target/" --exclude "tools/target/" --exclude "var/" --exclude "*.socket" "$temp_clone/" "$LOCAL_ROOT/"
     else

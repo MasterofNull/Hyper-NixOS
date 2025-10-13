@@ -35,7 +35,7 @@ The default installation mode is already optimized:
 
 **Default Install:**
 ```bash
-sudo ./scripts/bootstrap_nixos.sh --fast --hostname "$(hostname -s)" --action switch
+sudo ./scripts/system_installer.sh --fast --hostname "$(hostname -s)" --action switch
 ```
 
 **What's included:**
@@ -293,11 +293,11 @@ fi
 **Usage:**
 ```bash
 # Fast minimal install
-sudo ./scripts/bootstrap_nixos.sh --fast --minimal \
+sudo ./scripts/system_installer.sh --fast --minimal \
      --hostname "$(hostname -s)" --action switch
 
 # Normal install
-sudo ./scripts/bootstrap_nixos.sh --hostname "$(hostname -s)" --action switch
+sudo ./scripts/system_installer.sh --hostname "$(hostname -s)" --action switch
 ```
 
 ---
@@ -376,7 +376,7 @@ The standard installation includes all basic optimizations:
 
 ```bash
 # Standard optimized install
-sudo ./scripts/bootstrap_nixos.sh --fast --hostname "$(hostname -s)" --action switch
+sudo ./scripts/system_installer.sh --fast --hostname "$(hostname -s)" --action switch
 ```
 
 **Already includes:**
@@ -536,7 +536,7 @@ nix.settings.substituters = [
 
 ```bash
 # Single command - already optimized
-bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/bootstrap_nixos.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
+bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/system_installer.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
 **Result:** Install in ~15 minutes with ~2GB download!

@@ -74,7 +74,7 @@ This document tracks the comprehensive audit and refactor of the Hyper-NixOS cod
 - [ ] VM Management (create, clone, scheduler, templates)
 - [ ] Menu Systems (menu.sh, management_dashboard.sh)
 - [ ] Security (security_audit.sh, quick_security_audit.sh)
-- [ ] Installation (bootstrap_nixos.sh, setup_wizard.sh)
+- [ ] Installation (system_installer.sh, setup_wizard.sh)
 - [ ] Health & Monitoring (enhanced_health_checks.sh, preflight_check.sh)
 - [ ] VFIO/Passthrough (vfio_workflow.sh, merge_vfio_into_config.sh)
 - [ ] Network & Storage Management
