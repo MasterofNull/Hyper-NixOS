@@ -775,7 +775,9 @@ main() {
   # Refresh flake inputs to avoid stale input hashes and nar mismatches
   # Even though we use a local path input for the hypervisor source, updating
   # the host flake lock ensures nixpkgs and other inputs are coherent.
-  msg "Refreshing flake inputs (nix flake update) to prevent nar hash mismatches"
+  msg "Updating NixOS package dependencies (nixpkgs) to latest versions..."
+  msg "Note: This updates NixOS system packages, NOT your hypervisor code"
+  msg "This ensures you get the latest security patches and bug fixes from NixOS"
   mkdir -p /var/lib/hypervisor/logs 2>/dev/null || true
   
   # Ensure git is available for flake operations
@@ -788,8 +790,8 @@ main() {
         --option narinfo-cache-positive-ttl 0 \
         --option narinfo-cache-negative-ttl 0 \
         flake update /etc/hypervisor" 2>&1 | tee -a /var/lib/hypervisor/logs/bootstrap-update.log; then
-      msg "Flake update failed; proceeding with current lock file"
-      msg "This is usually safe - the build will use existing pinned inputs"
+      msg "NixOS package update failed; proceeding with current lock file"
+      msg "This is usually safe - the build will use existing pinned package versions"
     fi
   else
     # Git is available, proceed normally
@@ -798,8 +800,8 @@ main() {
         --option narinfo-cache-positive-ttl 0 \
         --option narinfo-cache-negative-ttl 0 \
         flake update /etc/hypervisor 2>&1 | tee -a /var/lib/hypervisor/logs/bootstrap-update.log; then
-      msg "Flake update failed; proceeding with current lock file"
-      msg "This is usually safe - the build will use existing pinned inputs"
+      msg "NixOS package update failed; proceeding with current lock file"
+      msg "This is usually safe - the build will use existing pinned package versions"
     fi
   fi
 
