@@ -148,12 +148,38 @@ cd Hyper-NixOS
 
 2. **Run bootstrap:**
 ```bash
-# Interactive (prompts for hostname, action):
+# Default (prompts to update from GitHub, then installs):
 sudo nix run .#bootstrap
 
-# Automated (one-shot):
+# With custom hostname and fast mode:
+sudo nix run .#bootstrap -- --hostname myhost --fast
+
+# Offline mode (skip update prompt):
+sudo nix run .#bootstrap -- --skip-update-check --fast
+
+# Explicit action (build/test/switch):
 sudo nix run .#bootstrap -- --hostname myhost --action switch --fast
 ```
+
+**What happens:**
+- Prompts: "Keep current hostname 'X'?" 
+  - **Yes** → Uses current hostname
+  - **No** → Prompts for custom hostname
+- Copies source files to `/etc/hypervisor/src`
+- Prompts: "Check for and download updates from GitHub before installation?"
+  - **Yes** → Downloads latest version, then continues
+  - **No** → Continues with current source files
+- **Migrates users and system settings** from base installation
+  - Users, passwords, groups, home directories (interactive selection for multiple users)
+  - Timezone, locale, console keyboard/font
+  - System state version, swap/hibernation config
+  - Headless design: X11 settings not migrated (Wayland-first approach)
+- **Shows TUI menu** with options:
+  - **Build only** → Builds configuration without activating
+  - **Test** → Temporary activation (reverts on reboot)
+  - **Switch** → Full installation (persistent)
+  - **Shell** → Drop to root shell
+  - **Quit** → Exit without changes
 
 ### Method 3: Build Bootable ISO
 

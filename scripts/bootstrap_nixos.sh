@@ -32,6 +32,7 @@ SRC_OVERRIDE=""
 RB_OPTS=(--refresh --option tarball-ttl 0 --option narinfo-cache-positive-ttl 0 --option narinfo-cache-negative-ttl 0)
 REBOOT=false
 FAST_MODE=false
+SKIP_UPDATE_CHECK=false
 
 # Wrapper: use a flake-capable nixos-rebuild even on older hosts
 supports_flakes_flag() {
@@ -51,15 +52,17 @@ usage() {
 Usage: sudo $(basename "$0") [OPTIONS]
 
 Install Hyper‑NixOS from the current folder (USB checkout) into /etc/hypervisor/src,
-write /etc/hypervisor/flake.nix (and symlink /etc/nixos/flake.nix), and optionally perform a one-shot rebuild.
+optionally update from GitHub, write /etc/hypervisor/flake.nix (and symlink /etc/nixos/flake.nix),
+and perform the system installation.
 
 Options:
   --hostname NAME     Host attribute and system hostname (default: current hostname)
-  --action MODE       One of: build, test, switch. If omitted, show TUI menu.
+  --action MODE       One of: build, test, switch. If omitted, prompts for test/switch.
   --force             Overwrite existing /etc/hypervisor/src without prompting
   --source PATH       Use PATH as source folder instead of auto-detect
   --reboot            Reboot after successful switch (recommended on fresh installs)
   --fast              Enable optimized parallel downloads (recommended)
+  --skip-update-check Skip checking for updates from GitHub (offline mode)
   -h, --help          Show this help
 
 Optimizations (--fast flag, recommended):
@@ -116,6 +119,7 @@ use_dialog() {
 }
 
 msg() { printf "[hypervisor-bootstrap] %s\n" "$*"; }
+warn() { printf "[hypervisor-bootstrap WARNING] %s\n" "$*" >&2; }
 
 detect_system() {
   case "$(uname -m)" in
@@ -123,6 +127,75 @@ detect_system() {
     aarch64|arm64) echo aarch64-linux ;;
     *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
   esac
+}
+
+# Check for network connectivity
+has_network() {
+  # Try to reach GitHub with a short timeout
+  if command -v curl >/dev/null 2>&1; then
+    curl -s --connect-timeout 5 --max-time 10 https://api.github.com >/dev/null 2>&1
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q --timeout=5 --tries=1 --spider https://api.github.com >/dev/null 2>&1
+  elif command -v ping >/dev/null 2>&1; then
+    ping -c 1 -W 5 github.com >/dev/null 2>&1
+  else
+    # Assume network is available if we can't check
+    return 0
+  fi
+}
+
+# Prompt user to update hypervisor files from GitHub before installation
+prompt_and_update_if_desired() {
+  local src_root="$1"
+  local update_script="$src_root/scripts/dev_update_hypervisor.sh"
+  
+  # Skip if script doesn't exist
+  if [[ ! -f "$update_script" ]]; then
+    return 0
+  fi
+  
+  # Check network connectivity first
+  if ! has_network; then
+    msg "No network connectivity detected - skipping update prompt"
+    return 0
+  fi
+  
+  # Ask user if they want to update
+  local do_update=false
+  if ask_yes_no "Check for and download updates from GitHub before installation?" yes; then
+    do_update=true
+  fi
+  
+  if ! $do_update; then
+    msg "Skipping update - will install with current source files"
+    return 0
+  fi
+  
+  msg "Checking for updates from GitHub..."
+  msg "This will update the source files before installation begins"
+  echo ""
+  
+  # Run the dev_update script with --skip-rebuild (just sync files, don't rebuild yet)
+  # The bootstrap will handle the rebuild after setup is complete
+  if bash "$update_script" --skip-rebuild --ref main; then
+    msg ""
+    msg "✓ Source files updated successfully"
+    msg "Bootstrap will now continue with the updated files"
+    echo ""
+    return 0
+  else
+    local exit_code=$?
+    warn "Update failed or no changes were detected"
+    
+    # Ask if they want to continue anyway
+    if ask_yes_no "Continue with installation using current source files?" yes; then
+      msg "Continuing with installation..."
+      return 0
+    else
+      msg "Installation cancelled by user"
+      exit 1
+    fi
+  fi
 }
 
 ensure_hardware_config() {
@@ -156,12 +229,14 @@ copy_repo_to_etc() {
     if [[ "$src_real" == "$dst_real"* ]]; then
       local stage
       stage=$(mktemp -d -t hypervisor-stage.XXXXXX)
-      rsync -a --exclude ".git/" --exclude "result" --exclude "target/" "$src_root/" "$stage/"
+      rsync -a --no-specials --exclude ".git/" --exclude "result" --exclude "target/" \
+        --exclude "var/" --exclude "*.socket" "$src_root/" "$stage/"
       # Now populate destination from the staged snapshot
-      rsync -a --delete "$stage/" "$dst_root/"
+      rsync -a --no-specials --delete "$stage/" "$dst_root/"
       rm -rf -- "$stage"
     else
-      rsync -a --delete --exclude ".git/" --exclude "result" --exclude "target/" "$src_root/" "$dst_root/"
+      rsync -a --no-specials --delete --exclude ".git/" --exclude "result" --exclude "target/" \
+        --exclude "var/" --exclude "*.socket" "$src_root/" "$dst_root/"
     fi
   else
     # Fallback: copy via a temporary stage if needed
@@ -181,6 +256,14 @@ copy_repo_to_etc() {
       shopt -u dotglob
     fi
   fi
+  
+  # Remove any special files (sockets, pipes, devices) that may have been copied
+  # These cannot be included in Nix flake inputs and will cause errors
+  msg "Cleaning up special files (sockets, pipes, devices)..."
+  find "$dst_root" -type s -delete 2>/dev/null || true  # sockets
+  find "$dst_root" -type p -delete 2>/dev/null || true  # named pipes
+  find "$dst_root" -type b -delete 2>/dev/null || true  # block devices
+  find "$dst_root" -type c -delete 2>/dev/null || true  # character devices
   # Permissive defaults for build/rebuild usability; optional hardening provided separately
   chown -R root:root "$dst_root" || true
   find "$dst_root" -type d -exec chmod 0755 {} + 2>/dev/null || true
@@ -287,11 +370,11 @@ write_users_local_nix() {
   msg "Note: Passwordless sudo is restricted to VM operations only"
   msg "System administration (nixos-rebuild, systemctl, etc.) requires password"
 
-  # If multiple, prefer interactive choice when TUI available; otherwise take the first
+  # If multiple, prefer interactive choice when TUI available; otherwise take all
   local selected=("${users[@]}")
   if (( ${#users[@]} > 1 )) && [[ -n "$DIALOG" && -t 1 ]]; then
     local items=()
-    for u in "${users[@]}"; do items+=("$u" " "); done
+    for u in "${users[@]}"; do items+=("$u" " " on); done
     local picked
     picked=$("$DIALOG" --checklist "Select user(s) to carry over" 18 70 8 "${items[@]}" 3>&1 1>&2 2>&3 || true)
     if [[ -n "$picked" ]]; then
@@ -379,48 +462,108 @@ write_system_local_nix() {
     fi
   fi
 
+  msg "Detecting base system settings to preserve..."
+  
   local host tz locale keymap swap_device resume_device swap_uuid
+  local console_font state_version
+  
   host=$(hostname -s 2>/dev/null || echo hypervisor)
+  
   # Prefer nixos-option for accuracy; fall back if missing
   if command -v nixos-option >/dev/null 2>&1; then
     tz=$(nixos-option time.timeZone 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     locale=$(nixos-option i18n.defaultLocale 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     keymap=$(nixos-option console.keyMap 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+    console_font=$(nixos-option console.font 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
+    state_version=$(nixos-option system.stateVersion 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     swap_device=$(nixos-option swapDevices 2>/dev/null | sed -n 's/.*\"\(\/dev[^\"\n]*\)\".*/\1/p' | head -n1 || true)
     resume_device=$(nixos-option boot.resumeDevice 2>/dev/null | sed -n 's/^[^=]*= \"\(\/dev[^\"\n]*\)\".*/\1/p' | head -n1 || true)
   fi
-  # Fallbacks
+  
+  # Fallback detection methods
   if [[ -z "$tz" && -L /etc/localtime ]]; then
     tz=$(readlink -f /etc/localtime | sed -n 's#^.*/zoneinfo/\(.*\)$#\1#p')
   fi
+  if [[ -z "$locale" ]]; then
+    locale=$(localectl status 2>/dev/null | awk '/System Locale:/ {sub(/.*LANG=/, ""); print $1; exit}' || true)
+  fi
+  if [[ -z "$keymap" ]]; then
+    keymap=$(localectl status 2>/dev/null | awk '/VC Keymap:/ {print $3; exit}' || true)
+  fi
+  
   # Discover swap by label/uuid only if not provided by nixos-option
   if [[ -z "$swap_device" ]]; then
     swap_uuid=$(blkid -t TYPE=swap -o value -s UUID 2>/dev/null | head -n1 || true)
   fi
 
+  msg "Migrating base system settings: hostname, timezone, locale, console keyboard, and more..."
+  msg "Note: X11 keyboard settings are NOT migrated (Wayland-first, headless design)"
+
   {
     echo '{ config, lib, pkgs, ... }:'
     echo '{'
+    echo '  # Base system settings migrated from original NixOS installation'
+    echo ''
+    
+    # Hostname
     echo "  networking.hostName = lib.mkForce \"$(escape_nix_string "$host")\";"
-    if [[ -n "$tz" ]]; then echo "  time.timeZone = lib.mkForce \"$(escape_nix_string "$tz")\";"; fi
-    if [[ -n "$locale" ]]; then echo "  i18n.defaultLocale = lib.mkForce \"$(escape_nix_string "$locale")\";"; fi
-    if [[ -n "$keymap" ]]; then echo "  console.keyMap = lib.mkForce \"$(escape_nix_string "$keymap")\";"; fi
-    # Enable time synchronization by default for reliability during builds
-    echo '  services.timesyncd.enable = true;'
-    # Only emit swap/resume if not already in host config
+    echo ''
+    
+    # Time and locale
+    if [[ -n "$tz" ]]; then 
+      echo "  # Timezone"
+      echo "  time.timeZone = lib.mkForce \"$(escape_nix_string "$tz")\";"
+      echo "  services.timesyncd.enable = true;"
+      echo ''
+    fi
+    
+    if [[ -n "$locale" ]]; then 
+      echo "  # Locale settings"
+      echo "  i18n.defaultLocale = lib.mkForce \"$(escape_nix_string "$locale")\";"
+      echo ''
+    fi
+    
+    # Console settings (headless/TUI mode)
+    if [[ -n "$keymap" || -n "$console_font" ]]; then
+      echo "  # Console configuration (for headless/TUI operation)"
+      if [[ -n "$keymap" ]]; then 
+        echo "  console.keyMap = lib.mkForce \"$(escape_nix_string "$keymap")\";"
+      fi
+      if [[ -n "$console_font" ]]; then 
+        echo "  console.font = lib.mkForce \"$(escape_nix_string "$console_font")\";"
+      fi
+      echo ''
+    fi
+    
+    # Note: X11 keyboard settings NOT migrated
+    # This hypervisor is designed to run headless with console TUI
+    # GUI keyboard layouts should be configured in gui-local.nix if GUI is enabled
+    
+    # State version (important for compatibility)
+    if [[ -n "$state_version" ]]; then
+      echo "  # System state version (preserves compatibility)"
+      echo "  system.stateVersion = lib.mkDefault \"$(escape_nix_string "$state_version")\";"
+      echo ''
+    fi
+    
+    # Swap configuration (only if not already in hardware-configuration.nix)
     if [[ -z "$swap_device" && -n "$swap_uuid" ]]; then
-      echo '  swapDevices = ['
+      echo "  # Swap device configuration"
+      echo '  swapDevices = lib.mkDefault ['
       echo '    {'
       echo "      device = \"/dev/disk/by-uuid/$swap_uuid\";"
       echo '    }'
       echo '  ];'
-      # Optional: set resume to the same device if not declared
       if [[ -z "$resume_device" ]]; then
         echo "  boot.resumeDevice = lib.mkDefault \"/dev/disk/by-uuid/$swap_uuid\";"
       fi
+      echo ''
     elif [[ -n "$resume_device" ]]; then
+      echo "  # Resume device for hibernation"
       echo "  boot.resumeDevice = lib.mkDefault \"$resume_device\";"
+      echo ''
     fi
+    
     echo '}'
   } >"$dest_file"
 
@@ -429,7 +572,7 @@ write_system_local_nix() {
   cp "$dest_file" "$state_dir/system-local.nix"
 
   chmod 0644 "$dest_file" || true
-  msg "Wrote $dest_file"
+  msg "Wrote $dest_file with migrated system settings"
 }
 
 rebuild_menu() {
@@ -497,6 +640,7 @@ main() {
       --source) SRC_OVERRIDE="$2"; shift 2;;
       --reboot) REBOOT=true; shift;;
       --fast) FAST_MODE=true; shift;;
+      --skip-update-check) SKIP_UPDATE_CHECK=true; shift;;
       -h|--help) usage; exit 0;;
       *) echo "Unknown option: $1" >&2; usage; exit 1;;
     esac
@@ -527,16 +671,34 @@ main() {
   local hostname
   if [[ -n "$HOSTNAME_OVERRIDE" ]]; then
     hostname="$HOSTNAME_OVERRIDE"
-  elif [[ -n "$DIALOG" && -z "$ACTION" ]]; then
-    hostname=$("$DIALOG" --inputbox "Hostname for this hypervisor" 10 60 "$default_hostname" 3>&1 1>&2 2>&3 || echo "$default_hostname")
-    "$DIALOG" --msgbox "We will copy Hyper‑NixOS files to /etc/hypervisor/src and generate /etc/hypervisor/flake.nix (symlinked from /etc/nixos/flake.nix) for '$hostname' on $system." 12 70 || true
   else
-    read -r -p "Hostname [$default_hostname]: " ans || true
-    hostname=${ans:-$default_hostname}
+    # Ask if user wants to keep current hostname or set a custom one
+    if ask_yes_no "Keep current hostname '$default_hostname'?" yes; then
+      hostname="$default_hostname"
+      msg "Using hostname: $hostname"
+    else
+      if [[ -n "$DIALOG" ]]; then
+        hostname=$("$DIALOG" --inputbox "Enter custom hostname for this hypervisor" 10 60 "$default_hostname" 3>&1 1>&2 2>&3 || echo "$default_hostname")
+      else
+        read -r -p "Enter custom hostname [$default_hostname]: " ans || true
+        hostname=${ans:-$default_hostname}
+      fi
+      msg "Using custom hostname: $hostname"
+    fi
   fi
 
   ensure_hardware_config
+  
+  # Copy repo first, then optionally update before proceeding
   copy_repo_to_etc "$src_root"
+  
+  # Prompt to update source files after initial copy but before configuration
+  if ! $SKIP_UPDATE_CHECK; then
+    prompt_and_update_if_desired "/etc/hypervisor/src"
+  else
+    msg "Skipping update prompt (--skip-update-check flag)"
+  fi
+
   write_host_flake "$system" "$hostname"
 
   # Generate carry-over local modules for users and base system settings
@@ -583,39 +745,10 @@ main() {
       *) echo "Invalid --action: $ACTION" >&2; exit 1;;
     esac
   else
-    # Automated flow with minimal prompts: offer test first, then optional switch
-    if ask_yes_no "Run a test activation (nixos-rebuild test) before full switch?" yes; then
-      if ! nr test --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"; then
-        if [[ -n "$DIALOG" ]]; then "$DIALOG" --msgbox "Test activation failed. Review configuration and retry." 10 70 || true; fi
-        echo "Test activation failed." >&2
-        exit 1
-      fi
-      if ask_yes_no "Test succeeded. Proceed with full switch now?" yes; then
-        nr switch --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
-        if $REBOOT; then
-          systemctl reboot
-        else
-          systemctl daemon-reload || true
-          systemctl enable --now hypervisor-menu.service || true
-          command -v chvt >/dev/null 2>&1 && chvt 1 || true
-        fi
-      else
-        msg "Switch skipped per user choice."
-      fi
-    else
-      if ask_yes_no "Proceed directly to full switch now?" yes; then
-        nr switch --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
-        if $REBOOT; then
-          systemctl reboot
-        else
-          systemctl daemon-reload || true
-          systemctl enable --now hypervisor-menu.service || true
-          command -v chvt >/dev/null 2>&1 && chvt 1 || true
-        fi
-      else
-        msg "No rebuild performed."
-      fi
-    fi
+    # Interactive flow: show TUI menu with rebuild options
+    msg "Bootstrap setup complete. Choose next step:"
+    echo ""
+    rebuild_menu "$hostname"
   fi
 }
 

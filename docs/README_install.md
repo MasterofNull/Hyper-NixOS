@@ -21,7 +21,7 @@ nix run .#rebuild-helper -- --flake /etc/nixos --host $(hostname -s) switch
 - From USB (folder contains this repository):
 
 ```
-sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --action switch --force --source $(pwd)
+sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(pwd)
 ```
 
 - From GitHub checkout:
@@ -29,14 +29,45 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --action switch --fo
 ```
 git clone https://github.com/<your-org>/<your-repo>.git hypervisor
 cd hypervisor
-sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --action switch --force --source $(pwd)
+sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(pwd)
 ```
+
+**Note:** By default, the bootstrapper will:
+1. **Prompt**: "Keep current hostname 'X'?"
+   - If **Yes**: Uses the current system hostname
+   - If **No**: Prompts for a custom hostname
+2. Copy source files to `/etc/hypervisor/src`
+3. **Prompt**: "Check for and download updates from GitHub before installation?"
+   - If **Yes**: Runs `dev_update_hypervisor.sh` to sync latest files
+   - If **No**: Continues with current source files
+   - Automatically skips if no network detected
+4. **Detect and migrate all base system settings:**
+   - **Users**: Detects users with UID ≥ 1000, preserves password hashes, groups, home directories
+     - If multiple users: Interactive checklist to select which to carry over (TUI)
+     - If single user or no TUI: Automatically carries over all detected users
+   - **Locale**: Timezone, locale settings
+   - **Console**: Console keymap and font (for headless/TUI operation)
+   - **System**: State version (for compatibility), hostname
+   - **Boot**: Swap devices, resume device for hibernation
+   - **Note**: X11 keyboard settings are NOT migrated (headless design, Wayland-first approach)
+5. **Shows TUI menu** "Choose next step":
+   - **Build only** → Build the system without activating (test build)
+   - **Test** → Test activation (temporary, reverts on reboot)
+   - **Switch** → Full system switch (persistent installation)
+   - **Shell** → Drop to root shell for manual operations
+   - **Quit** → Exit without making changes
+6. User has full control over installation via the TUI menu
+
+This ensures a safe, controlled installation with the latest version while preserving your existing user accounts and giving you full control over the activation process.
 
 Flags:
 - `--hostname NAME`: attribute and system hostname
-- `--action {build|test|switch}`: choose dry-run, temporary activation, or full switch
+- `--action {build|test|switch}`: override default behavior (if omitted, performs test then switch)
 - `--force`: overwrite existing `/etc/hypervisor` without a prompt
 - `--source PATH`: explicit source (defaults to auto-detected repo root)
+- `--fast`: enable optimized parallel downloads (recommended)
+- `--skip-update-check`: skip checking for updates from GitHub (offline mode)
+- `--reboot`: automatically reboot after successful installation
 
 ### Build bootable ISO
 
