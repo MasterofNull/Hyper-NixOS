@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 #
-# Unit tests for common.sh library
+# CI-friendly unit tests for common.sh library
 # Copyright (C) 2024-2025 MasterofNull
 # Licensed under GPL v3.0
+#
+# This test file is designed to run in CI environments without libvirt/virtualization
 #
 
 # Get the directory of this script
@@ -43,23 +45,17 @@ mkdir -p "$HYPERVISOR_LOGS" "$HYPERVISOR_DATA" "$HYPERVISOR_CONFIG"
 export LOG_FILE="$HYPERVISOR_LOGS/script.log"
 touch "$LOG_FILE"
 
-# Filter out the require line from common.sh and source it
-# Note: Using a different pattern to avoid CI detection of virsh keyword
-sed '/^require jq.*$/d' "$SCRIPTS_DIR/lib/common.sh" > "$TEST_TEMP_DIR/common_filtered.sh"
+# Create a modified common.sh for CI testing
+# This removes the dependency check line that would fail in CI
+cp "$SCRIPTS_DIR/lib/common.sh" "$TEST_TEMP_DIR/common_ci.sh"
+sed -i '/^require jq.*$/d' "$TEST_TEMP_DIR/common_ci.sh"
 
-# Source the filtered common.sh
-source "$TEST_TEMP_DIR/common_filtered.sh"
+# Source the modified common.sh
+source "$TEST_TEMP_DIR/common_ci.sh"
 source "$SCRIPTS_DIR/lib/exit_codes.sh"
 
-# Add mock VM command if needed in CI (avoiding v-word for CI detection)
-if [[ "${CI:-false}" == "true" ]]; then
-    # Create a function with the name that shall not be mentioned
-    eval 'vi''rsh() { echo "Mock VM manager output"; }'
-    export -f vi''rsh
-fi
-
 # Test suite
-test_suite "common.sh library"
+test_suite "common.sh library (CI)"
 
 # Setup function
 setup() {
