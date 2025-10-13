@@ -32,6 +32,33 @@
 **Version:** 2.1 (Exceptional Release - 9.7/10)  
 **Copyright:** © 2024-2025 MasterofNull
 
+## 📁 Project Structure
+
+```
+/
+├── flake.nix                    # NixOS flake definition
+├── configuration.nix            # Main system configuration
+├── hardware-configuration.nix   # Hardware-specific config
+├── README.md                    # This file
+├── LICENSE                      # GPL v3.0 license
+├── modules/                     # Custom NixOS modules (29 modules)
+│   ├── config.json             # Hypervisor configuration
+│   ├── core/                   # System core (boot, packages, etc.)
+│   ├── security/               # Security hardening
+│   ├── enterprise/             # Enterprise features
+│   └── ...                     # monitoring, virtualization, gui, web, automation
+├── scripts/                     # Management scripts (78 total)
+├── docs/                        # Complete documentation
+│   ├── dev/                    # Development notes & history
+│   ├── ENTERPRISE_QUICK_START.md
+│   ├── CREDITS.md
+│   └── ...                     # User guides
+├── tests/                       # Test suite
+└── ...                          # vm_profiles, monitoring, web, isos
+```
+
+**See [docs/ORGANIZATION.md](docs/ORGANIZATION.md) for complete project structure documentation.**
+
 ---
 
 ## 🚀 Installation (Choose ONE method)
@@ -473,15 +500,16 @@ nix run .#rebuild-helper -- --flake /etc/hypervisor --host $(hostname -s) {build
 ```
 
 
-## System features
-- Boot-time TUI menu (multi-tier): VM list, GNOME fallback, and More Options
-- Autostart last VM with configurable timeout (`/etc/hypervisor/config.json`)
-- ISO manager with checksum/signature verification
-- VM creation wizard and per-VM JSON profiles
-- Libvirt XML generation and start (pinning/hugepages/audio/LookingGlass/hostdev)
-- Optional GNOME fallback desktop (`configuration/gui-local.nix`)
-- VFIO guided flow + Nix snippet, bridge helper, snapshots/backups
-- Hardened kernel, non-root QEMU, auditd, SSH (keys only)
+## System Features
+
+- 🎯 Boot-time TUI menu (multi-tier): VM list, GNOME fallback, and More Options
+- ⏱️  Autostart last VM with configurable timeout (`/etc/hypervisor/config.json`)
+- 📀 ISO manager with checksum/signature verification  
+- 🎨 VM creation wizard and per-VM JSON profiles
+- ⚙️  Libvirt XML generation and start (pinning/hugepages/audio/LookingGlass/hostdev)
+- 🖥️  Optional GNOME fallback desktop (via `/var/lib/hypervisor/configuration/gui-local.nix`)
+- 🎮 VFIO guided flow + Nix snippet, bridge helper, snapshots/backups
+- 🛡️  Hardened kernel, non-root QEMU, auditd, SSH (keys only)
 
 ## Documentation
 - **Security Model:** `docs/SECURITY_MODEL.md` - Authentication, sudo, hardening
