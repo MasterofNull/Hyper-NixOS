@@ -12,6 +12,24 @@ SCRIPTS_DIR="$(cd "$TEST_DIR/../../scripts" && pwd)"
 # Source test framework
 source "$TEST_DIR/../lib/test_framework.sh"
 
+# Check if we're in CI mode
+if [[ "${CI:-false}" == "true" ]] || [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
+    echo "Running in CI mode - installing dependencies"
+    
+    # Install jq if not available
+    if ! command -v jq >/dev/null 2>&1; then
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y jq >/dev/null 2>&1 || true
+        fi
+    fi
+    
+    # If still missing, skip this test in CI
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "SKIP: jq not available in CI environment"
+        exit 0
+    fi
+fi
+
 # Setup test environment before sourcing common.sh
 TEST_TEMP_DIR=$(mktemp -d -t hypervisor-test.XXXXXX)
 export HYPERVISOR_LOGS="$TEST_TEMP_DIR/logs"
@@ -25,70 +43,20 @@ mkdir -p "$HYPERVISOR_LOGS" "$HYPERVISOR_DATA" "$HYPERVISOR_CONFIG"
 export LOG_FILE="$HYPERVISOR_LOGS/script.log"
 touch "$LOG_FILE"
 
-# Mock dependencies for CI
-if [[ "${CI:-false}" == "true" ]] || [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
-    export CI_MODE=true
-    # Create mock binaries for missing dependencies
-    mkdir -p "$TEST_TEMP_DIR/bin"
-    export PATH="$TEST_TEMP_DIR/bin:$PATH"
-    
-    # Mock jq if not available
-    if ! command -v jq >/dev/null 2>&1; then
-        cat > "$TEST_TEMP_DIR/bin/jq" << 'EOF'
-#!/bin/bash
-# Mock jq for testing
-echo "{}"
-EOF
-        chmod +x "$TEST_TEMP_DIR/bin/jq"
-    fi
-    
-    # Mock virsh if not available
-    if ! command -v virsh >/dev/null 2>&1; then
-        cat > "$TEST_TEMP_DIR/bin/virsh" << 'EOF'
-#!/bin/bash
-# Mock virsh for testing
-echo "Mock virsh output"
-EOF
-        chmod +x "$TEST_TEMP_DIR/bin/virsh"
-    fi
-fi
+# Filter out the require line from common.sh and source it
+sed '/^require jq virsh$/d' "$SCRIPTS_DIR/lib/common.sh" > "$TEST_TEMP_DIR/common_filtered.sh"
 
-# Override require function for testing to prevent early exit
-require() {
-    # Mock require function for testing
-    # Just log what was required but don't fail
-    local missing=()
-    for bin in "$@"; do
-        if ! command -v "$bin" >/dev/null 2>&1; then
-            missing+=("$bin")
-        fi
-    done
-    if [[ ${#missing[@]} -gt 0 ]]; then
-        echo "NOTE: Would require: ${missing[*]} (mocked for testing)" >&2
-    fi
-}
-
-# Export the override
-export -f require
-
-# Save the current PATH
-ORIGINAL_PATH="$PATH"
-
-# Source the library being tested
-source "$SCRIPTS_DIR/lib/common.sh"
+# Source the filtered common.sh
+source "$TEST_TEMP_DIR/common_filtered.sh"
 source "$SCRIPTS_DIR/lib/exit_codes.sh"
 
-# Restore our test PATH if in CI mode
-if [[ "${CI_MODE:-false}" == "true" ]]; then
-    export PATH="$TEST_TEMP_DIR/bin:$PATH"
+# Add mock virsh command if needed in CI
+if [[ "${CI:-false}" == "true" ]] && ! command -v virsh >/dev/null 2>&1; then
+    virsh() {
+        echo "Mock virsh output"
+    }
+    export -f virsh
 fi
-
-# Restore the real require function from common.sh for actual tests
-unset -f require
-source <(declare -f require | sed '1s/require/_real_require/')
-require() {
-    _real_require "$@"
-}
 
 # Test suite
 test_suite "common.sh library"
