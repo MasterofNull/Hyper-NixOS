@@ -64,7 +64,8 @@
   };
 
   # Console keyboard configuration
-  console.useXkbConfig = true;  # Use X keyboard settings in console
+  # Only use X keyboard settings in console when X server is enabled
+  console.useXkbConfig = lib.mkIf config.services.xserver.enable true;
 
   # ACPI events handling (lid, power button, keyboard hotkeys)
   services.acpid = {

@@ -55,8 +55,10 @@ in {
 
       users.groups.hypervisor-operator = {};
 
-      # Autologin to operator user
-      services.getty.autologinUser = "hypervisor-operator";
+      # Autologin to operator user (only when menu/wizard boots and GUI is disabled)
+      services.getty.autologinUser = lib.mkIf 
+        ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
+        "hypervisor-operator";
 
       # Disable GUI autologin
       services.displayManager.autoLogin.enable = lib.mkForce false;
