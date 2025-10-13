@@ -27,10 +27,9 @@ in {
   # ═══════════════════════════════════════════════════════════════
   # TTY Auto-Login Configuration
   # ═══════════════════════════════════════════════════════════════
-  # Enable TTY autologin for headless console menu startup (not GUI)
-  # This provides appliance-like behavior for dedicated hypervisor hosts
-  # Condition matches hypervisor-menu.service: enableMenuAtBoot && !enableGuiAtBoot
-  services.getty.autologinUser = lib.mkIf (enableMenuAtBoot && !enableGuiAtBoot) mgmtUser;
+  # TTY autologin is now managed by modules/security/profiles.nix
+  # - Headless profile: autologin as "hypervisor-operator"
+  # - Management profile: autologin as configured management user
   
   # ═══════════════════════════════════════════════════════════════
   # Module Imports - Organized by Topic
