@@ -33,12 +33,15 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(p
 ```
 
 **Note:** By default, the bootstrapper will:
-1. Copy source files to `/etc/hypervisor/src`
-2. **Prompt**: "Check for and download updates from GitHub before installation?"
+1. **Prompt**: "Keep current hostname 'X'?"
+   - If **Yes**: Uses the current system hostname
+   - If **No**: Prompts for a custom hostname
+2. Copy source files to `/etc/hypervisor/src`
+3. **Prompt**: "Check for and download updates from GitHub before installation?"
    - If **Yes**: Runs `dev_update_hypervisor.sh` to sync latest files
    - If **No**: Continues with current source files
    - Automatically skips if no network detected
-3. **Detect and migrate all base system settings:**
+4. **Detect and migrate all base system settings:**
    - **Users**: Detects users with UID ≥ 1000, preserves password hashes, groups, home directories
      - If multiple users: Interactive checklist to select which to carry over (TUI)
      - If single user or no TUI: Automatically carries over all detected users
@@ -47,11 +50,11 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(p
    - **System**: State version (for compatibility), hostname
    - **Boot**: Swap devices, resume device for hibernation
    - **Note**: X11 keyboard settings are NOT migrated (headless design, Wayland-first approach)
-4. **Prompt**: "Run a test activation (nixos-rebuild test) before full switch?"
+5. **Prompt**: "Run a test activation (nixos-rebuild test) before full switch?"
    - If **Yes**: Tests configuration safely (temporary activation)
      - Then **prompts**: "Test succeeded. Proceed with full switch now?"
    - If **No**: Prompts to proceed directly to full switch
-5. User controls when/if the system switches (not automatic)
+6. User controls when/if the system switches (not automatic)
 
 This ensures a safe, controlled installation with the latest version while preserving your existing user accounts and giving you full control over the activation process.
 

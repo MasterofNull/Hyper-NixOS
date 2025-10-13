@@ -162,6 +162,9 @@ sudo nix run .#bootstrap -- --hostname myhost --action switch --fast
 ```
 
 **What happens:**
+- Prompts: "Keep current hostname 'X'?" 
+  - **Yes** → Uses current hostname
+  - **No** → Prompts for custom hostname
 - Copies source files to `/etc/hypervisor/src`
 - Prompts: "Check for and download updates from GitHub before installation?"
   - **Yes** → Downloads latest version, then continues

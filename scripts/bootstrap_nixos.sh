@@ -671,12 +671,20 @@ main() {
   local hostname
   if [[ -n "$HOSTNAME_OVERRIDE" ]]; then
     hostname="$HOSTNAME_OVERRIDE"
-  elif [[ -n "$DIALOG" && -z "$ACTION" ]]; then
-    hostname=$("$DIALOG" --inputbox "Hostname for this hypervisor" 10 60 "$default_hostname" 3>&1 1>&2 2>&3 || echo "$default_hostname")
-    "$DIALOG" --msgbox "We will copy Hyper‑NixOS files to /etc/hypervisor/src and generate /etc/hypervisor/flake.nix (symlinked from /etc/nixos/flake.nix) for '$hostname' on $system." 12 70 || true
   else
-    read -r -p "Hostname [$default_hostname]: " ans || true
-    hostname=${ans:-$default_hostname}
+    # Ask if user wants to keep current hostname or set a custom one
+    if ask_yes_no "Keep current hostname '$default_hostname'?" yes; then
+      hostname="$default_hostname"
+      msg "Using hostname: $hostname"
+    else
+      if [[ -n "$DIALOG" ]]; then
+        hostname=$("$DIALOG" --inputbox "Enter custom hostname for this hypervisor" 10 60 "$default_hostname" 3>&1 1>&2 2>&3 || echo "$default_hostname")
+      else
+        read -r -p "Enter custom hostname [$default_hostname]: " ans || true
+        hostname=${ans:-$default_hostname}
+      fi
+      msg "Using custom hostname: $hostname"
+    fi
   fi
 
   ensure_hardware_config
