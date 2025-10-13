@@ -4,17 +4,16 @@
 # This is the top-level configuration file that imports all modules
 
 let
-  mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
-  enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
-  enableWelcomeAtBoot = lib.attrByPath ["hypervisor" "firstBootWelcome" "enableAtBoot"] true config;
-  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
+  # Now that options are defined, we can safely access config values
+  mgmtUser = config.hypervisor.management.userName;
+  enableMenuAtBoot = config.hypervisor.menu.enableAtBoot;
+  enableWelcomeAtBoot = config.hypervisor.firstBootWelcome.enableAtBoot;
+  enableWizardAtBoot = config.hypervisor.firstBootWizard.enableAtBoot;
   
   # Boot Architecture: Headless console menu by default, GUI only on explicit request
   # This hypervisor is designed to boot to a TUI menu for VM management (minimal resources).
   # GUI desktop environment is opt-in via hypervisor.gui.enableAtBoot = true
-  hasHypervisorGuiPreference = lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config;
-  hypervisorGuiRequested = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
-  enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else false;
+  enableGuiAtBoot = config.hypervisor.gui.enableAtBoot;
   
   # Enable console autologin only when not booting to a GUI Desktop
   consoleAutoLoginEnabled = (enableMenuAtBoot || enableWizardAtBoot) && (!enableGuiAtBoot);
@@ -43,6 +42,7 @@ in {
     # ─────────────────────────────────────────────────────────────
     # Core System Configuration
     # ─────────────────────────────────────────────────────────────
+    ./modules/core/options.nix
     ./modules/core/boot.nix
     ./modules/core/system.nix
     ./modules/core/packages.nix
