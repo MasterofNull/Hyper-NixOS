@@ -23,11 +23,11 @@ in {
     boot.kernelModules = [ "vfio_pci" ];
 
     # Bind specified PCI IDs to vfio-pci at boot
-    boot.extraModprobeConfig = lib.mkIf (cfg.pcieIds != []) (
+    boot.extraModprobeConfig = (
       let ids = lib.concatStringsSep "," cfg.pcieIds; in
-      ''
+      if cfg.pcieIds != [] then ''
         options vfio-pci ids=${ids}
-      ''
+      '' else ""
     );
   };
 }

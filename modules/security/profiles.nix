@@ -56,9 +56,11 @@ in {
       users.groups.hypervisor-operator = {};
 
       # Autologin to operator user (only when menu/wizard boots and GUI is disabled)
-      services.getty.autologinUser = lib.mkIf 
-        ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
-        "hypervisor-operator";
+      # Avoid lib.mkIf on leaf values; set null when condition is false
+      services.getty.autologinUser = lib.mkDefault (
+        if ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
+        then "hypervisor-operator" else null
+      );
 
       # Disable GUI autologin
       services.displayManager.autoLogin.enable = lib.mkForce false;
@@ -192,9 +194,11 @@ in {
       };
 
       # Conditional autologin for management convenience
-      services.getty.autologinUser = lib.mkIf 
-        ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
-        mgmtUser;
+      # Avoid lib.mkIf on leaf values; set null when condition is false
+      services.getty.autologinUser = lib.mkDefault (
+        if ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
+        then mgmtUser else null
+      );
 
       # Sudo with NOPASSWD for VM operations
       security.sudo.wheelNeedsPassword = true;
