@@ -1,7 +1,13 @@
 { config, lib, pkgs, ... }:
 
 # Network Isolation Configuration
-# Provides VLAN tagging, private networks, and traffic isolation
+# Provides VLAN tagging, private networks, and traffic isolation for VMs
+#
+# Features:
+# - VLAN support for network segmentation
+# - Private networks (VM-to-VM only, no external access)
+# - Network isolation tools and utilities
+# - Scripts for managing network attachments
 
 {
   # Enable advanced networking
@@ -14,7 +20,7 @@
     };
     
     # Enable IP forwarding for routing between networks
-    # Note: Firewall configuration is handled by modules/security/firewall.nix
+    # Note: Firewall configuration is handled by modules/network-settings/firewall.nix
     nat.internalInterfaces = lib.mkDefault [ "virbr+" ];
   };
   

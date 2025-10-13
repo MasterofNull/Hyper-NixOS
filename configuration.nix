@@ -44,13 +44,19 @@ in {
     ./modules/core/cache-optimization.nix
     
     # ─────────────────────────────────────────────────────────────
+    # Network Configuration
+    # ─────────────────────────────────────────────────────────────
+    ./modules/network-settings/base.nix
+    ./modules/network-settings/firewall.nix
+    ./modules/network-settings/ssh.nix
+    ./modules/network-settings/isolation.nix
+    
+    # ─────────────────────────────────────────────────────────────
     # Security Configuration
     # ─────────────────────────────────────────────────────────────
     ./modules/security/base.nix
     ./modules/security/profiles.nix
     ./modules/security/kernel-hardening.nix
-    ./modules/security/firewall.nix
-    ./modules/security/ssh.nix
     
     # ─────────────────────────────────────────────────────────────
     # Virtualization Configuration

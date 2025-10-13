@@ -1,12 +1,9 @@
 { config, lib, pkgs, ... }:
 
 # Core System Settings
-# Basic system-wide configuration
+# Basic system-wide configuration (non-network)
 
 {
-  # Hostname
-  networking.hostName = lib.mkDefault "hypervisor";
-  
   # Timezone
   time.timeZone = lib.mkDefault "UTC";
   
