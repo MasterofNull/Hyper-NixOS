@@ -3,22 +3,8 @@
 # Hyper-NixOS Main Configuration
 # This is the top-level configuration file that imports all modules
 
-let
-  mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
-  enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
-  enableWelcomeAtBoot = lib.attrByPath ["hypervisor" "firstBootWelcome" "enableAtBoot"] true config;
-  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  
-  # Boot Architecture: Headless console menu by default, GUI only on explicit request
-  # This hypervisor is designed to boot to a TUI menu for VM management (minimal resources).
-  # GUI desktop environment is opt-in via hypervisor.gui.enableAtBoot = true
-  hasHypervisorGuiPreference = lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config;
-  hypervisorGuiRequested = lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config;
-  enableGuiAtBoot = if hasHypervisorGuiPreference then hypervisorGuiRequested else false;
-  
-  # Enable console autologin only when not booting to a GUI Desktop
-  consoleAutoLoginEnabled = (enableMenuAtBoot || enableWizardAtBoot) && (!enableGuiAtBoot);
-in {
+{
+  # Note: All config-dependent variables moved to config section to avoid circular dependencies
   # ═══════════════════════════════════════════════════════════════
   # System Version
   # ═══════════════════════════════════════════════════════════════
@@ -150,7 +136,11 @@ in {
   # ═══════════════════════════════════════════════════════════════
   # Systemd Services - Hypervisor Menu
   # ═══════════════════════════════════════════════════════════════
-  systemd.services.hypervisor-menu = {
+  systemd.services.hypervisor-menu = let
+    mgmtUser = config.hypervisor.management.userName;
+    enableMenuAtBoot = config.hypervisor.menu.enableAtBoot;
+    enableGuiAtBoot = config.hypervisor.gui.enableAtBoot or false;
+  in {
     description = "Boot-time Hypervisor VM Menu";
     wantedBy = lib.optional (enableMenuAtBoot && !enableGuiAtBoot) "multi-user.target";
     after = [ "network-online.target" "libvirtd.service" ];
@@ -164,7 +154,7 @@ in {
       Type = "simple";
       ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/menu.sh";
       WorkingDirectory = "/etc/hypervisor";
-      User = "${mgmtUser}";
+      User = mgmtUser;
       SupplementaryGroups = [ "kvm" "libvirtd" "video" ];
       Restart = "always";
       RestartSec = 2;
@@ -214,7 +204,9 @@ in {
   # ═══════════════════════════════════════════════════════════════
   # Systemd Services - First Boot Welcome
   # ═══════════════════════════════════════════════════════════════
-  systemd.services.hypervisor-first-boot-welcome = {
+  systemd.services.hypervisor-first-boot-welcome = let
+    enableWelcomeAtBoot = config.hypervisor.firstBootWelcome.enableAtBoot;
+  in {
     description = "First-boot Welcome Screen";
     wantedBy = lib.optional enableWelcomeAtBoot "multi-user.target";
     after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
@@ -263,7 +255,9 @@ in {
   # ═══════════════════════════════════════════════════════════════
   # Systemd Services - First Boot Wizard
   # ═══════════════════════════════════════════════════════════════
-  systemd.services.hypervisor-first-boot = {
+  systemd.services.hypervisor-first-boot = let
+    enableWizardAtBoot = config.hypervisor.firstBootWizard.enableAtBoot;
+  in {
     description = "First-boot Setup Wizard (Disabled)";
     wantedBy = lib.optional enableWizardAtBoot "multi-user.target";
     after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];

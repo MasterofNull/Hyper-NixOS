@@ -8,23 +8,8 @@
 #
 # Select profile via: hypervisor.security.profile option
 
-let
-  mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
-  enableMenuAtBoot = lib.attrByPath ["hypervisor" "menu" "enableAtBoot"] true config;
-  enableWizardAtBoot = lib.attrByPath ["hypervisor" "firstBootWizard" "enableAtBoot"] false config;
-  enableGuiAtBoot = 
-    if lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config 
-    then lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config 
-    else false;
-  
-  # Determine active profile
-  # Default to "headless" for production zero-trust operations
-  # Use "management" for system administration with expanded sudo
-  activeProfile = lib.attrByPath ["hypervisor" "security" "profile"] "headless" config;
-  
-  isHeadless = activeProfile == "headless";
-  isManagement = activeProfile == "management";
-in {
+{
+  # Note: All config-dependent variables moved to individual config sections to avoid circular dependencies
   options.hypervisor.security.profile = lib.mkOption {
     type = lib.types.enum [ "headless" "management" ];
     default = "headless";
@@ -35,7 +20,15 @@ in {
     '';
   };
 
-  config = lib.mkMerge [
+  config = let
+    mgmtUser = config.hypervisor.management.userName;
+    enableMenuAtBoot = config.hypervisor.menu.enableAtBoot;
+    enableWizardAtBoot = config.hypervisor.firstBootWizard.enableAtBoot;
+    enableGuiAtBoot = config.hypervisor.gui.enableAtBoot or false;
+    activeProfile = config.hypervisor.security.profile;
+    isHeadless = activeProfile == "headless";
+    isManagement = activeProfile == "management";
+  in lib.mkMerge [
     # ═══════════════════════════════════════════════════════════════
     # PROFILE: HEADLESS ZERO-TRUST
     # For production VM operations only
