@@ -50,11 +50,13 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(p
    - **System**: State version (for compatibility), hostname
    - **Boot**: Swap devices, resume device for hibernation
    - **Note**: X11 keyboard settings are NOT migrated (headless design, Wayland-first approach)
-5. **Prompt**: "Run a test activation (nixos-rebuild test) before full switch?"
-   - If **Yes**: Tests configuration safely (temporary activation)
-     - Then **prompts**: "Test succeeded. Proceed with full switch now?"
-   - If **No**: Prompts to proceed directly to full switch
-6. User controls when/if the system switches (not automatic)
+5. **Shows TUI menu** "Choose next step":
+   - **Build only** → Build the system without activating (test build)
+   - **Test** → Test activation (temporary, reverts on reboot)
+   - **Switch** → Full system switch (persistent installation)
+   - **Shell** → Drop to root shell for manual operations
+   - **Quit** → Exit without making changes
+6. User has full control over installation via the TUI menu
 
 This ensures a safe, controlled installation with the latest version while preserving your existing user accounts and giving you full control over the activation process.
 

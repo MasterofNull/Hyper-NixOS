@@ -174,10 +174,12 @@ sudo nix run .#bootstrap -- --hostname myhost --action switch --fast
   - Timezone, locale, console keyboard/font
   - System state version, swap/hibernation config
   - Headless design: X11 settings not migrated (Wayland-first approach)
-- Prompts: "Run a test activation (nixos-rebuild test) before full switch?"
-  - **Yes** → Tests configuration, then prompts: "Test succeeded. Proceed with full switch now?"
-  - **No** → Prompts: "Proceed directly to full switch now?"
-- User controls when/if system switches
+- **Shows TUI menu** with options:
+  - **Build only** → Builds configuration without activating
+  - **Test** → Temporary activation (reverts on reboot)
+  - **Switch** → Full installation (persistent)
+  - **Shell** → Drop to root shell
+  - **Quit** → Exit without changes
 
 ### Method 3: Build Bootable ISO
 

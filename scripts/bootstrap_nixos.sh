@@ -745,39 +745,10 @@ main() {
       *) echo "Invalid --action: $ACTION" >&2; exit 1;;
     esac
   else
-    # Automated flow with minimal prompts: offer test first, then optional switch
-    if ask_yes_no "Run a test activation (nixos-rebuild test) before full switch?" yes; then
-      if ! nr test --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"; then
-        if [[ -n "$DIALOG" ]]; then "$DIALOG" --msgbox "Test activation failed. Review configuration and retry." 10 70 || true; fi
-        echo "Test activation failed." >&2
-        exit 1
-      fi
-      if ask_yes_no "Test succeeded. Proceed with full switch now?" yes; then
-        nr switch --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
-        if $REBOOT; then
-          systemctl reboot
-        else
-          systemctl daemon-reload || true
-          systemctl enable --now hypervisor-menu.service || true
-          command -v chvt >/dev/null 2>&1 && chvt 1 || true
-        fi
-      else
-        msg "Switch skipped per user choice."
-      fi
-    else
-      if ask_yes_no "Proceed directly to full switch now?" yes; then
-        nr switch --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
-        if $REBOOT; then
-          systemctl reboot
-        else
-          systemctl daemon-reload || true
-          systemctl enable --now hypervisor-menu.service || true
-          command -v chvt >/dev/null 2>&1 && chvt 1 || true
-        fi
-      else
-        msg "No rebuild performed."
-      fi
-    fi
+    # Interactive flow: show TUI menu with rebuild options
+    msg "Bootstrap setup complete. Choose next step:"
+    echo ""
+    rebuild_menu "$hostname"
   fi
 }
 
