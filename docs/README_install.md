@@ -32,7 +32,12 @@ cd hypervisor
 sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(pwd)
 ```
 
-**Note:** By default, the bootstrapper will test the configuration first, then automatically proceed with the full system switch. This ensures a safe installation while meeting user expectations for a bootstrapper script.
+**Note:** By default, the bootstrapper will:
+1. Check for updates from GitHub (gracefully skips if no network)
+2. Test the configuration first (safe dry-run)
+3. Automatically proceed with the full system switch
+
+This ensures a safe installation while meeting user expectations for a bootstrapper script.
 
 Flags:
 - `--hostname NAME`: attribute and system hostname
@@ -40,6 +45,7 @@ Flags:
 - `--force`: overwrite existing `/etc/hypervisor` without a prompt
 - `--source PATH`: explicit source (defaults to auto-detected repo root)
 - `--fast`: enable optimized parallel downloads (recommended)
+- `--skip-update-check`: skip checking for updates from GitHub (offline mode)
 - `--reboot`: automatically reboot after successful installation
 
 ### Build bootable ISO

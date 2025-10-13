@@ -148,11 +148,14 @@ cd Hyper-NixOS
 
 2. **Run bootstrap:**
 ```bash
-# Default (test then install automatically):
+# Default (checks for updates, then installs):
 sudo nix run .#bootstrap
 
 # With custom hostname and fast mode:
 sudo nix run .#bootstrap -- --hostname myhost --fast
+
+# Offline mode (skip update check):
+sudo nix run .#bootstrap -- --skip-update-check --fast
 
 # Explicit action (build/test/switch):
 sudo nix run .#bootstrap -- --hostname myhost --action switch --fast

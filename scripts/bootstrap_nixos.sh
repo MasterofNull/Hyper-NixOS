@@ -32,6 +32,7 @@ SRC_OVERRIDE=""
 RB_OPTS=(--refresh --option tarball-ttl 0 --option narinfo-cache-positive-ttl 0 --option narinfo-cache-negative-ttl 0)
 REBOOT=false
 FAST_MODE=false
+SKIP_UPDATE_CHECK=false
 
 # Wrapper: use a flake-capable nixos-rebuild even on older hosts
 supports_flakes_flag() {
@@ -60,6 +61,7 @@ Options:
   --source PATH       Use PATH as source folder instead of auto-detect
   --reboot            Reboot after successful switch (recommended on fresh installs)
   --fast              Enable optimized parallel downloads (recommended)
+  --skip-update-check Skip checking for updates from GitHub (offline mode)
   -h, --help          Show this help
 
 Optimizations (--fast flag, recommended):
@@ -123,6 +125,57 @@ detect_system() {
     aarch64|arm64) echo aarch64-linux ;;
     *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
   esac
+}
+
+# Check for network connectivity
+has_network() {
+  # Try to reach GitHub with a short timeout
+  if command -v curl >/dev/null 2>&1; then
+    curl -s --connect-timeout 5 --max-time 10 https://api.github.com >/dev/null 2>&1
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q --timeout=5 --tries=1 --spider https://api.github.com >/dev/null 2>&1
+  elif command -v ping >/dev/null 2>&1; then
+    ping -c 1 -W 5 github.com >/dev/null 2>&1
+  else
+    # Assume network is available if we can't check
+    return 0
+  fi
+}
+
+# Check for updates using dev_update_hypervisor.sh with graceful failure
+check_for_updates_if_online() {
+  local update_script="/etc/hypervisor/src/scripts/dev_update_hypervisor.sh"
+  
+  # Skip if script doesn't exist yet (shouldn't happen but defensive)
+  if [[ ! -f "$update_script" ]]; then
+    return 0
+  fi
+  
+  msg "Checking for updates from GitHub..."
+  
+  # Check network connectivity with graceful failure
+  if ! has_network; then
+    msg "No network connectivity detected - skipping update check"
+    msg "Installation will proceed with the source files provided"
+    return 0
+  fi
+  
+  msg "Network available - checking for newer version..."
+  
+  # Run update check with timeout and capture exit code
+  local check_result=0
+  if timeout 30s bash "$update_script" --check-only --skip-rebuild 2>&1 | grep -q "No changes detected"; then
+    msg "✓ Source files are up to date with main branch"
+  elif timeout 30s bash "$update_script" --check-only --skip-rebuild >/dev/null 2>&1; then
+    msg "Note: Updates are available from GitHub"
+    msg "Installation will proceed with current source version"
+  else
+    # Network error or other issue - gracefully continue
+    msg "Could not check for updates (network issue or rate limit)"
+    msg "Installation will proceed with current source version"
+  fi
+  
+  return 0  # Always succeed to avoid blocking installation
 }
 
 ensure_hardware_config() {
@@ -507,6 +560,7 @@ main() {
       --source) SRC_OVERRIDE="$2"; shift 2;;
       --reboot) REBOOT=true; shift;;
       --fast) FAST_MODE=true; shift;;
+      --skip-update-check) SKIP_UPDATE_CHECK=true; shift;;
       -h|--help) usage; exit 0;;
       *) echo "Unknown option: $1" >&2; usage; exit 1;;
     esac
@@ -552,6 +606,13 @@ main() {
   # Generate carry-over local modules for users and base system settings
   write_users_local_nix
   write_system_local_nix
+  
+  # Check for updates if network is available (non-blocking)
+  if ! $SKIP_UPDATE_CHECK; then
+    check_for_updates_if_online
+  else
+    msg "Skipping update check (--skip-update-check flag)"
+  fi
   
   # Always create cache optimization config for faster downloads
   msg "Configuring optimized binary cache and parallel downloads"
