@@ -179,8 +179,121 @@ This builds upon previous infinite recursion fixes:
 4. **Test configuration evaluation after any module changes**
 5. **Be aware of evaluation order in the NixOS module system**
 
+## Additional Fix: lib.mkIf on Leaf Values
+
+After the initial fix, another critical issue was identified: **using `lib.mkIf` on leaf values (non-option values) instead of explicit conditionals**. This also causes circular dependencies.
+
+### Problem Pattern:
+```nix
+# WRONG: lib.mkIf on leaf values
+services.getty.autologinUser = lib.mkIf condition "username";
+MaxAuthTries = lib.mkIf condition 2;
+boot.extraModprobeConfig = lib.mkIf condition "config string";
+```
+
+### Fixed Pattern:
+```nix
+# CORRECT: Explicit conditionals with lib.mkDefault
+services.getty.autologinUser = lib.mkDefault (if condition then "username" else null);
+MaxAuthTries = if condition then 2 else lib.mkDefault 6;
+boot.extraModprobeConfig = if condition then "config string" else "";
+```
+
+### Files Fixed:
+
+#### 1. `modules/security/profiles.nix`
+**Before:**
+```nix
+services.getty.autologinUser = lib.mkIf 
+  ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
+  "hypervisor-operator";
+```
+
+**After:**
+```nix
+services.getty.autologinUser = lib.mkDefault (
+  if ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
+  then "hypervisor-operator"
+  else null
+);
+```
+
+#### 2. `modules/network-settings/ssh.nix`
+**Before:**
+```nix
+MaxAuthTries = lib.mkIf config.hypervisor.security.sshStrictMode 2;
+MaxSessions = lib.mkIf config.hypervisor.security.sshStrictMode 2;
+LoginGraceTime = lib.mkIf config.hypervisor.security.sshStrictMode 30;
+```
+
+**After:**
+```nix
+MaxAuthTries = if config.hypervisor.security.sshStrictMode then 2 else lib.mkDefault 6;
+MaxSessions = if config.hypervisor.security.sshStrictMode then 2 else lib.mkDefault 10;
+LoginGraceTime = if config.hypervisor.security.sshStrictMode then 30 else lib.mkDefault 120;
+```
+
+#### 3. `scripts/vfio-boot.nix`
+**Before:**
+```nix
+boot.extraModprobeConfig = lib.mkIf (cfg.pcieIds != []) (
+  let ids = lib.concatStringsSep "," cfg.pcieIds; in
+  ''
+    options vfio-pci ids=${ids}
+  ''
+);
+```
+
+**After:**
+```nix
+boot.extraModprobeConfig = 
+  if (cfg.pcieIds != []) 
+  then (
+    let ids = lib.concatStringsSep "," cfg.pcieIds; in
+    ''
+      options vfio-pci ids=${ids}
+    ''
+  )
+  else "";
+```
+
+## Updated Best Practices
+
+### ✅ Correct lib.mkIf Usage:
+```nix
+# Use lib.mkIf for attribute sets and lists
+systemd.services.myservice = lib.mkIf condition {
+  description = "My service";
+  # ...
+};
+
+# Use lib.mkIf for entire option blocks
+services.openssh = lib.mkIf enableSsh {
+  enable = true;
+  settings = { /* ... */ };
+};
+```
+
+### ❌ Incorrect lib.mkIf Usage:
+```nix
+# DON'T use lib.mkIf on leaf values (strings, numbers, booleans)
+services.getty.autologinUser = lib.mkIf condition "username";  # WRONG
+MaxAuthTries = lib.mkIf condition 2;  # WRONG
+boot.extraModprobeConfig = lib.mkIf condition "config";  # WRONG
+```
+
+### ✅ Correct Alternatives for Leaf Values:
+```nix
+# Use explicit conditionals with appropriate defaults
+services.getty.autologinUser = lib.mkDefault (if condition then "username" else null);
+MaxAuthTries = if condition then 2 else lib.mkDefault 6;
+boot.extraModprobeConfig = if condition then "config" else "";
+```
+
 ## Status
 
-🎉 **RESOLVED**: The infinite recursion error has been completely fixed.
+🎉 **RESOLVED**: Both infinite recursion issues have been completely fixed:
+1. ✅ **lib.attrByPath circular dependencies** - Fixed by moving config access to proper evaluation contexts
+2. ✅ **lib.mkIf on leaf values** - Fixed by using explicit conditionals with lib.mkDefault
 
 The configuration should now evaluate and build successfully without any circular dependency issues.
