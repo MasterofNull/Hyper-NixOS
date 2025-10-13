@@ -775,9 +775,10 @@ main() {
   # Refresh flake inputs to avoid stale input hashes and nar mismatches
   # Even though we use a local path input for the hypervisor source, updating
   # the host flake lock ensures nixpkgs and other inputs are coherent.
-  msg "Updating NixOS package dependencies (nixpkgs) to latest versions..."
-  msg "Note: This updates NixOS system packages, NOT your hypervisor code"
-  msg "This ensures you get the latest security patches and bug fixes from NixOS"
+  msg "Updating flakes..."
+  msg "  → Fetching latest NixOS package dependencies (nixpkgs)"
+  msg "  → This updates NixOS system packages, NOT your hypervisor code"
+  msg "  → Ensures you get the latest security patches and bug fixes"
   mkdir -p /var/lib/hypervisor/logs 2>/dev/null || true
   
   # Ensure git is available for flake operations
