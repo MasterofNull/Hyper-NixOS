@@ -453,8 +453,7 @@ write_system_local_nix() {
   msg "Detecting base system settings to preserve..."
   
   local host tz locale keymap swap_device resume_device swap_uuid
-  local extra_locale_settings console_font xkb_layout xkb_variant xkb_options
-  local state_version
+  local console_font state_version
   
   host=$(hostname -s 2>/dev/null || echo hypervisor)
   
@@ -464,9 +463,6 @@ write_system_local_nix() {
     locale=$(nixos-option i18n.defaultLocale 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     keymap=$(nixos-option console.keyMap 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     console_font=$(nixos-option console.font 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
-    xkb_layout=$(nixos-option services.xserver.xkb.layout 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
-    xkb_variant=$(nixos-option services.xserver.xkb.variant 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
-    xkb_options=$(nixos-option services.xserver.xkb.options 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     state_version=$(nixos-option system.stateVersion 2>/dev/null | sed -n 's/^[^=]*= \"\(.*\)\".*/\1/p' | head -n1 || true)
     swap_device=$(nixos-option swapDevices 2>/dev/null | sed -n 's/.*\"\(\/dev[^\"\n]*\)\".*/\1/p' | head -n1 || true)
     resume_device=$(nixos-option boot.resumeDevice 2>/dev/null | sed -n 's/^[^=]*= \"\(\/dev[^\"\n]*\)\".*/\1/p' | head -n1 || true)
@@ -482,21 +478,14 @@ write_system_local_nix() {
   if [[ -z "$keymap" ]]; then
     keymap=$(localectl status 2>/dev/null | awk '/VC Keymap:/ {print $3; exit}' || true)
   fi
-  if [[ -z "$xkb_layout" ]]; then
-    xkb_layout=$(localectl status 2>/dev/null | awk '/X11 Layout:/ {print $3; exit}' || true)
-  fi
-  
-  # Try to get i18n.extraLocaleSettings from existing config
-  if [[ -f /etc/nixos/configuration.nix ]]; then
-    extra_locale_settings=$(grep -A10 'i18n.extraLocaleSettings' /etc/nixos/configuration.nix 2>/dev/null | grep -v '^#' | head -n10 || true)
-  fi
   
   # Discover swap by label/uuid only if not provided by nixos-option
   if [[ -z "$swap_device" ]]; then
     swap_uuid=$(blkid -t TYPE=swap -o value -s UUID 2>/dev/null | head -n1 || true)
   fi
 
-  msg "Migrating base system settings: hostname, timezone, locale, keyboard, and more..."
+  msg "Migrating base system settings: hostname, timezone, locale, console keyboard, and more..."
+  msg "Note: X11 keyboard settings are NOT migrated (Wayland-first, headless design)"
 
   {
     echo '{ config, lib, pkgs, ... }:'
@@ -522,9 +511,9 @@ write_system_local_nix() {
       echo ''
     fi
     
-    # Console settings
+    # Console settings (headless/TUI mode)
     if [[ -n "$keymap" || -n "$console_font" ]]; then
-      echo "  # Console configuration"
+      echo "  # Console configuration (for headless/TUI operation)"
       if [[ -n "$keymap" ]]; then 
         echo "  console.keyMap = lib.mkForce \"$(escape_nix_string "$keymap")\";"
       fi
@@ -534,18 +523,9 @@ write_system_local_nix() {
       echo ''
     fi
     
-    # X11/Wayland keyboard layout (if different from console)
-    if [[ -n "$xkb_layout" ]]; then
-      echo "  # X11/Wayland keyboard layout"
-      echo "  services.xserver.xkb.layout = lib.mkForce \"$(escape_nix_string "$xkb_layout")\";"
-      if [[ -n "$xkb_variant" ]]; then 
-        echo "  services.xserver.xkb.variant = lib.mkForce \"$(escape_nix_string "$xkb_variant")\";"
-      fi
-      if [[ -n "$xkb_options" ]]; then 
-        echo "  services.xserver.xkb.options = lib.mkForce \"$(escape_nix_string "$xkb_options")\";"
-      fi
-      echo ''
-    fi
+    # Note: X11 keyboard settings NOT migrated
+    # This hypervisor is designed to run headless with console TUI
+    # GUI keyboard layouts should be configured in gui-local.nix if GUI is enabled
     
     # State version (important for compatibility)
     if [[ -n "$state_version" ]]; then

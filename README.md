@@ -168,8 +168,9 @@ sudo nix run .#bootstrap -- --hostname myhost --action switch --fast
   - **No** → Continues with current source files
 - **Automatically migrates users and system settings** from base installation
   - Users, passwords, groups, home directories
-  - Timezone, locale, keyboard layouts (console + X11)
+  - Timezone, locale, console keyboard/font
   - System state version, swap/hibernation config
+  - Headless design: X11 settings not migrated (Wayland-first approach)
 - Tests configuration (safe dry-run)
 - Installs and switches to new system
 
