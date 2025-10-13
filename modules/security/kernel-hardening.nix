@@ -72,23 +72,9 @@
     
     # Disable core dumps for setuid programs
     "fs.suid_dumpable" = 0;
-    
-    # ═══════════════════════════════════════════════════════════════
-    # Network Performance Optimization
-    # From cache-optimization.nix - TCP tuning for faster downloads
-    # ═══════════════════════════════════════════════════════════════
-    
-    # Increase TCP buffer sizes for better throughput
-    "net.core.rmem_max" = 134217728;  # 128MB receive buffer
-    "net.core.wmem_max" = 134217728;  # 128MB send buffer
-    "net.ipv4.tcp_rmem" = "4096 87380 134217728";
-    "net.ipv4.tcp_wmem" = "4096 87380 134217728";
-    
-    # Enable TCP fast open for faster connection establishment
-    "net.ipv4.tcp_fastopen" = 3;
-    
-    # Increase max connections
-    "net.core.somaxconn" = 4096;
-    "net.core.netdev_max_backlog" = 5000;
   };
+  
+  # Note: TCP performance optimization sysctls (buffer sizes, tcp_fastopen, etc.)
+  # are now in modules/core/cache-optimization.nix where they semantically belong.
+  # This module focuses solely on security hardening.
 }

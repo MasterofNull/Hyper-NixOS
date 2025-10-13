@@ -61,8 +61,22 @@
     require-sigs = true
   '';
   
-  # Note: TCP optimization sysctl settings have been moved to
-  # modules/security/kernel-hardening.nix to avoid duplicates
+  # TCP optimization for faster downloads
+  # Using lib.mkDefault to allow override without conflicts
+  boot.kernel.sysctl = {
+    # Increase TCP buffer sizes for better download throughput
+    "net.core.rmem_max" = lib.mkDefault 134217728;  # 128MB
+    "net.core.wmem_max" = lib.mkDefault 134217728;  # 128MB
+    "net.ipv4.tcp_rmem" = lib.mkDefault "4096 87380 134217728";
+    "net.ipv4.tcp_wmem" = lib.mkDefault "4096 87380 134217728";
+    
+    # Enable TCP fast open for faster connection establishment
+    "net.ipv4.tcp_fastopen" = lib.mkDefault 3;
+    
+    # Increase max connections for parallel downloads
+    "net.core.somaxconn" = lib.mkDefault 4096;
+    "net.core.netdev_max_backlog" = lib.mkDefault 5000;
+  };
   
   # Garbage collection to save space
   # But keep recent builds
