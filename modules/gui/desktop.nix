@@ -40,12 +40,9 @@ in {
     };
   };
   
-  # NEVER enable X11 - it's insecure
-  services.xserver.enable = lib.mkForce false;
-  
-  # XWayland disabled by default (pure Wayland)
-  # Only enable if you need legacy X11 app compatibility
-  programs.xwayland.enable = lib.mkDefault false;
+  # XWayland: DISABLED - this is a locked-down Wayland-only system
+  # Never enable X11/XWayland on production hypervisors (security risk)
+  programs.xwayland.enable = lib.mkForce false;
   
   # XDG Desktop entries for hypervisor tools
   environment.etc."xdg/applications/hypervisor-menu.desktop".text = ''
