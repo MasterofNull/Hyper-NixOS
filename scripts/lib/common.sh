@@ -233,6 +233,54 @@ load_config() {
     fi
 }
 
+# Performance monitoring
+SCRIPT_START_TIME=""
+SCRIPT_METRICS_ENABLED="${SCRIPT_METRICS_ENABLED:-false}"
+
+# Start script timer
+script_timer_start() {
+    SCRIPT_START_TIME=$(date +%s.%N 2>/dev/null || date +%s)
+    log_debug "Script timer started at $SCRIPT_START_TIME"
+}
+
+# End script timer and log duration
+script_timer_end() {
+    local label="${1:-Script execution}"
+    if [[ -n "$SCRIPT_START_TIME" ]]; then
+        local end_time=$(date +%s.%N 2>/dev/null || date +%s)
+        local duration=$(awk "BEGIN {print $end_time - $SCRIPT_START_TIME}")
+        log_info "$label time: ${duration}s"
+        
+        # Write metrics if enabled
+        if [[ "$SCRIPT_METRICS_ENABLED" == "true" ]]; then
+            local metrics_file="${HYPERVISOR_LOGS}/script_metrics.csv"
+            if [[ ! -f "$metrics_file" ]]; then
+                echo "timestamp,script,operation,duration" > "$metrics_file"
+            fi
+            echo "$(date -Iseconds),${BASH_SOURCE[-1]##*/},$label,$duration" >> "$metrics_file"
+        fi
+    fi
+}
+
+# Measure function execution time
+measure_function() {
+    local func_name="$1"
+    shift
+    local start_time=$(date +%s.%N 2>/dev/null || date +%s)
+    
+    # Execute the function with its arguments
+    "$func_name" "$@"
+    local result=$?
+    
+    if [[ "$SCRIPT_METRICS_ENABLED" == "true" ]]; then
+        local end_time=$(date +%s.%N 2>/dev/null || date +%s)
+        local duration=$(awk "BEGIN {print $end_time - $start_time}")
+        log_debug "Function $func_name took ${duration}s"
+    fi
+    
+    return $result
+}
+
 # Auto-load configuration
 load_config
 
