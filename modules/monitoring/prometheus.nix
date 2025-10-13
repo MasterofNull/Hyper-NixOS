@@ -1,6 +1,20 @@
 { config, lib, pkgs, ... }:
 {
-  # Note: All options are now centralized in modules/core/options.nix
+  options.hypervisor.monitoring = {
+    enablePrometheus = lib.mkEnableOption "Enable Prometheus monitoring stack";
+    enableGrafana = lib.mkEnableOption "Enable Grafana dashboards";
+    enableAlertmanager = lib.mkEnableOption "Enable Alertmanager for notifications";
+    prometheusPort = lib.mkOption {
+      type = lib.types.port;
+      default = 9090;
+      description = "Port for Prometheus server";
+    };
+    grafanaPort = lib.mkOption {
+      type = lib.types.port;
+      default = 3000;
+      description = "Port for Grafana server";
+    };
+  };
 
   config = lib.mkMerge [
     (lib.mkIf config.hypervisor.monitoring.enablePrometheus {

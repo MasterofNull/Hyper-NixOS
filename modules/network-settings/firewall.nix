@@ -5,7 +5,10 @@
 # Supports both iptables and nftables
 
 {
-  # Note: All options are now centralized in modules/core/options.nix
+  options.hypervisor.security = {
+    strictFirewall = lib.mkEnableOption "Enable default-deny nftables for hypervisor";
+    migrationTcp = lib.mkEnableOption "Allow libvirt TCP migration ports (16514, 49152-49216)";
+  };
 
   config = lib.mkMerge [
     # ═══════════════════════════════════════════════════════════════

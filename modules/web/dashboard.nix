@@ -8,6 +8,19 @@ let
   py = pkgs.python3.withPackages (ps: [ ps.flask ps.requests ]);
 in
 {
+  options.hypervisor.web = {
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable the web dashboard";
+    };
+    port = lib.mkOption {
+      type = lib.types.port;
+      default = 8080;
+      description = "Port for the web dashboard";
+    };
+  };
+
   config = lib.mkIf config.hypervisor.web.enable {
     # Runtime user for the web dashboard (non-login)
     # Note: hypervisor-operator user is defined in security-production.nix
