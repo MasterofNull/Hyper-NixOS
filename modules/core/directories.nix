@@ -4,14 +4,13 @@
 # Consolidated directory creation and permissions management
 # Manages /var/lib/hypervisor and related directories
 
-let
-  # Access config values safely within the config section
-  mgmtUser = config.hypervisor.management.userName;
-  activeProfile = config.hypervisor.security.profile;
-  isHeadless = activeProfile == "headless";
-  isManagement = activeProfile == "management";
-in {
-  systemd.tmpfiles.rules = lib.mkMerge [
+{
+  systemd.tmpfiles.rules = let
+    mgmtUser = config.hypervisor.management.userName;
+    activeProfile = config.hypervisor.security.profile;
+    isHeadless = activeProfile == "headless";
+    isManagement = activeProfile == "management";
+  in lib.mkMerge [
     # ═══════════════════════════════════════════════════════════════
     # Common Directories (all profiles)
     # ═══════════════════════════════════════════════════════════════

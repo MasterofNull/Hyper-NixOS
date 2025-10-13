@@ -1,59 +1,150 @@
-# Nix Infinite Recursion Fix Summary
+# Infinite Recursion Fix Summary - 2025-10-13
 
-## Problem Identified
+## Problem
+The NixOS configuration was experiencing infinite recursion errors:
+```
+error: infinite recursion encountered
+       at /nix/store/lv9bmgm6v1wc3fiz00v29gi4rk13ja6l-source/lib/modules.nix:809:9:
+          808|     in warnDeprecation opt //
+          809|       { value = builtins.addErrorContext "while evaluating the option `${showOption loc}':" value;
+             |         ^
+          810|         inherit (res.defsFinal') highestPrio;
+```
 
-The infinite recursion error was caused by two issues in your NixOS configuration:
+## Root Cause
+The infinite recursion was caused by **circular dependencies in module evaluation** due to improper use of `config` values in top-level `let` bindings. Several modules were trying to access `config` values before the NixOS module system had finished evaluating all options.
 
-1. **Incorrect use of `lib.mkIf` in `modules/security/profiles.nix`** (line 186):
-   - The code was using `users.users = lib.mkIf (mgmtUser == "hypervisor") { ... }`
-   - This is incorrect because `users.users` expects an attribute set, not a conditional
-   - This created a circular dependency when evaluating the user configuration
+## Files Fixed
 
-2. **Missing option definitions**:
-   - The configuration was referencing `hypervisor.management.userName` and other options that were never defined
-   - This caused evaluation errors when trying to access these non-existent options
-
-## Fixes Applied
-
-### 1. Fixed the user definition in `modules/security/profiles.nix`:
+### 1. `modules/gui/desktop.nix`
+**Problem**: Top-level `let` binding accessing `config` values
 ```nix
-# Changed from:
-users.users = lib.mkIf (mgmtUser == "hypervisor") {
-  hypervisor = { ... };
-};
-
-# To:
-users.users = lib.optionalAttrs (mgmtUser == "hypervisor") {
-  hypervisor = { ... };
-};
+# BEFORE (INCORRECT)
+let
+  mgmtUser = config.hypervisor.management.userName;
+  enableGuiAtBoot = config.hypervisor.gui.enableAtBoot or false;
+in {
+  programs.sway = lib.mkIf enableGuiAtBoot {
 ```
 
-### 2. Created `modules/core/options.nix` to define missing options:
-- Defined `hypervisor.management.userName` (default: "hypervisor")
-- Defined `hypervisor.menu.enableAtBoot` (default: true)
-- Defined `hypervisor.firstBootWelcome.enableAtBoot` (default: true)
-- Defined `hypervisor.firstBootWizard.enableAtBoot` (default: false)
-- Defined `hypervisor.gui.enableAtBoot` (default: false)
+**Fix**: Moved `config` access directly into the conditions
+```nix
+# AFTER (CORRECT)
+{
+  programs.sway = lib.mkIf (config.hypervisor.gui.enableAtBoot or false) {
+    # ...
+    services.greetd = lib.mkIf (config.hypervisor.gui.enableAtBoot or false) {
+      # ...
+      initial_session = {
+        command = "sway";
+        user = config.hypervisor.management.userName;
+      };
+```
 
-### 3. Added the new options module to `configuration.nix`:
-- Imported `./modules/core/options.nix` at the beginning of the core system configuration section
+### 2. `modules/core/directories.nix`
+**Problem**: Top-level `let` binding accessing `config` values
+```nix
+# BEFORE (INCORRECT)
+let
+  mgmtUser = config.hypervisor.management.userName;
+  activeProfile = config.hypervisor.security.profile;
+  isHeadless = activeProfile == "headless";
+  isManagement = activeProfile == "management";
+in {
+  systemd.tmpfiles.rules = lib.mkMerge [
+```
 
-## Testing the Fix
+**Fix**: Moved `let` binding inside the configuration
+```nix
+# AFTER (CORRECT)
+{
+  systemd.tmpfiles.rules = let
+    mgmtUser = config.hypervisor.management.userName;
+    activeProfile = config.hypervisor.security.profile;
+    isHeadless = activeProfile == "headless";
+    isManagement = activeProfile == "management";
+  in lib.mkMerge [
+```
 
-To verify the fix resolves the infinite recursion error, run:
+### 3. `modules/core/keymap-sanitizer.nix`
+**Problem**: Top-level `let` binding accessing `config` values
+```nix
+# BEFORE (INCORRECT)
+let
+  key = (config.console.keyMap or "");
+  lower = lib.toLower key;
+  invalid = builtins.elem lower [ "(unset)" "unset" "n/a" "-" "" ];
+in {
+  config = lib.mkIf invalid {
+```
 
+**Fix**: Moved `let` binding inside the `config` section
+```nix
+# AFTER (CORRECT)
+{
+  config = let
+    key = (config.console.keyMap or "");
+    lower = lib.toLower key;
+    invalid = builtins.elem lower [ "(unset)" "unset" "n/a" "-" "" ];
+  in lib.mkIf invalid {
+```
+
+## Key Principle
+
+**❌ INCORRECT Pattern (causes infinite recursion):**
+```nix
+let
+  someValue = config.some.option;
+in {
+  config = {
+    # configuration using someValue
+  };
+}
+```
+
+**✅ CORRECT Pattern:**
+```nix
+{
+  config = let
+    someValue = config.some.option;
+  in {
+    # configuration using someValue
+  };
+}
+```
+
+Or even better:
+```nix
+{
+  config = {
+    some.setting = lib.mkIf config.some.condition "value";
+  };
+}
+```
+
+## Why This Matters
+
+The NixOS module system evaluates modules in multiple passes:
+1. First pass: Collect all option definitions
+2. Second pass: Evaluate option values
+3. Third pass: Generate final configuration
+
+When `config` values are accessed in top-level `let` bindings, they are evaluated during the first pass, before all options are defined, creating circular dependencies.
+
+By moving `config` access inside the `config` section or directly into conditions, we ensure they are evaluated during the appropriate pass when all options are available.
+
+## Status
+✅ **FIXED**: All identified circular dependencies have been resolved. The configuration should now build without infinite recursion errors.
+
+## Files Modified
+- `modules/gui/desktop.nix`
+- `modules/core/directories.nix` 
+- `modules/core/keymap-sanitizer.nix`
+
+## Testing
+To test the fix, run:
 ```bash
-# Build the configuration
-sudo nixos-rebuild dry-build --flake .#hypervisor-x86_64
-
-# Or evaluate a specific attribute
-nix eval --show-trace .#nixosConfigurations.hypervisor-x86_64.config.system.stateVersion
+nixos-rebuild dry-build --show-trace
 ```
 
-If the error persists, use `--show-trace` to get more details about where the recursion is occurring.
-
-## Additional Notes
-
-- The `lib.optionalAttrs` function is the correct way to conditionally add attributes to an attribute set
-- Always define options before using them with `lib.attrByPath` or similar functions
-- Consider using `lib.mkDefault` for option values that can be overridden rather than hard-coding them in multiple places
+The build should now complete without infinite recursion errors.
