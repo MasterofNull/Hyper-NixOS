@@ -7,6 +7,29 @@ PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 trap 'exit $?' EXIT HUP INT TERM
 
+# Ensure git is available for flake operations
+ensure_git_available() {
+  if ! command -v git >/dev/null 2>&1; then
+    # Try to add git from nix-env or system paths
+    if [[ -d ~/.nix-profile/bin ]]; then
+      export PATH="$HOME/.nix-profile/bin:$PATH"
+    fi
+    if [[ -d /run/current-system/sw/bin ]]; then
+      export PATH="/run/current-system/sw/bin:$PATH"
+    fi
+    # Still not available?
+    if ! command -v git >/dev/null 2>&1; then
+      echo "WARNING: Git is not in PATH - some flake operations may fail" >&2
+      echo "Consider installing git: nix-env -iA nixos.git" >&2
+      return 1
+    fi
+  fi
+  return 0
+}
+
+# Check git availability early
+ensure_git_available || echo "Proceeding without git - flake operations may fail" >&2
+
 usage() {
   cat <<USAGE
 Usage: $(basename "$0") [--flake FLAKE] [--host HOST] {build|test|switch|check}

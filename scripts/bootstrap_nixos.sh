@@ -39,7 +39,30 @@ supports_flakes_flag() {
   nixos-rebuild --help 2>&1 | grep -q -- '--flake'
 }
 
+# Ensure git is available for flake operations
+ensure_git_available() {
+  if ! command -v git >/dev/null 2>&1; then
+    # Try to add git from nix-env or system paths
+    if [[ -d ~/.nix-profile/bin ]]; then
+      export PATH="$HOME/.nix-profile/bin:$PATH"
+    fi
+    if [[ -d /run/current-system/sw/bin ]]; then
+      export PATH="/run/current-system/sw/bin:$PATH"
+    fi
+    # Still not available?
+    if ! command -v git >/dev/null 2>&1; then
+      warn "Git is not in PATH - some flake operations may fail"
+      warn "Consider installing git: nix-env -iA nixos.git"
+      return 1
+    fi
+  fi
+  return 0
+}
+
 nr() {
+  # Ensure git is available before running nixos-rebuild with flakes
+  ensure_git_available || warn "Proceeding without git - flake operations may fail"
+  
   if supports_flakes_flag; then
     nixos-rebuild "$@"
   else
@@ -726,12 +749,30 @@ main() {
   # the host flake lock ensures nixpkgs and other inputs are coherent.
   msg "Refreshing flake inputs (nix flake update) to prevent nar hash mismatches"
   mkdir -p /var/lib/hypervisor/logs 2>/dev/null || true
-  if ! nix \
-      --option tarball-ttl 0 \
-      --option narinfo-cache-positive-ttl 0 \
-      --option narinfo-cache-negative-ttl 0 \
-      flake update /etc/hypervisor 2>&1 | tee -a /var/lib/hypervisor/logs/bootstrap-update.log; then
-    msg "Flake update failed; proceeding with current lock file"
+  
+  # Ensure git is available for flake operations
+  # Nix may need git even for path: inputs during flake evaluation
+  if ! ensure_git_available; then
+    warn "Git is not available - attempting to use nix-shell with git for flake operations"
+    # Use nix-shell to provide git during flake update
+    if ! nix-shell -p git --run "nix \
+        --option tarball-ttl 0 \
+        --option narinfo-cache-positive-ttl 0 \
+        --option narinfo-cache-negative-ttl 0 \
+        flake update /etc/hypervisor" 2>&1 | tee -a /var/lib/hypervisor/logs/bootstrap-update.log; then
+      msg "Flake update failed; proceeding with current lock file"
+      msg "This is usually safe - the build will use existing pinned inputs"
+    fi
+  else
+    # Git is available, proceed normally
+    if ! nix \
+        --option tarball-ttl 0 \
+        --option narinfo-cache-positive-ttl 0 \
+        --option narinfo-cache-negative-ttl 0 \
+        flake update /etc/hypervisor 2>&1 | tee -a /var/lib/hypervisor/logs/bootstrap-update.log; then
+      msg "Flake update failed; proceeding with current lock file"
+      msg "This is usually safe - the build will use existing pinned inputs"
+    fi
   fi
 
   if [[ -n "$ACTION" ]]; then
