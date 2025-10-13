@@ -799,9 +799,9 @@ set +e  # Disable exit on error for test execution
 **Symptoms**:
 ```
 error: undefined variable 'elem'
-       at /nix/store/.../configuration.nix:345:25:
-          344|     # Grafana (if monitoring feature enabled)
-          345|     grafana = lib.mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+       at /nix/store/.../configuration.nix:323:28:
+          322|     # System monitoring (if monitoring feature enabled)
+          323|     prometheus = lib.mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
 ```
 
 **Root Cause**: Missing `lib.` prefix for standard Nix library functions
@@ -811,11 +811,20 @@ error: undefined variable 'elem'
 #### ✅ **Fix: Add lib. Prefix to Standard Functions**
 ```nix
 # ❌ WRONG - elem is not in scope
+prometheus = lib.mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
 grafana = lib.mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
 
 # ✅ CORRECT - Use lib.elem
+prometheus = lib.mkIf (lib.elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
 grafana = lib.mkIf (lib.elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
 ```
+
+**Common Functions Requiring lib. Prefix**:
+- `elem`, `filter`, `map`, `any`, `all`
+- `head`, `tail`, `length`, `unique`
+- `concatStringsSep`, `optionalString`, `optional`
+- `mkIf`, `mkDefault`, `mkForce`, `mkAfter`, `mkBefore`
+- `types.*` (when defining options)
 
 **Prevention**: Always use `lib.` prefix for standard library functions unless explicitly imported with `with lib;`
 
