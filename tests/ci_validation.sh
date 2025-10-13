@@ -110,6 +110,22 @@ echo "━━━ GitHub Actions ━━━"
 check_file "CI workflow" ".github/workflows/test.yml"
 
 echo ""
+echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║           Sysctl Organization Validation                       ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+echo -n "• Checking for duplicate sysctls... "
+if "$ROOT_DIR/scripts/validate-sysctl-organization.sh" > /dev/null 2>&1; then
+  echo -e "${GREEN}✓${NC}"
+  ((PASSED++))
+else
+  echo -e "${RED}✗ DUPLICATES FOUND${NC}"
+  "$ROOT_DIR/scripts/validate-sysctl-organization.sh"
+  ((FAILED++))
+fi
+
+echo ""
 echo "━━━ Bash Syntax Check ━━━"
 syntax_errors=0
 for script in "$ROOT_DIR"/scripts/*.sh; do
