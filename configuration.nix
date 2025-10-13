@@ -320,7 +320,7 @@
     chrony.enable = true;
     
     # System monitoring (if monitoring feature enabled)
-    prometheus = lib.mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+    prometheus = lib.mkIf (lib.elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
       enable = true;
       port = 9090;
       

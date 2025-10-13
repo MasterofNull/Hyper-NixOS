@@ -242,6 +242,8 @@ with lib;
 mkIf (elem "feature" list)
 ```
 
+**Recent Fix (2025-10-13)**: Fixed undefined variable 'elem' errors in configuration.nix lines 323 and 345 by adding `lib.` prefix.
+
 ## Known Patterns & Solutions
 
 ### Infinite Recursion Prevention
