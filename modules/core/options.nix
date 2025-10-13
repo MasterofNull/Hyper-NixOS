@@ -11,6 +11,8 @@
         type = lib.types.str;
         default = "hypervisor";
         description = "Username for the management user account";
+        # Validate username follows Unix conventions
+        check = name: builtins.match "^[a-z_][a-z0-9_-]*$" name != null;
       };
     };
 
@@ -47,6 +49,15 @@
         type = lib.types.bool;
         default = false;
         description = "Enable GUI desktop environment at boot";
+      };
+    };
+
+    # Web dashboard options
+    web = {
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 8080;
+        description = "Port for the web dashboard";
       };
     };
   };

@@ -121,19 +121,7 @@
         });
       '';
 
-      # Directory ownership: root:libvirtd
-      systemd.tmpfiles.rules = [
-        "d /var/lib/hypervisor 0755 root libvirtd - -"
-        "d /var/lib/hypervisor/isos 0775 root libvirtd - -"
-        "d /var/lib/hypervisor/disks 0770 root libvirtd - -"
-        "d /var/lib/hypervisor/xml 0775 root libvirtd - -"
-        "d /var/lib/hypervisor/vm_profiles 0775 root libvirtd - -"
-        "d /var/lib/hypervisor/backups 0770 root libvirtd - -"
-        "d /var/log/hypervisor 0770 root libvirtd - -"
-        "d /var/lib/hypervisor/logs 0770 root libvirtd - -"
-        "d /var/lib/hypervisor-operator 0700 hypervisor-operator hypervisor-operator - -"
-        "d /var/lib/hypervisor-operator/.gnupg 0700 hypervisor-operator hypervisor-operator - -"
-      ];
+      # Note: Directory permissions are managed by modules/core/directories.nix
 
       # Enhanced systemd security for menu
       systemd.services.hypervisor-menu.serviceConfig = {
@@ -195,48 +183,28 @@
 
       # Sudo with NOPASSWD for VM operations
       security.sudo.wheelNeedsPassword = true;
-      security.sudo.extraRules = [
+      security.sudo.extraRules = let
+        # Helper function to create virsh command rules
+        virshBin = "${pkgs.libvirt}/bin/virsh";
+        virshCmd = cmd: { command = "${virshBin} ${cmd}"; options = [ "NOPASSWD" ]; };
+        
+        # VM management commands that management user can run without password
+        vmCommands = [
+          "list" "start" "shutdown" "reboot" "destroy" "suspend" "resume"
+          "dominfo" "domstate" "domuuid" "domifaddr" "console"
+          "define" "undefine" 
+          "snapshot-create-as" "snapshot-list" "snapshot-revert" "snapshot-delete"
+          "net-list" "net-info" "net-dhcp-leases"
+        ];
+      in [
         {
           users = [ mgmtUser ];
-          commands = [
-            { command = "${pkgs.libvirt}/bin/virsh list"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh start"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh shutdown"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh reboot"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh destroy"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh suspend"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh resume"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh dominfo"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh domstate"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh domuuid"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh domifaddr"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh console"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh define"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh undefine"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh snapshot-create-as"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh snapshot-list"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh snapshot-revert"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh snapshot-delete"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh net-list"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh net-info"; options = [ "NOPASSWD" ]; }
-            { command = "${pkgs.libvirt}/bin/virsh net-dhcp-leases"; options = [ "NOPASSWD" ]; }
-          ];
+          commands = map virshCmd vmCommands;
         }
         { users = [ mgmtUser ]; commands = [ { command = "ALL"; } ]; }
       ];
 
-      # Directory ownership: management user
-      systemd.tmpfiles.rules = [
-        "d /var/lib/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/isos 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/disks 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/xml 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/vm_profiles 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/gnupg 0700 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/backups 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/log/hypervisor 0750 ${mgmtUser} ${mgmtUser} - -"
-        "d /var/lib/hypervisor/logs 0750 ${mgmtUser} ${mgmtUser} - -"
-      ];
+      # Note: Directory permissions are managed by modules/core/directories.nix
     })
   ];
 }
