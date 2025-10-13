@@ -55,14 +55,15 @@
   # Keyboard configuration for Wayland
   # Note: Even though we're using Wayland/Sway, services.xserver.xkb is the
   # canonical place for XKB configuration in NixOS (used by console.useXkbConfig)
-  services.xserver.xkb = lib.mkIf config.programs.sway.enable {
+  # We configure this unconditionally because it doesn't require X11 to be enabled
+  services.xserver.xkb = {
     layout = lib.mkDefault "us";
     variant = lib.mkDefault "";
   };
 
   # Console keyboard configuration
-  # Only use XKB settings in console when Sway is enabled
-  console.useXkbConfig = lib.mkIf config.programs.sway.enable true;
+  # Use direct keymap for console (avoids XKB dependency issues)
+  console.keyMap = lib.mkDefault "us";
 
   # ACPI events handling (lid, power button, keyboard hotkeys)
   services.acpid = {

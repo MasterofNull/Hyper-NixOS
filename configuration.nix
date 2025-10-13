@@ -66,6 +66,7 @@ in {
     ./modules/security/base.nix
     ./modules/security/profiles.nix
     ./modules/security/kernel-hardening.nix
+    ./modules/security/biometrics.nix
     
     # ─────────────────────────────────────────────────────────────
     # Virtualization Configuration
