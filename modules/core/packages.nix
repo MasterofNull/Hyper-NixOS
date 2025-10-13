@@ -21,6 +21,7 @@
     # Scripting and development
     python3
     python3Packages.jsonschema
+    git  # Required for flake operations
     
     # Dialog/TUI tools
     newt

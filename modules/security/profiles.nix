@@ -19,20 +19,12 @@
     '';
   };
 
-  config = let
-    mgmtUser = config.hypervisor.management.userName;
-    enableMenuAtBoot = config.hypervisor.menu.enableAtBoot;
-    enableWizardAtBoot = config.hypervisor.firstBootWizard.enableAtBoot;
-    enableGuiAtBoot = config.hypervisor.gui.enableAtBoot or false;
-    activeProfile = config.hypervisor.security.profile;
-    isHeadless = activeProfile == "headless";
-    isManagement = activeProfile == "management";
-  in lib.mkMerge [
+  config = lib.mkMerge [
     # ═══════════════════════════════════════════════════════════════
     # PROFILE: HEADLESS ZERO-TRUST
     # For production VM operations only
     # ═══════════════════════════════════════════════════════════════
-    (lib.mkIf isHeadless {
+    (lib.mkIf (config.hypervisor.security.profile == "headless") {
       # Create dedicated operator user with NO sudo access
       users.users.hypervisor-operator = {
         isSystemUser = true;
@@ -49,7 +41,7 @@
 
       # Autologin to operator user (only when menu/wizard boots and GUI is disabled)
       services.getty.autologinUser = lib.mkDefault (
-        if ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
+        if ((config.hypervisor.menu.enableAtBoot || config.hypervisor.firstBootWizard.enableAtBoot) && !(config.hypervisor.gui.enableAtBoot or false))
         then "hypervisor-operator"
         else null
       );
@@ -163,9 +155,9 @@
     # PROFILE: MANAGEMENT
     # For system administration with expanded sudo privileges
     # ═══════════════════════════════════════════════════════════════
-    (lib.mkIf isManagement {
+    (lib.mkIf (config.hypervisor.security.profile == "management") {
       # Management user with sudo privileges
-      users.users = lib.optionalAttrs (mgmtUser == "hypervisor") {
+      users.users = lib.optionalAttrs (config.hypervisor.management.userName == "hypervisor") {
         hypervisor = {
           isNormalUser = true;
           extraGroups = [ "wheel" "kvm" "libvirtd" "video" "input" ];
@@ -175,8 +167,8 @@
 
       # Conditional autologin for management convenience
       services.getty.autologinUser = lib.mkDefault (
-        if ((enableMenuAtBoot || enableWizardAtBoot) && !enableGuiAtBoot)
-        then mgmtUser
+        if ((config.hypervisor.menu.enableAtBoot || config.hypervisor.firstBootWizard.enableAtBoot) && !(config.hypervisor.gui.enableAtBoot or false))
+        then config.hypervisor.management.userName
         else null
       );
 
@@ -197,10 +189,10 @@
         ];
       in [
         {
-          users = [ mgmtUser ];
+          users = [ config.hypervisor.management.userName ];
           commands = map virshCmd vmCommands;
         }
-        { users = [ mgmtUser ]; commands = [ { command = "ALL"; } ]; }
+        { users = [ config.hypervisor.management.userName ]; commands = [ { command = "ALL"; } ]; }
       ];
 
       # Note: Directory permissions are managed by modules/core/directories.nix
