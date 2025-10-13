@@ -201,6 +201,9 @@ calculate_file_sha() {
 }
 
 # Compare local and remote files
+# Note: This function skips files that bootstrap_nixos.sh excludes during installation
+# to prevent false positives when comparing after a fresh install.
+# Excluded paths: .git/, result/, target/, tools/target/, var/, *.socket
 compare_files() {
   local remote_tree_file="$1"
   local changed_files="$TEMP_DIR/changed_files.txt"
@@ -223,8 +226,14 @@ compare_files() {
     
     verbose "Checking: $path"
     
-    # Skip git internal files
-    if [[ "$path" == .git/* ]] || [[ "$path" == result/* ]] || [[ "$path" == target/* ]]; then
+    # Skip files that bootstrap excludes (build artifacts, git metadata, etc.)
+    # These paths match the exclusions in bootstrap_nixos.sh copy_repo_to_etc function
+    if [[ "$path" == .git/* ]] || \
+       [[ "$path" == result/* ]] || \
+       [[ "$path" == target/* ]] || \
+       [[ "$path" == tools/target/* ]] || \
+       [[ "$path" == var/* ]] || \
+       [[ "$path" == *.socket ]]; then
       ((SKIPPED++))
       continue
     fi
@@ -408,11 +417,15 @@ full_clone() {
     
     mkdir -p "$LOCAL_ROOT"
     
+    # Use same exclusions as bootstrap_nixos.sh for consistency
     if command -v rsync >/dev/null 2>&1; then
-      rsync -a --exclude ".git/" --exclude "result" --exclude "target/" "$temp_clone/" "$LOCAL_ROOT/"
+      rsync -a --exclude ".git/" --exclude "result" --exclude "target/" --exclude "tools/target/" --exclude "var/" --exclude "*.socket" "$temp_clone/" "$LOCAL_ROOT/"
     else
       cp -a "$temp_clone"/* "$LOCAL_ROOT/" 2>/dev/null || true
       cp -a "$temp_clone"/.[!.]* "$LOCAL_ROOT/" 2>/dev/null || true
+      # Manual cleanup of excluded paths for non-rsync case
+      rm -rf "$LOCAL_ROOT/.git" "$LOCAL_ROOT/result" "$LOCAL_ROOT/target" "$LOCAL_ROOT/tools/target" "$LOCAL_ROOT/var" 2>/dev/null || true
+      find "$LOCAL_ROOT" -name "*.socket" -delete 2>/dev/null || true
     fi
     
     # Set permissions
