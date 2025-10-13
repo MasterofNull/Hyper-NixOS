@@ -52,7 +52,8 @@ usage() {
 Usage: sudo $(basename "$0") [OPTIONS]
 
 Install Hyper‑NixOS from the current folder (USB checkout) into /etc/hypervisor/src,
-write /etc/hypervisor/flake.nix (and symlink /etc/nixos/flake.nix), and optionally perform a one-shot rebuild.
+optionally update from GitHub, write /etc/hypervisor/flake.nix (and symlink /etc/nixos/flake.nix),
+and perform the system installation.
 
 Options:
   --hostname NAME     Host attribute and system hostname (default: current hostname)
@@ -118,6 +119,7 @@ use_dialog() {
 }
 
 msg() { printf "[hypervisor-bootstrap] %s\n" "$*"; }
+warn() { printf "[hypervisor-bootstrap WARNING] %s\n" "$*" >&2; }
 
 detect_system() {
   case "$(uname -m)" in
@@ -142,40 +144,58 @@ has_network() {
   fi
 }
 
-# Check for updates using dev_update_hypervisor.sh with graceful failure
-check_for_updates_if_online() {
-  local update_script="/etc/hypervisor/src/scripts/dev_update_hypervisor.sh"
+# Prompt user to update hypervisor files from GitHub before installation
+prompt_and_update_if_desired() {
+  local src_root="$1"
+  local update_script="$src_root/scripts/dev_update_hypervisor.sh"
   
-  # Skip if script doesn't exist yet (shouldn't happen but defensive)
+  # Skip if script doesn't exist
   if [[ ! -f "$update_script" ]]; then
     return 0
   fi
   
-  msg "Checking for updates from GitHub..."
-  
-  # Check network connectivity with graceful failure
+  # Check network connectivity first
   if ! has_network; then
-    msg "No network connectivity detected - skipping update check"
-    msg "Installation will proceed with the source files provided"
+    msg "No network connectivity detected - skipping update prompt"
     return 0
   fi
   
-  msg "Network available - checking for newer version..."
-  
-  # Run update check with timeout and capture exit code
-  local check_result=0
-  if timeout 30s bash "$update_script" --check-only --skip-rebuild 2>&1 | grep -q "No changes detected"; then
-    msg "✓ Source files are up to date with main branch"
-  elif timeout 30s bash "$update_script" --check-only --skip-rebuild >/dev/null 2>&1; then
-    msg "Note: Updates are available from GitHub"
-    msg "Installation will proceed with current source version"
-  else
-    # Network error or other issue - gracefully continue
-    msg "Could not check for updates (network issue or rate limit)"
-    msg "Installation will proceed with current source version"
+  # Ask user if they want to update
+  local do_update=false
+  if ask_yes_no "Check for and download updates from GitHub before installation?" yes; then
+    do_update=true
   fi
   
-  return 0  # Always succeed to avoid blocking installation
+  if ! $do_update; then
+    msg "Skipping update - will install with current source files"
+    return 0
+  fi
+  
+  msg "Checking for updates from GitHub..."
+  msg "This will update the source files before installation begins"
+  echo ""
+  
+  # Run the dev_update script with --skip-rebuild (just sync files, don't rebuild yet)
+  # The bootstrap will handle the rebuild after setup is complete
+  if bash "$update_script" --skip-rebuild --ref main; then
+    msg ""
+    msg "✓ Source files updated successfully"
+    msg "Bootstrap will now continue with the updated files"
+    echo ""
+    return 0
+  else
+    local exit_code=$?
+    warn "Update failed or no changes were detected"
+    
+    # Ask if they want to continue anyway
+    if ask_yes_no "Continue with installation using current source files?" yes; then
+      msg "Continuing with installation..."
+      return 0
+    else
+      msg "Installation cancelled by user"
+      exit 1
+    fi
+  fi
 }
 
 ensure_hardware_config() {
@@ -600,19 +620,22 @@ main() {
   fi
 
   ensure_hardware_config
+  
+  # Copy repo first, then optionally update before proceeding
   copy_repo_to_etc "$src_root"
+  
+  # Prompt to update source files after initial copy but before configuration
+  if ! $SKIP_UPDATE_CHECK; then
+    prompt_and_update_if_desired "/etc/hypervisor/src"
+  else
+    msg "Skipping update prompt (--skip-update-check flag)"
+  fi
+
   write_host_flake "$system" "$hostname"
 
   # Generate carry-over local modules for users and base system settings
   write_users_local_nix
   write_system_local_nix
-  
-  # Check for updates if network is available (non-blocking)
-  if ! $SKIP_UPDATE_CHECK; then
-    check_for_updates_if_online
-  else
-    msg "Skipping update check (--skip-update-check flag)"
-  fi
   
   # Always create cache optimization config for faster downloads
   msg "Configuring optimized binary cache and parallel downloads"

@@ -148,18 +148,26 @@ cd Hyper-NixOS
 
 2. **Run bootstrap:**
 ```bash
-# Default (checks for updates, then installs):
+# Default (prompts to update from GitHub, then installs):
 sudo nix run .#bootstrap
 
 # With custom hostname and fast mode:
 sudo nix run .#bootstrap -- --hostname myhost --fast
 
-# Offline mode (skip update check):
+# Offline mode (skip update prompt):
 sudo nix run .#bootstrap -- --skip-update-check --fast
 
 # Explicit action (build/test/switch):
 sudo nix run .#bootstrap -- --hostname myhost --action switch --fast
 ```
+
+**What happens:**
+- Copies source files to `/etc/hypervisor/src`
+- Prompts: "Check for and download updates from GitHub before installation?"
+  - **Yes** → Downloads latest version, then continues with installation
+  - **No** → Continues with current source files
+- Tests configuration (safe dry-run)
+- Installs and switches to new system
 
 ### Method 3: Build Bootable ISO
 

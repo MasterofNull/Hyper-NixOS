@@ -33,11 +33,15 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(p
 ```
 
 **Note:** By default, the bootstrapper will:
-1. Check for updates from GitHub (gracefully skips if no network)
-2. Test the configuration first (safe dry-run)
-3. Automatically proceed with the full system switch
+1. Copy source files to `/etc/hypervisor/src`
+2. **Prompt**: "Check for and download updates from GitHub before installation?"
+   - If **Yes**: Runs `dev_update_hypervisor.sh` to sync latest files
+   - If **No**: Continues with current source files
+   - Automatically skips if no network detected
+3. Test the configuration first (safe dry-run)
+4. Automatically proceed with the full system switch
 
-This ensures a safe installation while meeting user expectations for a bootstrapper script.
+This ensures a safe installation with the latest version while respecting user choice.
 
 Flags:
 - `--hostname NAME`: attribute and system hostname
