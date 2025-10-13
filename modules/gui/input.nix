@@ -63,7 +63,11 @@
 
   # Console keyboard configuration
   # Use direct keymap for console (avoids XKB dependency issues)
-  # Note: Using mkForce to prevent empty/null values that cause loadkeys errors
+  # Note: console.useXkbConfig and console.keyMap are mutually exclusive!
+  # If useXkbConfig is true, keyMap is ignored, which can cause loadkeys errors
+  # if XKB configuration is incomplete. We explicitly disable useXkbConfig and
+  # set keyMap directly to ensure a valid keymap is always available.
+  console.useXkbConfig = lib.mkForce false;
   console.keyMap = lib.mkForce "us";
 
   # ACPI events handling (lid, power button, keyboard hotkeys)
