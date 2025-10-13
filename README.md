@@ -148,10 +148,13 @@ cd Hyper-NixOS
 
 2. **Run bootstrap:**
 ```bash
-# Interactive (prompts for hostname, action):
+# Default (test then install automatically):
 sudo nix run .#bootstrap
 
-# Automated (one-shot):
+# With custom hostname and fast mode:
+sudo nix run .#bootstrap -- --hostname myhost --fast
+
+# Explicit action (build/test/switch):
 sudo nix run .#bootstrap -- --hostname myhost --action switch --fast
 ```
 

@@ -55,7 +55,7 @@ write /etc/hypervisor/flake.nix (and symlink /etc/nixos/flake.nix), and optional
 
 Options:
   --hostname NAME     Host attribute and system hostname (default: current hostname)
-  --action MODE       One of: build, test, switch. If omitted, show TUI menu.
+  --action MODE       One of: build, test, switch. If omitted, performs test then switch.
   --force             Overwrite existing /etc/hypervisor/src without prompting
   --source PATH       Use PATH as source folder instead of auto-detect
   --reboot            Reboot after successful switch (recommended on fresh installs)
@@ -583,38 +583,40 @@ main() {
       *) echo "Invalid --action: $ACTION" >&2; exit 1;;
     esac
   else
-    # Automated flow with minimal prompts: offer test first, then optional switch
-    if ask_yes_no "Run a test activation (nixos-rebuild test) before full switch?" yes; then
-      if ! nr test --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"; then
-        if [[ -n "$DIALOG" ]]; then "$DIALOG" --msgbox "Test activation failed. Review configuration and retry." 10 70 || true; fi
-        echo "Test activation failed." >&2
-        exit 1
+    # Automated flow: Install the system by default
+    # On a new system, users expect the bootstrapper to complete the installation
+    msg "==> Starting installation process..."
+    msg "    Step 1: Testing configuration (safe dry-run)"
+    
+    if ! nr test --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"; then
+      if [[ -n "$DIALOG" ]]; then 
+        "$DIALOG" --msgbox "Test activation failed. Review configuration and retry." 10 70 || true
       fi
-      if ask_yes_no "Test succeeded. Proceed with full switch now?" yes; then
-        nr switch --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
-        if $REBOOT; then
-          systemctl reboot
-        else
-          systemctl daemon-reload || true
-          systemctl enable --now hypervisor-menu.service || true
-          command -v chvt >/dev/null 2>&1 && chvt 1 || true
-        fi
-      else
-        msg "Switch skipped per user choice."
-      fi
+      echo "Test activation failed." >&2
+      echo "The configuration has errors. Please review the output above." >&2
+      exit 1
+    fi
+    
+    msg "==> Test activation succeeded!"
+    msg "    Step 2: Installing and switching to new system..."
+    
+    # Automatically proceed with switch after successful test
+    # This matches user expectations for a bootstrapper script
+    nr switch --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
+    
+    msg "==> Installation complete!"
+    
+    if $REBOOT; then
+      msg "    Rebooting system..."
+      systemctl reboot
     else
-      if ask_yes_no "Proceed directly to full switch now?" yes; then
-        nr switch --impure --flake "/etc/hypervisor#$hostname" "${RB_OPTS[@]}"
-        if $REBOOT; then
-          systemctl reboot
-        else
-          systemctl daemon-reload || true
-          systemctl enable --now hypervisor-menu.service || true
-          command -v chvt >/dev/null 2>&1 && chvt 1 || true
-        fi
-      else
-        msg "No rebuild performed."
-      fi
+      msg "    Enabling hypervisor services..."
+      systemctl daemon-reload || true
+      systemctl enable --now hypervisor-menu.service || true
+      command -v chvt >/dev/null 2>&1 && chvt 1 || true
+      msg ""
+      msg "Installation successful! System is now configured."
+      msg "You can reboot now or continue using the current session."
     fi
   fi
 }

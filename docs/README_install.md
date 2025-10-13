@@ -21,7 +21,7 @@ nix run .#rebuild-helper -- --flake /etc/nixos --host $(hostname -s) switch
 - From USB (folder contains this repository):
 
 ```
-sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --action switch --force --source $(pwd)
+sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(pwd)
 ```
 
 - From GitHub checkout:
@@ -29,14 +29,18 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --action switch --fo
 ```
 git clone https://github.com/<your-org>/<your-repo>.git hypervisor
 cd hypervisor
-sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --action switch --force --source $(pwd)
+sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(pwd)
 ```
+
+**Note:** By default, the bootstrapper will test the configuration first, then automatically proceed with the full system switch. This ensures a safe installation while meeting user expectations for a bootstrapper script.
 
 Flags:
 - `--hostname NAME`: attribute and system hostname
-- `--action {build|test|switch}`: choose dry-run, temporary activation, or full switch
+- `--action {build|test|switch}`: override default behavior (if omitted, performs test then switch)
 - `--force`: overwrite existing `/etc/hypervisor` without a prompt
 - `--source PATH`: explicit source (defaults to auto-detected repo root)
+- `--fast`: enable optimized parallel downloads (recommended)
+- `--reboot`: automatically reboot after successful installation
 
 ### Build bootable ISO
 
