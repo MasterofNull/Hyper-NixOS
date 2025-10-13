@@ -31,7 +31,7 @@ if $CI_MODE; then
   fi
   
   test_case "Configuration supports virtualization"
-  if grep -q "virtualisation.libvirtd" "../../configuration/configuration.nix"; then
+  if grep -q "virtualisation.libvirtd" "../../configuration.nix"; then
     test_pass "Libvirt configuration present"
   else
     test_info "Libvirt will be configured during installation"

@@ -108,9 +108,9 @@ if [[ -f /etc/hypervisor/scripts/web_dashboard.py ]]; then
   
   # Check systemd service isolation
   if [[ -f /etc/systemd/system/hypervisor-web-dashboard.service ]] || \
-     grep -q "hypervisor-web-dashboard" configuration/web-dashboard.nix 2>/dev/null; then
+     grep -q "hypervisor-web-dashboard" modules/web/dashboard.nix 2>/dev/null; then
     echo -n "Checking systemd isolation... "
-    if grep -q "ProtectSystem=strict\|ReadWritePaths" configuration/web-dashboard.nix 2>/dev/null; then
+    if grep -q "ProtectSystem=strict\|ReadWritePaths" modules/web/dashboard.nix 2>/dev/null; then
       check_pass "Systemd service properly isolated"
     else
       check_warn "Systemd isolation not configured"
@@ -147,8 +147,8 @@ if [[ -f /etc/hypervisor/scripts/alert_manager.sh ]]; then
   
   # Check for webhook URL exposure
   echo -n "Checking webhook URL security... "
-  if grep -q "WEBHOOK_URL=" configuration/alerting.nix 2>/dev/null; then
-    if grep -q "WEBHOOK_URL=\"https" configuration/alerting.nix; then
+  if grep -q "WEBHOOK_URL=" modules/monitoring/alerting.nix 2>/dev/null; then
+    if grep -q "WEBHOOK_URL=\"https" modules/monitoring/alerting.nix; then
       check_pass "Webhooks use HTTPS"
     else
       check_warn "Webhooks may use HTTP (unencrypted)"
@@ -287,7 +287,7 @@ fi
 
 # Check for setuid/setgid
 echo -n "Checking for setuid/setgid files... "
-local setuid_files=$(find scripts/ configuration/ -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null | wc -l)
+local setuid_files=$(find scripts/ modules/ -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null | wc -l)
 if [[ $setuid_files -eq 0 ]]; then
   check_pass "No setuid/setgid files"
 else
@@ -326,7 +326,7 @@ section "8. Secrets Management"
 # Check for hardcoded passwords
 echo -n "Checking for hardcoded passwords... "
 if grep -rE "password=.*['\"][^$]|passwd=.*['\"][^$]|pwd=.*['\"][^$]" \
-   scripts/ configuration/ --include="*.sh" --include="*.py" --include="*.nix" 2>/dev/null | \
+   scripts/ modules/ --include="*.sh" --include="*.py" --include="*.nix" 2>/dev/null | \
    grep -v "SMTP_PASS=\|example\|placeholder\|your-password"; then
   check_fail "Hardcoded passwords found!"
 else
@@ -336,7 +336,7 @@ fi
 # Check for API keys
 echo -n "Checking for API keys... "
 if grep -rE "api[_-]key=.*['\"][A-Za-z0-9]{20}" \
-   scripts/ configuration/ 2>/dev/null; then
+   scripts/ modules/ 2>/dev/null; then
   check_fail "Hardcoded API keys found!"
 else
   check_pass "No hardcoded API keys"
@@ -344,7 +344,7 @@ fi
 
 # Check for private keys
 echo -n "Checking for private keys... "
-if grep -r "BEGIN.*PRIVATE KEY" scripts/ configuration/ web/ 2>/dev/null; then
+if grep -r "BEGIN.*PRIVATE KEY" scripts/ modules/ web/ 2>/dev/null; then
   check_fail "Private keys found in code!"
 else
   check_pass "No private keys in code"
@@ -367,8 +367,8 @@ fi
 
 # Check firewall rules
 echo -n "Checking firewall for web dashboard... "
-if grep -q "allowedTCPPorts.*8080" configuration/web-dashboard.nix 2>/dev/null; then
-  if grep -q "interfaces.*lo.*8080" configuration/web-dashboard.nix; then
+if grep -q "allowedTCPPorts.*8080" modules/web/dashboard.nix 2>/dev/null; then
+  if grep -q "interfaces.*lo.*8080" modules/web/dashboard.nix; then
     check_pass "Port 8080 only allowed on localhost"
   else
     check_warn "Port 8080 may be exposed externally"
@@ -381,7 +381,7 @@ fi
 section "10. Systemd Service Hardening"
 
 # Check new services have security features
-for service_file in configuration/web-dashboard.nix configuration/alerting.nix; do
+for service_file in modules/web/dashboard.nix modules/monitoring/alerting.nix; do
   if [[ -f "$service_file" ]]; then
     echo "Checking $service_file..."
     

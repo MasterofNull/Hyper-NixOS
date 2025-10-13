@@ -302,7 +302,7 @@ EOT
     cim) ci_meta_data=$($DIALOG --inputbox "cloud-init meta-data path (YAML)" 10 70 "$ci_meta_data" 3>&1 1>&2 2>&3) || true ;;
     cin) ci_network_config=$($DIALOG --inputbox "cloud-init network-config path (YAML)" 10 70 "$ci_network_config" 3>&1 1>&2 2>&3) || true ;;
     help)
-      $DIALOG --msgbox "Tips:\n\n- ISO path: use ISO manager if none present.\n- Cloud image: use Cloud image manager, then point wizard at image.\n- Network zone: maps to bridges via configuration/config.json.\n- Autostart: group and priority affect boot order and delays.\n- Hugepages/memfd/private: performance/security trade-offs.\n\nDocs: More Options -> Docs & Help" 18 72
+      $DIALOG --msgbox "Tips:\n\n- ISO path: use ISO manager if none present.\n- Cloud image: use Cloud image manager, then point wizard at image.\n- Network zone: maps to bridges via config.json.\n- Autostart: group and priority affect boot order and delays.\n- Hugepages/memfd/private: performance/security trade-offs.\n\nDocs: More Options -> Docs & Help" 18 72
       ;;
     *) : ;;
   esac

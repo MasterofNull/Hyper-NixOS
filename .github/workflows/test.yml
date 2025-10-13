@@ -103,8 +103,9 @@ jobs:
             "ENTERPRISE_QUICK_START.md"
             "scripts/bootstrap_nixos.sh"
             "scripts/menu.sh"
-            "configuration/configuration.nix"
-            "configuration/security-production.nix"
+            "configuration.nix"
+            "hardware-configuration.nix"
+            "modules/security/profiles.nix"
             "tests/run_all_tests.sh"
           )
           
@@ -187,7 +188,7 @@ jobs:
           if grep -rn \
             -E "(password|passwd|secret|api[_-]?key|token)\s*=\s*['\"][a-zA-Z0-9!@#\$%^&*]{10,}['\"]" \
             --include="*.sh" --include="*.nix" --include="*.py" \
-            scripts/ configuration/ 2>/dev/null | \
+            scripts/ modules/ 2>/dev/null | \
             grep -v \
             -E "CHANGEME|CHANGE.ME|TODO|example|EXAMPLE|your-|Your-|<password>|>password|dummy|test|placeholder|variable|\\\$|\\\{"; then
             

@@ -83,7 +83,7 @@ done
 msg "Checking critical configuration files..."
 critical_files=(
   "/etc/hypervisor/flake.nix"
-  "/etc/hypervisor/src/configuration/configuration.nix"
+  "/etc/hypervisor/src/configuration.nix"
   "/etc/nixos/hardware-configuration.nix"
 )
 
@@ -139,11 +139,11 @@ fi
 
 # Check 5: User configuration
 msg "Checking user configuration..."
-if [[ -f /etc/hypervisor/src/configuration/users-local.nix ]]; then
+if [[ -f /etc/hypervisor/src/modules/users-local.nix ]]; then
   pass "users-local.nix exists"
   
   # Check if it has actual user definitions
-  if grep -q "users.users" /etc/hypervisor/src/configuration/users-local.nix; then
+  if grep -q "users.users" /etc/hypervisor/src/modules/users-local.nix; then
     pass "User definitions found"
   else
     warn "No user definitions in users-local.nix"
@@ -154,7 +154,7 @@ fi
 
 # Check 6: System configuration
 msg "Checking system configuration..."
-if [[ -f /etc/hypervisor/src/configuration/system-local.nix ]]; then
+if [[ -f /etc/hypervisor/src/modules/system-local.nix ]]; then
   pass "system-local.nix exists"
 else
   warn "system-local.nix not found (will be generated on rebuild)"

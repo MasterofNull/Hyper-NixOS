@@ -164,9 +164,9 @@ test_nixos_configuration() {
     "NixOS uses declarative configuration. These files define your entire system.
 Without them, you can't manage or update your hypervisor." \
     "• Flake file exists at /etc/hypervisor/flake.nix
-• Main config exists at /etc/hypervisor/src/configuration/configuration.nix
+• Main config exists at /etc/hypervisor/src/configuration.nix
 • Configuration is valid Nix syntax" \
-    "test -f /etc/hypervisor/flake.nix && test -f /etc/hypervisor/src/configuration/configuration.nix" \
+    "test -f /etc/hypervisor/flake.nix && test -f /etc/hypervisor/src/configuration.nix" \
     "Your NixOS configuration is properly installed.
 
 This means:
@@ -221,7 +221,7 @@ This could mean:
 • The security-production.nix module isn't loaded
 
 To fix:
-1. Check: cat /etc/hypervisor/src/configuration/configuration.nix
+1. Check: cat /etc/hypervisor/src/configuration.nix
 2. Verify 'security-production.nix' is in the imports
 3. Rebuild: sudo nixos-rebuild switch --flake /etc/hypervisor
 

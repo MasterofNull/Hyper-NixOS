@@ -33,16 +33,16 @@ grep -q "CHANGE_ME\|CHANGEME\|YOUR.*PASSWORD" scripts/alert_manager.sh && echo "
 echo ""
 echo "━━━ Service Security ━━━"
 echo -n "• Dashboard runs as operator user... "
-grep -q "User = \"hypervisor-operator\"" configuration/web-dashboard.nix && echo "✓ PASS" || { echo "⚠ WARN"; ((WARNINGS++)); }
+grep -q "User = \"hypervisor-operator\"" modules/web/dashboard.nix && echo "✓ PASS" || { echo "⚠ WARN"; ((WARNINGS++)); }
 
 echo -n "• Dashboard uses PrivateTmp... "
-grep -q "PrivateTmp = true" configuration/web-dashboard.nix && echo "✓ PASS" || { echo "⚠ WARN"; ((WARNINGS++)); }
+grep -q "PrivateTmp = true" modules/web/dashboard.nix && echo "✓ PASS" || { echo "⚠ WARN"; ((WARNINGS++)); }
 
 echo -n "• Dashboard uses ProtectSystem... "
-grep -q "ProtectSystem" configuration/web-dashboard.nix && echo "✓ PASS" || { echo "⚠ WARN"; ((WARNINGS++)); }
+grep -q "ProtectSystem" modules/web/dashboard.nix && echo "✓ PASS" || { echo "⚠ WARN"; ((WARNINGS++)); }
 
 echo -n "• Dashboard NOT exposed to network... "
-grep -q "#.*allowedTCPPorts" configuration/web-dashboard.nix && echo "✓ PASS" || { echo "⚠ WARN"; ((WARNINGS++)); }
+grep -q "#.*allowedTCPPorts" modules/web/dashboard.nix && echo "✓ PASS" || { echo "⚠ WARN"; ((WARNINGS++)); }
 
 echo ""
 echo "━━━ Code Quality ━━━"
