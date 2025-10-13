@@ -16,7 +16,9 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
-PATH="$HOME/.nix-profile/bin:/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+# Build PATH with multiple common nix profile locations to ensure jq is found
+# when running as root or different users
+PATH="/root/.nix-profile/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 # Configuration
 GITHUB_REPO="MasterofNull/Hyper-NixOS"
@@ -113,13 +115,14 @@ require_command jq || {
   
   # Try multiple installation methods
   if command -v nix-env >/dev/null 2>&1; then
-    # NixOS user installation
-    nix-env -iA nixos.jq
-    export PATH="$HOME/.nix-profile/bin:$PATH"
+    # NixOS user installation (try both user and root profiles)
+    nix-env -iA nixos.jq 2>/dev/null || nix-env -iA nixpkgs.jq 2>/dev/null || true
+    # Update PATH to include all possible nix profile locations
+    export PATH="/root/.nix-profile/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
   elif command -v nix >/dev/null 2>&1; then
     # Try nix profile install (new style)
     nix profile install nixpkgs#jq || nix-env -iA nixpkgs.jq || true
-    export PATH="$HOME/.nix-profile/bin:$PATH"
+    export PATH="/root/.nix-profile/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
   elif command -v apt-get >/dev/null 2>&1; then
     # Debian/Ubuntu systems
     msg "Installing jq via apt-get..."
@@ -142,9 +145,11 @@ require_command jq || {
     exit 1
   fi
   
-  # Verify jq is now available
+  # Verify jq is now available (hash -r clears bash's command cache)
+  hash -r 2>/dev/null || true
   if ! command -v jq >/dev/null 2>&1; then
     error "jq installation appeared to succeed but jq is still not available in PATH"
+    error "Current PATH: $PATH"
     error "Please install jq manually and try again"
     exit 1
   fi
@@ -172,22 +177,40 @@ get_commit_sha() {
   local ref="$1"
   verbose "Resolving ref '$ref' to commit SHA..."
   
+  # Verify jq is available
+  if ! command -v jq >/dev/null 2>&1; then
+    error "jq command not found in PATH: $PATH"
+    error "Cannot parse GitHub API responses without jq"
+    return 1
+  fi
+  
   # Try as branch first
   local sha
-  sha=$(github_api_curl "$GITHUB_API/repos/$GITHUB_REPO/git/refs/heads/$ref" 2>/dev/null | jq -r '.object.sha' 2>/dev/null || true)
+  local response
+  response=$(github_api_curl "$GITHUB_API/repos/$GITHUB_REPO/git/refs/heads/$ref" 2>&1)
+  if [[ $? -eq 0 ]] && [[ -n "$response" ]]; then
+    sha=$(echo "$response" | jq -r '.object.sha' 2>/dev/null || true)
+  fi
   
   # Try as tag if branch failed
   if [[ -z "$sha" || "$sha" == "null" ]]; then
-    sha=$(github_api_curl "$GITHUB_API/repos/$GITHUB_REPO/git/refs/tags/$ref" 2>/dev/null | jq -r '.object.sha' 2>/dev/null || true)
+    response=$(github_api_curl "$GITHUB_API/repos/$GITHUB_REPO/git/refs/tags/$ref" 2>&1)
+    if [[ $? -eq 0 ]] && [[ -n "$response" ]]; then
+      sha=$(echo "$response" | jq -r '.object.sha' 2>/dev/null || true)
+    fi
   fi
   
   # Try as direct commit SHA
   if [[ -z "$sha" || "$sha" == "null" ]]; then
-    sha=$(github_api_curl "$GITHUB_API/repos/$GITHUB_REPO/commits/$ref" 2>/dev/null | jq -r '.sha' 2>/dev/null || true)
+    response=$(github_api_curl "$GITHUB_API/repos/$GITHUB_REPO/commits/$ref" 2>&1)
+    if [[ $? -eq 0 ]] && [[ -n "$response" ]]; then
+      sha=$(echo "$response" | jq -r '.sha' 2>/dev/null || true)
+    fi
   fi
   
   if [[ -z "$sha" || "$sha" == "null" ]]; then
     error "Could not resolve ref '$ref' to a commit SHA"
+    verbose "Last API response: $response"
     return 1
   fi
   
