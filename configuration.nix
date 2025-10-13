@@ -342,7 +342,7 @@
     };
     
     # Grafana (if monitoring feature enabled)
-    grafana = lib.mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+    grafana = lib.mkIf (lib.elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
       enable = true;
       settings = {
         server = {
