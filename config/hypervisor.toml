@@ -1,0 +1,165 @@
+# Hyper-NixOS Configuration File
+# This file uses TOML format for better readability and type safety
+
+[system]
+version = "2.0.0"
+hostname = "hypervisor"
+debug = false
+log_level = "info"  # trace, debug, info, warn, error
+
+[features]
+# Boot and startup features
+autostart_timeout_sec = 5
+boot_selector_enable = true
+boot_selector_timeout_sec = 8
+boot_selector_exit_after_start = true
+
+# UI features
+enable_tooltips = true
+enable_help_shortcuts = true
+confirm_dangerous_operations = true
+show_first_time_tips = true
+
+[security]
+# Security profile: "strict", "balanced", "relaxed"
+profile = "balanced"
+enforce_mfa = false
+audit_logging = true
+encryption_required = true
+
+# Session settings
+session_timeout_minutes = 30
+max_login_attempts = 5
+lockout_duration_minutes = 15
+
+[vm]
+# Default VM settings
+[vm.defaults]
+vcpus = 2
+memory_mb = 2048
+disk_gb = 20
+disk_type = "qcow2"  # qcow2, raw, lvm
+network_mode = "nat"  # nat, bridge, isolated
+
+[vm.limits]
+max_vcpus = 16
+max_memory_gb = 32
+max_disk_tb = 2
+max_vms_per_user = 10
+
+[vm.performance]
+cpu_mode = "host-passthrough"
+enable_hugepages = false
+enable_numa = false
+io_mode = "native"  # native, threads
+
+[storage]
+# Storage configuration
+base_path = "/var/lib/hypervisor"
+vm_images_path = "/var/lib/hypervisor/images"
+iso_path = "/var/lib/hypervisor/isos"
+backup_path = "/var/lib/hypervisor/backups"
+database_path = "/var/lib/hypervisor/hypervisor.db"
+
+[storage.quotas]
+enable_quotas = true
+default_user_quota_gb = 100
+warning_threshold_percent = 85
+critical_threshold_percent = 95
+
+[network]
+# Network configuration
+[network.bridge]
+name = "virbr0"
+subnet = "192.168.122.0/24"
+dhcp_start = "192.168.122.2"
+dhcp_end = "192.168.122.254"
+
+[network.nat]
+enable_masquerade = true
+forward_mode = "nat"
+
+[network.firewall]
+enable = true
+allow_vm_communication = true
+block_external_access = false
+
+[backup]
+# Backup configuration
+enable_automatic = true
+schedule = "daily"  # hourly, daily, weekly, monthly
+retention_days = 30
+compression = "zstd"  # none, gzip, zstd
+encryption = true
+
+[backup.destinations]
+local = { path = "/var/lib/hypervisor/backups" }
+# remote = { type = "s3", bucket = "hypervisor-backups", region = "us-east-1" }
+
+[monitoring]
+# Monitoring configuration
+enable_metrics = true
+metrics_retention_days = 90
+scrape_interval_seconds = 15
+
+[monitoring.alerts]
+enable = true
+cpu_threshold_percent = 90
+memory_threshold_percent = 85
+disk_threshold_percent = 85
+
+[monitoring.exporters]
+node_exporter_port = 9100
+libvirt_exporter_port = 9177
+custom_metrics_port = 9090
+
+[api]
+# API configuration
+enable = true
+port = 8080
+host = "127.0.0.1"
+tls_enabled = false
+# tls_cert = "/etc/hypervisor/certs/server.crt"
+# tls_key = "/etc/hypervisor/certs/server.key"
+
+[api.auth]
+type = "token"  # none, basic, token, oauth2
+token_expiry_hours = 24
+refresh_token_days = 30
+
+[api.rate_limit]
+enable = true
+requests_per_minute = 60
+burst_size = 100
+
+[logging]
+# Logging configuration
+log_to_file = true
+log_file = "/var/log/hypervisor/hypervisor.log"
+max_file_size_mb = 100
+max_files = 10
+log_to_syslog = false
+log_to_journal = true
+
+[logging.levels]
+default = "info"
+vm_operations = "debug"
+api = "info"
+security = "warn"
+
+[advanced]
+# Advanced settings (use with caution)
+[advanced.libvirt]
+uri = "qemu:///system"
+keepalive_interval = 5
+keepalive_count = 5
+
+[advanced.performance]
+vm_startup_threads = 4
+concurrent_operations = 10
+cache_size_mb = 512
+
+[advanced.experimental]
+enable_gpu_passthrough = false
+enable_live_migration = false
+enable_memory_ballooning = false
