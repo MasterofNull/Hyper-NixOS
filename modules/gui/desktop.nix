@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 
 # Desktop Environment Configuration
-# GUI and display manager settings
+# Pure Wayland/Sway GUI (NO X11 - security risk)
 
 let
   mgmtUser = lib.attrByPath ["hypervisor" "management" "userName"] "hypervisor" config;
@@ -9,19 +9,43 @@ let
     if lib.hasAttrByPath ["hypervisor" "gui" "enableAtBoot"] config 
     then lib.attrByPath ["hypervisor" "gui" "enableAtBoot"] false config 
     else false;
-  hasOldDM = lib.hasAttrByPath ["services" "xserver" "displayManager"] config;
 in {
-  # X Server configuration (only when GUI enabled)
-  services.xserver.enable = lib.mkDefault enableGuiAtBoot;
-  
-  # Auto-login configuration
-  services.xserver.displayManager.autoLogin = lib.mkIf (enableGuiAtBoot && hasOldDM) {
-    enable = lib.mkDefault true;
-    user = mgmtUser;
+  # Sway window manager (pure Wayland, no X11)
+  programs.sway = lib.mkIf enableGuiAtBoot {
+    enable = true;
+    wrapperFeatures.gtk = true;
+    extraPackages = with pkgs; [
+      swaylock
+      swayidle
+      wl-clipboard
+      mako # notification daemon
+      alacritty # terminal
+      wofi # launcher
+      waybar # status bar
+    ];
   };
   
-  # Wayland-first: enable Xwayland only if GUI is enabled for compatibility
-  programs.xwayland.enable = lib.mkDefault enableGuiAtBoot;
+  # greetd display manager for Wayland autologin
+  services.greetd = lib.mkIf enableGuiAtBoot {
+    enable = true;
+    settings = {
+      default_session = {
+        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd sway";
+        user = "greeter";
+      };
+      initial_session = {
+        command = "sway";
+        user = mgmtUser;
+      };
+    };
+  };
+  
+  # NEVER enable X11 - it's insecure
+  services.xserver.enable = lib.mkForce false;
+  
+  # XWayland disabled by default (pure Wayland)
+  # Only enable if you need legacy X11 app compatibility
+  programs.xwayland.enable = lib.mkDefault false;
   
   # XDG Desktop entries for hypervisor tools
   environment.etc."xdg/applications/hypervisor-menu.desktop".text = ''
