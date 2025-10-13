@@ -6,7 +6,10 @@
 # This configuration builds on top of the default production security model
 # and adds additional restrictions for compliance-critical deployments.
 #
-# Enable by creating: /var/lib/hypervisor/configuration/security-strict.nix
+# Enable by creating /var/lib/hypervisor/configuration/security-strict.nix with:
+#   { imports = [ /etc/hypervisor/modules/security/strict.nix ]; }
+#
+# Then rebuild: sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
 #
 # Additional restrictions:
 # - Disable autologin completely (manual login required)

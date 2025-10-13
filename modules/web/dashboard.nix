@@ -62,7 +62,7 @@ in
   
   # Install template to the Flask template directory
   environment.etc."var/www/hypervisor/templates/dashboard.html" = {
-    source = ../web/templates/dashboard.html;
+    source = ../../web/templates/dashboard.html;
     mode = "0644";
   };
   
