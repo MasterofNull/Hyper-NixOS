@@ -20,12 +20,16 @@
         apps.bootstrap = {
           type = "app";
           program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-bootstrap" ''
+            # Ensure git is in PATH for flake operations
+            export PATH="${pkgs.git}/bin:$PATH"
             exec ${pkgs.bash}/bin/bash ${./scripts/bootstrap_nixos.sh} "$@"
           '');
         };
         apps.rebuild-helper = {
           type = "app";
           program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-rebuild" ''
+            # Ensure git is in PATH for flake operations
+            export PATH="${pkgs.git}/bin:$PATH"
             exec ${pkgs.bash}/bin/bash ${./scripts/rebuild_helper.sh} "$@"
           '');
         };
