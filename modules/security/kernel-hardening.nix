@@ -1,8 +1,8 @@
 { config, lib, pkgs, ... }:
 
 # Kernel Hardening Settings
-# Consolidated kernel sysctl settings for security and performance
-# Extracted from security-production.nix, security-strict.nix, and cache-optimization.nix
+# Kernel-specific security sysctls only (kernel.*, vm.*, fs.*)
+# Network security sysctls have been moved to network-settings modules
 
 {
   boot.kernel.sysctl = {
@@ -34,33 +34,6 @@
     "vm.unprivileged_userfaultfd" = lib.mkDefault 0;
     
     # ═══════════════════════════════════════════════════════════════
-    # Network Security Hardening
-    # ═══════════════════════════════════════════════════════════════
-    
-    # IP Forwarding (enabled for VM networking)
-    # "net.ipv4.ip_forward" = 1;  # Managed by libvirt
-    
-    # Reverse path filtering (prevent IP spoofing)
-    "net.ipv4.conf.all.rp_filter" = 1;
-    "net.ipv4.conf.default.rp_filter" = 1;
-    
-    # Disable source routing
-    "net.ipv4.conf.all.accept_source_route" = 0;
-    "net.ipv4.conf.default.accept_source_route" = 0;
-    
-    # Disable ICMP redirects (prevent MITM)
-    "net.ipv4.conf.all.send_redirects" = 0;
-    "net.ipv4.conf.default.send_redirects" = 0;
-    "net.ipv4.conf.all.accept_redirects" = 0;
-    "net.ipv4.conf.default.accept_redirects" = 0;
-    
-    # Enable SYN cookies (prevent SYN flood)
-    "net.ipv4.tcp_syncookies" = 1;
-    
-    # Ignore broadcast pings
-    "net.ipv4.icmp_echo_ignore_broadcasts" = 1;
-    
-    # ═══════════════════════════════════════════════════════════════
     # Filesystem Security
     # ═══════════════════════════════════════════════════════════════
     
@@ -72,23 +45,10 @@
     
     # Disable core dumps for setuid programs
     "fs.suid_dumpable" = 0;
-    
-    # ═══════════════════════════════════════════════════════════════
-    # Network Performance Optimization
-    # From cache-optimization.nix - TCP tuning for faster downloads
-    # ═══════════════════════════════════════════════════════════════
-    
-    # Increase TCP buffer sizes for better throughput
-    "net.core.rmem_max" = 134217728;  # 128MB receive buffer
-    "net.core.wmem_max" = 134217728;  # 128MB send buffer
-    "net.ipv4.tcp_rmem" = "4096 87380 134217728";
-    "net.ipv4.tcp_wmem" = "4096 87380 134217728";
-    
-    # Enable TCP fast open for faster connection establishment
-    "net.ipv4.tcp_fastopen" = 3;
-    
-    # Increase max connections
-    "net.core.somaxconn" = 4096;
-    "net.core.netdev_max_backlog" = 5000;
   };
+  
+  # Note: Network-related sysctls have been moved to network-settings/:
+  # - Network performance (TCP buffers, connection tuning) → network-settings/performance.nix
+  # - Network security (IP/ICMP/TCP security) → network-settings/security.nix
+  # This maintains proper separation: kernel/* and vm/* and fs/* here, net.* in network-settings/
 }
