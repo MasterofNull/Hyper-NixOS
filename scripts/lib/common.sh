@@ -281,6 +281,103 @@ measure_function() {
     return $result
 }
 
+# Phase detection functions
+get_security_phase() {
+    if [[ -f /etc/hypervisor/.phase2_hardened ]]; then
+        echo "hardened"
+    elif [[ -f /etc/hypervisor/.phase1_setup ]]; then
+        echo "setup"
+    else
+        # Fresh install defaults to setup
+        echo "setup"
+    fi
+}
+
+# Check if operation is allowed in current phase
+is_operation_allowed() {
+    local operation="$1"
+    local phase
+    phase=$(get_security_phase)
+    
+    case "$phase" in
+        setup)
+            # All operations allowed in setup
+            return 0
+            ;;
+        hardened)
+            # Check operation whitelist
+            case "$operation" in
+                # VM operations
+                vm_start|vm_stop|vm_pause|vm_resume|vm_status|vm_console)
+                    return 0
+                    ;;
+                # Backup operations
+                backup_create|backup_restore|backup_list)
+                    return 0
+                    ;;
+                # Monitoring operations
+                monitoring_view|log_view|metrics_view)
+                    return 0
+                    ;;
+                # Restricted operations
+                vm_create|vm_delete|vm_modify|system_config|network_config|user_modify)
+                    return 1
+                    ;;
+                *)
+                    # Unknown operations default to denied in hardened mode
+                    return 1
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+# Phase-aware permission check wrapper
+check_phase_permission() {
+    local operation="$1"
+    local phase
+    phase=$(get_security_phase)
+    
+    if ! is_operation_allowed "$operation"; then
+        log_error "Operation '$operation' not allowed in $phase mode"
+        if [[ "$phase" == "hardened" ]]; then
+            die "Operation not permitted in hardened mode. Use 'transition_phase.sh setup' to enable setup mode."
+        fi
+        return 1
+    fi
+    
+    # Log security-sensitive operations
+    if [[ "$phase" == "setup" ]]; then
+        log_warn "Setup mode operation: $operation (will be restricted in hardened mode)"
+    fi
+    
+    return 0
+}
+
+# Phase-aware directory permissions
+get_phase_permissions() {
+    local type="$1"  # file, dir, or script
+    local phase
+    phase=$(get_security_phase)
+    
+    case "$phase:$type" in
+        setup:file)    echo "0644" ;;
+        setup:dir)     echo "0755" ;;
+        setup:script)  echo "0755" ;;
+        hardened:file) echo "0640" ;;
+        hardened:dir)  echo "0750" ;;
+        hardened:script) echo "0750" ;;
+        *)             echo "0644" ;;
+    esac
+}
+
+# Initialize security phase
+SECURITY_PHASE=$(get_security_phase)
+export SECURITY_PHASE
+
+# Log current phase
+log_info "Security phase: $SECURITY_PHASE"
+
 # Auto-load configuration
 load_config
 
