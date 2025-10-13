@@ -67,8 +67,9 @@
   # If useXkbConfig is true, keyMap is ignored, which can cause loadkeys errors
   # if XKB configuration is incomplete. We explicitly disable useXkbConfig and
   # set keyMap directly to ensure a valid keymap is always available.
+  # Note: Using mkDefault allows system-local.nix to override with mkForce
   console.useXkbConfig = lib.mkForce false;
-  console.keyMap = lib.mkForce "us";
+  console.keyMap = lib.mkDefault "us";
 
   # ACPI events handling (lid, power button, keyboard hotkeys)
   services.acpid = {
