@@ -5,12 +5,12 @@
 
 {
   imports = [
-    ./centralized-logging.nix
-    ./resource-quotas.nix
+    ../monitoring/logging.nix
+    ./quotas.nix
     ./network-isolation.nix
     ./storage-quotas.nix
-    ./snapshot-lifecycle.nix
-    ./vm-encryption.nix
+    ./snapshots.nix
+    ./encryption.nix
   ];
   
   # Install enterprise management tools
@@ -61,10 +61,5 @@
     };
   };
   
-  # Create directory structure
-  systemd.tmpfiles.rules = [
-    "d /var/lib/hypervisor/templates 0755 root root -"
-    "d /var/lib/hypervisor/reports 0755 root root -"
-    "d /var/lib/hypervisor/keys 0700 root root -"
-  ];
+  # Note: Directory structure is managed in core/directories.nix
 }
