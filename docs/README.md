@@ -17,6 +17,8 @@
 
 ### For Developers & Maintainers
 - **[AI Assistant Context](AI_ASSISTANT_CONTEXT.md)** - Context for future AI assistants
+- **[AI Documentation Protocol](AI_DOCUMENTATION_PROTOCOL.md)** - AI maintenance procedures
+- **[Documentation Maintenance Guide](DOCUMENTATION_MAINTENANCE_GUIDE.md)** - Human maintenance procedures
 - **[Design Evolution](DESIGN_EVOLUTION.md)** - Historical design decisions
 - **[Common Issues](COMMON_ISSUES_AND_SOLUTIONS.md)** - Troubleshooting guide
 - **[Development Guides](dev/)** - Technical implementation details
@@ -63,10 +65,20 @@ This documentation follows these principles:
 
 ## 🔄 **Documentation Updates**
 
-When updating documentation:
+### For AI Assistants
+- **MUST READ**: [AI Documentation Protocol](AI_DOCUMENTATION_PROTOCOL.md) before making any changes
+- Follow established procedures for design conflicts and documentation maintenance
+- Preserve historical context while enabling progress
+
+### For Human Maintainers
+- **Reference**: [Documentation Maintenance Guide](DOCUMENTATION_MAINTENANCE_GUIDE.md) for procedures
+- Focus on user experience and strategic direction
+- Review AI-maintained content for accuracy and completeness
+
+### General Principles
 - Keep user guides focused on tasks and outcomes
 - Maintain historical context in design documents
 - Update troubleshooting guides with new issues
-- Preserve AI assistant context for future maintainers
+- Preserve accumulated knowledge for future maintainers
 
 The documentation is as important as the code - it enables users to successfully use and maintain the system.
