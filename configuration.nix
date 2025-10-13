@@ -88,12 +88,23 @@ in {
     # ─────────────────────────────────────────────────────────────
     ./modules/web/dashboard.nix
     
+    # ─────────────────────────────────────────────────────────────
+    # VM Management
+    # ─────────────────────────────────────────────────────────────
+    ./modules/vm-management/resource-quotas.nix
+    ./modules/vm-management/snapshots.nix
+    ./modules/vm-management/scheduling.nix
+    
+    # ─────────────────────────────────────────────────────────────
+    # Storage Management
+    # ─────────────────────────────────────────────────────────────
+    ./modules/storage-management/quotas.nix
+    ./modules/storage-management/encryption.nix
+    
   # ─────────────────────────────────────────────────────────────
   # Optional Modules (conditionally loaded)
   # ─────────────────────────────────────────────────────────────
-  ] ++ lib.optional (builtins.pathExists ./modules/enterprise/features.nix) 
-      ./modules/enterprise/features.nix
-    ++ lib.optional (builtins.pathExists ./modules/virtualization/performance.nix) 
+  ] ++ lib.optional (builtins.pathExists ./modules/virtualization/performance.nix) 
       ./modules/virtualization/performance.nix
   
   # ─────────────────────────────────────────────────────────────

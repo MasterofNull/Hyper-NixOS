@@ -1,19 +1,10 @@
 { config, lib, pkgs, ... }:
 
-# Enterprise Features Configuration
-# Aggregates all enterprise features for easy enable/disable
+# VM Scheduling and Automation
+# Automated VM operations, scheduled tasks, and resource reporting
 
 {
-  imports = [
-    ../monitoring/logging.nix
-    ./quotas.nix
-    ./network-isolation.nix
-    ./storage-quotas.nix
-    ./snapshots.nix
-    ./encryption.nix
-  ];
-  
-  # Install enterprise management tools
+  # VM management tools
   environment.systemPackages = with pkgs; [
     virt-manager
     virt-viewer
@@ -22,7 +13,10 @@
     bc
   ];
   
-  # Systemd timer for VM scheduler
+  # ═══════════════════════════════════════════════════════════════
+  # VM Scheduler Service
+  # Executes scheduled VM operations (start, stop, snapshot, etc.)
+  # ═══════════════════════════════════════════════════════════════
   systemd.services.vm-scheduler-run = {
     description = "Execute Scheduled VM Operations";
     serviceConfig = {
@@ -40,7 +34,10 @@
     };
   };
   
-  # Daily resource reporting
+  # ═══════════════════════════════════════════════════════════════
+  # Daily Resource Reporting
+  # Generates daily reports on VM resource usage
+  # ═══════════════════════════════════════════════════════════════
   systemd.services.daily-resource-report = {
     description = "Generate Daily Resource Report";
     serviceConfig = {
@@ -61,5 +58,5 @@
     };
   };
   
-  # Note: Directory structure is managed in core/directories.nix
+  # Note: Directory structure for reports is managed in core/directories.nix
 }
