@@ -3,6 +3,11 @@
 ## 🎯 **Purpose**
 This document catalogs common issues encountered in Hyper-NixOS, their root causes, solutions, and prevention strategies. It serves as a reference for troubleshooting and avoiding known pitfalls.
 
+## Table of Contents
+- [Critical Issues](#critical-issues)
+- [Permission and Privilege Issues](#permission-and-privilege-issues)
+- [Module and Configuration Issues](#module-and-configuration-issues)
+
 ## 🚨 **Critical Issues**
 
 ### Issue: Infinite Recursion Errors
@@ -447,3 +452,129 @@ nixos-option hypervisor.web.port
    - Error messages and logs
 
 Remember: Most issues have been encountered before. Check documentation, follow established patterns, and test thoroughly.
+
+## 🔐 **Permission and Privilege Issues**
+
+### Issue: "Permission Denied" for VM Operations
+**Symptoms**:
+```
+error: Cannot access libvirt socket
+Permission denied
+```
+
+**Root Cause**: User not in required groups for VM management
+
+**Solution**:
+```bash
+# Add user to required groups
+sudo usermod -aG libvirtd,kvm username
+
+# Logout and login again for changes to take effect
+```
+
+**Prevention**:
+- Configure users properly in `configuration.nix`:
+  ```nix
+  hypervisor.security.privileges = {
+    enable = true;
+    vmUsers = [ "username" ];
+  };
+  ```
+
+### Issue: VM Operations Asking for Sudo Password
+**Symptoms**:
+```
+[sudo] password for user:
+```
+
+**Root Cause**: Misconfigured polkit rules or user not in correct group
+
+**Solution**:
+1. Verify polkit rules are installed:
+   ```bash
+   ls /etc/polkit-1/rules.d/50-hypervisor*
+   ```
+
+2. Check user groups:
+   ```bash
+   groups
+   # Should include: libvirtd kvm
+   ```
+
+3. Enable polkit rules in configuration:
+   ```nix
+   hypervisor.security.polkit = {
+     enable = true;
+     enableVMRules = true;
+   };
+   ```
+
+### Issue: System Operations Not Working Without Sudo
+**Symptoms**:
+```
+═══════════════════════════════════════════════════════════════
+  This operation requires administrator privileges
+═══════════════════════════════════════════════════════════════
+```
+
+**Expected Behavior**: This is correct! System operations SHOULD require sudo.
+
+**Proper Usage**:
+```bash
+# Correct - system operations need sudo
+sudo system-config network setup-bridge br0
+
+# Incorrect - trying without sudo
+system-config network setup-bridge br0  # Will fail with clear message
+```
+
+### Issue: Script Shows "Missing Required Group Membership"
+**Symptoms**:
+```
+═══════════════════════════════════════════════════════════════
+  Missing Required Group Membership
+═══════════════════════════════════════════════════════════════
+
+  Your user needs to be in these groups:
+    • libvirtd
+    • kvm
+```
+
+**Solution**:
+1. Have an admin add you to groups:
+   ```bash
+   sudo usermod -aG libvirtd,kvm $USER
+   ```
+
+2. Logout and login again
+
+3. Verify groups:
+   ```bash
+   groups
+   ```
+
+### Issue: "Operation not allowed in hardened mode"
+**Symptoms**:
+```
+ERROR: Operation 'system_config' not allowed in hardened mode
+```
+
+**Root Cause**: System is in hardened security phase
+
+**Solution**:
+1. Check current phase:
+   ```bash
+   cat /etc/hypervisor/.phase* 2>/dev/null
+   ```
+
+2. If needed, transition to setup phase (requires sudo):
+   ```bash
+   sudo transition_phase.sh setup
+   ```
+
+3. Perform operation, then harden again:
+   ```bash
+   sudo transition_phase.sh harden
+   ```
+
+**Prevention**: Plan system changes during setup phase

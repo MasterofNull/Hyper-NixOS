@@ -5,6 +5,7 @@
 # Licensed under GPL v3.0
 #
 # VM management functions for menu system
+# Sudo Required: NO - All VM operations work without sudo
 #
 
 # Get VM list with optional filtering
