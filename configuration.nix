@@ -142,6 +142,9 @@ in {
     # Enable it by: echo '{ imports = [ /etc/hypervisor/modules/security/strict.nix ]; }' | sudo tee /var/lib/hypervisor/configuration/security-strict.nix
     ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/security-strict.nix) 
       /var/lib/hypervisor/configuration/security-strict.nix;
+
+  # Import last so it can override bad values from local overrides
+  imports = imports ++ [ ./modules/core/keymap-sanitizer.nix ];
   
   # ═══════════════════════════════════════════════════════════════
   # Systemd Services - Hypervisor Menu
