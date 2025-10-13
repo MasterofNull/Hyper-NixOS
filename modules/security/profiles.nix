@@ -9,7 +9,6 @@
 # Select profile via: hypervisor.security.profile option
 
 {
-  # Note: All config-dependent variables moved to individual config sections to avoid circular dependencies
   options.hypervisor.security.profile = lib.mkOption {
     type = lib.types.enum [ "headless" "management" ];
     default = "headless";

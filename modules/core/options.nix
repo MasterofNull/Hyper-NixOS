@@ -1,11 +1,11 @@
 { config, lib, pkgs, ... }:
 
 # Core Hypervisor Options Definition
-# Defines the base hypervisor configuration options
+# Only defines core system options that are used across multiple modules
 
 {
   options.hypervisor = {
-    # Management options
+    # Management Configuration
     management = {
       userName = lib.mkOption {
         type = lib.types.str;
@@ -16,7 +16,7 @@
       };
     };
 
-    # Menu options
+    # Boot Services Configuration
     menu = {
       enableAtBoot = lib.mkOption {
         type = lib.types.bool;
@@ -25,7 +25,6 @@
       };
     };
 
-    # First boot welcome options
     firstBootWelcome = {
       enableAtBoot = lib.mkOption {
         type = lib.types.bool;
@@ -34,7 +33,6 @@
       };
     };
 
-    # First boot wizard options
     firstBootWizard = {
       enableAtBoot = lib.mkOption {
         type = lib.types.bool;
@@ -43,21 +41,12 @@
       };
     };
 
-    # GUI options
+    # GUI Configuration
     gui = {
       enableAtBoot = lib.mkOption {
         type = lib.types.bool;
         default = false;
         description = "Enable GUI desktop environment at boot";
-      };
-    };
-
-    # Web dashboard options
-    web = {
-      port = lib.mkOption {
-        type = lib.types.port;
-        default = 8080;
-        description = "Port for the web dashboard";
       };
     };
   };

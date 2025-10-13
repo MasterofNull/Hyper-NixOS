@@ -1,0 +1,382 @@
+# Common Issues and Solutions - Hyper-NixOS
+
+## 🎯 **Purpose**
+This document catalogs common issues encountered in Hyper-NixOS, their root causes, solutions, and prevention strategies. It serves as a reference for troubleshooting and avoiding known pitfalls.
+
+## 🚨 **Critical Issues**
+
+### Issue: Infinite Recursion Errors
+**Symptoms**:
+```
+error: infinite recursion encountered
+       at /nix/store/.../lib/modules.nix:809:9:
+```
+
+**Root Cause**: Circular dependencies in module evaluation, typically caused by:
+1. Top-level `let` bindings accessing `config` values
+2. Cross-module option dependencies
+3. Improper module structure patterns
+
+**Solutions**:
+
+#### ✅ **Fix #1: Remove Top-Level Config Access**
+```nix
+# ❌ WRONG - Causes infinite recursion
+let
+  user = config.hypervisor.management.userName;
+in {
+  config = { /* ... */ };
+}
+
+# ✅ CORRECT - Access config inside config section
+{
+  config = let
+    user = config.hypervisor.management.userName;
+  in {
+    # Configuration using user variable
+  };
+}
+```
+
+#### ✅ **Fix #2: Use Proper Conditional Wrappers**
+```nix
+# ❌ WRONG - Direct config access
+{
+  networking.firewall.allowedTCPPorts = [ config.hypervisor.web.port ];
+}
+
+# ✅ CORRECT - Wrapped in conditional
+{
+  config = lib.mkIf config.hypervisor.web.enable {
+    networking.firewall.allowedTCPPorts = [ config.hypervisor.web.port ];
+  };
+}
+```
+
+#### ✅ **Fix #3: Eliminate Cross-Module Dependencies**
+```nix
+# ❌ WRONG - Option defined in different module
+modules/web/dashboard.nix:
+  config.something = config.hypervisor.monitoring.port;  # Defined elsewhere
+
+# ✅ CORRECT - Options defined in same module
+modules/web/dashboard.nix:
+  options.hypervisor.web.port = { /* ... */ };
+  config = lib.mkIf config.hypervisor.web.enable {
+    networking.firewall.allowedTCPPorts = [ config.hypervisor.web.port ];
+  };
+```
+
+**Prevention**:
+- Always wrap module config in `lib.mkIf config.hypervisor.TOPIC.enable`
+- Define options in the same module that uses them
+- Never access `config` in top-level `let` bindings
+- Test with `nixos-rebuild dry-build --show-trace`
+
+### Issue: Module Not Loading/Working
+**Symptoms**:
+- Module configuration not applied
+- Services not starting
+- Options not available
+
+**Root Causes**:
+1. Module not imported in `configuration.nix`
+2. Module disabled (enable option set to false)
+3. Conditional wrapper preventing evaluation
+4. Option definition errors
+
+**Solutions**:
+
+#### ✅ **Check Import Status**
+```bash
+# Verify module is imported in configuration.nix
+grep -r "modules/TOPIC/module.nix" configuration.nix
+```
+
+#### ✅ **Check Enable Status**
+```nix
+# Verify module is enabled
+hypervisor.TOPIC.enable = true;  # Make sure this is set
+```
+
+#### ✅ **Verify Module Structure**
+```nix
+# Ensure proper module structure
+{
+  options.hypervisor.TOPIC = {
+    enable = lib.mkEnableOption "Enable TOPIC";
+    # Other options...
+  };
+
+  config = lib.mkIf config.hypervisor.TOPIC.enable {
+    # Configuration here
+  };
+}
+```
+
+**Prevention**:
+- Follow standardized module template
+- Always include enable options for optional modules
+- Test module enable/disable behavior
+- Document module dependencies
+
+## ⚠️ **Common Warnings and Errors**
+
+### Issue: Option Conflicts
+**Symptoms**:
+```
+error: The option `services.something` is defined multiple times
+```
+
+**Root Cause**: Same option defined in multiple modules or files.
+
+**Solutions**:
+- Use `lib.mkMerge` for combining configurations
+- Use `lib.mkForce` to override existing values
+- Use `lib.mkDefault` for default values that can be overridden
+
+```nix
+# ✅ Merge multiple configurations
+config = lib.mkMerge [
+  (lib.mkIf condition1 { /* config 1 */ })
+  (lib.mkIf condition2 { /* config 2 */ })
+];
+
+# ✅ Override existing value
+services.something.enable = lib.mkForce true;
+
+# ✅ Provide default that can be overridden
+services.something.port = lib.mkDefault 8080;
+```
+
+### Issue: Type Errors
+**Symptoms**:
+```
+error: A definition for option `...` is not of type `...`
+```
+
+**Root Cause**: Value doesn't match expected type.
+
+**Solutions**:
+- Check option type definition
+- Convert values to correct type
+- Use proper NixOS types
+
+```nix
+# ✅ Common type conversions
+port = lib.mkOption {
+  type = lib.types.port;  # Ensures valid port number
+  default = 8080;
+};
+
+enable = lib.mkOption {
+  type = lib.types.bool;  # Boolean values only
+  default = false;
+};
+
+paths = lib.mkOption {
+  type = lib.types.listOf lib.types.path;  # List of paths
+  default = [];
+};
+```
+
+### Issue: Service Failures
+**Symptoms**:
+- Services failing to start
+- Permission denied errors
+- Missing dependencies
+
+**Common Causes & Solutions**:
+
+#### ✅ **User/Group Issues**
+```nix
+# Ensure user exists before service starts
+users.users.myuser = {
+  isSystemUser = true;
+  group = "mygroup";
+};
+users.groups.mygroup = {};
+
+systemd.services.myservice = {
+  serviceConfig.User = "myuser";
+  # Service will start after user creation
+};
+```
+
+#### ✅ **Directory Permissions**
+```nix
+# Create directories with proper permissions
+systemd.tmpfiles.rules = [
+  "d /var/lib/myapp 0755 myuser mygroup - -"
+];
+```
+
+#### ✅ **Dependency Ordering**
+```nix
+systemd.services.myservice = {
+  after = [ "network.target" "other-service.service" ];
+  wants = [ "network.target" ];
+  requires = [ "other-service.service" ];
+};
+```
+
+## 🔧 **Performance Issues**
+
+### Issue: Slow Build Times
+**Symptoms**: `nixos-rebuild` takes very long time
+
+**Causes & Solutions**:
+
+#### ✅ **Unnecessary Evaluations**
+```nix
+# ❌ WRONG - Always evaluates expensive operation
+config = {
+  services.something = expensiveFunction config.other.value;
+};
+
+# ✅ CORRECT - Only evaluates when needed
+config = lib.mkIf config.hypervisor.feature.enable {
+  services.something = expensiveFunction config.other.value;
+};
+```
+
+#### ✅ **Optimize Conditionals**
+```nix
+# ✅ Use early returns for expensive operations
+config = lib.mkIf (!config.hypervisor.feature.enable) {};
+# vs evaluating everything then discarding
+```
+
+### Issue: High Memory Usage
+**Symptoms**: System running out of memory during builds
+
+**Solutions**:
+- Disable unnecessary modules during development
+- Use `nix-collect-garbage` to clean up old builds
+- Increase swap space for large builds
+
+## 🛡️ **Security Issues**
+
+### Issue: Permission Denied
+**Symptoms**: Services can't access files/directories
+
+**Solutions**:
+```nix
+# ✅ Proper service permissions
+systemd.services.myservice = {
+  serviceConfig = {
+    User = "myuser";
+    Group = "mygroup";
+    ReadWritePaths = [ "/var/lib/myapp" ];
+    ReadOnlyPaths = [ "/etc/myapp" ];
+  };
+};
+```
+
+### Issue: Firewall Blocking Services
+**Symptoms**: Services not accessible from network
+
+**Solutions**:
+```nix
+# ✅ Open required ports
+networking.firewall = {
+  allowedTCPPorts = [ 80 443 8080 ];
+  allowedUDPPorts = [ 53 ];
+};
+
+# ✅ Interface-specific rules
+networking.firewall.interfaces."lo".allowedTCPPorts = [ 8080 ];
+```
+
+## 🔍 **Debugging Techniques**
+
+### Build Issues
+```bash
+# Get detailed error information
+nixos-rebuild dry-build --show-trace
+
+# Check specific module
+nix-instantiate --eval --strict -E 'import ./modules/web/dashboard.nix'
+
+# Verify configuration syntax
+nix-instantiate --parse configuration.nix
+```
+
+### Runtime Issues
+```bash
+# Check service status
+systemctl status myservice
+
+# View service logs
+journalctl -u myservice -f
+
+# Check configuration files
+nixos-option services.myservice
+```
+
+### Module Issues
+```bash
+# List all options for a module
+nixos-option hypervisor.web
+
+# Check option values
+nixos-option hypervisor.web.enable
+nixos-option hypervisor.web.port
+```
+
+## 📋 **Prevention Checklist**
+
+### Before Making Changes
+- [ ] Understand the current system behavior
+- [ ] Read existing module code completely
+- [ ] Check for similar patterns in other modules
+- [ ] Plan the change to avoid circular dependencies
+
+### Module Development
+- [ ] Follow standardized module template
+- [ ] Define options in same module as implementation
+- [ ] Wrap config in `lib.mkIf` conditionals
+- [ ] Test enable/disable behavior
+- [ ] Document any special requirements
+
+### Testing Changes
+- [ ] Test with `nixos-rebuild dry-build --show-trace`
+- [ ] Verify no infinite recursion errors
+- [ ] Test module enable/disable functionality
+- [ ] Check service startup and logs
+- [ ] Validate configuration options work correctly
+
+### Documentation
+- [ ] Update relevant documentation
+- [ ] Document any new patterns or decisions
+- [ ] Add troubleshooting notes for complex features
+- [ ] Update this guide with new issues discovered
+
+## 🎯 **When to Seek Help**
+
+### Complex Issues
+- Infinite recursion that can't be resolved with standard fixes
+- Performance problems affecting entire system
+- Security vulnerabilities requiring immediate attention
+- Breaking changes affecting multiple modules
+
+### Before Seeking Help
+1. **Gather Information**:
+   - Full error messages with `--show-trace`
+   - System configuration details
+   - Steps to reproduce the issue
+   - What was changed recently
+
+2. **Try Standard Solutions**:
+   - Check this troubleshooting guide
+   - Review module patterns in working modules
+   - Test with minimal configuration
+   - Verify NixOS version compatibility
+
+3. **Document the Issue**:
+   - Clear description of problem
+   - Expected vs actual behavior
+   - Configuration snippets
+   - Error messages and logs
+
+Remember: Most issues have been encountered before. Check documentation, follow established patterns, and test thoroughly.

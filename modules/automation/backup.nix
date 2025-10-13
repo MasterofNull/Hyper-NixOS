@@ -168,11 +168,11 @@
           log "Applying retention policy..."
           
           # Daily backups
-          local daily_keep=${config.hypervisor.backup.retention.daily}
+          local daily_keep=${toString config.hypervisor.backup.retention.daily}
           find "$BACKUP_DIR" -name "*-*_*" -type d -mtime +$daily_keep -exec rm -rf {} + 2>/dev/null || true
           
           # Weekly backups (keep one per week)
-          local weekly_keep=${config.hypervisor.backup.retention.weekly}
+          local weekly_keep=${toString config.hypervisor.backup.retention.weekly}
           if [[ $weekly_keep -gt 0 ]]; then
             find "$backup_dir" -name "weekly-*.tar.gz" -type f -printf '%T@ %p\n' | \
               sort -rn | tail -n +$((weekly_keep + 1)) | cut -d' ' -f2- | \
