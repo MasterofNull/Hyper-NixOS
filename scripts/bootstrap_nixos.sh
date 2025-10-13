@@ -223,7 +223,7 @@ write_host_flake() {
         inherit system;
         modules = [
           /etc/nixos/hardware-configuration.nix
-          (hypervisor + "/configuration/configuration.nix")
+          (hypervisor + "/configuration.nix")
         ];
       };
     };
@@ -259,7 +259,7 @@ detect_primary_users() {
 }
 
 write_users_local_nix() {
-  local dest_dir="/etc/hypervisor/src/configuration"
+  local dest_dir="/etc/hypervisor/src/modules"
   local dest_file="$dest_dir/users-local.nix"
   local state_dir="/var/lib/hypervisor/configuration"
 
@@ -364,7 +364,7 @@ write_users_local_nix() {
 }
 
 write_system_local_nix() {
-  local dest_dir="/etc/hypervisor/src/configuration"
+  local dest_dir="/etc/hypervisor/src/modules"
   local dest_file="$dest_dir/system-local.nix"
   local state_dir="/var/lib/hypervisor/configuration"
   mkdir -p "$dest_dir"
@@ -545,8 +545,8 @@ main() {
   
   # Always create cache optimization config for faster downloads
   msg "Configuring optimized binary cache and parallel downloads"
-  local cache_conf="/etc/hypervisor/src/configuration/core/cache-optimization.nix"
-  [[ -f "$cache_conf" ]] || cp "$src_root/configuration/core/cache-optimization.nix" "$cache_conf"
+  local cache_conf="/etc/hypervisor/src/modules/core/cache-optimization.nix"
+  [[ -f "$cache_conf" ]] || cp "$src_root/modules/core/cache-optimization.nix" "$cache_conf"
   
   # Link to state dir
   mkdir -p /var/lib/hypervisor/configuration

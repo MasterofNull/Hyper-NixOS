@@ -15,7 +15,7 @@
           };
       in {
         packages.iso = pkgs.nixos ({ config, pkgs, ... }: {
-          imports = [ ./configuration/configuration.nix ];
+          imports = [ ./configuration.nix ];
         }).config.system.build.isoImage;
         apps.bootstrap = {
           type = "app";
@@ -36,11 +36,11 @@
       nixosConfigurations = {
         hypervisor-x86_64 = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          modules = [ ./configuration/configuration.nix ];
+          modules = [ ./configuration.nix ];
         };
         hypervisor-aarch64 = nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
-          modules = [ ./configuration/configuration.nix ];
+          modules = [ ./configuration.nix ];
         };
       };
     };

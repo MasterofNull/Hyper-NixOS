@@ -19,26 +19,26 @@ test_suite_start "Zero-Trust Security Model"
 # In CI, validate configuration files only
 if $CI_MODE; then
   test_case "Security configuration files exist"
-  assert_file_exists "../../configuration/security/base.nix"
-  assert_file_exists "../../configuration/security/profiles.nix"
+  assert_file_exists "../../modules/security/base.nix"
+  assert_file_exists "../../modules/security/profiles.nix"
   
   test_case "Security production is default"
-  if grep -q "security/profiles.nix" "../../configuration/configuration.nix"; then
+  if grep -q "modules/security/profiles.nix" "../../configuration.nix"; then
     test_pass "Production security model is enabled by default"
   else
     test_fail "Production security not found in main config"
   fi
   
   test_case "Polkit rules are configured"
-  if grep -q "polkit" "../../configuration/security/profiles.nix"; then
+  if grep -q "polkit" "../../modules/security/profiles.nix"; then
     test_pass "Polkit authorization configured"
   else
-    test_info "Polkit rules should be in security/profiles.nix"
+    test_info "Polkit rules should be in modules/security/profiles.nix"
   fi
   
   test_case "Audit logging is configured"
-  if grep -q "auditd\|audit" "../../configuration/security/profiles.nix" ||
-     grep -q "auditd\|audit" "../../configuration/security/base.nix"; then
+  if grep -q "auditd\|audit" "../../modules/security/profiles.nix" ||
+     grep -q "auditd\|audit" "../../modules/security/base.nix"; then
     test_pass "Audit logging configured"
   else
     test_info "Audit logging should be enabled"

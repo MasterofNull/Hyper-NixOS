@@ -276,7 +276,7 @@ if $DIALOG --yesno "Advanced Configuration (Optional)\n\nApply best-practice sec
 
   mkdir -p /etc/hypervisor/src/configuration
   # Write security-local.nix
-  cat > /etc/hypervisor/src/configuration/security-local.nix <<NIX
+  cat > /etc/hypervisor/src/modules/security-local.nix <<NIX
 { config, lib, pkgs, ... }:
 {
   hypervisor.security.strictFirewall = $( [[ $sf == 1 ]] && echo true || echo false );
@@ -284,7 +284,7 @@ if $DIALOG --yesno "Advanced Configuration (Optional)\n\nApply best-practice sec
 }
 NIX
   # Write perf-local.nix
-  cat > /etc/hypervisor/src/configuration/perf-local.nix <<NIX
+  cat > /etc/hypervisor/src/modules/perf-local.nix <<NIX
 { config, lib, pkgs, ... }:
 {
   hypervisor.performance.enableHugepages = $( [[ $hp == 1 ]] && echo true || echo false );
@@ -303,12 +303,12 @@ NIX
       $DIALOG --msgbox "Rebuild successful!\n\nNew configuration is now active." 10 70
     else
       log "ERROR: Rebuild failed"
-      $DIALOG --msgbox "Rebuild failed!\n\nPlease review:\n- $LOGFILE\n- /etc/hypervisor/src/configuration/*.nix\n\nYou can try again later from the main menu." 14 70
+      $DIALOG --msgbox "Rebuild failed!\n\nPlease review:\n- $LOGFILE\n- /etc/hypervisor/src/modules/*.nix\n\nYou can try again later from the main menu." 14 70
     fi
   else
     log "User skipped rebuild"
     CONFIGURED_ITEMS+=("⚠ Rebuild skipped - settings not yet active")
-    $DIALOG --msgbox "Configuration written to:\n- /etc/hypervisor/src/configuration/security-local.nix\n- /etc/hypervisor/src/configuration/perf-local.nix\n\nRun 'sudo nixos-rebuild switch' to apply." 14 78
+    $DIALOG --msgbox "Configuration written to:\n- /etc/hypervisor/src/modules/security-local.nix\n- /etc/hypervisor/src/modules/perf-local.nix\n\nRun 'sudo nixos-rebuild switch' to apply." 14 78
   fi
 else
   log "User skipped advanced configuration"
