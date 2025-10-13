@@ -16,7 +16,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
-PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+PATH="$HOME/.nix-profile/bin:/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 # Configuration
 GITHUB_REPO="MasterofNull/Hyper-NixOS"
@@ -112,6 +112,15 @@ require_command jq || {
   msg "jq not found, installing..."
   if command -v nix-env >/dev/null 2>&1; then
     nix-env -iA nixos.jq
+    # Update PATH to include nix profile
+    export PATH="$HOME/.nix-profile/bin:$PATH"
+    # Verify jq is now available
+    if ! command -v jq >/dev/null 2>&1; then
+      error "jq installation succeeded but jq is still not available in PATH"
+      error "Try running: export PATH=\"\$HOME/.nix-profile/bin:\$PATH\""
+      exit 1
+    fi
+    msg "jq installed and available"
   else
     error "Cannot install jq automatically"
     exit 1
