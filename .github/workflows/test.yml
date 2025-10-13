@@ -101,7 +101,7 @@ jobs:
             "README.md"
             "CREDITS.md"
             "ENTERPRISE_QUICK_START.md"
-            "scripts/bootstrap_nixos.sh"
+            "scripts/system_installer.sh"
             "scripts/menu.sh"
             "configuration.nix"
             "hardware-configuration.nix"
@@ -303,7 +303,7 @@ jobs:
             wget https://github.com/MasterofNull/Hyper-NixOS/releases/download/${{ github.ref_name }}/hyper-nixos-${{ github.ref_name }}.tar.gz
             tar -xzf hyper-nixos-${{ github.ref_name }}.tar.gz
             cd hyper-nixos
-            sudo bash scripts/bootstrap_nixos.sh --fast --action switch --reboot
+            sudo bash scripts/system_installer.sh --fast --action switch --reboot
             ```
             
             ### Quick Start

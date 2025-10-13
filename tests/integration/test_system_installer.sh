@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Integration Test: Bootstrap Installation
+# Integration Test: System Installer
 #
 
 set -euo pipefail
@@ -14,22 +14,22 @@ if [[ "${CI:-false}" == "true" ]] || [[ "${GITHUB_ACTIONS:-false}" == "true" ]];
   CI_MODE=true
 fi
 
-test_suite_start "Bootstrap Installation"
+test_suite_start "System Installer"
 
 # In CI, only do structure validation
 if $CI_MODE; then
-  test_case "Bootstrap script exists"
-  assert_file_exists "../../scripts/bootstrap_nixos.sh"
+  test_case "System installer script exists"
+  assert_file_exists "../../scripts/system_installer.sh"
   
-  test_case "Bootstrap script has valid syntax"
-  if bash -n "../../scripts/bootstrap_nixos.sh" 2>/dev/null; then
+  test_case "System installer script has valid syntax"
+  if bash -n "../../scripts/system_installer.sh" 2>/dev/null; then
     test_pass "Syntax is valid"
   else
     test_fail "Syntax errors found"
   fi
   
-  test_case "Bootstrap script is executable"
-  if [[ -x "../../scripts/bootstrap_nixos.sh" ]]; then
+  test_case "System installer script is executable"
+  if [[ -x "../../scripts/system_installer.sh" ]]; then
     test_pass "Script is executable"
   else
     test_info "Script will be made executable during installation"
@@ -71,7 +71,7 @@ test_case "Management user exists"
 if id hypervisor-operator &>/dev/null; then
   test_pass "Operator user exists"
 else
-  test_info "Operator user will be created during bootstrap"
+  test_info "Operator user will be created during system installation"
 fi
 
 test_case "Operator user has correct group memberships"

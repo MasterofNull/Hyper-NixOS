@@ -178,7 +178,7 @@ This is the foundation of NixOS's reliability!" \
     "Your configuration files are missing or in the wrong location.
 
 To fix:
-1. Re-run the bootstrap script: sudo bash /etc/hypervisor/scripts/bootstrap_nixos.sh
+1. Re-run the system installer: sudo bash /etc/hypervisor/scripts/system_installer.sh
 2. Or check that /etc/hypervisor/ directory exists
 3. Verify you completed the initial installation
 
@@ -216,7 +216,7 @@ best practices!" \
     "The security model is not properly configured.
 
 This could mean:
-• The bootstrap script wasn't run completely
+• The system installer wasn't run completely
 • Security settings were manually changed
 • The security-production.nix module isn't loaded
 

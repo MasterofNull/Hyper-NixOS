@@ -110,21 +110,45 @@ require_command() {
 require_command curl || exit 1
 require_command jq || {
   msg "jq not found, installing..."
+  
+  # Try multiple installation methods
   if command -v nix-env >/dev/null 2>&1; then
+    # NixOS user installation
     nix-env -iA nixos.jq
-    # Update PATH to include nix profile
     export PATH="$HOME/.nix-profile/bin:$PATH"
-    # Verify jq is now available
-    if ! command -v jq >/dev/null 2>&1; then
-      error "jq installation succeeded but jq is still not available in PATH"
-      error "Try running: export PATH=\"\$HOME/.nix-profile/bin:\$PATH\""
-      exit 1
-    fi
-    msg "jq installed and available"
+  elif command -v nix >/dev/null 2>&1; then
+    # Try nix profile install (new style)
+    nix profile install nixpkgs#jq || nix-env -iA nixpkgs.jq || true
+    export PATH="$HOME/.nix-profile/bin:$PATH"
+  elif command -v apt-get >/dev/null 2>&1; then
+    # Debian/Ubuntu systems
+    msg "Installing jq via apt-get..."
+    apt-get update -qq && apt-get install -y -qq jq
+  elif command -v yum >/dev/null 2>&1; then
+    # RHEL/CentOS systems
+    msg "Installing jq via yum..."
+    yum install -y -q jq
+  elif command -v apk >/dev/null 2>&1; then
+    # Alpine Linux
+    msg "Installing jq via apk..."
+    apk add --quiet jq
   else
     error "Cannot install jq automatically"
+    error "Please install jq manually:"
+    error "  - NixOS: nix-env -iA nixpkgs.jq"
+    error "  - Debian/Ubuntu: apt-get install jq"
+    error "  - RHEL/CentOS: yum install jq"
+    error "  - macOS: brew install jq"
     exit 1
   fi
+  
+  # Verify jq is now available
+  if ! command -v jq >/dev/null 2>&1; then
+    error "jq installation appeared to succeed but jq is still not available in PATH"
+    error "Please install jq manually and try again"
+    exit 1
+  fi
+  msg "jq installed and available"
 }
 
 # Get GitHub API token if available (increases rate limits)
