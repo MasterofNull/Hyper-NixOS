@@ -1,5 +1,20 @@
 # Hyper-NixOS Documentation
 
+## 🚨 CRITICAL: MANDATORY REQUIREMENTS 🚨
+
+**BEFORE ANY DEVELOPMENT OR OPERATION**, you MUST read and comply with:
+### ➡️ [**CRITICAL_REQUIREMENTS.md**](CRITICAL_REQUIREMENTS.md) ⬅️
+
+**This includes:**
+- AI Context Maintenance (MANDATORY)
+- Documentation Synchronization (REQUIRED)
+- Security-First Development (NO EXCEPTIONS)
+- Pattern Compliance (ENFORCED)
+
+**Failure to comply will result in automatic rejection and rollback.**
+
+---
+
 ## 📚 Complete Documentation Index
 
 Welcome to Hyper-NixOS - A comprehensive, security-focused virtualization platform built on NixOS.
