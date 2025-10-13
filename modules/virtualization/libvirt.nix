@@ -15,5 +15,5 @@
   users.groups.kvm = {};
   
   # Environment configuration for libvirt
-  environment.etc."libvirt/hooks/qemu".source = ../scripts/libvirt_hooks/qemu;
+  environment.etc."libvirt/hooks/qemu".source = ../../scripts/libvirt_hooks/qemu;
 }

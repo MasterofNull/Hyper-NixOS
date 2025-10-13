@@ -136,9 +136,10 @@ in {
     ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/gui-local.nix) 
       /var/lib/hypervisor/configuration/gui-local.nix
     
-    # Note: security/strict.nix is loaded from /var/lib/hypervisor/configuration/security-strict.nix
-    ++ lib.optional (builtins.pathExists ./modules/security/strict.nix) 
-      ./modules/security/strict.nix;
+    # Note: Strict security is opt-in via /var/lib/hypervisor/configuration/security-strict.nix
+    # Enable it by: echo '{ imports = [ /etc/hypervisor/modules/security/strict.nix ]; }' | sudo tee /var/lib/hypervisor/configuration/security-strict.nix
+    ++ lib.optional (builtins.pathExists /var/lib/hypervisor/configuration/security-strict.nix) 
+      /var/lib/hypervisor/configuration/security-strict.nix;
   
   # ═══════════════════════════════════════════════════════════════
   # Systemd Services - Hypervisor Menu
