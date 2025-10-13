@@ -233,7 +233,7 @@ Testing 10 changed files in a 150-file repository:
 ### Complementary Scripts
 
 Works alongside existing scripts:
-- `scripts/bootstrap_nixos.sh` - Initial installation
+- `scripts/system_installer.sh` - Initial installation
 - `scripts/update_hypervisor.sh` - Traditional update
 - All existing hypervisor management scripts
 
