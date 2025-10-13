@@ -1,10 +1,12 @@
 # Hypervisor Suite - Quick Install
 
-### Fresh NixOS host (recommended bootstrap)
+### Fresh NixOS host (recommended system installer)
 
-Run the guided bootstrap (TUI). This copies files to `/etc/hypervisor`, writes `/etc/nixos/flake.nix`, and lets you dry-run, test, or switch safely.
+Run the guided system installer (TUI). This copies files to `/etc/hypervisor`, writes `/etc/nixos/flake.nix`, and lets you dry-run, test, or switch safely.
 
 ```
+nix run .#system-installer
+# or use the legacy alias:
 nix run .#bootstrap
 ```
 
@@ -21,7 +23,7 @@ nix run .#rebuild-helper -- --flake /etc/nixos --host $(hostname -s) switch
 - From USB (folder contains this repository):
 
 ```
-sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(pwd)
+sudo ./scripts/system_installer.sh --hostname $(hostname -s) --force --source $(pwd)
 ```
 
 - From GitHub checkout:
@@ -29,10 +31,10 @@ sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(p
 ```
 git clone https://github.com/<your-org>/<your-repo>.git hypervisor
 cd hypervisor
-sudo ./scripts/bootstrap_nixos.sh --hostname $(hostname -s) --force --source $(pwd)
+sudo ./scripts/system_installer.sh --hostname $(hostname -s) --force --source $(pwd)
 ```
 
-**Note:** By default, the bootstrapper will:
+**Note:** By default, the system installer will:
 1. **Prompt**: "Keep current hostname 'X'?"
    - If **Yes**: Uses the current system hostname
    - If **No**: Prompts for a custom hostname
@@ -86,7 +88,7 @@ Boot it (USB/IPMI). The first-boot service starts the setup wizard automatically
 
 ## Where configurations live
 - Repo is installed at `/etc/hypervisor`. Host flake is `/etc/nixos/flake.nix`.
-- On bootstrap, the installer will auto-generate these optional modules if absent:
+- On installation, the installer will auto-generate these optional modules if absent:
   - `/etc/hypervisor/configuration/users-local.nix` (0600): carries over local users (including password hashes when available) and ensures access groups like `kvm`, `libvirtd`, `video`, `wheel`.
   - `/etc/hypervisor/configuration/system-local.nix`: carries over base settings like `networking.hostName`, `time.timeZone`, `i18n.defaultLocale`, `console.keyMap`.
 - Both modules are imported conditionally by `configuration/configuration.nix`.
