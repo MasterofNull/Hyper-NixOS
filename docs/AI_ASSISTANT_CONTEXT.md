@@ -28,10 +28,17 @@ modules/
 
 ## 🚨 **Critical Historical Issues & Solutions**
 
-### Issue #1: Infinite Recursion (2025-10-13)
+### Issue #1: Infinite Recursion (2025-10-13) - COMPREHENSIVE FIX
 **Problem**: Circular dependencies causing `infinite recursion encountered` errors.
 
-**Root Cause**: Top-level `let` bindings accessing `config` values before module evaluation.
+**Root Cause**: Multiple files had top-level `let` bindings accessing `config` values before module evaluation.
+
+**Critical Discovery**: The issue was present in **multiple files simultaneously**:
+- `configuration.nix` (systemd services)
+- `modules/core/directories.nix` (tmpfiles rules)  
+- `modules/security/profiles.nix` (security profiles)
+
+**Key Lesson**: Always check ALL modules for this pattern, not just the first one found.
 
 **❌ Never Do This:**
 ```nix
@@ -53,7 +60,7 @@ in {
 }
 ```
 
-**Lesson**: NixOS module evaluation happens in phases. Respect the evaluation order.
+**Lesson**: NixOS module evaluation happens in phases. Respect the evaluation order. **ALWAYS search comprehensively** - if one file has this issue, others likely do too.
 
 ### Issue #2: Centralization Mistake (2025-10-13)
 **Problem**: Attempted to solve circular dependencies by centralizing all options into one massive file.
