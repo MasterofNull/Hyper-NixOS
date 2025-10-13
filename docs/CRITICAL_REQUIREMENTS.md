@@ -6,25 +6,25 @@ This document outlines **MANDATORY** requirements that **MUST** be followed for 
 
 ---
 
-## 🔴 REQUIREMENT #1: AI CONTEXT MAINTENANCE
+## 🔴 REQUIREMENT #1: DEVELOPMENT REFERENCE COMPLIANCE
 
-### **CRITICAL**: All AI assistants and developers MUST maintain and update context
+### **CRITICAL**: All developers (human and AI) MUST follow the Development Reference
 
 **MANDATORY ACTIONS:**
 1. **BEFORE** any development work:
-   - Read `/docs/AI_ASSISTANT_CONTEXT.md`
+   - Read `/docs/dev/DEVELOPMENT_REFERENCE.md` (COMPLETE DOCUMENT)
    - Review `/docs/dev/PROJECT_DEVELOPMENT_HISTORY.md`
    - Check recent changes in `/docs/CHANGELOG.md`
 
 2. **DURING** development:
-   - Document ALL decisions in appropriate files
-   - Update context documents in real-time
-   - Maintain consistency with existing patterns
+   - Follow ALL patterns in DEVELOPMENT_REFERENCE.md
+   - Document decisions and changes
+   - Maintain consistency with existing code
 
 3. **AFTER** making changes:
-   - Update `AI_ASSISTANT_CONTEXT.md` with new patterns
+   - Update `DEVELOPMENT_REFERENCE.md` with new patterns
    - Add entries to `PROJECT_DEVELOPMENT_HISTORY.md`
-   - Update all affected documentation
+   - Ensure all documentation is synchronized
 
 ### **Enforcement:**
 ```bash
