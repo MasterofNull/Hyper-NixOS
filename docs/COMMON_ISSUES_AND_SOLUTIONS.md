@@ -19,7 +19,7 @@ error: infinite recursion encountered
 
 **Solutions**:
 
-#### ✅ **Fix #1: Remove Top-Level Config Access**
+#### ✅ **Fix #1: Remove Top-Level Config Access (CRITICAL)**
 ```nix
 # ❌ WRONG - Causes infinite recursion
 let
@@ -70,8 +70,12 @@ modules/web/dashboard.nix:
 **Prevention**:
 - Always wrap module config in `lib.mkIf config.hypervisor.TOPIC.enable`
 - Define options in the same module that uses them
-- Never access `config` in top-level `let` bindings
+- **NEVER access `config` in top-level `let` bindings** (most common cause)
+- Use direct config access: `config.hypervisor.option` instead of `let var = config.hypervisor.option`
+- Check ALL modules for this pattern - multiple files often have the same issue
 - Test with `nixos-rebuild dry-build --show-trace`
+
+**Recent Fix (2025-10-13)**: Comprehensive fix applied to `configuration.nix`, `modules/core/directories.nix`, and `modules/security/profiles.nix`. See `docs/dev/INFINITE_RECURSION_FIX_2025-10-13.md` for details.
 
 ### Issue: Module Not Loading/Working
 **Symptoms**:
@@ -119,6 +123,45 @@ hypervisor.TOPIC.enable = true;  # Make sure this is set
 - Always include enable options for optional modules
 - Test module enable/disable behavior
 - Document module dependencies
+
+### Issue: Git Not Available During Installation
+**Symptoms**:
+```
+Git is not in PATH - some flake operations may fail
+Consider installing git: nix-env -iA nixos.git
+```
+
+**Root Cause**: Nix flake operations require git for evaluation, but git may not be available in minimal installation environments.
+
+**Solutions**:
+
+#### ✅ **System-Level Git Installation**
+Git is now included in core system packages (`modules/core/packages.nix`):
+```nix
+environment.systemPackages = with pkgs; [
+  # System utilities
+  git  # Required for flake operations and updates
+  # ... other packages
+];
+```
+
+#### ✅ **Flake-Level Git Provision**
+The `flake.nix` provides git in installer apps:
+```nix
+apps.system-installer = {
+  type = "app";
+  program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-system-installer" ''
+    # Ensure git is in PATH for flake operations
+    export PATH="${pkgs.git}/bin:$PATH"
+    exec ${pkgs.bash}/bin/bash ${./scripts/system_installer.sh} "$@"
+  '');
+};
+```
+
+**Prevention**:
+- Include git in core system packages for all NixOS configurations using flakes
+- Provide git in PATH for any scripts that perform flake operations
+- Test installation in minimal environments without git pre-installed
 
 ## ⚠️ **Common Warnings and Errors**
 

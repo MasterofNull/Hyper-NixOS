@@ -17,6 +17,7 @@
     jq
     curl
     ripgrep
+    git  # Required for flake operations and updates
     
     # Scripting and development
     python3

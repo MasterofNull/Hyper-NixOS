@@ -136,13 +136,9 @@
   # ═══════════════════════════════════════════════════════════════
   # Systemd Services - Hypervisor Menu
   # ═══════════════════════════════════════════════════════════════
-  systemd.services.hypervisor-menu = let
-    mgmtUser = config.hypervisor.management.userName;
-    enableMenuAtBoot = config.hypervisor.menu.enableAtBoot;
-    enableGuiAtBoot = config.hypervisor.gui.enableAtBoot or false;
-  in {
+  systemd.services.hypervisor-menu = {
     description = "Boot-time Hypervisor VM Menu";
-    wantedBy = lib.optional (enableMenuAtBoot && !enableGuiAtBoot) "multi-user.target";
+    wantedBy = lib.optional ((config.hypervisor.menu.enableAtBoot) && !(config.hypervisor.gui.enableAtBoot or false)) "multi-user.target";
     after = [ "network-online.target" "libvirtd.service" ];
     wants = [ "network-online.target" "libvirtd.service" ];
     
@@ -154,7 +150,7 @@
       Type = "simple";
       ExecStart = "${pkgs.bash}/bin/bash /etc/hypervisor/scripts/menu.sh";
       WorkingDirectory = "/etc/hypervisor";
-      User = mgmtUser;
+      User = config.hypervisor.management.userName;
       SupplementaryGroups = [ "kvm" "libvirtd" "video" ];
       Restart = "always";
       RestartSec = 2;
@@ -204,11 +200,9 @@
   # ═══════════════════════════════════════════════════════════════
   # Systemd Services - First Boot Welcome
   # ═══════════════════════════════════════════════════════════════
-  systemd.services.hypervisor-first-boot-welcome = let
-    enableWelcomeAtBoot = config.hypervisor.firstBootWelcome.enableAtBoot;
-  in {
+  systemd.services.hypervisor-first-boot-welcome = {
     description = "First-boot Welcome Screen";
-    wantedBy = lib.optional enableWelcomeAtBoot "multi-user.target";
+    wantedBy = lib.optional config.hypervisor.firstBootWelcome.enableAtBoot "multi-user.target";
     after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
     before = [ "hypervisor-menu.service" ];
     wants = [ "network-online.target" ];
@@ -255,11 +249,9 @@
   # ═══════════════════════════════════════════════════════════════
   # Systemd Services - First Boot Wizard
   # ═══════════════════════════════════════════════════════════════
-  systemd.services.hypervisor-first-boot = let
-    enableWizardAtBoot = config.hypervisor.firstBootWizard.enableAtBoot;
-  in {
+  systemd.services.hypervisor-first-boot = {
     description = "First-boot Setup Wizard (Disabled)";
-    wantedBy = lib.optional enableWizardAtBoot "multi-user.target";
+    wantedBy = lib.optional config.hypervisor.firstBootWizard.enableAtBoot "multi-user.target";
     after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
     before = [ "hypervisor-menu.service" ];
     wants = [ "network-online.target" ];
