@@ -55,6 +55,8 @@ in {
     # Network Configuration
     # ─────────────────────────────────────────────────────────────
     ./modules/network-settings/base.nix
+    ./modules/network-settings/performance.nix
+    ./modules/network-settings/security.nix
     ./modules/network-settings/firewall.nix
     ./modules/network-settings/ssh.nix
     ./modules/network-settings/isolation.nix
