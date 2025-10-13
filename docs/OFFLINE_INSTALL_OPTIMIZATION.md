@@ -114,10 +114,10 @@ sudo ./scripts/bootstrap_nixos.sh --fast --hostname "$(hostname -s)" --action sw
 
 ### Already Optimized! ✅
 
-The bootstrap script already uses local paths:
+The system installer already uses local paths:
 
 ```bash
-# In bootstrap_nixos.sh (line 163):
+# In system_installer.sh:
 local hypervisor_url="path:/etc/hypervisor/src"
 ```
 
@@ -240,11 +240,11 @@ echo "  sudo cp -r $BUNDLE_DIR/isos/* /var/lib/hypervisor/isos/"
 
 ---
 
-## 🎯 Optimized Bootstrap Script
+## 🎯 Optimized System Installer
 
-### Fast Bootstrap Mode
+### Fast Installation Mode
 
-**Update:** `scripts/bootstrap_nixos.sh`
+**Update:** `scripts/system_installer.sh`
 
 Add after line 20 (after `RB_OPTS` definition):
 
@@ -286,7 +286,7 @@ fi
 # Minimal package mode
 if $MINIMAL_PACKAGES; then
   msg "Minimal mode - installing essential packages only"
-  # Add minimal-bootstrap.nix to imports
+  # Add minimal-install.nix to imports
 fi
 ```
 
@@ -411,7 +411,7 @@ nix-serve --port 5000
 - [ ] Pre-download ISOs if known
 - [ ] Check available disk space (20GB+)
 
-**During Bootstrap:**
+**During Installation:**
 - [ ] Use `--fast` flag
 - [ ] Use `--minimal` for first install
 - [ ] Skip GUI initially (add later)

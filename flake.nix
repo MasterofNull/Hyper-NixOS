@@ -25,8 +25,6 @@
             exec ${pkgs.bash}/bin/bash ${./scripts/system_installer.sh} "$@"
           '');
         };
-        # Keep 'bootstrap' as an alias for backwards compatibility
-        apps.bootstrap = self.apps.${system}.system-installer;
         apps.rebuild-helper = {
           type = "app";
           program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-rebuild" ''

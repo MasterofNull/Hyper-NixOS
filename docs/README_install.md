@@ -6,8 +6,6 @@ Run the guided system installer (TUI). This copies files to `/etc/hypervisor`, w
 
 ```
 nix run .#system-installer
-# or use the legacy alias:
-nix run .#bootstrap
 ```
 
 If you prefer non-interactive:
@@ -142,7 +140,7 @@ sudo env NIX_CONFIG="experimental-features = nix-command flakes" \
   nixos-rebuild switch --flake "/etc/nixos#$(hostname -s)" --option substituters ""
 ```
 
-Tip: The bootstrapper script already adds `--refresh` and zero TTLs to rebuilds to avoid stale cache issues on first install.
+Tip: The system installer already adds `--refresh` and zero TTLs to rebuilds to avoid stale cache issues on first install.
 - The boot-time menu is two-tiered:
   - Main menu lists installed VMs, plus "Start GNOME management session (fallback GUI)" and "More Options".
   - More Options contains setup, ISO manager, VFIO tools, preflight, migration, and maintenance actions.

@@ -17,7 +17,7 @@ Complete reference documentation for all Hyper-NixOS management scripts.
 ## System Installer
 
 **Script:** `scripts/system_installer.sh`  
-**Flake app:** `nix run .#system-installer` (or legacy alias `.#bootstrap`)  
+**Flake app:** `nix run .#system-installer`  
 **Purpose:** Install Hyper-NixOS on an existing NixOS system with hardware detection, user migration, and safe system configuration.
 
 ### Synopsis
@@ -295,7 +295,7 @@ sudo ./scripts/smart_sync_hypervisor.sh --force-full
 
 ### File Exclusions
 
-The following paths are automatically excluded (matching bootstrap behavior):
+The following paths are automatically excluded (matching system installer behavior):
 
 - `.git/` - Git metadata
 - `result/` - Nix build results

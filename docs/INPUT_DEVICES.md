@@ -129,7 +129,7 @@ Input device access requires proper group membership. Users are automatically ad
 - **input**: Access to keyboard/mouse/touchpad devices
 - **video**: Access to brightness controls
 
-These are configured automatically during installation via the bootstrap script.
+These are configured automatically during installation via the system installer.
 
 ## Troubleshooting
 

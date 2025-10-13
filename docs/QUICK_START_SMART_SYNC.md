@@ -114,7 +114,7 @@ sudo bash /etc/hypervisor/scripts/dev_update_hypervisor.sh --ref my-feature
 ## Fresh NixOS Install Workflow
 
 ```bash
-# 1. After bootstrap, validate installation
+# 1. After installation, validate system
 sudo bash /etc/hypervisor/scripts/validate_hypervisor_install.sh --fix
 
 # 2. Update to latest

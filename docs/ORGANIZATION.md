@@ -27,7 +27,7 @@ This document describes the organization and structure of the Hyper-NixOS projec
 │
 ├── scripts/                     # Management scripts (78)
 │   ├── menu.sh                 # Main menu system
-│   ├── bootstrap_nixos.sh      # Installation script
+│   ├── system_installer.sh     # Installation script
 │   ├── vm_*.sh                 # VM management scripts
 │   ├── *_manager.sh            # Resource managers
 │   └── ...                     # Additional utilities
@@ -110,7 +110,7 @@ These are conditionally imported if they exist, allowing per-host customization 
 Scripts are organized by function:
 - **VM Management** - `vm_*.sh` (create, clone, start, stop, etc.)
 - **Menus** - `menu.sh`, `management_dashboard.sh`
-- **Installation** - `bootstrap_nixos.sh`, `setup_wizard.sh`
+- **Installation** - `system_installer.sh`, `setup_wizard.sh`
 - **Security** - `security_audit.sh`, `quick_security_audit.sh`
 - **Health Checks** - `enhanced_health_checks.sh`, `preflight_check.sh`
 - **Resource Management** - `*_manager.sh` (quota, snapshot, etc.)
@@ -125,7 +125,7 @@ tests/
 ├── run_all_tests.sh          # Master test runner
 ├── ci_validation.sh          # CI/CD validation
 ├── integration/              # Integration tests
-│   ├── test_bootstrap.sh
+│   ├── test_system_installer.sh
 │   ├── test_security_model.sh
 │   └── test_vm_lifecycle.sh
 └── lib/                      # Test helpers

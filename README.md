@@ -129,7 +129,7 @@ bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experiment
 **What it does:**
 - Installs git if needed
 - Clones repository to temporary directory
-- Runs optimized bootstrap (25 parallel downloads)
+- Runs optimized system installer (25 parallel downloads)
 - Migrates existing users and settings
 - Switches to new system
 - Reboots automatically
@@ -159,9 +159,6 @@ sudo nix run .#system-installer -- --skip-update-check --fast
 
 # Explicit action (build/test/switch):
 sudo nix run .#system-installer -- --hostname myhost --action switch --fast
-
-# Legacy alias (for backwards compatibility):
-sudo nix run .#bootstrap
 ```
 
 **What happens:**
