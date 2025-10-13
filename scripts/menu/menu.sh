@@ -31,6 +31,10 @@ source "${MENU_DIR}/modules/admin_menu.sh"
 init_logging "menu"
 script_timer_start
 
+# Script metadata for privilege checking
+readonly REQUIRES_SUDO=false  # Main menu doesn't require sudo
+readonly OPERATION_TYPE="menu_display"
+
 # Configuration
 readonly ROOT="/etc/hypervisor"
 readonly TEMPLATE_PROFILES_DIR="$ROOT/vm_profiles"
@@ -63,6 +67,28 @@ show_main_menu() {
     local entries=()
     local owner_filter="${OWNER_FILTER:-}"
     
+    # Get current user and privilege info
+    local current_user=$(get_actual_user)
+    local sudo_status=""
+    local privilege_info=""
+    
+    if is_running_as_sudo; then
+        sudo_status=" [SUDO MODE]"
+        privilege_info="Running with administrator privileges"
+    else
+        # Check group membership
+        if groups 2>/dev/null | grep -q "\blibvirtd\b"; then
+            privilege_info="VM management enabled"
+        else
+            privilege_info="Limited access - add user to libvirtd group"
+        fi
+    fi
+    
+    # Add user info at top
+    entries+=("__HEADER_USER__" "═══ User: $current_user$sudo_status ═══")
+    entries+=("__PRIVILEGE_INFO__" "◦ $privilege_info")
+    entries+=("" "")
+    
     # Get VM list
     shopt -s nullglob
     for f in "$USER_PROFILES_DIR"/*.json; do
@@ -85,12 +111,12 @@ show_main_menu() {
     done
     shopt -u nullglob
     
-    # Add menu options
+    # Add menu options with clear privilege indicators
     entries+=("__VM_SELECTOR__" "← Back to VM Boot Selector")
     entries+=("" "")
-    entries+=("__VM_OPS__" "VM Operations →")
-    entries+=("__SYS_CONFIG__" "System Configuration → [sudo]")
-    entries+=("__ADMIN__" "🔧 Admin Management Environment → (full access)")
+    entries+=("__VM_OPS__" "▸ VM Operations (No sudo required)")
+    entries+=("__SYS_CONFIG__" "▸ System Configuration [SUDO REQUIRED]")
+    entries+=("__ADMIN__" "▸ Admin Management [SUDO REQUIRED]")
     entries+=("" "")
     
     # Donation option
@@ -205,10 +231,24 @@ main() {
                 show_vm_operations_menu
                 ;;
             __SYS_CONFIG__)
-                show_system_config_menu
+                # System config requires sudo
+                if ! is_running_as_sudo; then
+                    show_sudo_warning "System Configuration" \
+                        "Configure system-wide settings, services, and network"
+                    exec sudo "$0" --system-config
+                else
+                    show_system_config_menu
+                fi
                 ;;
             __ADMIN__)
-                show_admin_menu
+                # Admin menu requires sudo
+                if ! is_running_as_sudo; then
+                    show_sudo_warning "Admin Management" \
+                        "Access administrative functions and system management"
+                    exec sudo "$0" --admin
+                else
+                    show_admin_menu
+                fi
                 ;;
             __DONATE__)
                 "$SCRIPTS_DIR/donate.sh"
@@ -221,6 +261,8 @@ main() {
                 ;;
             __DESKTOP__)
                 if show_yesno "Start Desktop" "Start GUI desktop session?"; then
+                    show_sudo_warning "Desktop Session" \
+                        "Start the graphical desktop environment"
                     sudo systemctl start display-manager.service
                     clear_screen
                     exit 0

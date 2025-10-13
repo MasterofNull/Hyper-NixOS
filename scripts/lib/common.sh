@@ -383,3 +383,144 @@ load_config
 
 # Efficiency: Pre-check common dependencies
 require jq virsh
+
+# ============================================================================
+# Privilege Management Functions
+# ============================================================================
+
+# Check if script requires sudo
+check_sudo_requirement() {
+    local requires_sudo="${REQUIRES_SUDO:-false}"
+    local operation="${OPERATION_TYPE:-unknown}"
+    
+    if [[ "$requires_sudo" == "true" ]] && [[ $EUID -ne 0 ]]; then
+        log_error "This operation requires administrator privileges"
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        echo "  This operation requires administrator privileges" >&2
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        echo "" >&2
+        echo "  Operation: $operation" >&2
+        echo "  Script: $(basename "$0")" >&2
+        echo "" >&2
+        echo "  Please run with sudo:" >&2
+        echo "    sudo $0 $*" >&2
+        echo "" >&2
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        return 1
+    fi
+    
+    if [[ "$requires_sudo" == "true" ]]; then
+        log_warn "Running with sudo: $(basename "$0") (user: ${SUDO_USER:-root})"
+    fi
+    
+    return 0
+}
+
+# Check if user is in required groups for VM operations
+check_vm_group_membership() {
+    local required_groups=("libvirtd" "kvm")
+    local missing_groups=()
+    
+    for group in "${required_groups[@]}"; do
+        if ! groups 2>/dev/null | grep -q "\b$group\b"; then
+            missing_groups+=("$group")
+        fi
+    done
+    
+    if [[ ${#missing_groups[@]} -gt 0 ]]; then
+        log_error "Missing required group membership for VM operations"
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        echo "  Missing Required Group Membership" >&2
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        echo "" >&2
+        echo "  Your user needs to be in these groups:" >&2
+        for group in "${missing_groups[@]}"; do
+            echo "    • $group" >&2
+        done
+        echo "" >&2
+        echo "  To add yourself to these groups, run:" >&2
+        echo "    sudo usermod -aG ${missing_groups[*]} $USER" >&2
+        echo "" >&2
+        echo "  Then logout and login again for changes to take effect." >&2
+        echo "═══════════════════════════════════════════════════════════════" >&2
+        return 1
+    fi
+    
+    return 0
+}
+
+# Get actual username (works even under sudo)
+get_actual_user() {
+    if [[ -n "$SUDO_USER" ]]; then
+        echo "$SUDO_USER"
+    else
+        echo "${USER:-$(whoami)}"
+    fi
+}
+
+# Check if running under sudo
+is_running_as_sudo() {
+    [[ $EUID -eq 0 ]] || [[ -n "$SUDO_USER" ]]
+}
+
+# Determine if operation requires sudo
+operation_requires_sudo() {
+    local operation="$1"
+    
+    # Operations that don't require sudo
+    local no_sudo_ops=(
+        # VM Management
+        "vm_start" "vm_stop" "vm_restart" "vm_pause" "vm_resume"
+        "vm_status" "vm_console" "vm_list" "vm_info" "vm_create"
+        
+        # Monitoring
+        "vm_metrics" "vm_logs" "resource_usage" "health_check"
+        
+        # User operations
+        "snapshot_create" "snapshot_list" "snapshot_revert"
+        "backup_create" "backup_list" "backup_restore"
+        
+        # Read operations
+        "config_view" "log_view" "status_view"
+    )
+    
+    for op in "${no_sudo_ops[@]}"; do
+        if [[ "$operation" == "$op" ]]; then
+            return 1  # Does not require sudo
+        fi
+    done
+    
+    return 0  # Requires sudo
+}
+
+# Show sudo warning for interactive operations
+show_sudo_warning() {
+    local operation="$1"
+    local description="$2"
+    
+    if [[ -t 0 ]]; then  # Only if interactive
+        cat >&2 <<EOF
+╔═══════════════════════════════════════════════════════════════╗
+║              ADMINISTRATOR PRIVILEGES REQUIRED                ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  Operation: $operation                                        ║
+║  Description: $description                                    ║
+║                                                               ║
+║  This operation requires sudo because it will:                ║
+║    • Modify system configuration                              ║
+║    • Change system-wide settings                              ║
+║    • Access restricted resources                              ║
+║                                                               ║
+║  You will be prompted for your password.                     ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+Press Enter to continue or Ctrl+C to cancel...
+EOF
+        read -r
+    fi
+}
+
+# Export privilege management functions
+export -f check_sudo_requirement check_vm_group_membership get_actual_user is_running_as_sudo operation_requires_sudo show_sudo_warning
