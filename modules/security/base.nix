@@ -6,6 +6,20 @@
 
 {
   # ═══════════════════════════════════════════════════════════════
+  # Security Assertions
+  # ═══════════════════════════════════════════════════════════════
+  assertions = [
+    {
+      assertion = !(config.services.xserver.enable or false);
+      message = ''
+        SECURITY VIOLATION: X11 is PROHIBITED on this locked-down hypervisor.
+        X11 has known security vulnerabilities and architecture flaws.
+        Use Wayland/Sway for GUI: hypervisor.gui.enableAtBoot = true
+      '';
+    }
+  ];
+
+  # ═══════════════════════════════════════════════════════════════
   # Libvirt Security Configuration
   # ═══════════════════════════════════════════════════════════════
   virtualisation.libvirtd = {

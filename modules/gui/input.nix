@@ -3,11 +3,11 @@
 {
   # Comprehensive touchpad and keyboard support for hypervisor management
   # This module provides multitouch, gestures, backlighting, and hotkey support
-  # ONLY enabled when X server is enabled (GUI mode)
+  # Works with Wayland/Sway (NO X11)
 
   # Touchpad support with libinput (modern, multitouch-aware driver)
-  # Only enable when xserver is enabled to avoid forcing GUI mode
-  services.xserver.libinput = lib.mkIf config.services.xserver.enable {
+  # Only enable when Sway is enabled (GUI mode)
+  services.libinput = lib.mkIf config.programs.sway.enable {
     enable = true;
     
     # Touchpad-specific settings
@@ -52,19 +52,15 @@
     };
   };
 
-  # Keyboard configuration (only when X server is enabled)
-  services.xserver.xkb = lib.mkIf config.services.xserver.enable {
+  # Keyboard configuration for Wayland
+  services.xkb = lib.mkIf config.programs.sway.enable {
     layout = lib.mkDefault "us";
     variant = lib.mkDefault "";
-    options = lib.mkDefault "terminate:ctrl_alt_bksp";  # Ctrl+Alt+Backspace to restart X
-
-    # Enable support for additional keyboard layouts and variants
-    # Users can switch layouts with: setxkbmap <layout>
-    extraLayouts = {};
   };
 
   # Console keyboard configuration
-  console.useXkbConfig = true;  # Use X keyboard settings in console
+  # Only use XKB settings in console when Sway is enabled
+  console.useXkbConfig = lib.mkIf config.programs.sway.enable true;
 
   # ACPI events handling (lid, power button, keyboard hotkeys)
   services.acpid = {
@@ -123,22 +119,18 @@
     
     # Input device configuration and debugging tools
     libinput
-    xorg.xinput
-    
-    # Keyboard layout switching and configuration
-    xorg.xkbcomp
-    xorg.setxkbmap
+    evtest            # Event device testing
     
     # ACPI event monitoring and debugging
     acpi
     acpid
     
-    # Additional useful tools
-    xdotool           # Simulate keyboard/mouse events
-    wmctrl            # Window management from command line
-    evtest            # Event device testing
+    # Wayland-specific tools
+    wl-clipboard      # Wayland clipboard utilities
+    wtype             # Simulate keyboard/mouse events (Wayland equivalent of xdotool)
+    ydotool           # Universal input automation (works with Wayland)
     
-    # Multitouch gesture support (optional, for GNOME/Wayland)
+    # Multitouch gesture support for Wayland
     libinput-gestures
   ];
 
@@ -160,8 +152,8 @@
   # Ensure input group exists for device access
   users.groups.input = {};
 
-  # XDG autostart for libinput-gestures (if using GNOME with touchpad gestures)
-  environment.etc."xdg/autostart/libinput-gestures.desktop" = lib.mkIf config.services.xserver.enable {
+  # XDG autostart for libinput-gestures (Wayland/Sway with touchpad gestures)
+  environment.etc."xdg/autostart/libinput-gestures.desktop" = lib.mkIf config.programs.sway.enable {
     text = ''
       [Desktop Entry]
       Type=Application
@@ -173,35 +165,23 @@
   };
 
   # Default libinput-gestures configuration (user can override in ~/.config)
-  environment.etc."libinput-gestures.conf" = lib.mkIf config.services.xserver.enable {
+  environment.etc."libinput-gestures.conf" = lib.mkIf config.programs.sway.enable {
     text = ''
-      # Multitouch gestures configuration
-      # Swipe gestures
-      gesture swipe up 3 _internal ws_up
-      gesture swipe down 3 _internal ws_down
-      gesture swipe left 3 xdotool key alt+Right
-      gesture swipe right 3 xdotool key alt+Left
-      gesture swipe left 4 xdotool key ctrl+alt+Right
-      gesture swipe right 4 xdotool key ctrl+alt+Left
+      # Multitouch gestures configuration for Sway/Wayland
+      # Swipe gestures for workspace navigation
+      gesture swipe up 3 swaymsg workspace prev
+      gesture swipe down 3 swaymsg workspace next
+      gesture swipe left 4 swaymsg workspace next
+      gesture swipe right 4 swaymsg workspace prev
       
-      # Pinch gestures
-      gesture pinch in 2 xdotool key ctrl+minus
-      gesture pinch out 2 xdotool key ctrl+plus
+      # Pinch gestures (using wtype for Wayland)
+      gesture pinch in 2 wtype -M ctrl -P minus -m ctrl
+      gesture pinch out 2 wtype -M ctrl -P equal -m ctrl
       
       # Configuration
       device all
     '';
   };
 
-  # extraLayouts moved into the xkb block above to avoid duplicate attribute definitions
-
-  # Enable NumLock on boot (console and X11)
-  # Uncomment if desired:
-  # services.xserver.displayManager.sessionCommands = ''
-  #   ${pkgs.numlockx}/bin/numlockx on
-  # '';
-  
-  # System-wide keyboard rate and delay
-  # services.xserver.autoRepeatDelay = 250;
-  # services.xserver.autoRepeatInterval = 30;
+  # Wayland input configuration (Sway handles keyboard repeat rate in its config)
 }
