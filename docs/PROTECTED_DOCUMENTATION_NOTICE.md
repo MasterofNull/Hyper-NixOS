@@ -6,22 +6,29 @@ To protect intellectual property and maintain security of design decisions, cert
 
 ### Protected Documents
 
-The following design and prompt context documents are now in the protected `dev/` folder:
+The entire `dev/` folder is now protected and contains:
+
+#### AI Context & Design Documents
 - **AI_ASSISTANT_CONTEXT.md** - Core AI agent prompt context and patterns
 - **AI_DOCUMENTATION_PROTOCOL.md** - AI-specific documentation procedures  
 - **DESIGN_EVOLUTION.md** - Historical design decisions and rationale
 - **EDUCATIONAL_PHILOSOPHY.md** - Educational system design philosophy
 - **AI-IP-PROTECTION-RULES.md** - AI-specific IP protection rules
 - **AI-LESSONS-LEARNED.md** - Proprietary AI development lessons
+
+#### Development Documentation
+- **DEVELOPMENT_REFERENCE.md** - Internal development guide
+- **DOCUMENTATION_MAINTENANCE_GUIDE.md** - Documentation standards
+- **AI-Development-Best-Practices.md** - AI development practices
+- **AI-QUICK-REFERENCE.md** - Quick development reference
+
+#### Technical History
+- All fix reports and technical improvements
+- System architecture documents
+- Implementation details and optimizations
+
+#### IP Protection
 - **ip-protection/** - All IP classification guidelines
-
-### Public Development Documentation
-
-The following remain publicly accessible for contributors:
-- **DEVELOPMENT_REFERENCE.md** - General development guide
-- **DOCUMENTATION_MAINTENANCE_GUIDE.md** - General documentation standards
-- **development/** - AI development best practices and guides
-- All technical fix reports and improvements in `dev/`
 
 ### Access Information
 
