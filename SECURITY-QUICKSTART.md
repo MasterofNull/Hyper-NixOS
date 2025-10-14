@@ -1,231 +1,279 @@
-# Security Framework Quick Start Guide
+# Security Platform Quick Start Guide
 
-## 🚀 Overview
-This security framework implements comprehensive security measures inspired by advanced penetration testing distributions. It provides automated deployment, monitoring, and incident response capabilities.
+Get up and running with the security platform in minutes!
 
-## 📋 What's Included
+## 🚀 5-Minute Setup
 
-### 1. **Security Scripts**
-- `security-aliases.sh` - Security-focused command aliases
-- `defensive-validation.sh` - Validates security defenses
-- `security-monitoring-setup.sh` - Sets up monitoring stack
-- `incident-response-automation.py` - Automated incident response
-- `security-tool-deployment.py` - Deploy security tools via Docker
-- `setup-security-framework.sh` - Master setup script
-
-### 2. **Documentation**
-- `AI-Development-Best-Practices.md` - Security-first development patterns
-- `security-countermeasures-analysis.md` - Defense mapping against attacks
-- `system-improvement-implementation.md` - Implementation roadmap
-- `defensive-validation-checklist.md` - Validation procedures
-
-## 🏃 Quick Start
-
-### Step 1: Run Master Setup
+### 1. Install (1 minute)
 ```bash
-./setup-security-framework.sh
-```
-This will:
-- Check prerequisites
-- Create directory structure
-- Install dependencies
-- Setup monitoring
-- Configure aliases
-
-### Step 2: Source Aliases
-```bash
-source ~/.bashrc  # or ~/.zshrc
+# Deploy with auto-detection
+sudo ./security-platform-deploy.sh
+./profile-selector.sh --auto
 ```
 
-### Step 3: Run Security Validation
+### 2. Activate Console (30 seconds)
 ```bash
-./defensive-validation.sh
-```
-Review the generated report to identify security gaps.
-
-### Step 4: Deploy Security Stack
-```bash
-# Basic monitoring
-cd security-monitoring
-./start-monitoring.sh
-
-# Advanced security tools
-python3 security-tool-deployment.py
+# Enable enhanced terminal features
+source /opt/security-platform/console/activate.sh
 ```
 
-## 🔧 Key Commands
-
-### Security Status
+### 3. First Security Check (1 minute)
 ```bash
-security-status          # Quick security overview
-harden-check            # Security hardening checklist
-security-report         # Generate detailed report
+# Run comprehensive check
+sec check
 ```
 
-### Network Security
+### 4. Start Monitoring (30 seconds)
 ```bash
-net-scan-local          # Scan local network
-net-connections         # View active connections
-net-monitor            # Real-time network monitoring
+# Begin real-time monitoring
+sec monitor start
+```
+
+### 5. View Status (1 minute)
+```bash
+# Check platform status
+sec status
+```
+
+## 🎯 Common Tasks
+
+### Network Security Scan
+```bash
+# Quick scan of local network
+sec scan 192.168.1.0/24
+
+# Deep scan of specific host
+sec scan 192.168.1.100 --deep
+
+# Stealth scan
+sec scan target.com --stealth
+```
+
+### Container Security
+```bash
+# Scan all containers
+sec check containers
+
+# Scan specific image
+sec scan image nginx:latest
+
+# Monitor container security
+sec monitor containers
 ```
 
 ### Incident Response
 ```bash
-ir-snapshot            # Collect forensic snapshot
-ir-block-ip <IP>      # Block malicious IP
-ir-kill <PID>         # Kill suspicious process
+# View security alerts
+sec alert list
+
+# Investigate incident
+sec ai analyze --incident-id 12345
+
+# Start threat hunt
+sec hunt --technique T1055
 ```
 
-### Docker Security
+### API Security
 ```bash
-docker-scan <image>    # Scan for vulnerabilities
-docker-bench          # Run security benchmark
-docker-secrets        # Check for exposed secrets
+# Check API gateway status
+sec api status
+
+# Create API key
+sec api keys create --client myapp
+
+# Validate request
+sec api validate --endpoint /api/v1/users
 ```
 
-## 📊 Monitoring Access Points
+## ⌨️ Keyboard Shortcuts
 
-After deployment, access:
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000 (admin/SecurePass123!)
-- **Node Exporter**: http://localhost:9100/metrics
-- **Alertmanager**: http://localhost:9093
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+S` | Quick security status |
+| `Ctrl+X,S` | Start security scan |
+| `Ctrl+X,C` | Run security check |
+| `Ctrl+X,A` | Show alerts |
+| `Ctrl+R` | Search command history |
 
-## 🛡️ Security Tools Available
+## 🎨 Console Features
 
-### Deployed via Docker
-- **Prometheus** - Metrics collection
-- **Grafana** - Visualization
-- **Suricata** - IDS/IPS
-- **Falco** - Runtime security
-- **Trivy** - Vulnerability scanning
-- **OpenVAS** - Vulnerability assessment
-- **Wazuh** - SIEM
-- **Honeypot** - Deception system
-
-### Quick Deployment
+### Fuzzy Search
 ```bash
-# Deploy specific tool
-python3 -c "
-import asyncio
-from security_tool_deployment import SecurityToolDeployment
-d = SecurityToolDeployment()
-asyncio.run(d.deploy_tool('suricata'))
-"
+# Search security logs
+fsec
 
-# Deploy security stack
-python3 -c "
-import asyncio
-from security_tool_deployment import SecurityToolDeployment
-d = SecurityToolDeployment()
-asyncio.run(d.deploy_stack('advanced'))
-"
+# Find and analyze alerts
+sec alert list | fzf
+
+# Interactive process kill
+fkill
 ```
 
-## 🚨 Incident Response
-
-### Automated Playbooks
-The system includes automated responses for:
-- Brute force attacks
-- Port scanning
-- Malware detection
-- Data exfiltration
-- Privilege escalation
-- DoS attacks
-
-### Manual Response
-```python
-# Trigger incident response
-from incident_response_automation import *
-import asyncio
-
-incident = Incident(
-    id="INC001",
-    type=IncidentType.BRUTE_FORCE,
-    severity=IncidentSeverity.HIGH,
-    source_ip="192.168.1.100",
-    description="SSH brute force detected"
-)
-
-orchestrator = IncidentResponseOrchestrator()
-asyncio.run(orchestrator.respond_to_incident(incident))
-```
-
-## 📈 Security Metrics
-
-Monitor key security metrics:
-- Failed authentication attempts
-- Network anomalies
-- System resource usage
-- Open connections
-- Process behavior
-- File integrity
-
-## 🔍 Regular Tasks
-
-### Daily
-1. Check security alerts
-2. Review authentication logs
-3. Monitor system resources
-
-### Weekly
-1. Run security validation
-2. Update security tools
-3. Review incident reports
-4. Patch systems
-
-### Monthly
-1. Comprehensive security audit
-2. Update security policies
-3. Test incident response
-4. Security training
-
-## 🆘 Troubleshooting
-
-### Docker Issues
+### Security Functions
 ```bash
-# Check Docker status
-systemctl status docker
+# Generate secure password
+genpass 20
 
-# View container logs
-docker logs security_<tool_name>
+# Check SSL certificate
+check-ssl example.com
 
-# Restart tool
-docker restart security_<tool_name>
+# Monitor specific service
+monitor-service nginx
 ```
 
-### Monitoring Issues
+## 📊 Dashboards
+
+### Start Monitoring Dashboard
 ```bash
-# Check Prometheus targets
-curl http://localhost:9090/api/v1/targets
-
-# Verify metrics
-curl http://localhost:9100/metrics | grep -i cpu
+# Launch tmux security session
+~/.security/console/tmux-security-session.sh
 ```
 
-### Permission Issues
+### Grafana Dashboards
+Access at http://localhost:3000
+- Security Overview
+- Container Security
+- Threat Detection
+- Compliance Status
+
+## 🔍 Quick Troubleshooting
+
+### Check Installation
 ```bash
-# Fix Docker permissions
-sudo usermod -aG docker $USER
+# Verify installation
+sec help
 
-# Fix log permissions
-sudo chmod 644 /var/log/auth.log
+# Check module status
+sec status --modules
+
+# View logs
+sec logs
 ```
 
-## 📚 Further Reading
+### Common Issues
 
-1. Review `AI-Development-Best-Practices.md` for development guidelines
-2. Check `security-countermeasures-analysis.md` for defense strategies
-3. Follow `system-improvement-implementation.md` for roadmap
-4. Use `defensive-validation-checklist.md` for regular audits
+**Command not found**
+```bash
+source ~/.bashrc
+# or
+export PATH="/opt/security-platform/bin:$PATH"
+```
 
-## 🎯 Next Steps
+**Permission denied**
+```bash
+# Most commands need sudo for system scanning
+sudo sec scan
+```
 
-1. **Immediate**: Run validation and fix critical issues
-2. **Week 1**: Deploy monitoring and core security tools
-3. **Month 1**: Implement automated responses
-4. **Ongoing**: Regular validation and improvement
+**Module not loaded**
+```bash
+# Check profile
+sec profile --show
+
+# Switch to profile with needed module
+sec profile --advanced
+```
+
+## 🎚️ Profile Management
+
+### View Current Profile
+```bash
+sec profile --show
+```
+
+### Change Profile
+```bash
+# Minimal (containers, IoT)
+sec profile --minimal
+
+# Standard (servers)
+sec profile --standard  
+
+# Advanced (security teams)
+sec profile --advanced
+
+# Enterprise (large orgs)
+sec profile --enterprise
+```
+
+## 📱 Mobile Security
+
+```bash
+# Scan mobile device
+sec mobile scan --device android-001
+
+# Enroll device
+sec mobile enroll --device iphone-123 --user john
+
+# Apply security policy
+sec mobile policy --strict
+```
+
+## 🔗 Supply Chain Security
+
+```bash
+# Generate SBOM
+sec supply sbom .
+
+# Scan dependencies
+sec supply scan
+
+# Sign artifact
+sec supply sign app.tar.gz
+```
+
+## 🤖 AI Features
+
+```bash
+# Run AI analysis
+sec ai analyze
+
+# Train on new data
+sec ai train --data /path/to/logs
+
+# Predict threats
+sec ai predict
+```
+
+## 📈 Reporting
+
+```bash
+# Generate security report
+sec report generate --format pdf
+
+# Compliance report
+sec report compliance --framework cis
+
+# Executive summary
+sec report summary --exec
+```
+
+## 🆘 Getting Help
+
+```bash
+# General help
+sec help
+
+# Command-specific help
+sec scan --help
+
+# Show examples
+sec examples
+
+# Interactive guide
+sec guide
+```
+
+## 📚 Next Steps
+
+1. **Explore Modules**: Try different security modules
+2. **Customize**: Edit `~/.security/profile.conf`
+3. **Automate**: Set up scheduled scans
+4. **Integrate**: Connect to your SIEM/tools
+5. **Learn**: Read full documentation
 
 ---
 
-Remember: Security is a journey, not a destination. Regular validation and continuous improvement are key to maintaining a strong security posture.
+**Pro Tip**: Use `sec` + `Tab` for auto-completion of commands!
+
+**Support**: See `/opt/security-platform/docs/` for detailed guides
