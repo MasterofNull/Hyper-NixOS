@@ -996,4 +996,6 @@ You must set one to prevent being locked out of your system.
 - Use `mkpasswd -m sha-512` to generate secure password hashes
 - Consider redundant authentication methods (password + SSH key)
 
+**Update**: Added `allowNoPasswordLogin = true` option for first boot setup, allowing the system to boot without passwords so the first boot wizard can configure them interactively. This is the recommended approach for Hyper-NixOS minimal installations.
+
 ---

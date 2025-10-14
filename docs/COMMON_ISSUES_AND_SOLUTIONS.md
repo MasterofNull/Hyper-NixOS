@@ -69,6 +69,25 @@ users = {
 };
 ```
 
+#### ✅ **Option 5: Temporarily allow no password for first boot wizard (Hyper-NixOS)**
+```nix
+users = {
+  mutableUsers = false;
+  allowNoPasswordLogin = true;  # TEMPORARY - for first boot setup only
+  
+  users.admin = {
+    isNormalUser = true;
+    description = "System Administrator";
+    extraGroups = [ "wheel" "libvirtd" "kvm" ];
+    # Password will be set by first boot wizard
+  };
+};
+```
+**IMPORTANT**: This option should only be used with Hyper-NixOS's first boot wizard. After initial setup:
+1. Set a proper password using the wizard or `passwd` command
+2. Remove or set `allowNoPasswordLogin = false`
+3. Rebuild your configuration
+
 **Best Practices**:
 1. For production systems, use hashed passwords or SSH keys
 2. Never use `initialPassword` in production

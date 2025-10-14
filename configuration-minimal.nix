@@ -105,21 +105,17 @@
   # Users
   users = {
     mutableUsers = false;
+    
+    # TEMPORARY: Allow no password login during first boot setup
+    # The first boot wizard will configure passwords interactively
+    # This should be removed or set to false after initial setup
+    allowNoPasswordLogin = true;
+    
     users.admin = {
       isNormalUser = true;
       description = "System Administrator";
       extraGroups = [ "wheel" "libvirtd" "kvm" ];
-      # IMPORTANT: You must set ONE of the following to avoid being locked out:
-      # Option 1: Set a hashed password (generate with: mkpasswd -m sha-512)
-      # hashedPassword = "$6$rounds=100000$yourSaltHere$yourHashHere";
-      
-      # Option 2: Add SSH public key for passwordless login
-      # openssh.authorizedKeys.keys = [
-      #   "ssh-rsa AAAAB3NzaC1... your-key-comment"
-      # ];
-      
-      # Option 3: For initial setup only - set a temporary password
-      # initialPassword = "changeme";  # CHANGE THIS IMMEDIATELY AFTER FIRST LOGIN
+      # Password will be set by first boot wizard
     };
   };
   
