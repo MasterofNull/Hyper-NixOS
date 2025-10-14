@@ -77,6 +77,9 @@ esac
 2. **Don't assume dependencies** - Check and install
 3. **Don't mix profiles** - Respect resource limits
 4. **Don't skip validation** - Always test changes
+5. **Don't forget resource constants** - Define MAX_MEMORY/MAX_CPU for profiles
+6. **Don't clutter root directory** - Organize docs in proper folders
+7. **Don't ignore audit requirements** - Ensure all expected files/constants exist
 
 ## 👨‍💻 For Human Developers
 
@@ -262,6 +265,58 @@ main() {
        return compute(param)
    ```
 
+### File Organization Standards
+
+1. **Directory Structure**
+   ```
+   workspace/
+   ├── docs/                    # All documentation
+   │   ├── guides/             # User guides
+   │   ├── reports/            # Test/audit reports
+   │   ├── implementation/     # Technical details
+   │   ├── development/        # Developer docs
+   │   └── deployment/         # Deployment info
+   ├── scripts/                # Implementation scripts
+   │   ├── security/          # Security modules
+   │   └── monitoring/        # Monitoring tools
+   └── [root files]           # Only executables & configs
+   ```
+
+2. **Documentation Placement**
+   - User guides → `docs/guides/`
+   - Test reports → `docs/reports/`
+   - Technical docs → `docs/implementation/`
+   - Dev resources → `docs/development/`
+   - Deploy guides → `docs/deployment/`
+
+3. **Root Directory Rules**
+   - Only executable scripts (.sh)
+   - Configuration files (.yaml, .json)
+   - Main README.md
+   - License files
+   - NO documentation dumps
+
+### Audit Compliance
+
+1. **Resource Constants Required**
+   ```bash
+   # Must define in modular-security-framework.sh
+   readonly MAX_MEMORY_MINIMAL="512M"
+   readonly MAX_CPU_MINIMAL="25"
+   # ... for each profile
+   ```
+
+2. **File Location Awareness**
+   ```bash
+   # Audit script checks specific paths
+   test_check "Docs exist" "[[ -f docs/SCALABLE-SECURITY-FRAMEWORK.md ]]"
+   ```
+
+3. **Permission Requirements**
+   - All .sh files: 755 (rwxr-xr-x)
+   - Config files: 644 (rw-r--r--)
+   - Sensitive configs: 600 (rw-------)
+
 ### Debugging Tips
 
 1. **Enable Debug Mode**
@@ -322,6 +377,7 @@ main() {
 - [Architecture Guide](docs/architecture.md)
 - [Module Development](docs/module-development.md)
 - [API Reference](docs/api-reference.md)
+- [AI Lessons Learned](AI-LESSONS-LEARNED.md) - **MUST READ**
 
 ### External Resources
 - [Python AsyncIO](https://docs.python.org/3/library/asyncio.html)
@@ -334,6 +390,66 @@ main() {
 - **Linting**: pylint, shellcheck
 - **Security**: bandit, safety
 
+## 🤖 AI Agent Troubleshooting Guide
+
+### Common Issues and Solutions
+
+1. **Audit Failures**
+   ```bash
+   # Issue: 97% success rate
+   # Cause: Missing resource constants
+   # Solution: Add MAX_MEMORY_*/MAX_CPU_* to framework script
+   
+   # Issue: Documentation not found
+   # Cause: Files in wrong location
+   # Solution: Move to docs/ subdirectories
+   ```
+
+2. **File Organization Problems**
+   ```bash
+   # Issue: Cluttered root directory
+   # Solution: Use this structure
+   find . -name "*.md" -maxdepth 1 | while read f; do
+       # Determine category and move
+       case "$f" in
+           *QUICKSTART*) mv "$f" docs/guides/ ;;
+           *REPORT*) mv "$f" docs/reports/ ;;
+           *IMPLEMENTATION*) mv "$f" docs/implementation/ ;;
+           *) mv "$f" docs/ ;;
+       esac
+   done
+   ```
+
+3. **Script Validation**
+   ```bash
+   # Always validate after changes
+   bash -n script.sh              # Syntax check
+   ./audit-platform.sh            # Full audit
+   ./test-platform-features.sh    # Feature tests
+   ```
+
+### Best Practices for AI Implementation
+
+1. **Always Run Audits**
+   - After any major change
+   - Before marking complete
+   - Fix all failures before proceeding
+
+2. **Maintain Organization**
+   - Keep docs in categorized folders
+   - Update paths in scripts when moving files
+   - Use consistent naming conventions
+
+3. **Test Incrementally**
+   - Don't wait until the end
+   - Test each module as implemented
+   - Verify audit passes at each stage
+
+4. **Document Changes**
+   - Update affected documentation
+   - Note breaking changes
+   - Provide migration paths
+
 ## 🎯 Key Takeaways
 
 1. **Modularity First**: Always think in terms of independent modules
@@ -341,6 +457,8 @@ main() {
 3. **Security by Design**: Build security in, don't bolt it on
 4. **Test Everything**: Automated tests prevent regressions
 5. **Document Always**: Code is read more than written
+6. **Organize Properly**: Clean structure = maintainable code
+7. **Audit Compliance**: 100% pass rate is the goal
 
 ---
 

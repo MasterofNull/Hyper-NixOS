@@ -27,7 +27,9 @@ Technical implementation details
 
 ### 👨‍💻 [Development](development/)
 Developer resources and guidelines
-- [AI Development Best Practices](development/AI-Development-Best-Practices.md)
+- [AI Development Best Practices](development/AI-Development-Best-Practices.md) - Comprehensive guide
+- [AI Lessons Learned](development/AI-LESSONS-LEARNED.md) - **Critical insights from implementation**
+- [AI Quick Reference](development/AI-QUICK-REFERENCE.md) - Essential commands and fixes
 - [Advanced Patterns Integration](development/ADVANCED-PATTERNS-INTEGRATION-GUIDE.md)
 - [Additional Improvements](development/ADDITIONAL-IMPROVEMENTS.md)
 - [Security Framework Roadmap](development/security-framework-roadmap.md)
@@ -51,8 +53,10 @@ Deployment guides and release information
 - Start here: [Security Quick Start Guide](guides/SECURITY-QUICKSTART.md)
 - Commands: See main [README](../README.md)
 
-### For Developers
+### For Developers & AI Agents
 - Best practices: [AI Development Guide](development/AI-Development-Best-Practices.md)
+- **Lessons learned**: [AI Lessons Learned](development/AI-LESSONS-LEARNED.md)
+- Quick reference: [AI Quick Reference](development/AI-QUICK-REFERENCE.md)
 - Roadmap: [Framework Roadmap](development/security-framework-roadmap.md)
 
 ### For Enterprise
