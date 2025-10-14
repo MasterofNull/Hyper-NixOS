@@ -904,4 +904,27 @@ These tools are designed for AI agents to quickly fix common issues during devel
 
 **Key Learning**: Platform tests revealed Hyper-NixOS has enterprise security features beyond typical virtualization platforms.
 
+### 2025-10-14: Fixed Duplicate enabledFeatures Option in feature-manager.nix
+
+**Agent**: Claude
+**Issue**: Build error due to duplicate option definition
+
+**Error**:
+```
+error: attribute 'enabledFeatures' already defined at /nix/store/.../modules/features/feature-manager.nix:104:5
+       at /nix/store/.../modules/features/feature-manager.nix:134:5
+```
+
+**Root Cause**: The `enabledFeatures` option was defined twice in the options section of feature-manager.nix
+
+**Fix Applied**:
+- Removed duplicate `enabledFeatures` definition at line 134
+- Kept single definition at line 104 with updated description
+- Updated description to clarify it's automatically set based on profile or manually for custom profiles
+
+**Files Modified**:
+- `modules/features/feature-manager.nix` - Removed duplicate option definition
+
+**Validation**: Searched entire codebase for similar duplication patterns - no other actual duplicates found
+
 ---

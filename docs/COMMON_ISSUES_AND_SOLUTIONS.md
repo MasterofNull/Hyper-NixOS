@@ -41,6 +41,45 @@ hypervisor.enable = true;
 - The modular architecture requires explicit imports
 - Check that all required base modules are imported
 
+### Issue: Duplicate Option Definitions
+**Symptoms**:
+```
+error: attribute 'enabledFeatures' already defined at /nix/store/.../feature-manager.nix:104:5
+       at /nix/store/.../feature-manager.nix:134:5
+```
+
+**Root Cause**: The same option is defined multiple times at the same level in a module.
+
+**Solution**:
+1. Remove duplicate option definitions
+2. Keep only one definition with the most complete description
+3. Ensure the option type and default values are consistent
+
+**Example Fix**:
+```nix
+# Remove duplicate:
+options.hypervisor.featureManager = {
+  enabledFeatures = mkOption {  # First definition at line 104
+    type = types.listOf types.str;
+    default = [];
+    description = "List of enabled features";
+  };
+  
+  # ... other options ...
+  
+  enabledFeatures = mkOption {  # DUPLICATE at line 134 - REMOVE THIS
+    type = types.listOf types.str;
+    default = [];
+    description = "List of enabled features";
+  };
+};
+```
+
+**Prevention**:
+- Use editor search to check if an option name already exists before adding
+- Keep options organized alphabetically or by category
+- Run `nixos-rebuild dry-build` frequently during development
+
 ### Issue: Infinite Recursion Errors
 **Symptoms**:
 ```
