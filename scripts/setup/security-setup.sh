@@ -70,44 +70,46 @@ main() {
     echo -e "\n${YELLOW}Installing security tools...${NC}"
     
     # Main control center
-    cp "$SCRIPT_DIR/security-control.sh" security/sec-control
-    chmod +x security/sec-control
+    if [[ -f "$SCRIPT_DIR/../security/security-control.sh" ]]; then
+        cp "$SCRIPT_DIR/../security/security-control.sh" security/sec-control
+        chmod +x security/sec-control
+    fi
     echo -e "${GREEN}✓ Installed sec-control${NC}"
     
     # SSH security
-    cp "$SCRIPT_DIR/scripts/security/ssh-monitor.sh" security/scripts/
+    cp "$SCRIPT_DIR/../security/ssh-monitor.sh" security/scripts/
     echo -e "${GREEN}✓ Installed SSH monitoring${NC}"
     
     # Container security
-    cp "$SCRIPT_DIR/scripts/security/container-security-manager.sh" security/sec-containers
+    cp "$SCRIPT_DIR/../security/container-security-manager.sh" security/sec-containers
     chmod +x security/sec-containers
     echo -e "${GREEN}✓ Installed sec-containers${NC}"
     
     # Network scanner
-    cp "$SCRIPT_DIR/scripts/security/advanced-network-scanner.py" security/scripts/net-scan
+    cp "$SCRIPT_DIR/../security/advanced-network-scanner.py" security/scripts/net-scan
     chmod +x security/scripts/net-scan
     echo -e "${GREEN}✓ Installed net-scan${NC}"
     
     # Security pipelines
-    cp "$SCRIPT_DIR/scripts/security/run-security-pipeline.sh" security/sec-test
+    cp "$SCRIPT_DIR/../security/run-security-pipeline.sh" security/sec-test
     chmod +x security/sec-test
     echo -e "${GREEN}✓ Installed sec-test${NC}"
     
     # Vulnerability management
-    cp "$SCRIPT_DIR/scripts/security/vulnerability-management-system.py" security/scripts/vuln-check
+    cp "$SCRIPT_DIR/../security/vulnerability-management-system.py" security/scripts/vuln-check
     chmod +x security/scripts/vuln-check
     echo -e "${GREEN}✓ Installed vuln-check${NC}"
     
     # Compliance
-    cp "$SCRIPT_DIR/scripts/security/compliance-manager.sh" security/sec-comply
+    cp "$SCRIPT_DIR/../security/compliance-manager.sh" security/sec-comply
     chmod +x security/sec-comply
     echo -e "${GREEN}✓ Installed sec-comply${NC}"
     
     # Copy supporting files
     echo -e "\n${YELLOW}Installing configurations...${NC}"
-    cp -r "$SCRIPT_DIR/scripts/security/policies" security/
-    cp -r "$SCRIPT_DIR/scripts/security/pipelines" security/
-    cp -r "$SCRIPT_DIR/scripts/monitoring/dashboards" monitoring/
+    cp -r "$SCRIPT_DIR/../security/policies" security/
+    cp -r "$SCRIPT_DIR/../security/pipelines" security/
+    cp -r "$SCRIPT_DIR/../monitoring/dashboards" monitoring/
     
     # Create simple aliases
     echo -e "\n${YELLOW}Creating command shortcuts...${NC}"
