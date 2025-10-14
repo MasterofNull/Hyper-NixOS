@@ -91,12 +91,30 @@ declare -a AVAILABLE_FEATURES=()
 declare SYSTEM_RAM=0
 declare SYSTEM_CPUS=0
 declare CURRENT_TIER=""
+declare AUTO_TEST=${HV_AUTO_TEST:-true}
+declare AUTO_SWITCH=${HV_AUTO_SWITCH:-false}
+declare LOG_FILE="/var/log/hypervisor/feature-manager.log"
 
-# Detect system resources
+# Detect system resources using centralized detection
 detect_system_resources() {
-    local mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-    SYSTEM_RAM=$((mem_kb / 1024))  # Convert to MB
-    SYSTEM_CPUS=$(nproc)
+    # Use centralized system detection if available
+    if command -v hv-detect-system >/dev/null 2>&1; then
+        local detection_output=$(hv-detect-system json 2>/dev/null)
+        if [[ -n "$detection_output" ]]; then
+            SYSTEM_RAM=$(echo "$detection_output" | jq -r '.hardware.ram_mb // 0')
+            SYSTEM_CPUS=$(echo "$detection_output" | jq -r '.hardware.cpu_count // 1')
+        else
+            # Fallback to manual detection
+            local mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+            SYSTEM_RAM=$((mem_kb / 1024))  # Convert to MB
+            SYSTEM_CPUS=$(nproc)
+        fi
+    else
+        # Fallback to manual detection
+        local mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+        SYSTEM_RAM=$((mem_kb / 1024))  # Convert to MB
+        SYSTEM_CPUS=$(nproc)
+    fi
     
     # Detect current tier if configured
     if [[ -f "$FEATURES_FILE" ]]; then
@@ -162,9 +180,10 @@ show_main_menu() {
         echo "  4) Feature Information"
         echo "  5) Export/Import Configuration"
         echo "  6) Apply Configuration"
-        echo "  7) Exit"
+        echo "  7) Settings"
+        echo "  8) Exit"
         echo
-        read -r -p "Select option (1-7): " choice
+        read -r -p "Select option (1-8): " choice
         
         case $choice in
             1) tier_template_menu ;;
@@ -173,7 +192,8 @@ show_main_menu() {
             4) feature_information ;;
             5) export_import_menu ;;
             6) apply_configuration ;;
-            7) exit 0 ;;
+            7) settings_menu ;;
+            8) exit 0 ;;
             *) echo -e "${RED}Invalid option${NC}"; sleep 2 ;;
         esac
     done
@@ -406,16 +426,68 @@ select_features_in_category() {
     done
 }
 
+# Check feature compatibility
+check_feature_compatibility() {
+    local feature=$1
+    local reason=""
+    
+    # Check RAM
+    if [[ -n "${FEATURE_RAM[$feature]:-}" ]]; then
+        local current_usage=$(calculate_ram_requirement)
+        local feature_ram=${FEATURE_RAM[$feature]}
+        if [[ $((current_usage + feature_ram)) -gt $SYSTEM_RAM ]]; then
+            echo "Insufficient RAM: needs ${feature_ram}MB more"
+            return 1
+        fi
+    fi
+    
+    # Check dependencies
+    if [[ -n "${FEATURE_DEPS[$feature]:-}" ]]; then
+        for dep in ${FEATURE_DEPS[$feature]}; do
+            if [[ ! " ${SELECTED_FEATURES[@]} " =~ " ${dep} " ]]; then
+                echo "Requires: $dep"
+                return 1
+            fi
+        done
+    fi
+    
+    # Check conflicts (example for desktop environments)
+    case $feature in
+        "desktop-kde")
+            if [[ " ${SELECTED_FEATURES[@]} " =~ " desktop-gnome " ]]; then
+                echo "Conflicts with: desktop-gnome"
+                return 1
+            fi
+            ;;
+        "desktop-gnome")
+            if [[ " ${SELECTED_FEATURES[@]} " =~ " desktop-kde " ]]; then
+                echo "Conflicts with: desktop-kde"
+                return 1
+            fi
+            ;;
+    esac
+    
+    return 0
+}
+
 # Show feature with toggle status
 show_feature_toggle() {
     local feature=$1
     local description=$2
     local status="${RED}✗${NC}"
     local ram_info=""
+    local incompatible=false
+    local reason=""
     
     # Check if feature is selected
     if [[ " ${SELECTED_FEATURES[@]} " =~ " ${feature} " ]]; then
         status="${GREEN}✓${NC}"
+    else
+        # Check compatibility if not selected
+        if ! reason=$(check_feature_compatibility "$feature"); then
+            incompatible=true
+            status="${DIM}✗${NC}"
+        fi
     fi
     
     # Show RAM requirement if available
@@ -423,7 +495,13 @@ show_feature_toggle() {
         ram_info=" ${DIM}(${FEATURE_RAM[$feature]} MB RAM)${NC}"
     fi
     
-    echo -e "  $status $feature - $description$ram_info"
+    # Display feature
+    if [[ $incompatible == true ]]; then
+        echo -e "  $status ${DIM}$feature - $description$ram_info${NC}"
+        echo -e "      ${RED}└─ $reason${NC}"
+    else
+        echo -e "  $status $feature - $description$ram_info"
+    fi
 }
 
 # View current configuration
@@ -660,49 +738,84 @@ apply_configuration() {
     
     # Test configuration
     echo -e "\n${BLUE}Testing configuration...${NC}"
-    if nixos-rebuild dry-build; then
+    
+    # Create test log
+    local test_log="/tmp/nixos-test-$(date +%s).log"
+    
+    if nixos-rebuild dry-build 2>&1 | tee "$test_log"; then
         echo -e "${GREEN}✓ Configuration is valid${NC}"
+        rm -f "$test_log"
         
-        echo -e "\n${BOLD}Ready to apply. This will rebuild your system.${NC}"
-        echo "1) Apply now (nixos-rebuild switch)"
-        echo "2) Apply on next boot (nixos-rebuild boot)"
-        echo "3) Test in VM first (nixos-rebuild build-vm)"
-        echo "4) Cancel"
-        
-        read -r -p "Choice (1-4): " rebuild_choice
-        
-        case $rebuild_choice in
-            1)
-                echo -e "\n${BLUE}Applying configuration...${NC}"
-                if sudo nixos-rebuild switch; then
-                    echo -e "\n${GREEN}✓ Configuration applied successfully!${NC}"
-                    echo "Your system has been reconfigured with the selected features."
-                else
-                    echo -e "\n${RED}✗ Configuration failed!${NC}"
-                    echo "Check the error messages above."
-                fi
-                ;;
-            2)
-                echo -e "\n${BLUE}Applying configuration for next boot...${NC}"
-                if sudo nixos-rebuild boot; then
-                    echo -e "\n${GREEN}✓ Configuration will be applied on next boot!${NC}"
-                else
-                    echo -e "\n${RED}✗ Configuration failed!${NC}"
-                fi
-                ;;
-            3)
-                echo -e "\n${BLUE}Building VM for testing...${NC}"
-                if nixos-rebuild build-vm; then
-                    echo -e "\n${GREEN}✓ VM built successfully!${NC}"
-                    echo "Run ./result/bin/run-*-vm to test"
-                else
-                    echo -e "\n${RED}✗ VM build failed!${NC}"
-                fi
-                ;;
-            4)
-                echo "Configuration cancelled."
-                ;;
-        esac
+        # Check auto-switch setting
+        if [[ "$AUTO_SWITCH" == "true" ]] && [[ "$AUTO_TEST" == "true" ]]; then
+            echo -e "\n${BOLD}Auto-switch enabled. Applying configuration automatically...${NC}"
+            echo -e "${DIM}This may take several minutes...${NC}"
+            
+            # Log the action
+            mkdir -p "$(dirname "$LOG_FILE")"
+            echo "[$(date +'%Y-%m-%d %H:%M:%S')] Auto-switching to new configuration" >> "$LOG_FILE"
+            
+            # Apply with detailed output
+            if sudo nixos-rebuild switch --show-trace 2>&1 | tee -a "$LOG_FILE"; then
+                echo -e "\n${GREEN}✓ Configuration applied successfully!${NC}"
+                echo "Your system has been reconfigured with the selected features."
+                echo "[$(date +'%Y-%m-%d %H:%M:%S')] Configuration switch successful" >> "$LOG_FILE"
+                
+                # Show what's new
+                echo -e "\n${BOLD}New features activated:${NC}"
+                for feature in "${SELECTED_FEATURES[@]}"; do
+                    echo -e "  ${GREEN}✓${NC} $feature"
+                done
+            else
+                echo -e "\n${RED}✗ Configuration switch failed!${NC}"
+                echo "[$(date +'%Y-%m-%d %H:%M:%S')] Configuration switch failed" >> "$LOG_FILE"
+                echo -e "\n${YELLOW}Restore backup with:${NC}"
+                echo "  sudo cp $backup_name.nix $CONFIG_FILE"
+                echo "  sudo cp $backup_name-features.nix $FEATURES_FILE"
+                echo "  sudo nixos-rebuild switch"
+            fi
+        else
+            echo -e "\n${BOLD}Ready to apply. This will rebuild your system.${NC}"
+            echo "1) Apply now (nixos-rebuild switch)"
+            echo "2) Apply on next boot (nixos-rebuild boot)"
+            echo "3) Test in VM first (nixos-rebuild build-vm)"
+            echo "4) Cancel"
+            
+            read -r -p "Choice (1-4): " rebuild_choice
+            
+            case $rebuild_choice in
+                1)
+                    echo -e "\n${BLUE}Applying configuration...${NC}"
+                    if sudo nixos-rebuild switch; then
+                        echo -e "\n${GREEN}✓ Configuration applied successfully!${NC}"
+                        echo "Your system has been reconfigured with the selected features."
+                    else
+                        echo -e "\n${RED}✗ Configuration failed!${NC}"
+                        echo "Check the error messages above."
+                    fi
+                    ;;
+                2)
+                    echo -e "\n${BLUE}Applying configuration for next boot...${NC}"
+                    if sudo nixos-rebuild boot; then
+                        echo -e "\n${GREEN}✓ Configuration will be applied on next boot!${NC}"
+                    else
+                        echo -e "\n${RED}✗ Configuration failed!${NC}"
+                    fi
+                    ;;
+                3)
+                    echo -e "\n${BLUE}Building VM for testing...${NC}"
+                    if nixos-rebuild build-vm; then
+                        echo -e "\n${GREEN}✓ VM built successfully!${NC}"
+                        echo "Run ./result/bin/run-*-vm to test"
+                    else
+                        echo -e "\n${RED}✗ VM build failed!${NC}"
+                    fi
+                    ;;
+                4)
+                    echo "Configuration cancelled."
+                    ;;
+            esac
+        fi
     else
         echo -e "${RED}✗ Configuration test failed!${NC}"
         echo "Please check the error messages above."
@@ -781,8 +894,69 @@ EOF
     read -r
 }
 
+# Settings menu
+settings_menu() {
+    while true; do
+        show_header
+        echo -e "${BOLD}Settings:${NC}\n"
+        
+        echo "1) Auto-test before applying: $([ "$AUTO_TEST" == "true" ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")"
+        echo "2) Auto-switch after testing: $([ "$AUTO_SWITCH" == "true" ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")"
+        echo "3) View log file"
+        echo "4) Clear configuration backups"
+        echo "5) Reset to defaults"
+        echo "6) Back to main menu"
+        echo
+        
+        read -r -p "Select option (1-6): " choice
+        
+        case $choice in
+            1)
+                AUTO_TEST=$([ "$AUTO_TEST" == "true" ] && echo "false" || echo "true")
+                echo -e "${GREEN}Auto-test $([ "$AUTO_TEST" == "true" ] && echo "enabled" || echo "disabled")${NC}"
+                sleep 1
+                ;;
+            2)
+                AUTO_SWITCH=$([ "$AUTO_SWITCH" == "true" ] && echo "false" || echo "true")
+                echo -e "${GREEN}Auto-switch $([ "$AUTO_SWITCH" == "true" ] && echo "enabled" || echo "disabled")${NC}"
+                sleep 1
+                ;;
+            3)
+                if [[ -f "$LOG_FILE" ]]; then
+                    less "$LOG_FILE"
+                else
+                    echo -e "${YELLOW}No log file found${NC}"
+                    sleep 2
+                fi
+                ;;
+            4)
+                echo -e "${YELLOW}Clear old configuration backups?${NC}"
+                read -r -p "This will remove backups older than 30 days (y/N): " confirm
+                if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                    find "$BACKUP_DIR" -name "*.nix" -mtime +30 -delete
+                    echo -e "${GREEN}Old backups cleared${NC}"
+                    sleep 2
+                fi
+                ;;
+            5)
+                AUTO_TEST=true
+                AUTO_SWITCH=false
+                echo -e "${GREEN}Settings reset to defaults${NC}"
+                sleep 1
+                ;;
+            6)
+                return
+                ;;
+        esac
+    done
+}
+
 # Main execution
 main() {
+    # Initialize logging
+    mkdir -p "$(dirname "$LOG_FILE")"
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] Feature Manager started" >> "$LOG_FILE"
+    
     # Check if running as root
     if [[ $EUID -eq 0 ]]; then
         echo -e "${YELLOW}Note: Running as root. Configuration will affect system-wide settings.${NC}"
