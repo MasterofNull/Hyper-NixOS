@@ -9,6 +9,17 @@ let
   cfg = config.hypervisor.featureManager;
   features = config.hypervisor.features;
   
+  # Import tier definitions
+  tierConfig = config.hypervisor.tiers.${config.hypervisor.systemTier or "minimal"};
+  
+  # Get features for current tier and all inherited tiers
+  getTierFeatures = tier: let
+    currentTier = config.hypervisor.tiers.${tier};
+    inheritedFeatures = if currentTier ? inherits
+      then flatten (map getTierFeatures currentTier.inherits)
+      else [];
+  in inheritedFeatures ++ (currentTier.features or []);
+  
   # Feature dependency definitions
   featureDependencies = {
     # Web dashboard requires monitoring

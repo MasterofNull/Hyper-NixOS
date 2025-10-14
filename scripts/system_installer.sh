@@ -364,7 +364,7 @@ write_host_flake() {
         inherit system;
         modules = [
           /etc/nixos/hardware-configuration.nix
-          (hypervisor + "/configuration.nix")
+          (hypervisor + "/configuration-minimal.nix")
         ];
       };
     };

@@ -11,6 +11,7 @@
     
     # Only import modules whose options we're actually setting below
     ./modules/features/feature-manager.nix  # We use hypervisor.featureManager
+    ./modules/core/first-boot.nix  # First boot configuration wizard
   ];
 
   # System identification

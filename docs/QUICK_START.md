@@ -1,19 +1,44 @@
 # Hyper-NixOS Quick Start Guide
 
-Get up and running with Hyper-NixOS in minutes! This guide assumes you've already installed Hyper-NixOS.
+Get up and running with Hyper-NixOS in minutes!
 
-## 🎯 5-Minute Quick Start
+## 🚀 New Installation Workflow
 
-### 1. Initial Setup (First Run Only)
+Hyper-NixOS now uses a minimal installation approach that grows with your needs:
+
+### 1. Install Minimal System
 ```bash
-# Run the setup wizard
-hv setup
+# One-line installation
+curl -fsSL https://raw.githubusercontent.com/yourusername/hyper-nixos/main/scripts/system_installer.sh | sudo bash
 
-# Select:
-# - Your experience level
-# - Security preferences
-# - Features to enable
+# This installs only core virtualization components
 ```
+
+### 2. First Boot Configuration
+After installation and reboot, a configuration wizard will automatically start to help you select the appropriate system tier based on your hardware and use case.
+
+**Available Tiers:**
+- **Minimal** (2-4GB RAM): Core virtualization only
+- **Standard** (4-8GB RAM): + Monitoring & Security
+- **Enhanced** (8-16GB RAM): + Desktop & Advanced Features
+- **Professional** (16-32GB RAM): + AI Security & Automation
+- **Enterprise** (32GB+ RAM): + Clustering & High Availability
+
+### 3. Start Using Hyper-NixOS
+Once configured, you're ready to go:
+
+```bash
+# Change default password
+passwd admin
+
+# Check system status
+systemctl status hypervisor-*
+
+# View available commands
+hv help
+```
+
+## 🎯 5-Minute Quick Start (Post-Installation)
 
 ### 2. Create Your First VM
 ```bash

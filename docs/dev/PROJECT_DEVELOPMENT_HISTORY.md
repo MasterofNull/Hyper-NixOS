@@ -10,6 +10,43 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Minimal Installation Workflow Implementation
+**Agent**: Claude
+**Feature Implemented**: Tiered installation system with first-boot configuration
+
+**Changes Made**:
+1. **Created Tiered System Configuration**:
+   - Added `modules/system-tiers.nix` defining 5 tiers (minimal to enterprise)
+   - Each tier specifies features, services, packages, and requirements
+   - Tiers inherit from lower levels for progressive enhancement
+
+2. **Implemented First-Boot Wizard**:
+   - Created `scripts/first-boot-wizard.sh` - Interactive configuration wizard
+   - Detects system resources (RAM, CPU, GPU, disk)
+   - Recommends appropriate tier based on hardware
+   - Shows detailed information about each tier
+   - Applies selected configuration automatically
+
+3. **Updated Installation Workflow**:
+   - Modified installer to use minimal configuration by default
+   - Added `modules/core/first-boot.nix` for systemd service
+   - Created reconfiguration script for tier changes
+
+4. **Documentation Updates**:
+   - Created `docs/MINIMAL_INSTALL_WORKFLOW.md`
+   - Updated `docs/QUICK_START.md` with new workflow
+   - Updated `docs/INSTALLATION_GUIDE.md` with tier information
+   - Added hardware requirements for each tier
+
+**Key Benefits**:
+- Minimal initial footprint (2GB RAM minimum)
+- Hardware-appropriate recommendations
+- Clear upgrade path between tiers
+- Flexible post-install configuration
+- Better resource utilization
+
+---
+
 #### 2025-10-14: IP Protection Compliance & AI Documentation Organization
 **Agent**: Claude
 **Actions Taken**:
