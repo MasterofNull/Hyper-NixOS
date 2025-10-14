@@ -10,6 +10,28 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Restored Quick Install One-Liner to README
+**Agent**: Claude
+**Issue**: Quick install one-liner was missing from main README
+
+**Changes Made**:
+1. **Created new Hyper-NixOS README.md**
+   - Replaced the incorrect security platform README
+   - Added quick install one-liner as the primary installation method
+   - Preserved alternative installation methods for flexibility
+   - Included proper project description and features
+   - Added links to documentation
+
+**Key Features of New README**:
+- Quick install one-liner prominently featured at the top
+- Clear system tier information
+- Alternative installation methods (manual, offline)
+- Basic usage examples
+- Comprehensive documentation links
+- Proper project attribution
+
+---
+
 #### 2025-10-14: Fixed Undefined Variable Errors in Feature Modules
 **Agent**: Claude
 **Issue**: Build errors due to undefined variables in feature modules
