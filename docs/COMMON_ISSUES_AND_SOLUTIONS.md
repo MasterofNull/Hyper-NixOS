@@ -80,6 +80,74 @@ options.hypervisor.featureManager = {
 - Keep options organized alphabetically or by category
 - Run `nixos-rebuild dry-build` frequently during development
 
+### Issue: mkOption 'check' Argument Error
+**Symptoms**:
+```
+error: function 'mkOption' called with unexpected argument 'check'
+       at /nix/store/.../lib/options.nix:67:5
+```
+
+**Root Cause**: The `check` argument is not valid for `mkOption`. NixOS uses type constructors for validation, not separate check functions.
+
+**Solution**:
+Use appropriate type constructors for validation:
+
+```nix
+# ❌ WRONG - Don't use check argument
+userName = lib.mkOption {
+  type = lib.types.str;
+  default = "hypervisor";
+  description = "Username for the management user account";
+  check = name: builtins.match "^[a-z_][a-z0-9_-]*$" name != null;
+};
+
+# ✅ CORRECT - Use strMatching for regex validation
+userName = lib.mkOption {
+  type = lib.types.strMatching "^[a-z_][a-z0-9_-]*$";
+  default = "hypervisor";
+  description = "Username for the management user account (must follow Unix naming conventions)";
+};
+```
+
+**Common Validation Patterns**:
+```nix
+# String matching regex
+userName = lib.mkOption {
+  type = lib.types.strMatching "^[a-z_][a-z0-9_-]*$";
+};
+
+# Integer ranges
+port = lib.mkOption {
+  type = lib.types.ints.between 1 65535;
+};
+
+# Positive integers
+count = lib.mkOption {
+  type = lib.types.ints.positive;
+};
+
+# Email validation
+email = lib.mkOption {
+  type = lib.types.strMatching "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+};
+
+# Path validation
+configPath = lib.mkOption {
+  type = lib.types.path;
+};
+
+# Enum validation
+logLevel = lib.mkOption {
+  type = lib.types.enum [ "debug" "info" "warn" "error" ];
+};
+```
+
+**Prevention**:
+- Always use type constructors for validation
+- Refer to NixOS manual section on types
+- Common types with validation: `strMatching`, `ints.between`, `enum`, `path`
+- Never add custom arguments to `mkOption`
+
 ### Issue: Infinite Recursion Errors
 **Symptoms**:
 ```
