@@ -1,6 +1,6 @@
 #!/bin/bash
 # Security Monitoring Setup Script
-# Sets up basic security monitoring inspired by MaxOS patterns
+# Sets up basic security monitoring inspired by security-focused distribution patterns
 # Version: 1.0
 
 set -e
@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}=== Security Monitoring Setup ===${NC}"
-echo -e "${BLUE}Setting up monitoring inspired by MaxOS patterns...${NC}"
+echo -e "${BLUE}Setting up monitoring inspired by security-focused patterns...${NC}"
 echo
 
 # Check if running as root

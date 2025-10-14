@@ -39,7 +39,7 @@ sshm() {
 **Technique**: Automatic notification on SSH login
 ```bash
 if [[ -n "$SSH_CONNECTION" ]]; then
-  screen -adm $HOME/git/maxos/scripts/telegram_notify.sh -a -q -m "Login from $SSH_CLIENT"
+  screen -adm $HOME/scripts/notify.sh -a -q -m "Login from $SSH_CLIENT"
 fi
 ```
 **Security benefit**: Immediate awareness of system access
@@ -110,7 +110,7 @@ a.cloudmapper() {
 ```bash
 d.rengine() {
   cd $HOME/git/pentest-tools/rengine
-  cp $HOME/git/maxos/resources/rengine/docker-compose.yml .
+  cp $HOME/resources/rengine/docker-compose.yml .
   sed -i "s#- 443:443/tcp#- ${PORT_RENGINE}:443/tcp#g" docker-compose.yml
   sudo make up
 }
@@ -234,7 +234,7 @@ a.bust() {
 ### 3. **Notification on Completion**
 **Technique**: Background notifications for long-running tasks
 ```bash
-screen -adm $HOME/git/maxos/scripts/telegram_notify.sh -a -q -m "SQLi scan finished for $1"
+screen -adm $HOME/scripts/notify.sh -a -q -m "SQLi scan finished for $1"
 ```
 
 ### 4. **Temporary File Management**

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Defensive Security Validation Script
-# Validates defenses against MaxOS-style penetration testing capabilities
+# Validates defenses against advanced penetration testing capabilities
 # Version: 1.0
 
 # Color codes
@@ -20,7 +20,7 @@ TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 REPORT_FILE="security-validation-report-$TIMESTAMP.md"
 
 echo -e "${BLUE}=== Security Defense Validation Checklist ===${NC}"
-echo -e "${BLUE}Testing defenses against MaxOS pentesting capabilities...${NC}"
+echo -e "${BLUE}Testing defenses against advanced pentesting capabilities...${NC}"
 echo
 
 # Initialize report
@@ -29,7 +29,7 @@ cat > $REPORT_FILE << EOF
 Generated: $(date)
 
 ## Executive Summary
-This report validates our security defenses against the capabilities demonstrated in the MaxOS penetration testing framework.
+This report validates our security defenses against the capabilities demonstrated in advanced penetration testing frameworks.
 
 ## Test Results
 EOF
@@ -301,7 +301,7 @@ EOF
 # Risk assessment
 if [ $score -lt 50 ]; then
     echo -e "${RED}CRITICAL: Your defenses need immediate attention!${NC}"
-    echo "**Risk Level: CRITICAL** - Immediate action required. System is vulnerable to most attack vectors demonstrated in MaxOS." >> $REPORT_FILE
+    echo "**Risk Level: CRITICAL** - Immediate action required. System is vulnerable to most advanced attack vectors." >> $REPORT_FILE
 elif [ $score -lt 70 ]; then
     echo -e "${YELLOW}WARNING: Several important defenses are missing.${NC}"
     echo "**Risk Level: HIGH** - Several critical defenses are missing. System is vulnerable to common attacks." >> $REPORT_FILE
@@ -309,7 +309,7 @@ elif [ $score -lt 90 ]; then
     echo -e "${GREEN}GOOD: Most defenses are in place, but there's room for improvement.${NC}"
     echo "**Risk Level: MEDIUM** - Basic defenses are in place but additional hardening recommended." >> $REPORT_FILE
 else
-    echo -e "${GREEN}EXCELLENT: Strong defensive posture against MaxOS-style attacks!${NC}"
+    echo -e "${GREEN}EXCELLENT: Strong defensive posture against advanced attacks!${NC}"
     echo "**Risk Level: LOW** - Strong defensive posture with comprehensive security controls." >> $REPORT_FILE
 fi
 
@@ -339,7 +339,7 @@ cat >> $REPORT_FILE << EOF
 1. Address all critical (❌) findings immediately
 2. Implement warning (⚠️) items based on your security requirements
 3. Re-run this validation after implementing changes
-4. Consider implementing the security improvements from the MaxOS analysis
+4. Consider implementing the security improvements from the security analysis
 
 ## Additional Resources
 
