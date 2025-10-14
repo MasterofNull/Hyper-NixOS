@@ -1,0 +1,580 @@
+#!/usr/bin/env python3
+"""
+Security Checker - Find and fix vulnerabilities
+Usage: check [what] [options]
+"""
+
+import asyncio
+import subprocess
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+import argparse
+
+class SecurityChecker:
+    """Check for security issues"""
+    
+    async def check_system(self):
+        """Check system security"""
+        print("🔍 Checking system security...\n")
+        
+        issues = []
+        
+        # Check updates
+        print("📦 Checking for updates...")
+        update_issues = await self._check_updates()
+        issues.extend(update_issues)
+        
+        # Check services
+        print("🔌 Checking services...")
+        service_issues = await self._check_services()
+        issues.extend(service_issues)
+        
+        # Check permissions
+        print("🔐 Checking permissions...")
+        perm_issues = await self._check_permissions()
+        issues.extend(perm_issues)
+        
+        # Check firewall
+        print("🛡️  Checking firewall...")
+        fw_issues = await self._check_firewall()
+        issues.extend(fw_issues)
+        
+        return issues
+    
+    async def check_docker(self):
+        """Check Docker containers"""
+        print("🐳 Checking Docker security...\n")
+        
+        issues = []
+        
+        try:
+            # Get running containers
+            cmd = ['docker', 'ps', '--format', '{{.Names}}']
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            
+            containers = stdout.decode().strip().split('\n')
+            containers = [c for c in containers if c]
+            
+            if not containers:
+                print("   No running containers")
+                return issues
+            
+            print(f"   Found {len(containers)} running containers")
+            
+            # Check each container
+            for container in containers:
+                print(f"\n   Checking {container}...")
+                
+                # Check for vulnerabilities
+                vulns = await self._scan_container(container)
+                if vulns:
+                    issues.append({
+                        'type': 'docker',
+                        'target': container,
+                        'issue': f"{len(vulns)} vulnerabilities found",
+                        'severity': 'high' if any(v['severity'] == 'CRITICAL' for v in vulns) else 'medium',
+                        'fix': f"Update base image and packages for {container}"
+                    })
+                
+                # Check for dangerous settings
+                dangerous = await self._check_container_settings(container)
+                issues.extend(dangerous)
+            
+        except Exception as e:
+            print(f"   ⚠️  Docker not available: {str(e)}")
+        
+        return issues
+    
+    async def check_web(self, target: str):
+        """Check web application security"""
+        print(f"🌐 Checking web security for {target}...\n")
+        
+        issues = []
+        
+        # Basic web checks
+        print("   Checking headers...")
+        header_issues = await self._check_headers(target)
+        issues.extend(header_issues)
+        
+        print("   Checking SSL/TLS...")
+        ssl_issues = await self._check_ssl(target)
+        issues.extend(ssl_issues)
+        
+        return issues
+    
+    async def _check_updates(self):
+        """Check for system updates"""
+        issues = []
+        
+        try:
+            # Check for updates
+            cmd = ['apt', 'list', '--upgradable']
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            
+            updates = [line for line in stdout.decode().split('\n') 
+                      if '/' in line and not line.startswith('Listing')]
+            
+            if updates:
+                security_updates = [u for u in updates if 'security' in u]
+                
+                if security_updates:
+                    issues.append({
+                        'type': 'system',
+                        'target': 'packages',
+                        'issue': f"{len(security_updates)} security updates available",
+                        'severity': 'high',
+                        'fix': "Run: sudo apt update && sudo apt upgrade"
+                    })
+                elif len(updates) > 10:
+                    issues.append({
+                        'type': 'system',
+                        'target': 'packages',
+                        'issue': f"{len(updates)} updates available",
+                        'severity': 'medium',
+                        'fix': "Run: sudo apt update && sudo apt upgrade"
+                    })
+                else:
+                    print("   ✅ System is up to date")
+            else:
+                print("   ✅ No updates available")
+                
+        except:
+            print("   ⚠️  Could not check updates")
+        
+        return issues
+    
+    async def _check_services(self):
+        """Check for insecure services"""
+        issues = []
+        
+        # Services that should not be running
+        bad_services = {
+            'telnet': 'Use SSH instead',
+            'rsh': 'Use SSH instead',
+            'rlogin': 'Use SSH instead',
+            'ftp': 'Use SFTP instead'
+        }
+        
+        for service, recommendation in bad_services.items():
+            try:
+                cmd = ['systemctl', 'is-active', service]
+                process = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, _ = await process.communicate()
+                
+                if stdout.decode().strip() == 'active':
+                    issues.append({
+                        'type': 'system',
+                        'target': service,
+                        'issue': f"Insecure service {service} is running",
+                        'severity': 'high',
+                        'fix': f"Disable with: sudo systemctl stop {service} && sudo systemctl disable {service}\n       {recommendation}"
+                    })
+            except:
+                pass
+        
+        if not issues:
+            print("   ✅ No insecure services found")
+        
+        return issues
+    
+    async def _check_permissions(self):
+        """Check file permissions"""
+        issues = []
+        
+        # Critical files that should have restricted permissions
+        critical_files = {
+            '/etc/passwd': '644',
+            '/etc/shadow': '640',
+            '/etc/ssh/sshd_config': '600',
+            '/root/.ssh': '700'
+        }
+        
+        for filepath, expected in critical_files.items():
+            if Path(filepath).exists():
+                try:
+                    stat = Path(filepath).stat()
+                    current = oct(stat.st_mode)[-3:]
+                    
+                    if current != expected:
+                        issues.append({
+                            'type': 'system',
+                            'target': filepath,
+                            'issue': f"Incorrect permissions: {current} (should be {expected})",
+                            'severity': 'high',
+                            'fix': f"Run: sudo chmod {expected} {filepath}"
+                        })
+                except:
+                    pass
+        
+        if not issues:
+            print("   ✅ File permissions look good")
+        
+        return issues
+    
+    async def _check_firewall(self):
+        """Check firewall status"""
+        issues = []
+        
+        try:
+            # Check UFW status
+            cmd = ['ufw', 'status']
+            process = await asyncio.create_subprocess_exec(
+                'sudo', *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            
+            output = stdout.decode()
+            
+            if 'inactive' in output.lower():
+                issues.append({
+                    'type': 'system',
+                    'target': 'firewall',
+                    'issue': "Firewall is disabled",
+                    'severity': 'critical',
+                    'fix': "Enable with: sudo ufw enable"
+                })
+            else:
+                print("   ✅ Firewall is active")
+                
+        except:
+            # Try iptables
+            try:
+                cmd = ['iptables', '-L', '-n']
+                process = await asyncio.create_subprocess_exec(
+                    'sudo', *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, _ = await process.communicate()
+                
+                if 'ACCEPT     all' in stdout.decode() and stdout.decode().count('\n') < 10:
+                    issues.append({
+                        'type': 'system',
+                        'target': 'firewall',
+                        'issue': "No firewall rules configured",
+                        'severity': 'high',
+                        'fix': "Configure firewall rules or use UFW"
+                    })
+                else:
+                    print("   ✅ Firewall rules found")
+            except:
+                print("   ⚠️  Could not check firewall")
+        
+        return issues
+    
+    async def _scan_container(self, container: str):
+        """Scan container for vulnerabilities"""
+        try:
+            # Get image name
+            cmd = ['docker', 'inspect', container, '--format', '{{.Config.Image}}']
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            image = stdout.decode().strip()
+            
+            # Scan with trivy
+            cmd = ['trivy', 'image', '--format', 'json', '--quiet', image]
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            
+            if process.returncode in [0, 1]:
+                data = json.loads(stdout.decode())
+                vulns = []
+                
+                for result in data.get('Results', []):
+                    for vuln in result.get('Vulnerabilities', []):
+                        if vuln.get('Severity') in ['CRITICAL', 'HIGH']:
+                            vulns.append({
+                                'id': vuln.get('VulnerabilityID'),
+                                'severity': vuln.get('Severity'),
+                                'package': vuln.get('PkgName')
+                            })
+                
+                return vulns
+                
+        except:
+            pass
+        
+        return []
+    
+    async def _check_container_settings(self, container: str):
+        """Check container security settings"""
+        issues = []
+        
+        try:
+            # Check if running as root
+            cmd = ['docker', 'inspect', container, '--format', '{{.Config.User}}']
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            
+            user = stdout.decode().strip()
+            if not user or user == 'root':
+                issues.append({
+                    'type': 'docker',
+                    'target': container,
+                    'issue': "Container running as root",
+                    'severity': 'medium',
+                    'fix': "Use non-root user in Dockerfile: USER nonroot"
+                })
+            
+            # Check if privileged
+            cmd = ['docker', 'inspect', container, '--format', '{{.HostConfig.Privileged}}']
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            
+            if stdout.decode().strip() == 'true':
+                issues.append({
+                    'type': 'docker',
+                    'target': container,
+                    'issue': "Container running in privileged mode",
+                    'severity': 'critical',
+                    'fix': "Remove --privileged flag"
+                })
+                
+        except:
+            pass
+        
+        return issues
+    
+    async def _check_headers(self, target: str):
+        """Check web security headers"""
+        issues = []
+        
+        try:
+            # Make sure target has protocol
+            if not target.startswith('http'):
+                target = f"https://{target}"
+            
+            cmd = ['curl', '-s', '-I', target]
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, _ = await process.communicate()
+            
+            headers = stdout.decode().lower()
+            
+            # Check for security headers
+            security_headers = {
+                'strict-transport-security': 'HSTS not enabled',
+                'x-frame-options': 'Clickjacking protection missing',
+                'x-content-type-options': 'MIME sniffing not prevented',
+                'content-security-policy': 'CSP not configured'
+            }
+            
+            for header, issue in security_headers.items():
+                if header not in headers:
+                    issues.append({
+                        'type': 'web',
+                        'target': target,
+                        'issue': issue,
+                        'severity': 'medium',
+                        'fix': f"Add {header} header to web server configuration"
+                    })
+                    
+        except Exception as e:
+            print(f"   ⚠️  Could not check headers: {str(e)}")
+        
+        return issues
+    
+    async def _check_ssl(self, target: str):
+        """Check SSL/TLS configuration"""
+        issues = []
+        
+        try:
+            # Extract hostname
+            hostname = target.replace('https://', '').replace('http://', '').split('/')[0]
+            
+            # Test SSL
+            cmd = ['openssl', 's_client', '-connect', f'{hostname}:443', '-servername', hostname]
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            # Send empty input and get output
+            stdout, _ = await process.communicate(input=b'')
+            output = stdout.decode()
+            
+            # Check protocol version
+            if 'Protocol  : TLSv1.0' in output or 'Protocol  : TLSv1.1' in output:
+                issues.append({
+                    'type': 'web',
+                    'target': target,
+                    'issue': "Outdated TLS version",
+                    'severity': 'high',
+                    'fix': "Update to TLS 1.2 or higher"
+                })
+            
+            # Check certificate
+            if 'verify error' in output:
+                issues.append({
+                    'type': 'web',
+                    'target': target,
+                    'issue': "SSL certificate verification failed",
+                    'severity': 'critical',
+                    'fix': "Install valid SSL certificate"
+                })
+                
+        except:
+            pass
+        
+        return issues
+    
+    def show_results(self, issues: list):
+        """Display results in user-friendly format"""
+        if not issues:
+            print("\n✅ No security issues found! 🎉")
+            return
+        
+        # Group by severity
+        critical = [i for i in issues if i['severity'] == 'critical']
+        high = [i for i in issues if i['severity'] == 'high']
+        medium = [i for i in issues if i['severity'] == 'medium']
+        
+        print(f"\n⚠️  Found {len(issues)} security issues:\n")
+        
+        if critical:
+            print("🔴 CRITICAL Issues:")
+            for issue in critical:
+                print(f"   • {issue['issue']}")
+                print(f"     Target: {issue['target']}")
+                print(f"     Fix: {issue['fix']}")
+                print()
+        
+        if high:
+            print("🟠 HIGH Priority Issues:")
+            for issue in high:
+                print(f"   • {issue['issue']}")
+                print(f"     Target: {issue['target']}")
+                print(f"     Fix: {issue['fix']}")
+                print()
+        
+        if medium:
+            print("🟡 MEDIUM Priority Issues:")
+            for issue in medium:
+                print(f"   • {issue['issue']}")
+                print(f"     Target: {issue['target']}")
+                print(f"     Fix: {issue['fix']}")
+                print()
+
+
+async def main():
+    """Main entry point"""
+    parser = argparse.ArgumentParser(
+        description='Security Checker - Find and fix vulnerabilities',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+What to check:
+  system    Check system security (default)
+  docker    Check Docker containers
+  web       Check web application
+  all       Check everything
+
+Examples:
+  check                      # Check system security
+  check docker               # Check Docker containers  
+  check web example.com      # Check website security
+  check all                  # Run all checks
+  
+  check --fix                # Show how to fix issues
+  check --save report.json   # Save results to file
+        """
+    )
+    
+    parser.add_argument('what', nargs='?', default='system',
+                       choices=['system', 'docker', 'web', 'all'],
+                       help='What to check')
+    parser.add_argument('target', nargs='?',
+                       help='Target for web checks')
+    parser.add_argument('--fix', action='store_true',
+                       help='Show detailed fix instructions')
+    parser.add_argument('--save', '-s',
+                       help='Save results to file')
+    
+    args = parser.parse_args()
+    
+    checker = SecurityChecker()
+    all_issues = []
+    
+    # Run appropriate checks
+    if args.what == 'system' or args.what == 'all':
+        issues = await checker.check_system()
+        all_issues.extend(issues)
+    
+    if args.what == 'docker' or args.what == 'all':
+        issues = await checker.check_docker()
+        all_issues.extend(issues)
+    
+    if args.what == 'web':
+        if not args.target:
+            print("❌ Error: Web checks require a target")
+            print("   Example: check web example.com")
+            sys.exit(1)
+        issues = await checker.check_web(args.target)
+        all_issues.extend(issues)
+    
+    # Show results
+    checker.show_results(all_issues)
+    
+    # Save if requested
+    if args.save:
+        report = {
+            'scan_time': datetime.now().isoformat(),
+            'issues': all_issues,
+            'summary': {
+                'total': len(all_issues),
+                'critical': len([i for i in all_issues if i['severity'] == 'critical']),
+                'high': len([i for i in all_issues if i['severity'] == 'high']),
+                'medium': len([i for i in all_issues if i['severity'] == 'medium'])
+            }
+        }
+        
+        with open(args.save, 'w') as f:
+            json.dump(report, f, indent=2)
+        
+        print(f"\n💾 Report saved to {args.save}")
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n⚠️  Check cancelled")
+        sys.exit(0)
