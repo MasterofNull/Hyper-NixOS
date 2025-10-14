@@ -10,6 +10,31 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Python Code in Nix Multiline Strings
+**Agent**: Claude
+**Issues Fixed**:
+1. **Syntax Error**: `unexpected ')', expecting '}'` in threat-response.nix:409
+   - Root cause: Unescaped single quotes in Python code within Nix multiline strings
+   - Fixed by escaping single quotes as `''` (double single quotes)
+   
+2. **Similar errors** in multiple security modules:
+   - `modules/security/threat-response.nix` - Fixed .get() calls and dictionary keys
+   - `modules/security/behavioral-analysis.nix` - Fixed over 50 occurrences systematically
+
+**Files Modified**:
+- `modules/security/threat-response.nix` - Escaped all Python single quotes
+- `modules/security/behavioral-analysis.nix` - Systematic fix using sed
+- `docs/COMMON_ISSUES_AND_SOLUTIONS.md` - Added new section on Python in Nix strings
+- `docs/dev/PROJECT_DEVELOPMENT_HISTORY.md` - This update
+
+**Key Learnings**:
+- In Nix multiline strings (`''`), literal single quotes must be escaped as `''`
+- This affects all embedded code (Python, Bash, etc.) within Nix strings
+- Alternative: Use double quotes in Python when possible to avoid escaping
+- For complex scripts, consider separate files instead of embedding
+
+---
+
 #### 2025-10-13: CI Test Fixes and Build Errors
 **Agent**: Claude
 **Issues Fixed**:

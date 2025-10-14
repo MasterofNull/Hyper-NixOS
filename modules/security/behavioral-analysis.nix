@@ -110,30 +110,30 @@ let
             """Extract behavioral features from VM data"""
             features = {
                 # Resource usage patterns
-                'cpu_mean': vm_data.get('cpu_usage', []).mean() if 'cpu_usage' in vm_data else 0,
-                'cpu_std': vm_data.get('cpu_usage', []).std() if 'cpu_usage' in vm_data else 0,
-                'cpu_max': vm_data.get('cpu_usage', []).max() if 'cpu_usage' in vm_data else 0,
-                'memory_mean': vm_data.get('memory_usage', []).mean() if 'memory_usage' in vm_data else 0,
-                'memory_std': vm_data.get('memory_usage', []).std() if 'memory_usage' in vm_data else 0,
+                ''cpu_mean'': vm_data.get(''cpu_usage'', []).mean() if ''cpu_usage'' in vm_data else 0,
+                ''cpu_std'': vm_data.get(''cpu_usage'', []).std() if ''cpu_usage'' in vm_data else 0,
+                ''cpu_max'': vm_data.get(''cpu_usage'', []).max() if ''cpu_usage'' in vm_data else 0,
+                ''memory_mean'': vm_data.get(''memory_usage'', []).mean() if ''memory_usage'' in vm_data else 0,
+                ''memory_std'': vm_data.get(''memory_usage'', []).std() if ''memory_usage'' in vm_data else 0,
                 
                 # I/O patterns
-                'disk_read_rate': vm_data.get('disk_read_rate', 0),
-                'disk_write_rate': vm_data.get('disk_write_rate', 0),
-                'disk_io_ratio': vm_data.get('disk_write_rate', 0) / (vm_data.get('disk_read_rate', 1) + 1),
+                ''disk_read_rate'': vm_data.get(''disk_read_rate'', 0),
+                ''disk_write_rate'': vm_data.get(''disk_write_rate'', 0),
+                ''disk_io_ratio'': vm_data.get(''disk_write_rate'', 0) / (vm_data.get(''disk_read_rate'', 1) + 1),
                 
                 # Network patterns
-                'net_packets_in': vm_data.get('net_packets_in', 0),
-                'net_packets_out': vm_data.get('net_packets_out', 0),
-                'net_packet_ratio': vm_data.get('net_packets_out', 0) / (vm_data.get('net_packets_in', 1) + 1),
+                ''net_packets_in'': vm_data.get(''net_packets_in'', 0),
+                ''net_packets_out'': vm_data.get(''net_packets_out'', 0),
+                ''net_packet_ratio'': vm_data.get(''net_packets_out'', 0) / (vm_data.get(''net_packets_in'', 1) + 1),
                 
                 # Temporal patterns
-                'active_hours': len(set(vm_data.get('active_hours', []))),
-                'state_changes': vm_data.get('state_changes', 0),
+                ''active_hours'': len(set(vm_data.get(''active_hours'', []))),
+                ''state_changes'': vm_data.get(''state_changes'', 0),
                 
                 # Process patterns
-                'process_count': vm_data.get('process_count', 0),
-                'thread_count': vm_data.get('thread_count', 0),
-                'unique_processes': len(set(vm_data.get('process_names', []))),
+                ''process_count'': vm_data.get(''process_count'', 0),
+                ''thread_count'': vm_data.get(''thread_count'', 0),
+                ''unique_processes'': len(set(vm_data.get(''process_names'', []))),
             }
             
             return features
@@ -142,29 +142,29 @@ let
             """Extract network behavioral features"""
             features = {
                 # Connection patterns
-                'total_connections': net_data.get('connection_count', 0),
-                'unique_destinations': len(set(net_data.get('destinations', []))),
-                'unique_ports': len(set(net_data.get('dest_ports', []))),
+                ''total_connections'': net_data.get(''connection_count'', 0),
+                ''unique_destinations'': len(set(net_data.get(''destinations'', []))),
+                ''unique_ports'': len(set(net_data.get(''dest_ports'', []))),
                 
                 # Traffic patterns
-                'bytes_sent': net_data.get('bytes_sent', 0),
-                'bytes_received': net_data.get('bytes_received', 0),
-                'traffic_ratio': net_data.get('bytes_sent', 0) / (net_data.get('bytes_received', 1) + 1),
+                ''bytes_sent'': net_data.get(''bytes_sent'', 0),
+                ''bytes_received'': net_data.get(''bytes_received'', 0),
+                ''traffic_ratio'': net_data.get(''bytes_sent'', 0) / (net_data.get(''bytes_received'', 1) + 1),
                 
                 # Protocol distribution
-                'tcp_percentage': net_data.get('tcp_count', 0) / (net_data.get('total_packets', 1) + 1) * 100,
-                'udp_percentage': net_data.get('udp_count', 0) / (net_data.get('total_packets', 1) + 1) * 100,
-                'icmp_percentage': net_data.get('icmp_count', 0) / (net_data.get('total_packets', 1) + 1) * 100,
+                ''tcp_percentage'': net_data.get(''tcp_count'', 0) / (net_data.get(''total_packets'', 1) + 1) * 100,
+                ''udp_percentage'': net_data.get(''udp_count'', 0) / (net_data.get(''total_packets'', 1) + 1) * 100,
+                ''icmp_percentage'': net_data.get(''icmp_count'', 0) / (net_data.get(''total_packets'', 1) + 1) * 100,
                 
                 # Timing patterns
-                'connection_rate': net_data.get('connections_per_minute', 0),
-                'avg_connection_duration': net_data.get('avg_connection_duration', 0),
-                'connection_burst_size': net_data.get('max_concurrent_connections', 0),
+                ''connection_rate'': net_data.get(''connections_per_minute'', 0),
+                ''avg_connection_duration'': net_data.get(''avg_connection_duration'', 0),
+                ''connection_burst_size'': net_data.get(''max_concurrent_connections'', 0),
                 
                 # Anomaly indicators
-                'failed_connections': net_data.get('failed_connections', 0),
-                'port_scan_score': net_data.get('port_scan_score', 0),
-                'dns_queries': net_data.get('dns_query_count', 0),
+                ''failed_connections'': net_data.get(''failed_connections'', 0),
+                ''port_scan_score'': net_data.get(''port_scan_score'', 0),
+                ''dns_queries'': net_data.get(''dns_query_count'', 0),
             }
             
             return features
@@ -173,23 +173,23 @@ let
             """Extract process behavioral features"""
             features = {
                 # Process creation patterns
-                'process_creation_rate': proc_data.get('processes_per_hour', 0),
-                'child_process_ratio': proc_data.get('child_processes', 0) / (proc_data.get('total_processes', 1) + 1),
-                'process_lifetime_avg': proc_data.get('avg_process_lifetime', 0),
+                ''process_creation_rate'': proc_data.get(''processes_per_hour'', 0),
+                ''child_process_ratio'': proc_data.get(''child_processes'', 0) / (proc_data.get(''total_processes'', 1) + 1),
+                ''process_lifetime_avg'': proc_data.get(''avg_process_lifetime'', 0),
                 
                 # Resource usage
-                'cpu_per_process': proc_data.get('total_cpu', 0) / (proc_data.get('process_count', 1) + 1),
-                'memory_per_process': proc_data.get('total_memory', 0) / (proc_data.get('process_count', 1) + 1),
+                ''cpu_per_process'': proc_data.get(''total_cpu'', 0) / (proc_data.get(''process_count'', 1) + 1),
+                ''memory_per_process'': proc_data.get(''total_memory'', 0) / (proc_data.get(''process_count'', 1) + 1),
                 
                 # System call patterns
-                'syscall_rate': proc_data.get('syscalls_per_second', 0),
-                'file_operations': proc_data.get('file_op_count', 0),
-                'network_operations': proc_data.get('network_op_count', 0),
+                ''syscall_rate'': proc_data.get(''syscalls_per_second'', 0),
+                ''file_operations'': proc_data.get(''file_op_count'', 0),
+                ''network_operations'': proc_data.get(''network_op_count'', 0),
                 
                 # Anomaly indicators
-                'suspicious_names': proc_data.get('suspicious_process_names', 0),
-                'hidden_processes': proc_data.get('hidden_process_count', 0),
-                'privilege_escalations': proc_data.get('priv_esc_attempts', 0),
+                ''suspicious_names'': proc_data.get(''suspicious_process_names'', 0),
+                ''hidden_processes'': proc_data.get(''hidden_process_count'', 0),
+                ''privilege_escalations'': proc_data.get(''priv_esc_attempts'', 0),
             }
             
             return features
@@ -198,11 +198,11 @@ let
             """Detect behavioral anomalies using ML models"""
             try:
                 # Extract features based on entity type
-                if entity_type == 'vm':
+                if entity_type == ''vm'':
                     features = self.extract_vm_features(data)
-                elif entity_type == 'network':
+                elif entity_type == ''network'':
                     features = self.extract_network_features(data)
-                elif entity_type == 'process':
+                elif entity_type == ''process'':
                     features = self.extract_process_features(data)
                 else:
                     logger.error(f"Unknown entity type: {entity_type}")
@@ -224,12 +224,12 @@ let
                 
                 # Build result
                 result = {
-                    'entity_type': entity_type,
-                    'entity_id': entity_id,
-                    'timestamp': datetime.now().isoformat(),
-                    'is_anomaly': prediction[0] == -1,
-                    'anomaly_score': float(anomaly_score),
-                    'features': features
+                    ''entity_type'': entity_type,
+                    ''entity_id'': entity_id,
+                    ''timestamp'': datetime.now().isoformat(),
+                    ''is_anomaly'': prediction[0] == -1,
+                    ''anomaly_score'': float(anomaly_score),
+                    ''features'': features
                 }
                 
                 # If anomaly detected, analyze which features contributed
@@ -261,10 +261,10 @@ let
                         z_score = abs(value - mean) / std
                         if z_score > 3:  # 3 standard deviations
                             anomalous.append({
-                                'feature': feature,
-                                'value': value,
-                                'expected': mean,
-                                'z_score': z_score
+                                ''feature'': feature,
+                                ''value'': value,
+                                ''expected'': mean,
+                                ''z_score'': z_score
                             })
             
             return sorted(anomalous, key=lambda x: x['z_score'], reverse=True)[:5]
@@ -278,11 +278,11 @@ let
                     # Prepare features
                     features = []
                     for sample in data:
-                        if entity_type == 'vm':
+                        if entity_type == ''vm'':
                             feat = self.extract_vm_features(sample)
-                        elif entity_type == 'network':
+                        elif entity_type == ''network'':
                             feat = self.extract_network_features(sample)
-                        elif entity_type == 'process':
+                        elif entity_type == ''process'':
                             feat = self.extract_process_features(sample)
                         features.append(list(feat.values()))
                     
@@ -307,10 +307,10 @@ let
             self.baselines[entity_type] = {}
             for column in df.columns:
                 self.baselines[entity_type][column] = {
-                    'mean': df[column].mean(),
-                    'std': df[column].std(),
-                    'min': df[column].min(),
-                    'max': df[column].max()
+                    ''mean'': df[column].mean(),
+                    ''std'': df[column].std(),
+                    ''min'': df[column].min(),
+                    ''max'': df[column].max()
                 }
                 
         def analyze_zero_day_indicators(self, anomalies):
@@ -340,10 +340,10 @@ let
                     
                     if patterns:
                         zero_day_indicators.append({
-                            'timestamp': cluster[0]['timestamp'],
-                            'confidence': min(90, len(cluster) * 20),
-                            'patterns': patterns,
-                            'anomalies': cluster
+                            ''timestamp'': cluster[0]['timestamp'],
+                            ''confidence'': min(90, len(cluster) * 20),
+                            ''patterns'': patterns,
+                            ''anomalies'': cluster
                         })
             
             return zero_day_indicators
@@ -359,7 +359,7 @@ let
             if vm_anomalies and proc_anomalies:
                 # Check for privilege escalation + unusual VM behavior
                 for proc in proc_anomalies:
-                    if proc.get('features', {}).get('privilege_escalations', 0) > 0:
+                    if proc.get(''features'', {}).get(''privilege_escalations'', 0) > 0:
                         patterns.append('potential_vm_escape')
                         
             # Pattern 2: Novel malware
@@ -368,15 +368,15 @@ let
             if net_anomalies and proc_anomalies:
                 # Check for new process with unusual network behavior
                 for proc in proc_anomalies:
-                    if proc.get('features', {}).get('suspicious_names', 0) > 0:
+                    if proc.get(''features'', {}).get(''suspicious_names'', 0) > 0:
                         for net in net_anomalies:
-                            if net.get('features', {}).get('unique_destinations', 0) > 10:
+                            if net.get(''features'', {}).get(''unique_destinations'', 0) > 10:
                                 patterns.append('potential_novel_malware')
                                 
             # Pattern 3: Advanced persistent threat
             if len(anomaly_cluster) > 5:
                 # Check for slow, persistent anomalous behavior
-                anomaly_scores = [a.get('anomaly_score', 0) for a in anomaly_cluster]
+                anomaly_scores = [a.get(''anomaly_score'', 0) for a in anomaly_cluster]
                 if all(-2 < score < -1 for score in anomaly_scores):
                     patterns.append('potential_apt')
                     

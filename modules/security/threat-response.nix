@@ -361,16 +361,16 @@ in {
                   
               def process_threat(self, threat):
                   """Process a detected threat"""
-                  logger.info(f"Processing threat: {threat['type']} - {threat['description']}")
+                  logger.info(f"Processing threat: {threat[''type'']} - {threat[''description'']}")
                   
                   # Find matching playbooks
                   matches = []
                   for playbook_id, playbook in self.playbooks.items():
-                      if threat['type'] in playbook.get('triggers', []):
+                      if threat[''type''] in playbook.get(''triggers'', []):
                           matches.append((playbook_id, playbook))
                   
                   if not matches:
-                      logger.warning(f"No playbook found for threat type: {threat['type']}")
+                      logger.warning(f"No playbook found for threat type: {threat[''type'']}")
                       return
                   
                   # Execute playbooks
@@ -379,7 +379,7 @@ in {
               
               def execute_playbook(self, playbook, threat):
                   """Execute a response playbook"""
-                  logger.info(f"Executing playbook: {playbook['name']}")
+                  logger.info(f"Executing playbook: {playbook[''name'']}")
                   
                   if self.mode == "monitor":
                       logger.info("Mode is monitor-only, not executing actions")
@@ -391,7 +391,7 @@ in {
                       time.sleep(self.response_delay)
                   
                   # Execute actions
-                  for action in playbook.get('actions', []):
+                  for action in playbook.get(''actions'', []):
                       if self.mode == "interactive" and action in ${builtins.toJSON cfg.requireConfirmation}:
                           if not self.confirm_action(action, threat):
                               continue
@@ -406,8 +406,8 @@ in {
                       result = subprocess.run([
                           "${responseActions}/bin/threat-response-actions",
                           action,
-                          threat.get('target', ''),
-                          threat.get('metadata', '')
+                          threat.get('target', ''''),
+                          threat.get('metadata', '''')
                       ], capture_output=True, text=True)
                       
                       if result.returncode == 0:
@@ -438,9 +438,9 @@ in {
                                   threats = json.load(f)
                               
                               for threat in threats:
-                                  if not threat.get('processed'):
+                                  if not threat.get(''processed''):
                                       self.process_threat(threat)
-                                      threat['processed'] = True
+                                      threat[''processed''] = True
                               
                               # Update file
                               with open(threat_file, 'w') as f:
