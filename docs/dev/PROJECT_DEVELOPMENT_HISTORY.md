@@ -10,6 +10,33 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Fixed Undefined Variable Errors in Feature Modules
+**Agent**: Claude
+**Issue**: Build errors due to undefined variables in feature modules
+
+**Errors Fixed**:
+1. **Undefined `flatten`, `elem`, `foldl'`, etc. in feature modules**
+   - Root cause: Missing `lib.` prefix for Nix library functions
+   - Files affected:
+     - `modules/features/feature-manager.nix`
+     - `modules/features/module-loader.nix`
+     - `modules/features/adaptive-docs.nix`
+     - `modules/features/tier-templates.nix`
+     - `modules/features/feature-categories.nix`
+
+**Changes Applied**:
+- Added `lib.` prefix to all library functions (flatten, elem, filter, unique, etc.)
+- Added `pkgs.` prefix to all package references (writeScriptBin, bash, jq)
+- Added `optionalString` to inherit statement in feature-categories.nix
+- Updated `docs/COMMON_ISSUES_AND_SOLUTIONS.md` with comprehensive guide
+
+**Key Learning**:
+- Always use explicit `lib.` prefix for library functions
+- Always use explicit `pkgs.` prefix for packages
+- Test modules with `nixos-rebuild dry-build --show-trace`
+
+---
+
 #### 2025-10-14: System-Wide Best Practices Audit
 **Agent**: Claude
 **Tasks Completed**:

@@ -369,16 +369,16 @@ in {
     # Merge custom templates with defaults
     hypervisor.tierTemplates.availableTemplates = mkMerge [
       tierDefinitions
-      (mapAttrs (name: template: 
+      (lib.mapAttrs (name: template: 
         if template.baseTemplate != null then
           let
             base = tierDefinitions.${template.baseTemplate} or (throw "Unknown base template: ${template.baseTemplate}");
             baseFeatures = base.features;
             withAdded = baseFeatures ++ template.addFeatures;
-            final = filter (f: ! elem f template.removeFeatures) withAdded;
+            final = lib.filter (f: ! lib.elem f template.removeFeatures) withAdded;
           in {
             description = template.description;
-            features = unique final;
+            features = lib.unique final;
             requirements = base.requirements; # Inherit base requirements
           }
         else {
@@ -401,12 +401,12 @@ in {
     
     # Add template management script
     environment.systemPackages =  [
-      (writeScriptBin "hv-template" ''
-        #!${bash}/bin/bash
+      (pkgs.writeScriptBin "hv-template" ''
+        #!${pkgs.bash}/bin/bash
         case "$1" in
           list)
             echo "Available templates:"
-            ${jq}/bin/jq -r 'to_entries | .[] | "  \(.key): \(.value.description)"' \
+            ${pkgs.jq}/bin/jq -r 'to_entries | .[] | "  \(.key): \(.value.description)"' \
               /etc/hypervisor/tier-templates.json
             ;;
           show)

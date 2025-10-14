@@ -4,7 +4,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types optionalString;
   cfg = config.hypervisor.features;
   
   # Risk level definitions
@@ -450,8 +450,8 @@ in {
       Generated: $(date)
       
       Enabled Features by Risk Level:
-      ${concatStringsSep "\n" (mapAttrsToList (catName: cat:
-        concatStringsSep "\n" (mapAttrsToList (featName: feat:
+      ${lib.concatStringsSep "\n" (lib.mapAttrsToList (catName: cat:
+        lib.concatStringsSep "\n" (lib.mapAttrsToList (featName: feat:
           optionalString feat.enabled
             "${feat.risk} - ${cat.name}/${feat.name}: ${feat.description}"
         ) cat.features)
