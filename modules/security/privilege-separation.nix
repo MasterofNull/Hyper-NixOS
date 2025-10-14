@@ -69,15 +69,28 @@ in {
     };
     
     # Add users to required system groups
-    users.users = mkMerge (
-      map (user: {
-        ${user} = {
-          extraGroups = [ "libvirtd" "kvm" ] ++ 
-            optional (elem user cfg.vmOperators) "disk" ++
-            optional (elem user cfg.systemAdmins) "wheel";
+    users.users = mkMerge ([
+      # User group assignments
+      (mkMerge (
+        map (user: {
+          ${user} = {
+            extraGroups = [ "libvirtd" "kvm" ] ++ 
+              optional (elem user cfg.vmOperators) "disk" ++
+              optional (elem user cfg.systemAdmins) "wheel";
+          };
+        }) (cfg.vmUsers ++ cfg.vmOperators ++ cfg.systemAdmins)
+      ))
+      
+      # System service user
+      {
+        hypervisor-vm = {
+          isSystemUser = true;
+          group = "hypervisor-users";
+          description = "Hypervisor VM management service user";
+          extraGroups = [ "libvirtd" "kvm" ];
         };
-      }) (cfg.vmUsers ++ cfg.vmOperators ++ cfg.systemAdmins)
-    );
+      }
+    ]);
     
     # Sudo rules - minimal and specific
     security.sudo.extraRules = [
@@ -236,12 +249,5 @@ in {
       };
     };
     
-    # Create a dedicated user for VM services
-    users.users.hypervisor-vm = {
-      isSystemUser = true;
-      group = "hypervisor-users";
-      description = "Hypervisor VM management service user";
-      extraGroups = [ "libvirtd" "kvm" ];
-    };
   };
 }
