@@ -354,6 +354,21 @@ EOF
 EOF
     
     echo -e "${GREEN}✓ Created security dashboard${NC}"
+    
+    # Setup incident response system
+    echo -e "\n${YELLOW}Setting up incident response system...${NC}"
+    
+    # Copy incident response files
+    cp /workspace/scripts/security/playbook-executor.py scripts/security/
+    cp /workspace/scripts/security/event-monitor.py scripts/security/
+    cp /workspace/scripts/security/incident-response-playbooks.yaml scripts/security/
+    cp /workspace/scripts/security/test-incident-response.py scripts/security/
+    cp /workspace/scripts/security/security-monitor.service scripts/security/
+    cp /workspace/scripts/security/setup-incident-response.sh scripts/security/
+    
+    chmod +x scripts/security/*.py scripts/security/*.sh
+    
+    echo -e "${GREEN}✓ Incident response system files copied${NC}"
 }
 
 # Function to implement automation scripts
@@ -552,6 +567,12 @@ test_feature "Grafana dashboard" "test -f monitoring/dashboards/security-overvie
 # Test automation
 test_feature "Notification system" "test -x scripts/automation/notify.sh"
 test_feature "Security scanner" "test -x scripts/security/automated-security-scan.sh"
+
+# Test incident response
+test_feature "Playbook executor" "test -f scripts/security/playbook-executor.py"
+test_feature "Event monitor" "test -f scripts/security/event-monitor.py"
+test_feature "Incident response playbooks" "test -f scripts/security/incident-response-playbooks.yaml"
+test_feature "IR test script" "test -x scripts/security/test-incident-response.py"
 
 echo
 echo "Test Results:"
@@ -760,7 +781,20 @@ EOL
 ./scripts/security/automated-security-scan.sh
 ```
 
-### 6. Verify Installation
+### 6. Setup Incident Response
+
+```bash
+# Setup incident response system
+./scripts/security/setup-incident-response.sh
+
+# Start monitoring
+ir-start
+
+# Test incident response
+ir-test
+```
+
+### 7. Verify Installation
 
 ```bash
 # Run integration tests
@@ -787,7 +821,8 @@ journalctl -u ssh-monitor -f
 1. **Check Security Dashboard**: Open Grafana and review the Security Overview
 2. **Review Alerts**: Check Prometheus alerts for any security issues
 3. **Monitor SSH Access**: `tail -f /var/log/ssh-monitor.log`
-4. **Update Security Tools**: `./scripts/automation/parallel-git-update.sh`
+4. **Check Incident Response**: `ir-events` and `ir-status`
+5. **Update Security Tools**: `./scripts/automation/parallel-git-update.sh`
 
 ## Troubleshooting
 
@@ -816,6 +851,21 @@ ls -la /tmp/parallel-logs/
 
 # Kill stuck jobs
 pkill -f parallel_execute
+```
+
+### Incident Response Not Triggering
+```bash
+# Check service status
+systemctl status security-monitor
+
+# View logs
+journalctl -u security-monitor -f
+
+# Test manually
+ir-trigger brute_force 192.168.1.100
+
+# Check events log
+tail -f /var/log/security/events.json
 ```
 
 ## Maintenance

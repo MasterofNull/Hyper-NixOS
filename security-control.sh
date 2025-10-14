@@ -34,6 +34,9 @@ show_menu() {
     echo "8. Run Parallel Updates"
     echo "9. Configure Notifications"
     echo "10. View Documentation"
+    echo "11. Incident Response Status"
+    echo "12. View Security Events"
+    echo "13. Test Incident Response"
     echo "0. Exit"
     echo
 }
@@ -261,6 +264,118 @@ view_docs() {
     esac
 }
 
+# Incident Response Status
+ir_status() {
+    echo -e "${YELLOW}Incident Response Status${NC}"
+    echo
+    
+    # Check if service is running
+    if systemctl is-active --quiet security-monitor 2>/dev/null; then
+        echo -e "${GREEN}✓ Security Monitor: Active${NC}"
+        echo
+        systemctl status security-monitor --no-pager | head -15
+    else
+        echo -e "${RED}✗ Security Monitor: Inactive${NC}"
+        echo
+        echo "Start with: ir-start or systemctl start security-monitor"
+    fi
+    
+    echo
+    read -p "Press Enter to continue..."
+}
+
+# View Security Events
+ir_events() {
+    echo -e "${YELLOW}Recent Security Events${NC}"
+    echo
+    
+    local events_file="/var/log/security/events.json"
+    if [[ -f "$events_file" ]]; then
+        # Show last 20 events
+        tail -n 20 "$events_file" 2>/dev/null | while read line; do
+            echo "$line" | jq -r '"\(.timestamp) [\(.type)] \(.source_ip // "N/A") -> \(.target_ip // "localhost")"' 2>/dev/null || echo "$line"
+        done
+    else
+        echo "No events logged yet"
+    fi
+    
+    echo
+    echo "Full event log: $events_file"
+    echo
+    read -p "Press Enter to continue..."
+}
+
+# Test Incident Response Menu
+ir_test_menu() {
+    echo -e "${YELLOW}Test Incident Response${NC}"
+    echo
+    echo "1. Test All Playbooks"
+    echo "2. Test Brute Force Response"
+    echo "3. Test Port Scan Response"
+    echo "4. Test Malware Response"
+    echo "5. Test Container Compromise"
+    echo "6. Trigger Custom Event"
+    echo "0. Back to main menu"
+    echo
+    
+    read -p "Select test: " test_choice
+    
+    case $test_choice in
+        1) 
+            if [[ -x "$SCRIPT_DIR/scripts/security/test-incident-response.py" ]]; then
+                sudo python3 "$SCRIPT_DIR/scripts/security/test-incident-response.py"
+            else
+                echo -e "${RED}Test script not found${NC}"
+            fi
+            ;;
+        2) 
+            sudo python3 "$SCRIPT_DIR/scripts/security/test-incident-response.py" brute_force
+            ;;
+        3) 
+            sudo python3 "$SCRIPT_DIR/scripts/security/test-incident-response.py" port_scan
+            ;;
+        4) 
+            sudo python3 "$SCRIPT_DIR/scripts/security/test-incident-response.py" malware
+            ;;
+        5) 
+            sudo python3 "$SCRIPT_DIR/scripts/security/test-incident-response.py" container
+            ;;
+        6)
+            read -p "Event type (brute_force/port_scan/malware/container_compromise): " event_type
+            read -p "Source IP (default: 10.10.10.10): " source_ip
+            source_ip=${source_ip:-"10.10.10.10"}
+            
+            python3 -c "
+import asyncio
+import sys
+sys.path.append('$SCRIPT_DIR/scripts/security')
+from playbook_executor import PlaybookExecutor, SecurityEvent
+
+async def trigger():
+    event = SecurityEvent(
+        event_type='$event_type',
+        source_ip='$source_ip',
+        details={'manual_trigger': True}
+    )
+    
+    executor = PlaybookExecutor()
+    playbook = executor.match_event_to_playbook(event)
+    if playbook:
+        await executor.execute_playbook(playbook, event)
+        print(f'Executed playbook: {playbook}')
+    else:
+        print(f'No playbook found for event type: $event_type')
+
+asyncio.run(trigger())
+"
+            ;;
+        *) return ;;
+    esac
+    
+    echo
+    read -p "Press Enter to continue..."
+}
+
 # Main loop
 main() {
     while true; do
@@ -278,6 +393,9 @@ main() {
             8) run_parallel_updates ;;
             9) configure_notifications ;;
             10) view_docs ;;
+            11) ir_status ;;
+            12) ir_events ;;
+            13) ir_test_menu ;;
             0) echo "Exiting..."; exit 0 ;;
             *) echo -e "${RED}Invalid option${NC}"; sleep 2 ;;
         esac
