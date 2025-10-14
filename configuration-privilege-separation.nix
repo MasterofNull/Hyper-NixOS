@@ -9,27 +9,23 @@
     ./hardware-configuration.nix
     
     # Core modules
-    ./modules/core/base.nix
+    ./modules/core/system.nix
+    ./modules/core/packages.nix
     ./modules/core/directories.nix
     ./modules/core/portable-base.nix
     ./modules/core/optimized-system.nix
     
     # Security modules
+    ./modules/security/base.nix
     ./modules/security/profiles.nix
     ./modules/security/privilege-separation.nix
     ./modules/security/polkit-rules.nix
     
     # Virtualization
     ./modules/virtualization/libvirt.nix
-    ./modules/virtualization/qemu.nix
+    ./modules/virtualization/performance.nix
     
-    # Networking
-    ./modules/networking/base.nix
-    ./modules/networking/bridges.nix
-    
-    # Services
-    ./modules/services/ssh.nix
-    ./modules/services/monitoring.nix
+    # Note: Networking and service configurations are handled directly in this file
   ];
 
   # System identification
