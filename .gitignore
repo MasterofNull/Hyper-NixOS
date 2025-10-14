@@ -5,7 +5,14 @@ private-ip/
 # Protected Development Documentation
 # Contains AI context, design evolution, and IP-sensitive content
 # DO NOT DISTRIBUTE - Internal use only for dev team and AI agents
-docs/dev/
+# Specific protected files:
+docs/dev/AI_ASSISTANT_CONTEXT.md
+docs/dev/AI_DOCUMENTATION_PROTOCOL.md
+docs/dev/DESIGN_EVOLUTION.md
+docs/dev/EDUCATIONAL_PHILOSOPHY.md
+docs/dev/AI-IP-PROTECTION-RULES.md
+docs/dev/AI-LESSONS-LEARNED.md
+docs/dev/ip-protection/
 
 # Temporary files
 *.tmp
