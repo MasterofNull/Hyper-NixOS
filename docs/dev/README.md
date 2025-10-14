@@ -21,6 +21,19 @@ These files document:
   - Security review
   - Optimization opportunities
 
+### AI Assistant Documentation (IP-Protected)
+
+- **[AI_ASSISTANT_CONTEXT.md](AI_ASSISTANT_CONTEXT.md)** - Context and patterns for AI assistants
+  - Project overview and architecture
+  - Common issues and solutions
+  - Development patterns and anti-patterns
+  - Recent fixes and updates
+
+- **[AI_DOCUMENTATION_PROTOCOL.md](AI_DOCUMENTATION_PROTOCOL.md)** - Documentation protocol for AI assistants
+  - Documentation maintenance procedures
+  - Design conflict resolution
+  - Update protocols
+
 ### Configuration Reorganization
 
 - **[CONFIGURATION_ORGANIZATION.md](CONFIGURATION_ORGANIZATION.md)** - Configuration structure design
