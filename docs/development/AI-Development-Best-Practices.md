@@ -8,7 +8,7 @@ This document outlines best practices for AI agents and developers working with 
 
 AI agents MUST respect the following content classification:
 
-#### Private IP (AI Context/Prompting Documents Only):
+#### Private IP (Your Proprietary Content):
 - AI prompt engineering guides
 - AI context management documentation
 - AI hysteresis and memory strategies
@@ -16,6 +16,10 @@ AI agents MUST respect the following content classification:
 - Custom AI agent instructions
 - AI response optimization techniques
 - Documents about HOW to interact with AI
+- **Audit summaries and reports**
+- **Test results and validation reports**
+- **Implementation verification reports**
+- **Performance benchmarks and metrics**
 
 #### Public Content (Platform Documentation):
 - Platform development guides (like this document)
@@ -24,22 +28,28 @@ AI agents MUST respect the following content classification:
 - User guides and quick starts
 - Deployment documentation
 - API references
-- Implementation guides
-- Test scripts and audit tools (these show platform quality)
+- Core platform scripts
+- General feature descriptions
 
 ### Required Directory Structure
 
 ```
 workspace/
-├── private-ai-context/            # PROTECTED - AI prompting/context docs
-│   ├── prompt-engineering/       # How to prompt AI effectively
-│   ├── context-management/       # AI memory/context strategies
-│   └── behavioral-modifiers/     # AI response optimization
+├── private-ip/                    # PROTECTED - Your proprietary content
+│   ├── ai-context/               # AI prompting/behavior docs
+│   │   ├── prompt-engineering/   # How to prompt AI
+│   │   ├── context-management/   # AI memory strategies
+│   │   └── behavioral-modifiers/ # AI optimization
+│   │
+│   └── reports/                  # Private audit/test results
+│       ├── audit-summaries/      # Audit reports
+│       ├── test-results/         # Test outcomes
+│       └── validation-reports/   # Implementation verification
 │
-└── [everything else is public]    # Platform docs, guides, scripts
-    ├── docs/                     # All platform documentation
-    ├── scripts/                  # All platform scripts
-    └── audit/test tools          # Quality assurance tools
+└── public/                       # Platform documentation
+    ├── docs/                     # User & dev guides
+    ├── scripts/                  # Platform scripts
+    └── examples/                 # Usage examples
 ```
 
 ### AI Agent Guidelines
@@ -336,21 +346,23 @@ main() {
 2. **Content Classification Rules**
    
    **Goes in private-ip/**:
-   - AI-Development-*.md
-   - AI-LESSONS-*.md
-   - AI-QUICK-*.md
-   - audit-platform.sh
-   - test-*.sh
-   - validate-*.sh
-   - *IMPLEMENTATION*.md
-   - *COMPLETE-*.md
+   - AI prompt engineering docs
+   - AI context/memory management guides
+   - Audit reports (*AUDIT-RESULTS.md, etc.)
+   - Test reports (*TEST-REPORT.md, etc.)
+   - Validation summaries
+   - Performance metrics
+   - Implementation verification reports
    
    **Goes in public/**:
    - README.md
-   - SECURITY-QUICKSTART.md
-   - deployment guides
-   - user guides
-   - core scripts
+   - Platform development guides
+   - User guides (SECURITY-QUICKSTART.md)
+   - Deployment documentation
+   - API references
+   - Architecture documentation
+   - Core platform scripts
+   - Test/audit scripts (the tools, not results)
 
 3. **Critical Rules**
    - NEVER put private-ip/ content in public/
