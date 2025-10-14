@@ -1,8 +1,6 @@
 # AI Development Best Practices for Security Platform
 
-**IMPORTANT: This document contains proprietary information and is part of private intellectual property. Do not distribute or include in public releases.**
-
-This document outlines best practices for AI agents and developers working with the security platform.
+This document outlines best practices for AI agents and developers working with the security platform. This is PUBLIC documentation about platform development.
 
 ## 🔒 Critical: IP Protection Requirements
 
@@ -10,33 +8,38 @@ This document outlines best practices for AI agents and developers working with 
 
 AI agents MUST respect the following content classification:
 
-#### Private IP (Never Distribute):
-- All AI development documentation (AI-*.md files)
-- Audit and test scripts (audit-*.sh, test-*.sh)
-- Implementation details and reports
-- Lessons learned documents
-- Development methodologies
-- Internal architecture decisions
+#### Private IP (AI Context/Prompting Documents Only):
+- AI prompt engineering guides
+- AI context management documentation
+- AI hysteresis and memory strategies
+- AI behavioral modifier documentation
+- Custom AI agent instructions
+- AI response optimization techniques
+- Documents about HOW to interact with AI
 
-#### Public Content (Safe to Share):
-- User guides (QUICKSTART.md)
-- Basic deployment documentation
-- Core platform scripts
-- General README files
+#### Public Content (Platform Documentation):
+- Platform development guides (like this document)
+- Security platform architecture
+- Module development documentation
+- User guides and quick starts
+- Deployment documentation
+- API references
+- Implementation guides
+- Test scripts and audit tools (these show platform quality)
 
 ### Required Directory Structure
 
 ```
 workspace/
-├── private-ip/                    # PROTECTED - Never share
-│   ├── ai-development/           # This document belongs here
-│   ├── audit-tools/              # Testing and audit scripts
-│   └── implementation-details/   # Detailed implementation docs
+├── private-ai-context/            # PROTECTED - AI prompting/context docs
+│   ├── prompt-engineering/       # How to prompt AI effectively
+│   ├── context-management/       # AI memory/context strategies
+│   └── behavioral-modifiers/     # AI response optimization
 │
-└── public/                       # OK to distribute
-    ├── README.md
-    ├── docs/guides/              # User guides only
-    └── scripts/                  # Core scripts only
+└── [everything else is public]    # Platform docs, guides, scripts
+    ├── docs/                     # All platform documentation
+    ├── scripts/                  # All platform scripts
+    └── audit/test tools          # Quality assurance tools
 ```
 
 ### AI Agent Guidelines
