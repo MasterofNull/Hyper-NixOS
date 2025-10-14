@@ -86,8 +86,8 @@ When writing NixOS modules:
 
 ## Related Documentation
 - `docs/dev/INFINITE_RECURSION_FIX_2025-10-13.md` - Previous comprehensive fix
-- `docs/AI_ASSISTANT_CONTEXT.md` - Contains anti-patterns documentation
-- `docs/COMMON_ISSUES_AND_SOLUTIONS.md` - General troubleshooting guide
+- `docs/dev/AI_ASSISTANT_CONTEXT.md` - Contains anti-patterns documentation (PROTECTED)
+- `docs/COMMON_ISSUES_AND_SOLUTIONS.md` - General troubleshooting guide (PUBLIC)
 
 ## Status
 ✅ **RESOLVED** - The keymap sanitizer infinite recursion has been fixed.

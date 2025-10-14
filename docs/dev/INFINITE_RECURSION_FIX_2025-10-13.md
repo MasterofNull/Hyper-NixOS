@@ -198,8 +198,8 @@ nix flake check
 - ✅ Update documentation if patterns change
 
 ## Related Documentation
-- `docs/AI_ASSISTANT_CONTEXT.md` - Contains anti-patterns to avoid
-- `docs/COMMON_ISSUES_AND_SOLUTIONS.md` - Troubleshooting guide
+- `docs/dev/AI_ASSISTANT_CONTEXT.md` - Contains anti-patterns to avoid (PROTECTED)
+- `docs/COMMON_ISSUES_AND_SOLUTIONS.md` - Troubleshooting guide (PUBLIC)
 - `docs/dev/INFINITE_RECURSION_FIX.md` - Previous fix attempt (partial)
 
 ## Conclusion
