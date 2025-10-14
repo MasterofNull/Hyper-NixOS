@@ -47,6 +47,8 @@ error: The option `hypervisor.enable' does not exist. Definition values:
 
 **Key Learning**: Always ensure core options are defined before use. The modular architecture requires explicit imports of option definition modules.
 
+**Additional Fix**: Added missing `hypervisor.featureManager.enabledFeatures` option definition in `modules/features/feature-manager.nix`. This option was being set in config but not defined in options.
+
 ---
 
 #### 2025-10-14: Comprehensive Installation Scripts and Methods Update
