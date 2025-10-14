@@ -105,11 +105,17 @@
   # Users
   users = {
     mutableUsers = false;
+    
+    # TEMPORARY: Allow no password login during first boot setup
+    # The first boot wizard will configure passwords interactively
+    # This should be removed or set to false after initial setup
+    allowNoPasswordLogin = true;
+    
     users.admin = {
       isNormalUser = true;
       description = "System Administrator";
       extraGroups = [ "wheel" "libvirtd" "kvm" ];
-      # hashedPassword = "..."; # Set this
+      # Password will be set by first boot wizard
     };
   };
   

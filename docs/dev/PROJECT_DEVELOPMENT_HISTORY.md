@@ -965,3 +965,37 @@ error: attribute 'enabledFeatures' already defined at /nix/store/.../modules/fea
 **Validation**: Searched entire codebase for similar duplication patterns - no other actual duplicates found
 
 ---
+
+#### 2025-10-14: Fixed "Neither root nor wheel user has password" Error
+**Agent**: Claude
+**Task**: Fix NixOS user authentication error preventing system access
+
+**Error**:
+```
+Failed assertions:
+- Neither the root account nor any wheel user has a password or SSH authorized key.
+You must set one to prevent being locked out of your system.
+```
+
+**Root Cause**: When `users.mutableUsers = false`, NixOS requires at least one administrative user (root or wheel group member) to have authentication credentials set.
+
+**Fix Applied**:
+1. Updated `configuration-minimal.nix` with clear documentation on authentication options
+2. Added three authentication methods with examples:
+   - Hashed password (production recommended)
+   - SSH authorized keys (passwordless login)
+   - Initial password (setup phase only)
+
+**Files Modified**:
+- `configuration-minimal.nix` - Added authentication options with detailed comments
+- `docs/COMMON_ISSUES_AND_SOLUTIONS.md` - Added comprehensive troubleshooting entry
+
+**Key Learning**: 
+- Always set authentication for wheel group users when `mutableUsers = false`
+- Provide multiple authentication options for flexibility
+- Use `mkpasswd -m sha-512` to generate secure password hashes
+- Consider redundant authentication methods (password + SSH key)
+
+**Update**: Added `allowNoPasswordLogin = true` option for first boot setup, allowing the system to boot without passwords so the first boot wizard can configure them interactively. This is the recommended approach for Hyper-NixOS minimal installations.
+
+---

@@ -11,6 +11,116 @@ This document catalogs common issues encountered in Hyper-NixOS, their root caus
 
 ## 🚨 **Critical Issues**
 
+### Issue: "Neither the root account nor any wheel user has a password"
+**Symptoms**:
+```
+error:
+       Failed assertions:
+       - Neither the root account nor any wheel user has a password or SSH authorized key.
+       You must set one to prevent being locked out of your system.
+```
+
+**Root Cause**: NixOS requires at least one user with administrative access to have authentication credentials when `users.mutableUsers = false`.
+
+**Solutions**:
+
+#### ✅ **Option 1: Set a hashed password**
+```nix
+users.users.admin = {
+  isNormalUser = true;
+  extraGroups = [ "wheel" "libvirtd" "kvm" ];
+  hashedPassword = "$6$rounds=100000$yourSaltHere$yourHashHere";
+};
+```
+
+Generate a hashed password with:
+```bash
+mkpasswd -m sha-512
+```
+
+#### ✅ **Option 2: Add SSH public key**
+```nix
+users.users.admin = {
+  isNormalUser = true;
+  extraGroups = [ "wheel" "libvirtd" "kvm" ];
+  openssh.authorizedKeys.keys = [
+    "ssh-rsa AAAAB3NzaC1yc2EA... your-key-comment"
+  ];
+};
+```
+
+#### ✅ **Option 3: Use initial password (for setup only)**
+```nix
+users.users.admin = {
+  isNormalUser = true;
+  extraGroups = [ "wheel" "libvirtd" "kvm" ];
+  initialPassword = "changeme";  # CHANGE IMMEDIATELY AFTER FIRST LOGIN
+};
+```
+
+#### ✅ **Option 4: Enable mutable users (not recommended for production)**
+```nix
+users = {
+  mutableUsers = true;  # Allows changing passwords after installation
+  users.admin = {
+    isNormalUser = true;
+    extraGroups = [ "wheel" "libvirtd" "kvm" ];
+  };
+};
+```
+
+#### ✅ **Option 5: Temporarily allow no password for first boot wizard (Hyper-NixOS)**
+```nix
+users = {
+  mutableUsers = false;
+  allowNoPasswordLogin = true;  # TEMPORARY - for first boot setup only
+  
+  users.admin = {
+    isNormalUser = true;
+    description = "System Administrator";
+    extraGroups = [ "wheel" "libvirtd" "kvm" ];
+    # Password will be set by first boot wizard
+  };
+};
+```
+**IMPORTANT**: This option should only be used with Hyper-NixOS's first boot wizard. After initial setup:
+1. Set a proper password using the wizard or `passwd` command
+2. Remove or set `allowNoPasswordLogin = false`
+3. Rebuild your configuration
+
+**Best Practices**:
+1. For production systems, use hashed passwords or SSH keys
+2. Never use `initialPassword` in production
+3. If using `mutableUsers = true`, run `passwd admin` immediately after installation
+4. Consider having multiple admin users for redundancy
+5. For Hyper-NixOS, ensure both the admin user and hypervisor management user have credentials
+
+**Example for Hyper-NixOS**:
+```nix
+users = {
+  mutableUsers = false;
+  
+  # System administrator
+  users.admin = {
+    isNormalUser = true;
+    description = "System Administrator";
+    extraGroups = [ "wheel" "libvirtd" "kvm" ];
+    hashedPassword = "$6$...";  # Generate with mkpasswd
+    openssh.authorizedKeys.keys = [ "ssh-rsa ..." ];  # Optional redundancy
+  };
+  
+  # Hypervisor management user (automatically created by hypervisor-base.nix)
+  users.hypervisor = {
+    hashedPassword = "$6$...";  # Or use initialPassword for first boot wizard
+  };
+};
+```
+
+**Prevention**:
+- Always set authentication for at least one wheel group user
+- Use the first boot wizard in Hyper-NixOS to set passwords interactively
+- Consider using `configuration-complete.nix` as a template which includes proper user setup
+
 ### Issue: The option 'hypervisor.enable' does not exist
 **Symptoms**:
 ```
