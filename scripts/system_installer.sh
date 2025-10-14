@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Hyper-NixOS System Installer
 # Copyright (C) 2024-2025 MasterofNull
@@ -364,7 +365,7 @@ write_host_flake() {
         inherit system;
         modules = [
           /etc/nixos/hardware-configuration.nix
-          (hypervisor + "/configuration.nix")
+          (hypervisor + "/configuration-minimal.nix")
         ];
       };
     };

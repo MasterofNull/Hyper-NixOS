@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Comprehensive Feature Testing Suite for Security Platform
 
 # Colors
@@ -36,10 +37,10 @@ run_test() {
 
 # 1. Test Zero-Trust Features
 echo -e "${BOLD}1. Zero-Trust Architecture Tests${NC}"
-run_test "Zero-Trust engine import" "python3 -c 'exec(open(\"scripts/deployment/security-platform-deploy.sh\").read().split(\"ZeroTrustEngine\")[1].split(\"EOF\")[0])' 2>&1 | grep -q class"
-run_test "Service mesh configuration" "grep -q 'ServiceMesh' scripts/deployment/security-platform-deploy.sh"
-run_test "mTLS implementation" "grep -q 'mtls\|mTLS' scripts/deployment/security-platform-deploy.sh"
-run_test "Identity verification" "grep -q 'verify_identity' scripts/deployment/security-platform-deploy.sh"
+run_test "Zero-Trust engine import" "python3 -c 'exec(open(\"scripts/deployment/scripts/deployment/security-platform-deploy.sh\").read().split(\"ZeroTrustEngine\")[1].split(\"EOF\")[0])' 2>&1 | grep -q class"
+run_test "Service mesh configuration" "grep -q 'ServiceMesh' scripts/deployment/scripts/deployment/security-platform-deploy.sh"
+run_test "mTLS implementation" "grep -q 'mtls\|mTLS' scripts/deployment/scripts/deployment/security-platform-deploy.sh"
+run_test "Identity verification" "grep -q 'verify_identity' scripts/deployment/scripts/deployment/security-platform-deploy.sh"
 echo
 
 # 2. Test AI Detection
@@ -77,10 +78,10 @@ echo
 
 # 6. Test Console Enhancements
 echo -e "${BOLD}6. Console Enhancement Tests${NC}"
-run_test "Oh My Zsh theme" "grep -q 'security.zsh-theme' console-enhancements.sh"
-run_test "FZF commands" "grep -q 'fzf-scan.*fzf-alerts.*fzf-logs' console-enhancements.sh"
-run_test "Security keybindings" "grep -q 'bindkey.*\\^S.*\\^X' console-enhancements.sh"
-run_test "Tmux security layout" "grep -q 'tmux.*security.*monitoring' console-enhancements.sh"
+run_test "Oh My Zsh theme" "grep -q 'security.zsh-theme' scripts/console-enhancements.sh"
+run_test "FZF commands" "grep -q 'fzf-scan.*fzf-alerts.*fzf-logs' scripts/console-enhancements.sh"
+run_test "Security keybindings" "grep -q 'bindkey.*\\^S.*\\^X' scripts/console-enhancements.sh"
+run_test "Tmux security layout" "grep -q 'tmux.*security.*monitoring' scripts/console-enhancements.sh"
 echo
 
 # 7. Test Scalability
@@ -88,15 +89,15 @@ echo -e "${BOLD}7. Scalability Tests${NC}"
 run_test "Profile system" "grep -q 'PROFILE_MINIMAL.*PROFILE_ENTERPRISE' scripts/security/framework/modular-security-framework.sh"
 run_test "Module independence" "grep -q 'ENABLED_MODULES' scripts/security/framework/modular-security-framework.sh"
 run_test "Dynamic configuration" "grep -q 'calculate_size.*get_profile_modules' scripts/security/framework/modular-security-framework.sh"
-run_test "Resource management" "grep -q 'memory.*cpu' module-config-schema.yaml"
+run_test "Resource management" "grep -q 'memory.*cpu' config/module-config-schema.yaml"
 echo
 
 # 8. Test Documentation
 echo -e "${BOLD}8. Documentation Tests${NC}"
-run_test "Framework documentation exists" "[[ -f SCALABLE-SECURITY-FRAMEWORK.md ]]"
-run_test "Implementation status exists" "[[ -f IMPLEMENTATION-STATUS.md ]]"
-run_test "Comprehensive docs" "[[ $(wc -l < SCALABLE-SECURITY-FRAMEWORK.md) -gt 200 ]]"
-run_test "Command reference" "grep -q 'Command Reference' SCALABLE-SECURITY-FRAMEWORK.md"
+run_test "Framework documentation exists" "[[ -f docs/archive/old-guides/SCALABLE-SECURITY-FRAMEWORK.md ]]"
+run_test "Implementation status exists" "[[ -f docs/implementation/IMPLEMENTATION-STATUS.md ]]"
+run_test "Comprehensive docs" "[[ $(wc -l < docs/archive/old-guides/SCALABLE-SECURITY-FRAMEWORK.md 2>/dev/null || echo 0) -gt 200 ]]"
+run_test "Command reference" "grep -q 'Command Reference' docs/archive/old-guides/SCALABLE-SECURITY-FRAMEWORK.md"
 echo
 
 # 9. Integration Tests

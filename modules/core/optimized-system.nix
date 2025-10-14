@@ -3,9 +3,8 @@
 # Optimized Hyper-NixOS System Configuration
 # Implements performance, security, and maintainability improvements
 
-with lib;
-
 let
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
   cfg = config.hypervisor.optimized;
   
   # Custom packages
@@ -67,47 +66,47 @@ in
   
   config = mkIf cfg.enable {
     # System packages
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages =  [
       # Core tools (Rust-based)
-      hypervisor-lib
-      bat              # Better cat
-      exa              # Better ls
-      ripgrep          # Better grep
-      fd               # Better find
-      tokei            # Code statistics
-      hyperfine        # Benchmarking
+    pkgs.hypervisor-lib
+    pkgs.bat              # Better cat
+    pkgs.exa              # Better ls
+    pkgs.ripgrep          # Better grep
+    pkgs.fd               # Better find
+    pkgs.tokei            # Code statistics
+    pkgs.hyperfine        # Benchmarking
       
       # Go tools
-      hypervisor-api
+    pkgs.hypervisor-api
       
       # Development tools
-      rustup
-      go
-      nodejs
+    pkgs.rustup
+    pkgs.go
+    pkgs.nodejs
       
       # System tools
-      htop
-      iotop
-      iftop
-      nethogs
-      sysstat
-      dstat
+    pkgs.htop
+    pkgs.iotop
+    pkgs.iftop
+    pkgs.nethogs
+    pkgs.sysstat
+    pkgs.dstat
       
       # Security tools
-      vault-bin
-      age
-      sops
+    pkgs.vault-bin
+    pkgs.age
+    pkgs.sops
       
       # Container tools
-      podman
-      buildah
-      skopeo
+    pkgs.podman
+    pkgs.buildah
+    pkgs.skopeo
       
       # Monitoring
-      prometheus
-      grafana
-      loki
-      promtail
+    pkgs.prometheus
+    pkgs.grafana
+    pkgs.loki
+    pkgs.promtail
     ];
     
     # Performance optimizations

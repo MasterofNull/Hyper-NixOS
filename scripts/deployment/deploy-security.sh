@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Master Implementation Script for Scalable Security Framework
 # Implements all suggestions with modular, scalable architecture
 

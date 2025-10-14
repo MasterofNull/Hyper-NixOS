@@ -8,10 +8,10 @@
   boot.initrd.luks.devices = { };
   
   # Encryption tools
-  environment.systemPackages = with pkgs; [
-    cryptsetup
-    qemu_kvm
-    libvirt
+  environment.systemPackages =  [
+    pkgs.cryptsetup
+    pkgs.qemu_kvm
+    pkgs.libvirt
   ];
   
   # VM encryption manager

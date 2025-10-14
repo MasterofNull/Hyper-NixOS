@@ -1,8 +1,7 @@
 { config, pkgs, lib, ... }:
 
-with lib;
-
 let
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
   cfg = config.security.docker.enhanced;
   
   # Docker safe wrapper script
@@ -175,12 +174,12 @@ in
     };
     
     # Security scripts
-    environment.systemPackages = with pkgs; [
-      dockerSafeScript
-      docker-compose
+    environment.systemPackages =  [
+    pkgs.dockerSafeScript
+    pkgs.docker-compose
     ] ++ optionals cfg.enableCaching [
-      dockerCacheScript
-      dockerCleanScript
+    pkgs.dockerCacheScript
+    pkgs.dockerCleanScript
     ] ++ optional cfg.securityScanning (
       writeScriptBin "docker-scan" ''
         #!${bash}/bin/bash

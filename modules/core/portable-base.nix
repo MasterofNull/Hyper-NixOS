@@ -3,9 +3,8 @@
 # Portable Base Configuration for Hyper-NixOS
 # Ensures system can run on various platforms and architectures
 
-with lib;
-
 let
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
   cfg = config.hypervisor.portable;
   
   # Platform detection
@@ -15,63 +14,63 @@ let
   isRiscV = platform.isRiscV;
   
   # Portable package selection
-  portablePackages = with pkgs; [
+  portablePackages =  [
     # Core utilities (available on all platforms)
-    coreutils
-    findutils
-    gnugrep
-    gnused
-    gawk
-    diffutils
-    patch
-    which
-    file
+    pkgs.coreutils
+    pkgs.findutils
+    pkgs.gnugrep
+    pkgs.gnused
+    pkgs.gawk
+    pkgs.diffutils
+    pkgs.patch
+    pkgs.which
+    pkgs.file
     
     # Shell and scripting
-    bash
-    dash  # POSIX sh
-    busybox  # Fallback utilities
+    pkgs.bash
+    pkgs.dash  # POSIX sh
+    pkgs.busybox  # Fallback utilities
     
     # Compression (universal)
-    gzip
-    bzip2
-    xz
-    zstd
+    pkgs.gzip
+    pkgs.bzip2
+    pkgs.xz
+    pkgs.zstd
     
     # Network tools (portable)
-    curl
-    wget
-    netcat-openbsd
-    socat
+    pkgs.curl
+    pkgs.wget
+    pkgs.netcat-openbsd
+    pkgs.socat
     
     # Development tools
-    git
-    jq
-    yq
+    pkgs.git
+    pkgs.jq
+    pkgs.yq
     
     # Monitoring (cross-platform)
-    htop
-    iotop
-    nethogs
+    pkgs.htop
+    pkgs.iotop
+    pkgs.nethogs
     
     # Container tools (if supported)
   ] ++ optionals platform.isLinux [
     # Linux-specific tools
-    util-linux
-    procps
-    sysstat
-    iproute2
-    iptables
+    pkgs.util-linux
+    pkgs.procps
+    pkgs.sysstat
+    pkgs.iproute2
+    pkgs.iptables
     
     # Virtualization (Linux only)
-    qemu
-    libvirt
-    virt-viewer
+    pkgs.qemu
+    pkgs.libvirt
+    pkgs.virt-viewer
   ] ++ optionals (platform.isLinux && platform.isx86_64) [
     # x86_64 Linux specific
-    dmidecode
-    pciutils
-    usbutils
+    pkgs.dmidecode
+    pkgs.pciutils
+    pkgs.usbutils
   ];
   
   # Portable paths configuration

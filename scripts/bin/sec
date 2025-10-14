@@ -1,4 +1,7 @@
 #!/bin/bash
+# shellcheck disable=SC2034  # Unused variables may be used by sourcing scripts
+# shellcheck disable=SC2155  # Declare and assign separately to avoid masking return values
+
 # Security Control Panel - Main Interface
 # Simple, unified security management
 

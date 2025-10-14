@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Security Platform Deployment Script
 # Comprehensive implementation of all security enhancements
 

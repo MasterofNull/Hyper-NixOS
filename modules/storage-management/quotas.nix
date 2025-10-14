@@ -8,12 +8,12 @@
   boot.supportedFilesystems = [ "ext4" "xfs" "btrfs" ];
   
   # Quota tools
-  environment.systemPackages = with pkgs; [
-    quota
-    libvirt
-    qemu_kvm
-    btrfs-progs
-    xfsprogs
+  environment.systemPackages =  [
+    pkgs.quota
+    pkgs.libvirt
+    pkgs.qemu_kvm
+    pkgs.btrfs-progs
+    pkgs.xfsprogs
   ];
   
   # Storage quota management script

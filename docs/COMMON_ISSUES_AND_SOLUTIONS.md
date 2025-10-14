@@ -159,6 +159,81 @@ with lib;  # Add this line
 **Recent Fix**:
 - **(2025-10-14)**: Fixed undefined `elem` in `configuration-complete.nix` lines 168, 184, and 209 by adding `lib.` prefix.
 
+### Issue: Python Code in Nix Multiline Strings
+**Symptoms**:
+```
+error: syntax error, unexpected ')', expecting '}'
+       at /path/to/module.nix:XXX:XX:
+                          threat.get('target', ''),
+                                                  ^
+```
+
+**Root Cause**: Single quotes in Python code conflict with Nix multiline string delimiters (`''`). In Nix, to include a literal single quote inside a multiline string, you must escape it by doubling it (`''`).
+
+**Solutions**:
+
+#### ✅ **Fix: Escape single quotes in embedded Python/scripts**
+```nix
+# ❌ WRONG - Unescaped single quotes in Nix multiline string
+ExecStart = "${pkgs.python3}/bin/python3 ${pkgs.writeText "script.py" ''
+  data = threat.get('target', '')
+  items = playbook.get('actions', [])
+''}";
+
+# ✅ CORRECT - Single quotes escaped as ''
+ExecStart = "${pkgs.python3}/bin/python3 ${pkgs.writeText "script.py" ''
+  data = threat.get(''target'', '''')
+  items = playbook.get(''actions'', [])
+''}";
+```
+
+**Common patterns that need escaping**:
+```nix
+# Dictionary access
+# ❌ WRONG:  data['key']
+# ✅ CORRECT: data[''key'']
+
+# String literals
+# ❌ WRONG:  'string value'
+# ✅ CORRECT: ''string value''
+
+# Method calls with string arguments
+# ❌ WRONG:  obj.get('key', 'default')
+# ✅ CORRECT: obj.get(''key'', ''default'')
+
+# Conditionals
+# ❌ WRONG:  if 'key' in data:
+# ✅ CORRECT: if ''key'' in data:
+```
+
+**Alternative approaches**:
+1. **Use double quotes in Python** (when possible):
+   ```nix
+   data = threat.get("target", "")  # No escaping needed
+   ```
+
+2. **Store Python code in separate files**:
+   ```nix
+   ExecStart = "${pkgs.python3}/bin/python3 ${./script.py}";
+   ```
+
+3. **Use pkgs.writeScript with shebang**:
+   ```nix
+   myScript = pkgs.writeScript "myscript.py" ''
+     #!${pkgs.python3}/bin/python3
+     data = threat.get(''target'', '''')
+   '';
+   ```
+
+**Prevention**:
+1. Always escape single quotes in Nix multiline strings
+2. Consider using double quotes in embedded Python code
+3. For complex scripts, use separate files
+4. Test build after adding embedded code
+
+**Recent Fixes**:
+- **(2025-10-14)**: Fixed Python single quotes in `modules/security/threat-response.nix` and `modules/security/behavioral-analysis.nix`. Applied systematic escaping to all `.get()` calls and dictionary keys.
+
 ### Issue: Module Not Loading/Working
 **Symptoms**:
 - Module configuration not applied
@@ -505,6 +580,51 @@ nixos-option hypervisor.web.port
    - Error messages and logs
 
 Remember: Most issues have been encountered before. Check documentation, follow established patterns, and test thoroughly.
+
+## 📂 **File Organization and IP Protection**
+
+### Issue: IP-Protected Content in Public Release
+**Symptoms**:
+- AI documentation files in public-release folder
+- Implementation reports visible in distribution
+- Audit/test scripts included in public package
+
+**Root Cause**: Incorrect file placement violating IP protection rules
+
+**Solution**:
+Move IP-protected content to appropriate locations:
+```bash
+# AI documentation → docs/dev/
+mv public-release/docs/development/AI-*.md docs/dev/
+
+# Implementation reports → docs/dev/implementation/
+mkdir -p docs/dev/implementation
+mv public-release/docs/implementation/*.md docs/dev/implementation/
+
+# Audit/test scripts → scripts/audit/
+mkdir -p scripts/audit
+mv public-release/*-platform-*.sh scripts/audit/
+```
+
+**IP Protection Rules**:
+- **Private (Never in public-release)**:
+  - AI-*.md files
+  - Implementation reports
+  - Audit and test scripts
+  - Development methodologies
+  
+- **Public (Safe for distribution)**:
+  - User guides
+  - Basic deployment scripts
+  - Architecture overviews (without implementation details)
+
+**Prevention**:
+1. Always check IP classification before adding to public-release
+2. Keep development docs in docs/dev/
+3. Review public-release contents before distribution
+
+**Recent Fix**:
+- **(2025-10-14)**: Moved all IP-protected content from public-release to appropriate private locations
 
 ## 🔐 **Permission and Privilege Issues**
 

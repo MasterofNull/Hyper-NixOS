@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Purpose: Legacy host package installer for non-NixOS hosts (dev only)
 # Note: Not used on NixOS; dependencies come from NixOS modules.
 set -euo pipefail

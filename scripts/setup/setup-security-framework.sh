@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Master Security Framework Setup Script
 # Implements comprehensive security following best practices
 

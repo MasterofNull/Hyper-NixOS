@@ -682,7 +682,17 @@ sudo /etc/hypervisor/scripts/validate_hypervisor_install.sh
 - **Beginner Guide:** [novice_user_guide.md](novice_user_guide.md)
 - **Main README:** [../README.md](../README.md)
 
+## Community & Support
+
+For additional help and community resources, see our comprehensive [Community and Support Guide](../COMMUNITY_AND_SUPPORT.md).
+
+### Quick Links
+- **GitHub**: https://github.com/Hyper-NixOS/Hyper-NixOS
+- **Issues**: https://github.com/Hyper-NixOS/Hyper-NixOS/issues
+- **Contact**: Discord - [@quin-tessential](https://discord.com/users/quin-tessential)
+- **Security**: Contact via Discord or GitHub Security Advisory
+
 ---
 
-**Last Updated:** 2025-10-13  
+**Last Updated:** 2025-10-14  
 **Version:** 2.0.0

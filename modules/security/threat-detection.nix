@@ -3,9 +3,8 @@
 
 { config, lib, pkgs, ... }:
 
-with lib;
-
 let
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
   cfg = config.hypervisor.security.threatDetection;
   
   # Threat severity levels
@@ -530,21 +529,21 @@ in {
     };
     
     # System packages
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages =  [
       # Network monitoring
-      suricata
-      tcpdump
-      wireshark-cli
+    pkgs.suricata
+    pkgs.tcpdump
+    pkgs.wireshark-cli
       
       # System monitoring
-      sysdig
-      osquery
-      auditd
+    pkgs.sysdig
+    pkgs.osquery
+    pkgs.auditd
       
       # Analysis tools
-      yara
-      volatility
-      sleuthkit
+    pkgs.yara
+    pkgs.volatility
+    pkgs.sleuthkit
       
       # Our threat detection CLI
       (pkgs.writeScriptBin "hv-threats" (builtins.readFile ./scripts/threat-cli.sh))

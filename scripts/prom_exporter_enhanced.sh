@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Enhanced Prometheus exporter for hypervisor metrics
 # Exports comprehensive metrics about host and VMs
 

@@ -2,16 +2,48 @@
 
 ## 📋 Prerequisites
 
-### Hardware Requirements
+### Hardware Requirements (Minimal Installation)
 - **CPU**: x86_64 or ARM64 with virtualization support (Intel VT-x/AMD-V)
-- **RAM**: Minimum 8GB, recommended 16GB+
-- **Storage**: Minimum 50GB, recommended 200GB+ SSD
+- **RAM**: Minimum 2GB (4GB recommended for minimal tier)
+- **Storage**: Minimum 20GB (50GB recommended)
 - **Network**: Ethernet connection recommended
+
+**Note**: The minimal installation starts with core virtualization only. You can upgrade to higher tiers based on your hardware during first boot configuration.
 
 ### Software Requirements
 - NixOS 24.05 or later
 - UEFI boot support (Legacy BIOS also supported)
 - Internet connection for initial setup
+
+## 🆕 New Minimal Installation Workflow
+
+Hyper-NixOS now uses a tiered installation approach:
+
+1. **Minimal Installation**: Installs only core virtualization components
+2. **First Boot Configuration**: Interactive wizard helps select appropriate tier
+3. **Automatic Configuration**: System configures itself based on your selection
+
+### Quick Installation (Recommended)
+
+```bash
+# One-line installation - installs minimal system
+curl -fsSL https://raw.githubusercontent.com/hyper-nixos/hyper-nixos/main/scripts/system_installer.sh | sudo bash
+
+# Reboot
+sudo reboot
+
+# The configuration wizard will start automatically on first boot
+```
+
+### Available Configuration Tiers
+
+| Tier | RAM Required | Features |
+|------|--------------|----------|
+| **Minimal** | 2-4GB | Core virtualization (libvirt, QEMU, CLI tools) |
+| **Standard** | 4-8GB | + Monitoring (Prometheus/Grafana), Security hardening |
+| **Enhanced** | 8-16GB | + Desktop environment, Web dashboard, Containers |
+| **Professional** | 16-32GB | + AI/ML security, Automation, Multi-host management |
+| **Enterprise** | 32GB+ | + Clustering, HA, Distributed storage |
 
 ## 🚀 Installation Methods
 

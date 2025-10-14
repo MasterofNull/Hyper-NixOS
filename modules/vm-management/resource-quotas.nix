@@ -26,10 +26,10 @@
   };
   
   # Environment packages for quota management
-  environment.systemPackages = with pkgs; [
-    libvirt
-    qemu_kvm
-    quota  # Disk quota tools
+  environment.systemPackages =  [
+    pkgs.libvirt
+    pkgs.qemu_kvm
+    pkgs.quota  # Disk quota tools
   ];
   
   # Quota management scripts

@@ -119,22 +119,22 @@
   # ═══════════════════════════════════════════════════════════════
   # Security Packages
   # ═══════════════════════════════════════════════════════════════
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages =  [
     # Audit tools
-    audit
+    pkgs.audit
     
     # Security tools
-    gnupg
+    pkgs.gnupg
     
     # Monitoring
-    htop
-    iotop
+    pkgs.htop
+    pkgs.iotop
     
     # Network tools (for diagnostics)
-    tcpdump
-    netcat
+    pkgs.tcpdump
+    pkgs.netcat
     
     # Compliance reporting
-    lynis
+    pkgs.lynis
   ];
 }

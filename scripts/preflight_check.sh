@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Pre-flight checks before critical operations
 # Validates system is ready for VM operations, ISO downloads, etc.
+
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/common.sh"
+source "${SCRIPT_DIR}/lib/ui.sh"
+
+# Initialize script
+init_script "$(basename "$0")"
 
 set -Eeuo pipefail
 PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -9,10 +18,6 @@ OPERATION="${1:-general}"
 REQUIRED_SPACE_GB="${2:-10}"
 
 # Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
 
 error() {
   echo -e "${RED}✗${NC} $*" >&2

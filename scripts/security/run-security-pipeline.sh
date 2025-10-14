@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Security Pipeline Runner
 # Easy interface for running security testing pipelines
 

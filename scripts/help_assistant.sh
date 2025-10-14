@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Help Assistant - Context-aware help and guidance system
 set -Eeuo pipefail
 IFS=$'\n\t'

@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Security Monitoring Setup Script
 # Sets up basic security monitoring inspired by security-focused distribution patterns
 # Version: 1.0

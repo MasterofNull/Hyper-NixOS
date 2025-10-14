@@ -8,14 +8,14 @@
   programs.sway = lib.mkIf (config.hypervisor.gui.enableAtBoot or false) {
     enable = true;
     wrapperFeatures.gtk = true;
-    extraPackages = with pkgs; [
-      swaylock
-      swayidle
-      wl-clipboard
-      mako # notification daemon
-      alacritty # terminal
-      wofi # launcher
-      waybar # status bar
+    extraPackages = [
+      pkgs.swaylock
+      pkgs.swayidle
+      pkgs.wl-clipboard
+      pkgs.mako # notification daemon
+      pkgs.alacritty # terminal
+      pkgs.wofi # launcher
+      pkgs.waybar # status bar
     ];
   };
   

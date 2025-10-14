@@ -71,11 +71,11 @@
   # Biometric Packages
   # ═══════════════════════════════════════════════════════════════
   
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages =  [
     # Fingerprint reader daemon and libraries
-    fprintd
-    libfprint
-    libfprint-2-tod1-vfs0090  # Additional driver for some devices
+    pkgs.fprintd
+    pkgs.libfprint
+    pkgs.libfprint-2-tod1-vfs0090  # Additional driver for some devices
     
     # Fingerprint enrollment and management tools
     # Use: fprintd-enroll to register fingerprints

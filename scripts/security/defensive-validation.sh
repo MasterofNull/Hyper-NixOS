@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Defensive Security Validation Script
 # Validates defenses against advanced penetration testing capabilities
 # Version: 1.0

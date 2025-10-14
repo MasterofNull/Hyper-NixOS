@@ -5,12 +5,12 @@
 
 {
   # VM management tools
-  environment.systemPackages = with pkgs; [
-    virt-manager
-    virt-viewer
-    libguestfs
-    jq
-    bc
+  environment.systemPackages = [
+    pkgs.virt-manager
+    pkgs.virt-viewer
+    pkgs.libguestfs
+    pkgs.jq
+    pkgs.bc
   ];
   
   # ═══════════════════════════════════════════════════════════════
