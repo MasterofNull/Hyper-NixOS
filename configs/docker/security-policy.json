@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "policies": {
+    "volume_restrictions": {
+      "forbidden_paths": [
+        "/", "/etc", "/root", "/sys", "/proc",
+        "/home/*/.ssh", "/home/*/.aws", "/home/*/.gnupg"
+      ],
+      "allowed_paths": [
+        "/tmp", "/var/tmp", "/opt/data", "/workspace"
+      ]
+    },
+    "resource_limits": {
+      "default_memory": "2g",
+      "default_cpu": "1.5",
+      "max_memory": "8g",
+      "max_cpu": "4"
+    },
+    "security_options": [
+      "no-new-privileges:true",
+      "seccomp=default"
+    ]
+  }
+}

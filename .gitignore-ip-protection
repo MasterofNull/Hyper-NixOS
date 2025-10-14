@@ -1,0 +1,44 @@
+# IP Protection - Files/Folders Not for Public Distribution
+
+# Private IP directory (if using organized structure)
+private-ip/
+.private-ip/
+
+# AI Development Documentation (Proprietary)
+**/AI-Development-*.md
+**/AI-LESSONS-*.md
+**/AI-QUICK-*.md
+**/AI-*.md
+
+# Audit and Test Tools (Proprietary Methods)
+audit-platform.sh
+test-platform-features.sh
+validate-implementation.sh
+security-platform-audit.sh
+**/audit-*.sh
+**/test-*.sh
+**/validate-*.sh
+
+# Implementation Details (Proprietary)
+**/COMPLETE-IMPLEMENTATION-*.md
+**/IMPLEMENTATION-*.md
+**/FINAL-IMPLEMENTATION-*.md
+**/*implementation-details*
+**/*LESSONS-LEARNED*
+
+# Reports (Internal Use)
+**/AUDIT-RESULTS.md
+**/FEATURE-TEST-REPORT.md
+**/FINAL-AUDIT-SUMMARY.md
+
+# IP Protection Scripts
+secure-ip-content.sh
+create-ip-protection.sh
+setup-cursor-friendly-protection.sh
+*-ip-protection.sh
+
+# Temporary/Working Files
+*.tmp
+*.bak
+*.private
+*.enc

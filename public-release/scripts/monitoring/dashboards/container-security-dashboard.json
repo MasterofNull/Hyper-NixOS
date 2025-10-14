@@ -1,0 +1,312 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "container-security",
+    "title": "Container Security Dashboard",
+    "tags": ["security", "docker", "containers"],
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "gridPos": {"h": 3, "w": 24, "x": 0, "y": 0},
+        "id": 1,
+        "type": "row",
+        "title": "Container Security Overview",
+        "collapsed": false
+      },
+      {
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 3},
+        "id": 2,
+        "type": "bargauge",
+        "title": "Container Risk Scores",
+        "targets": [
+          {
+            "expr": "topk(10, container_risk_score)",
+            "legendFormat": "{{container_name}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "displayMode": "gradient",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"]
+          },
+          "showUnfilled": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 50},
+                {"color": "red", "value": 75}
+              ]
+            },
+            "unit": "percent",
+            "max": 100,
+            "min": 0
+          }
+        }
+      },
+      {
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 3},
+        "id": 3,
+        "type": "stat",
+        "title": "Total Vulnerabilities",
+        "targets": [
+          {
+            "expr": "sum(container_vulnerabilities_total)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 50},
+                {"color": "red", "value": 100}
+              ]
+            },
+            "mappings": [],
+            "unit": "none"
+          }
+        },
+        "options": {
+          "graphMode": "area",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"]
+          }
+        }
+      },
+      {
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 3},
+        "id": 4,
+        "type": "piechart",
+        "title": "Critical Vulnerabilities Distribution",
+        "targets": [
+          {
+            "expr": "sum by (container_name) (container_vulnerabilities_total{severity=\"critical\"})",
+            "legendFormat": "{{container_name}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "pieType": "pie",
+          "displayLabels": ["name", "value"],
+          "legendDisplayMode": "table",
+          "legendPlacement": "right",
+          "legendValues": ["value", "percent"]
+        }
+      },
+      {
+        "gridPos": {"h": 3, "w": 24, "x": 0, "y": 11},
+        "id": 5,
+        "type": "row",
+        "title": "Container Details",
+        "collapsed": false
+      },
+      {
+        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 14},
+        "id": 6,
+        "type": "table",
+        "title": "Container Security Details",
+        "targets": [
+          {
+            "expr": "container_risk_score",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          },
+          {
+            "expr": "sum by (container_name) (container_vulnerabilities_total{severity=\"critical\"})",
+            "format": "table",
+            "instant": true,
+            "refId": "B"
+          },
+          {
+            "expr": "sum by (container_name) (container_vulnerabilities_total{severity=\"high\"})",
+            "format": "table",
+            "instant": true,
+            "refId": "C"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "merge",
+            "options": {}
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "renameByName": {
+                "container_name": "Container",
+                "Value #A": "Risk Score",
+                "Value #B": "Critical",
+                "Value #C": "High"
+              }
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "color-background",
+              "filterable": true,
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 50},
+                {"color": "red", "value": 75}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 14},
+        "id": 7,
+        "type": "graph",
+        "title": "Container Risk Score Trends",
+        "targets": [
+          {
+            "expr": "container_risk_score",
+            "legendFormat": "{{container_name}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "Risk Score",
+            "max": 100,
+            "min": 0
+          },
+          {
+            "format": "short"
+          }
+        ],
+        "xaxis": {
+          "mode": "time"
+        },
+        "lines": true,
+        "linewidth": 2,
+        "fillGradient": 0
+      },
+      {
+        "gridPos": {"h": 3, "w": 24, "x": 0, "y": 24},
+        "id": 8,
+        "type": "row",
+        "title": "Vulnerability Analysis",
+        "collapsed": false
+      },
+      {
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 27},
+        "id": 9,
+        "type": "graph",
+        "title": "Vulnerability Trends by Severity",
+        "targets": [
+          {
+            "expr": "sum by (severity) (container_vulnerabilities_total)",
+            "legendFormat": "{{severity}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Count"
+          },
+          {
+            "format": "short"
+          }
+        ],
+        "xaxis": {
+          "mode": "time"
+        },
+        "stack": true,
+        "fillGradient": 5,
+        "tooltip": {
+          "shared": true,
+          "sort": 2,
+          "value_type": "individual"
+        }
+      },
+      {
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 35},
+        "id": 10,
+        "type": "heatmap",
+        "title": "Container Vulnerability Heatmap",
+        "targets": [
+          {
+            "expr": "sum by (container_name) (container_vulnerabilities_total)",
+            "format": "heatmap",
+            "refId": "A"
+          }
+        ],
+        "dataFormat": "timeseries",
+        "options": {
+          "calculate": true,
+          "calculation": {
+            "xBuckets": {
+              "mode": "count",
+              "value": "20"
+            }
+          },
+          "color": {
+            "mode": "spectrum",
+            "scheme": "Oranges",
+            "steps": 128
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          }
+        }
+      },
+      {
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 35},
+        "id": 11,
+        "type": "alertlist",
+        "title": "Container Security Alerts",
+        "options": {
+          "showOptions": "current",
+          "maxItems": 10,
+          "sortOrder": 1,
+          "dashboardAlerts": false,
+          "alertName": "",
+          "dashboardTitle": "",
+          "tags": ["container", "docker"],
+          "stateFilter": {
+            "ok": false,
+            "paused": false,
+            "no_data": false,
+            "exec_error": false,
+            "alerting": true,
+            "pending": true
+          }
+        }
+      }
+    ],
+    "time": {
+      "from": "now-12h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["10s", "30s", "1m", "5m", "15m", "30m", "1h"]
+    }
+  }
+}

@@ -1,0 +1,199 @@
+# Incident Response Playbooks
+# Automated response configurations for different incident types
+
+playbooks:
+  brute_force_ssh:
+    name: "SSH Brute Force Response"
+    description: "Automated response to SSH brute force attacks"
+    triggers:
+      - type: "log_pattern"
+        pattern: "Failed password.*sshd"
+        threshold: 5
+        window: 300  # 5 minutes
+    actions:
+      - name: "block_source_ip"
+        type: "firewall"
+        parameters:
+          action: "block"
+          duration: 3600  # 1 hour
+          
+      - name: "collect_evidence"
+        type: "forensics"
+        parameters:
+          logs:
+            - "/var/log/auth.log"
+            - "/var/log/secure"
+          lines: 100
+          
+      - name: "notify_security"
+        type: "notification"
+        parameters:
+          severity: "high"
+          channels: ["email", "slack"]
+          
+      - name: "update_fail2ban"
+        type: "command"
+        parameters:
+          command: "fail2ban-client reload"
+
+  port_scan_detected:
+    name: "Port Scan Response"
+    description: "Response to detected port scanning activity"
+    triggers:
+      - type: "ids_alert"
+        source: "suricata"
+        signature: "ET SCAN"
+    actions:
+      - name: "block_scanner"
+        type: "firewall"
+        parameters:
+          action: "block"
+          duration: 86400  # 24 hours
+          
+      - name: "log_scan_details"
+        type: "forensics"
+        parameters:
+          capture_packets: true
+          pcap_size: "10M"
+          
+      - name: "notify_ops"
+        type: "notification"
+        parameters:
+          severity: "medium"
+          channels: ["slack"]
+
+  malware_detected:
+    name: "Malware Detection Response"
+    description: "Response to detected malware or suspicious processes"
+    triggers:
+      - type: "process_alert"
+        patterns: ["cryptominer", "xmrig", "suspicious"]
+      - type: "file_hash"
+        source: "known_malware"
+    actions:
+      - name: "isolate_system"
+        type: "network"
+        parameters:
+          action: "isolate"
+          allow_management: true
+          
+      - name: "kill_process"
+        type: "process"
+        parameters:
+          signal: "SIGKILL"
+          
+      - name: "capture_memory"
+        type: "forensics"
+        parameters:
+          dump_memory: true
+          dump_disk: false
+          
+      - name: "notify_incident_team"
+        type: "notification"
+        parameters:
+          severity: "critical"
+          channels: ["email", "slack", "pagerduty"]
+          
+      - name: "quarantine_files"
+        type: "filesystem"
+        parameters:
+          action: "quarantine"
+          backup: true
+
+  privilege_escalation:
+    name: "Privilege Escalation Response"
+    description: "Response to detected privilege escalation attempts"
+    triggers:
+      - type: "log_pattern"
+        pattern: "sudo.*COMMAND.*unusual"
+      - type: "audit_alert"
+        rule: "privilege_change"
+    actions:
+      - name: "suspend_account"
+        type: "account"
+        parameters:
+          action: "suspend"
+          
+      - name: "terminate_sessions"
+        type: "session"
+        parameters:
+          kill_all: true
+          
+      - name: "forensic_snapshot"
+        type: "forensics"
+        parameters:
+          full_snapshot: true
+          
+      - name: "critical_alert"
+        type: "notification"
+        parameters:
+          severity: "critical"
+          channels: ["all"]
+          escalate: true
+
+  data_exfiltration:
+    name: "Data Exfiltration Response"
+    description: "Response to suspected data exfiltration"
+    triggers:
+      - type: "network_anomaly"
+        threshold: "1GB"
+        direction: "outbound"
+        window: 3600
+    actions:
+      - name: "throttle_bandwidth"
+        type: "network"
+        parameters:
+          limit: "1Mbps"
+          
+      - name: "capture_traffic"
+        type: "forensics"
+        parameters:
+          pcap: true
+          duration: 300
+          
+      - name: "block_destination"
+        type: "firewall"
+        parameters:
+          action: "block"
+          target: "destination"
+          
+      - name: "alert_dlp"
+        type: "notification"
+        parameters:
+          severity: "high"
+          include_details: true
+
+  container_compromise:
+    name: "Container Compromise Response"
+    description: "Response to compromised Docker containers"
+    triggers:
+      - type: "container_alert"
+        sources: ["falco", "docker_events"]
+    actions:
+      - name: "pause_container"
+        type: "docker"
+        parameters:
+          action: "pause"
+          
+      - name: "export_container"
+        type: "forensics"
+        parameters:
+          export_image: true
+          export_logs: true
+          
+      - name: "network_isolate"
+        type: "docker"
+        parameters:
+          disconnect_networks: true
+          
+      - name: "deploy_honeypot"
+        type: "deception"
+        parameters:
+          replace_with_honeypot: true
+
+# Global settings
+settings:
+  notification_rate_limit: 300  # 5 minutes between similar notifications
+  auto_escalate_after: 1800    # 30 minutes
+  evidence_retention_days: 90
+  test_mode: false

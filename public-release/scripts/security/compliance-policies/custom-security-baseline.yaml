@@ -1,0 +1,171 @@
+name: Custom Security Baseline
+description: Organization-specific security compliance checks
+framework: custom
+version: 1.0
+
+categories:
+  - Authentication
+  - Authorization
+  - Encryption
+  - Logging
+  - Network Security
+  - Container Security
+  - System Hardening
+
+checks:
+  # Authentication Checks
+  - id: AUTH-001
+    title: Ensure password complexity requirements are enforced
+    description: Strong passwords reduce the risk of unauthorized access
+    category: Authentication
+    severity: high
+    check_type: file
+    check_command: /etc/security/pwquality.conf
+    expected_result: "contains:minlen=14"
+    remediation: |
+      Edit /etc/security/pwquality.conf and set:
+      minlen = 14
+      dcredit = -1
+      ucredit = -1
+      ocredit = -1
+      lcredit = -1
+    
+  - id: AUTH-002
+    title: Ensure account lockout policy is configured
+    description: Account lockout prevents brute force attacks
+    category: Authentication
+    severity: high
+    check_type: file
+    check_command: /etc/pam.d/common-auth
+    expected_result: "contains:pam_faillock.so"
+    remediation: |
+      Configure PAM to use pam_faillock.so with appropriate settings
+  
+  # Container Security Checks
+  - id: CONT-001
+    title: Ensure Docker daemon security options are configured
+    description: Docker should run with security options enabled
+    category: Container Security
+    severity: critical
+    check_type: file
+    check_command: /etc/docker/daemon.json
+    expected_result: "contains:userns-remap"
+    remediation: |
+      Add to /etc/docker/daemon.json:
+      {
+        "userns-remap": "default",
+        "no-new-privileges": true
+      }
+  
+  - id: CONT-002
+    title: Ensure Docker content trust is enabled
+    description: Content trust provides image signing and verification
+    category: Container Security
+    severity: high
+    check_type: command
+    check_command: "echo $DOCKER_CONTENT_TRUST"
+    expected_result: "1"
+    remediation: |
+      Set environment variable:
+      export DOCKER_CONTENT_TRUST=1
+  
+  # Network Security Checks
+  - id: NET-001
+    title: Ensure firewall is enabled
+    description: Firewall should be active to control network traffic
+    category: Network Security
+    severity: critical
+    check_type: service
+    check_command: ufw
+    expected_result: active
+    remediation: |
+      Enable UFW firewall:
+      ufw enable
+  
+  - id: NET-002
+    title: Ensure unnecessary ports are not exposed
+    description: Minimize attack surface by closing unnecessary ports
+    category: Network Security
+    severity: high
+    check_type: command
+    check_command: "netstat -tlnp | grep -E ':23|:21|:25|:110|:143' | wc -l"
+    expected_result: "0"
+    remediation: |
+      Close unnecessary services listening on insecure ports
+  
+  # Logging Checks
+  - id: LOG-001
+    title: Ensure audit logging is enabled
+    description: Audit logs are essential for security monitoring
+    category: Logging
+    severity: high
+    check_type: service
+    check_command: auditd
+    expected_result: active
+    remediation: |
+      Install and enable auditd:
+      apt-get install auditd
+      systemctl enable auditd
+      systemctl start auditd
+  
+  - id: LOG-002
+    title: Ensure log rotation is configured
+    description: Log rotation prevents disk space issues
+    category: Logging
+    severity: medium
+    check_type: file
+    check_command: /etc/logrotate.conf
+    expected_result: "contains:weekly"
+    remediation: |
+      Configure log rotation in /etc/logrotate.conf
+  
+  # System Hardening Checks
+  - id: SYS-001
+    title: Ensure core dumps are restricted
+    description: Core dumps may contain sensitive information
+    category: System Hardening
+    severity: medium
+    check_type: command
+    check_command: "sysctl fs.suid_dumpable"
+    expected_result: "fs.suid_dumpable = 0"
+    remediation: |
+      Set in /etc/sysctl.conf:
+      fs.suid_dumpable = 0
+      Then run: sysctl -p
+  
+  - id: SYS-002
+    title: Ensure automatic updates are configured
+    description: Security patches should be applied automatically
+    category: System Hardening
+    severity: high
+    check_type: package
+    check_command: unattended-upgrades
+    expected_result: installed
+    remediation: |
+      Install and configure unattended-upgrades:
+      apt-get install unattended-upgrades
+      dpkg-reconfigure unattended-upgrades
+  
+  # Encryption Checks
+  - id: ENC-001
+    title: Ensure SSH protocol 2 is used
+    description: SSH protocol 1 has known vulnerabilities
+    category: Encryption
+    severity: critical
+    check_type: command
+    check_command: "sshd -T | grep protocol"
+    expected_result: "protocol 2"
+    remediation: |
+      Set in /etc/ssh/sshd_config:
+      Protocol 2
+  
+  - id: ENC-002
+    title: Ensure strong ciphers are used for SSH
+    description: Weak ciphers can be broken
+    category: Encryption
+    severity: high
+    check_type: command
+    check_command: "sshd -T | grep ciphers"
+    expected_result: "regex:aes256-gcm|chacha20-poly1305"
+    remediation: |
+      Configure strong ciphers in /etc/ssh/sshd_config

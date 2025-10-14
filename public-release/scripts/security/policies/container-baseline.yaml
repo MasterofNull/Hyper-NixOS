@@ -1,0 +1,39 @@
+name: container_baseline
+description: Baseline security policy for all containers
+
+rules:
+  - name: max_risk_score
+    type: max_risk_score
+    value: 50
+    severity: high
+    description: Container risk score must not exceed 50
+    
+  - name: no_privileged
+    type: forbidden_capability
+    value: ['SYS_ADMIN', 'SYS_MODULE', 'SYS_RAWIO']
+    severity: critical
+    description: Containers must not have dangerous capabilities
+    
+  - name: non_root_user
+    type: required_user
+    value: non-root
+    severity: medium
+    description: Containers must run as non-root user
+    
+  - name: vulnerability_limit
+    type: max_vulnerabilities
+    severity: critical
+    value: 0
+    description: No critical vulnerabilities allowed
+    
+  - name: high_vuln_limit
+    type: max_vulnerabilities
+    severity: high
+    value: 5
+    description: Maximum 5 high severity vulnerabilities
+
+enforcement: warn  # warn, block, or quarantine
+
+exceptions:
+  - system-critical-service
+  - legacy-app-container

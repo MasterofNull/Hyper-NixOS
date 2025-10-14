@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Libvirt QEMU hook to place domains into systemd slices and apply limits
+# Install to /etc/libvirt/hooks/qemu on the host
+set -euo pipefail
+
+op=${1:-}
+phase=${2:-}
+domain=${3:-}
+
+# Only apply on 'started' lifecycle event
+if [[ "$op" == "lifecycle" && "$phase" == "start" ]]; then
+  # Read profile limits if available
+  profile="/var/lib/hypervisor/vm_profiles/${domain}.json"
+  cpuq="200%"; memmax="8G"
+  if [[ -f "$profile" ]]; then
+    cpu_val=$(jq -r '.limits.cpu_quota_percent // empty' "$profile" 2>/dev/null || true)
+    mem_val=$(jq -r '.limits.memory_max_mb // empty' "$profile" 2>/dev/null || true)
+    [[ -n "${cpu_val:-}" ]] && cpuq="${cpu_val}%"
+    [[ -n "${mem_val:-}" ]] && memmax="${mem_val}M"
+  fi
+  systemd-run --unit="vm-${domain}.slice" \
+    --slice=machine.slice \
+    -p CPUAccounting=yes -p MemoryAccounting=yes -p IOAccounting=yes \
+    -p CPUQuota=${cpuq} -p MemoryMax=${memmax} \
+    /bin/true
+fi

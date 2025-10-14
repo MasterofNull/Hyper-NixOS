@@ -1,0 +1,55 @@
+{
+  "dashboard": {
+    "title": "Security Overview Dashboard",
+    "panels": [
+      {
+        "title": "SSH Login Activity",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(ssh_login_total[5m])",
+            "legendFormat": "SSH Logins"
+          }
+        ]
+      },
+      {
+        "title": "Docker Security Events",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "docker_security_events_total",
+            "legendFormat": "{{ event_type }}"
+          }
+        ]
+      },
+      {
+        "title": "Parallel Job Performance",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "parallel_jobs_active",
+            "legendFormat": "Active Jobs"
+          },
+          {
+            "expr": "rate(parallel_jobs_completed_total[5m])",
+            "legendFormat": "Completion Rate"
+          }
+        ]
+      },
+      {
+        "title": "Security Alerts",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "type": "table",
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\",category=\"security\"}",
+            "format": "table"
+          }
+        ]
+      }
+    ]
+  }
+}
