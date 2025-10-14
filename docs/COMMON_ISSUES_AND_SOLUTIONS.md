@@ -581,6 +581,51 @@ nixos-option hypervisor.web.port
 
 Remember: Most issues have been encountered before. Check documentation, follow established patterns, and test thoroughly.
 
+## 📂 **File Organization and IP Protection**
+
+### Issue: IP-Protected Content in Public Release
+**Symptoms**:
+- AI documentation files in public-release folder
+- Implementation reports visible in distribution
+- Audit/test scripts included in public package
+
+**Root Cause**: Incorrect file placement violating IP protection rules
+
+**Solution**:
+Move IP-protected content to appropriate locations:
+```bash
+# AI documentation → docs/dev/
+mv public-release/docs/development/AI-*.md docs/dev/
+
+# Implementation reports → docs/dev/implementation/
+mkdir -p docs/dev/implementation
+mv public-release/docs/implementation/*.md docs/dev/implementation/
+
+# Audit/test scripts → scripts/audit/
+mkdir -p scripts/audit
+mv public-release/*-platform-*.sh scripts/audit/
+```
+
+**IP Protection Rules**:
+- **Private (Never in public-release)**:
+  - AI-*.md files
+  - Implementation reports
+  - Audit and test scripts
+  - Development methodologies
+  
+- **Public (Safe for distribution)**:
+  - User guides
+  - Basic deployment scripts
+  - Architecture overviews (without implementation details)
+
+**Prevention**:
+1. Always check IP classification before adding to public-release
+2. Keep development docs in docs/dev/
+3. Review public-release contents before distribution
+
+**Recent Fix**:
+- **(2025-10-14)**: Moved all IP-protected content from public-release to appropriate private locations
+
 ## 🔐 **Permission and Privilege Issues**
 
 ### Issue: "Permission Denied" for VM Operations

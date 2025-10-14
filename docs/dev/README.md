@@ -52,6 +52,21 @@ These files document:
 - **[SETUP_COMPLETE.md](SETUP_COMPLETE.md)** - Initial setup and configuration completion notes
 - **[FINAL_CHANGES_SUMMARY.md](FINAL_CHANGES_SUMMARY.md)** - Summary of final changes before production
 
+### AI Development Resources (IP-Protected)
+
+- **[AI-Development-Best-Practices.md](AI-Development-Best-Practices.md)** - Best practices for AI development
+- **[AI-IP-PROTECTION-RULES.md](AI-IP-PROTECTION-RULES.md)** - IP protection rules for AI agents
+- **[AI-LESSONS-LEARNED.md](AI-LESSONS-LEARNED.md)** - Lessons learned from AI development
+- **[AI-QUICK-REFERENCE.md](AI-QUICK-REFERENCE.md)** - Quick reference for AI development
+
+### Implementation Reports (IP-Protected)
+
+- **[implementation/](implementation/)** - Detailed implementation reports
+  - Complete implementation summaries
+  - Verification reports
+  - Security analysis
+  - System improvement documentation
+
 ## For Users
 
 If you're looking for user documentation, please see:
