@@ -774,6 +774,58 @@ systemd.services.myservice = {
 };
 ```
 
+### Issue: "attribute 'enable' missing" in NixOS modules
+**Symptoms**:
+```
+error: attribute 'enable' missing
+       at /nix/store/.../modules/features/feature-categories.nix:446:59:
+          445|     # Generate security report
+          446|     system.activationScripts.featureSecurityReport = mkIf cfg.enable ''
+```
+
+**Root Cause**: Trying to access an attribute that doesn't exist in the configuration. Common causes:
+1. Using `cfg.enable` when `cfg` points to a configuration namespace without an `enable` option
+2. Referencing attributes that don't exist in data structures
+3. Assuming runtime state exists in static definitions
+
+**Solutions**:
+
+#### ✅ **Check if the attribute exists before using it**
+```nix
+# Bad - assumes cfg has enable attribute
+system.activationScripts.myScript = mkIf cfg.enable ''
+  echo "Running script"
+'';
+
+# Good - checks if the module is actually enabled
+system.activationScripts.myScript = mkIf (config.myModule ? enable && config.myModule.enable) ''
+  echo "Running script"
+'';
+```
+
+#### ✅ **Use the correct configuration path**
+```nix
+# If cfg = config.hypervisor.features
+# But enable is in config.hypervisor.featureManager.enable
+# Then use:
+mkIf config.hypervisor.featureManager.enable
+```
+
+#### ✅ **For feature checking, use the enabled features list**
+```nix
+# Bad - features don't have an 'enabled' attribute
+optionalString feat.enabled "Feature is enabled"
+
+# Good - check if feature is in the enabled list
+optionalString (lib.elem featName config.hypervisor.featureManager.enabledFeatures) "Feature is enabled"
+```
+
+**Prevention**:
+- Always verify configuration structure before accessing nested attributes
+- Use `?` operator to check attribute existence: `config.module ? attribute`
+- Remember that feature definitions are static; runtime state is tracked elsewhere
+- Test modules with `nixos-rebuild dry-build --show-trace` to catch errors early
+
 ## 🔧 **Performance Issues**
 
 ### Issue: Slow Build Times
