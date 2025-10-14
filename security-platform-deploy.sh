@@ -2011,7 +2011,60 @@ main() {
 # Helper functions for remaining modules
 create_forensics_module() {
     mkdir -p "$PLATFORM_HOME/modules/forensics/bin"
-    # Implementation details...
+    
+    cat > "$PLATFORM_HOME/modules/forensics/forensics-toolkit.py" << 'EOF'
+#!/usr/bin/env python3
+"""Advanced Forensics Toolkit"""
+
+import os
+import subprocess
+import hashlib
+import json
+from datetime import datetime
+from typing import Dict, List
+import asyncio
+
+class ForensicsToolkit:
+    def __init__(self):
+        self.evidence_dir = "/opt/security-platform/data/evidence"
+        self.chain_of_custody = []
+        
+    async def collect_evidence(self, incident_id: str) -> Dict:
+        """Collect comprehensive digital evidence"""
+        evidence = {
+            'incident_id': incident_id,
+            'timestamp': datetime.now().isoformat(),
+            'memory_dump': await self.dump_memory(),
+            'network_capture': await self.capture_packets(),
+            'process_snapshot': await self.snapshot_processes(),
+            'file_timeline': await self.create_timeline(),
+            'logs': await self.collect_logs()
+        }
+        
+        # Create evidence package
+        return self.package_evidence(evidence)
+        
+    async def dump_memory(self) -> str:
+        """Capture system memory"""
+        # Use LiME or similar for memory acquisition
+        dump_file = f"{self.evidence_dir}/memory_{datetime.now().strftime('%Y%m%d_%H%M%S')}.lime"
+        # Implementation would use actual memory dumping tools
+        return dump_file
+        
+    async def analyze_memory(self, dump_file: str) -> Dict:
+        """Analyze memory dump with Volatility"""
+        results = {}
+        
+        # Run various Volatility plugins
+        plugins = ['pslist', 'pstree', 'netscan', 'filescan', 'malfind']
+        
+        for plugin in plugins:
+            cmd = f"volatility -f {dump_file} {plugin}"
+            result = subprocess.run(cmd.split(), capture_output=True, text=True)
+            results[plugin] = result.stdout
+            
+        return results
+EOF
 }
 
 create_multicloud_module() {
@@ -2021,7 +2074,79 @@ create_multicloud_module() {
 
 create_patch_management_module() {
     mkdir -p "$PLATFORM_HOME/modules/patch_management/bin"
-    # Implementation details...
+    
+    cat > "$PLATFORM_HOME/modules/patch_management/auto-patch.py" << 'EOF'
+#!/usr/bin/env python3
+"""Automated Patch Management System"""
+
+import subprocess
+import json
+from datetime import datetime
+from typing import Dict, List
+import asyncio
+
+class PatchManager:
+    def __init__(self):
+        self.patch_history = []
+        self.rollback_points = []
+        
+    async def auto_patch(self) -> Dict:
+        """Intelligent automated patching"""
+        # Get available patches
+        patches = await self.get_available_patches()
+        
+        # Risk analysis
+        risk_analysis = await self.assess_patch_risk(patches)
+        
+        # Test in staging
+        test_results = await self.test_patches(patches, env='staging')
+        
+        if test_results['success']:
+            # Deploy with canary strategy
+            deployment = await self.deploy_patches(
+                patches,
+                strategy='canary',
+                rollback_on_error=True
+            )
+            return deployment
+            
+        return {'status': 'failed', 'reason': 'Testing failed'}
+        
+    async def get_available_patches(self) -> List[Dict]:
+        """Get list of available system patches"""
+        patches = []
+        
+        # Check different package managers
+        if os.path.exists('/usr/bin/apt'):
+            patches.extend(await self._get_apt_updates())
+        if os.path.exists('/usr/bin/yum'):
+            patches.extend(await self._get_yum_updates())
+            
+        return patches
+        
+    async def assess_patch_risk(self, patches: List[Dict]) -> Dict:
+        """Assess risk level of patches"""
+        risk_scores = {}
+        
+        for patch in patches:
+            score = 0
+            
+            # Critical security patches
+            if 'security' in patch.get('type', '').lower():
+                score += 10
+                
+            # Kernel patches are higher risk
+            if 'kernel' in patch.get('package', '').lower():
+                score += 5
+                
+            # Service patches
+            if any(svc in patch.get('package', '') for svc in ['apache', 'nginx', 'mysql']):
+                score += 3
+                
+            risk_scores[patch['package']] = score
+            
+        return risk_scores
+EOF
 }
 
 create_threat_hunting_module() {
@@ -2031,7 +2156,84 @@ create_threat_hunting_module() {
 
 create_secrets_vault_module() {
     mkdir -p "$PLATFORM_HOME/modules/secrets_vault/bin"
-    # Implementation details...
+    
+    cat > "$PLATFORM_HOME/modules/secrets_vault/secrets-vault.py" << 'EOF'
+#!/usr/bin/env python3
+"""Enhanced Secrets Management Vault"""
+
+import os
+import json
+import hashlib
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from datetime import datetime, timedelta
+import asyncio
+from typing import Dict, Optional
+
+class SecretsVault:
+    def __init__(self):
+        self.vault_path = "/opt/security-platform/data/secrets/vault.db"
+        self.rotation_policy = {'days': 30}
+        self.access_logs = []
+        
+    async def store_secret(self, secret_id: str, secret_value: str, 
+                          metadata: Dict = None) -> bool:
+        """Store secret with encryption"""
+        # Encrypt secret
+        encrypted = self._encrypt_secret(secret_value)
+        
+        # Store with metadata
+        secret_entry = {
+            'id': secret_id,
+            'encrypted_value': encrypted,
+            'created': datetime.now().isoformat(),
+            'last_rotated': datetime.now().isoformat(),
+            'metadata': metadata or {},
+            'version': 1
+        }
+        
+        # Save to vault
+        return await self._save_to_vault(secret_id, secret_entry)
+        
+    async def rotate_secret(self, secret_id: str) -> str:
+        """Automatically rotate secret"""
+        # Get current secret
+        current = await self.retrieve_secret(secret_id)
+        
+        if not current:
+            raise ValueError(f"Secret {secret_id} not found")
+            
+        # Generate new secret
+        new_secret = self._generate_secure_secret()
+        
+        # Store new version
+        await self.store_secret(secret_id, new_secret)
+        
+        # Notify consumers
+        await self._notify_rotation(secret_id)
+        
+        return new_secret
+        
+    async def provide_temporary_access(self, secret_id: str, 
+                                     ttl: int = 3600) -> str:
+        """Provide just-in-time access token"""
+        # Generate temporary token
+        temp_token = self._generate_temp_token()
+        
+        # Set expiration
+        expiry = datetime.now() + timedelta(seconds=ttl)
+        
+        # Log access
+        self.access_logs.append({
+            'secret_id': secret_id,
+            'token': temp_token,
+            'expires': expiry.isoformat(),
+            'granted': datetime.now().isoformat()
+        })
+        
+        return temp_token
+EOF
 }
 
 create_performance_module() {
