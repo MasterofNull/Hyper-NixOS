@@ -50,7 +50,7 @@ When working on this project, ALWAYS update documentation in this order:
 **Before Starting Work**:
 ```bash
 # Check these files first:
-cat docs/AI_ASSISTANT_CONTEXT.md      # Understand the project
+cat docs/dev/AI_ASSISTANT_CONTEXT.md      # Understand the project (PROTECTED)
 cat docs/dev/PROJECT_DEVELOPMENT_HISTORY.md  # See recent changes
 grep -r "TODO\|FIXME\|XXX" .         # Find pending work
 ```

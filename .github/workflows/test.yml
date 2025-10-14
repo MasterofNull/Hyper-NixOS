@@ -37,6 +37,12 @@ jobs:
               --severity=warning \
               2>&1 | tee shellcheck.log
           
+          # Exclusions explained:
+          # SC1090/1091: Dynamic sourcing of library files
+          # SC2086: Intentional word splitting in some cases
+          # SC2181: Using $? for readability in scripts
+          # SC2162: Read without -r acceptable for our use
+          
           # Shellcheck warnings are informational, not errors
           echo ""
           echo "Shellcheck completed (warnings are informational)"
@@ -163,7 +169,14 @@ jobs:
           export GITHUB_ACTIONS=true
           
           echo "Running tests in CI mode..."
-          echo "Tests requiring libvirt will be skipped (expected)"
+          echo ""
+          echo "NOTE: The following tests will be skipped in CI:"
+          echo "  • VM lifecycle tests (require libvirt/virsh)"
+          echo "  • System installer tests (require NixOS)"
+          echo "  • Security model tests (require libvirt groups)"
+          echo ""
+          echo "These tests run on actual NixOS systems during deployment."
+          echo "CI focuses on syntax, structure, and non-VM tests."
           echo ""
           
           # Run tests
@@ -254,6 +267,7 @@ jobs:
           
           tar --exclude='.git' \
               --exclude='dev-reference' \
+              --exclude='docs/dev' \
               --exclude='*.backup' \
               --exclude='*.log' \
               -czf hyper-nixos-${{ github.ref_name }}.tar.gz .

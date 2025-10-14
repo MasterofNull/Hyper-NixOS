@@ -2,6 +2,12 @@
 private-ip/
 **/private-ip/
 
+# Protected Development Documentation
+# Contains AI context, design evolution, and IP-sensitive content
+# DO NOT DISTRIBUTE - Internal use only for dev team and AI agents
+# Entire dev folder is protected
+docs/dev/
+
 # Temporary files
 *.tmp
 *.bak

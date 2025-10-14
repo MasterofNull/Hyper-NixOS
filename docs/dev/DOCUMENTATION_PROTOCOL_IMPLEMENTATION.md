@@ -6,7 +6,7 @@ Successfully implemented comprehensive documentation protocols for future AI ass
 
 ## 📋 **Key Deliverables**
 
-### **1. AI Documentation Protocol (`docs/AI_DOCUMENTATION_PROTOCOL.md`)**
+### **1. AI Documentation Protocol (`docs/dev/AI_DOCUMENTATION_PROTOCOL.md`)**
 **Purpose**: Explicit instructions for AI assistants on documentation maintenance and design decision handling.
 
 **Key Features**:

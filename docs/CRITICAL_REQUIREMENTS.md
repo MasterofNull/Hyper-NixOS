@@ -30,7 +30,7 @@ This document outlines **MANDATORY** requirements that **MUST** be followed for 
 ```bash
 # Pre-commit hook (REQUIRED)
 #!/bin/bash
-if ! grep -q "$(date +%Y-%m)" docs/AI_ASSISTANT_CONTEXT.md; then
+if ! grep -q "$(date +%Y-%m)" docs/dev/AI_ASSISTANT_CONTEXT.md; then
   echo "ERROR: AI_ASSISTANT_CONTEXT.md not updated this month"
   exit 1
 fi
