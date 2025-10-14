@@ -11,6 +11,36 @@ This document catalogs common issues encountered in Hyper-NixOS, their root caus
 
 ## 🚨 **Critical Issues**
 
+### Issue: The option 'hypervisor.enable' does not exist
+**Symptoms**:
+```
+error: The option `hypervisor.enable' does not exist. Definition values:
+       - In `/nix/store/.../configuration-minimal.nix': true
+```
+
+**Root Cause**: The core options module that defines `hypervisor.enable` is not imported.
+
+**Solution**:
+1. Ensure `modules/core/options.nix` is imported in your configuration:
+```nix
+imports = [
+  ./hardware-configuration.nix
+  ./modules/core/options.nix  # Add this import
+  ./modules/core/hypervisor-base.nix  # And this for base functionality
+  # ... other imports
+];
+```
+
+2. Make sure `hypervisor.enable = true;` is set in your configuration:
+```nix
+hypervisor.enable = true;
+```
+
+**Prevention**:
+- Always import core option modules before using their options
+- The modular architecture requires explicit imports
+- Check that all required base modules are imported
+
 ### Issue: Infinite Recursion Errors
 **Symptoms**:
 ```

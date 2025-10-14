@@ -130,6 +130,12 @@ in {
       default = true;
       description = "Generate security impact report on build";
     };
+    
+    enabledFeatures = mkOption {
+      type = types.listOf types.str;
+      default = [];
+      description = "List of enabled features";
+    };
   };
   
   config = mkIf cfg.enable {

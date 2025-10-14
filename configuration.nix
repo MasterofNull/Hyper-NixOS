@@ -14,6 +14,8 @@
     ./hardware-configuration.nix
     
     # Core system modules
+    ./modules/core/options.nix
+    ./modules/core/hypervisor-base.nix
     ./modules/core/system.nix
     ./modules/core/packages.nix
     ./modules/core/directories.nix

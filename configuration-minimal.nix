@@ -9,6 +9,10 @@
     # Hardware configuration (always needed)
     ./hardware-configuration.nix
     
+    # Core options module (defines hypervisor.enable and other core options)
+    ./modules/core/options.nix
+    ./modules/core/hypervisor-base.nix  # Base hypervisor setup when enabled
+    
     # Only import modules whose options we're actually setting below
     ./modules/features/feature-manager.nix  # We use hypervisor.featureManager
     ./modules/core/first-boot.nix  # First boot configuration wizard

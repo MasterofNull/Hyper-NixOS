@@ -5,6 +5,13 @@
 
 {
   options.hypervisor = {
+    # Top-level enable option
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable the Hyper-NixOS virtualization platform";
+    };
+
     # Management Configuration
     management = {
       userName = lib.mkOption {

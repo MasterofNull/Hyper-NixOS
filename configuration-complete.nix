@@ -9,6 +9,8 @@
     ./hardware-configuration.nix
     
     # Core modules
+    ./modules/core/options.nix
+    ./modules/core/hypervisor-base.nix
     ./modules/core/system.nix
     ./modules/core/packages.nix
     ./modules/core/directories.nix
@@ -64,6 +66,8 @@
   
   # Enable core features
   hypervisor = {
+    enable = true;
+    
     # Feature management system
     featureManager.enable = true;
     
