@@ -10,6 +10,44 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Fixed Missing 'enable' Attribute in feature-categories.nix
+**Agent**: Claude
+**Task**: Fix "attribute 'enable' missing" error in feature-categories.nix
+
+**Error**:
+```
+error: attribute 'enable' missing
+       at /nix/store/.../modules/features/feature-categories.nix:446:59:
+          445|     # Generate security report
+          446|     system.activationScripts.featureSecurityReport = mkIf cfg.enable ''
+```
+
+**Root Cause**: The module was using `cfg.enable` where `cfg = config.hypervisor.features`, but `hypervisor.features` doesn't have an `enable` attribute. Additionally, the script was trying to check `feat.enabled` which doesn't exist in feature definitions.
+
+**Fix Applied**:
+1. Changed the condition to check if featureManager exists and is enabled
+2. Fixed the feature check to use `config.hypervisor.featureManager.enabledFeatures`
+3. Added `mkdir -p /etc/hypervisor` to ensure directory exists
+
+```nix
+# Before:
+system.activationScripts.featureSecurityReport = mkIf cfg.enable ''
+  ...
+  optionalString feat.enabled
+
+# After:
+system.activationScripts.featureSecurityReport = mkIf (config.hypervisor ? featureManager && config.hypervisor.featureManager.enable) ''
+  ...
+  optionalString (lib.elem featName config.hypervisor.featureManager.enabledFeatures)
+```
+
+**Files Modified**:
+- `modules/features/feature-categories.nix` - Fixed enable condition and feature check
+
+**Key Learning**: Always verify that configuration attributes exist before referencing them. Feature definitions are static; the enabled state is tracked in `featureManager.enabledFeatures`.
+
+---
+
 #### 2025-10-14: Fixed Missing 'hypervisor.features' Attribute Error
 **Agent**: Claude
 **Task**: Fix "attribute 'features' missing" error in feature-manager.nix

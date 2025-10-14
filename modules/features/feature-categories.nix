@@ -443,8 +443,9 @@ in {
     hypervisor.features = featureCategories;
     
     # Generate security report
-    system.activationScripts.featureSecurityReport = mkIf cfg.enable ''
+    system.activationScripts.featureSecurityReport = mkIf (config.hypervisor ? featureManager && config.hypervisor.featureManager.enable) ''
       echo "Generating feature security report..."
+      mkdir -p /etc/hypervisor
       cat > /etc/hypervisor/FEATURE_SECURITY_REPORT.txt <<EOF
       Hyper-NixOS Feature Security Report
       Generated: $(date)
@@ -452,7 +453,7 @@ in {
       Enabled Features by Risk Level:
       ${lib.concatStringsSep "\n" (lib.mapAttrsToList (catName: cat:
         lib.concatStringsSep "\n" (lib.mapAttrsToList (featName: feat:
-          optionalString feat.enabled
+          optionalString (lib.elem featName config.hypervisor.featureManager.enabledFeatures)
             "${feat.risk} - ${cat.name}/${feat.name}: ${feat.description}"
         ) cat.features)
       ) featureCategories)}
