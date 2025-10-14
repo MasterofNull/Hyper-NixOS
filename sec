@@ -1,0 +1,337 @@
+#!/bin/bash
+# Security Control Panel - Main Interface
+# Simple, unified security management
+
+set -e
+
+# Colors
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m'
+
+# Script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Main menu
+show_menu() {
+    clear
+    echo -e "${BLUE}Security Control Panel${NC}"
+    echo "====================="
+    echo
+    echo "1. Status       - System security status"
+    echo "2. Scan         - Run security scans" 
+    echo "3. Monitor      - Live monitoring"
+    echo "4. Containers   - Container security"
+    echo "5. Comply       - Compliance checks"
+    echo "6. Report       - Generate reports"
+    echo "7. Fix          - Auto-fix issues"
+    echo "8. Alerts       - Configure alerts"
+    echo "9. Help         - Documentation"
+    echo "0. Exit"
+    echo
+}
+
+# Quick status check
+status() {
+    echo -e "${YELLOW}Security Status${NC}"
+    echo "==============="
+    
+    # Overall score
+    echo -n "Security Score: "
+    score=$(curl -s http://localhost:9090/api/v1/query?query=system_security_score 2>/dev/null | \
+            jq -r '.data.result[0].value[1]' 2>/dev/null || echo "N/A")
+    
+    if [[ "$score" != "N/A" ]]; then
+        if (( $(echo "$score >= 80" | bc -l) )); then
+            echo -e "${GREEN}${score}%${NC}"
+        elif (( $(echo "$score >= 50" | bc -l) )); then
+            echo -e "${YELLOW}${score}%${NC}"
+        else
+            echo -e "${RED}${score}%${NC}"
+        fi
+    else
+        echo "N/A (Monitoring not active)"
+    fi
+    
+    echo
+    
+    # Quick checks
+    echo "Services:"
+    for service in ssh-monitor docker security-monitor; do
+        if systemctl is-active --quiet $service 2>/dev/null; then
+            echo -e "  $service: ${GREEN}✓ Active${NC}"
+        else
+            echo -e "  $service: ${RED}✗ Inactive${NC}"
+        fi
+    done
+    
+    echo
+    echo "Recent Issues:"
+    if [[ -f /var/log/security/events.json ]]; then
+        tail -5 /var/log/security/events.json 2>/dev/null | \
+        jq -r '"\(.timestamp | split("T")[0]) [\(.type)] \(.source_ip // "local")"' 2>/dev/null || \
+        echo "  No recent events"
+    else
+        echo "  No event log found"
+    fi
+}
+
+# Run security scan
+scan() {
+    echo -e "${YELLOW}Security Scan Options${NC}"
+    echo "1. Quick scan (local)"
+    echo "2. Network scan"
+    echo "3. Container scan"
+    echo "4. Full scan"
+    echo
+    read -p "Select scan type: " scan_type
+    
+    case $scan_type in
+        1)
+            echo -e "${YELLOW}Running quick scan...${NC}"
+            vuln scan --targets / --dry-run
+            ;;
+        2)
+            read -p "Enter network range (default: 192.168.1.0/24): " network
+            network=${network:-"192.168.1.0/24"}
+            echo -e "${YELLOW}Scanning network $network...${NC}"
+            scan "$network" -t smart
+            ;;
+        3)
+            echo -e "${YELLOW}Scanning containers...${NC}"
+            containers scan-all
+            ;;
+        4)
+            echo -e "${YELLOW}Running full security scan...${NC}"
+            sec-test scheduled
+            ;;
+        *)
+            echo -e "${RED}Invalid option${NC}"
+            ;;
+    esac
+}
+
+# Monitor function
+monitor() {
+    echo -e "${YELLOW}Monitoring Options${NC}"
+    echo "1. Security dashboard (Grafana)"
+    echo "2. Live logs"
+    echo "3. SSH connections"
+    echo "4. Container activity"
+    echo
+    read -p "Select monitor type: " mon_type
+    
+    case $mon_type in
+        1)
+            echo "Opening security dashboard..."
+            xdg-open http://localhost:3000 2>/dev/null || echo "Open http://localhost:3000 in browser"
+            ;;
+        2)
+            echo "Showing live security logs (Ctrl+C to exit)..."
+            sudo journalctl -u security-monitor -f
+            ;;
+        3)
+            echo "Monitoring SSH connections..."
+            watch -n 1 'ss -tn | grep :22'
+            ;;
+        4)
+            echo "Monitoring container activity..."
+            docker events
+            ;;
+        *)
+            echo -e "${RED}Invalid option${NC}"
+            ;;
+    esac
+}
+
+# Generate report
+report() {
+    echo -e "${YELLOW}Report Options${NC}"
+    echo "1. Security summary"
+    echo "2. Compliance report"
+    echo "3. Vulnerability report"
+    echo "4. Full report"
+    echo
+    read -p "Select report type: " report_type
+    
+    case $report_type in
+        1)
+            echo -e "${YELLOW}Security Summary Report${NC}"
+            echo "======================="
+            status
+            ;;
+        2)
+            comply report markdown cis
+            ;;
+        3)
+            vuln report
+            ;;
+        4)
+            echo "Generating full report..."
+            {
+                echo "# Security Report - $(date)"
+                echo
+                status
+                echo
+                echo "## Compliance Status"
+                comply report markdown cis 2>/dev/null | head -20
+                echo
+                echo "## Vulnerabilities"
+                vuln report 2>/dev/null | head -20
+            } > "security-report-$(date +%Y%m%d).md"
+            echo "Report saved: security-report-$(date +%Y%m%d).md"
+            ;;
+        *)
+            echo -e "${RED}Invalid option${NC}"
+            ;;
+    esac
+}
+
+# Auto-fix function
+fix() {
+    echo -e "${YELLOW}Auto-Fix Options${NC}"
+    echo -e "${RED}Warning: This will make system changes!${NC}"
+    echo
+    echo "1. Fix critical vulnerabilities"
+    echo "2. Fix compliance issues"
+    echo "3. Harden containers"
+    echo "4. Apply security updates"
+    echo
+    read -p "Select fix type: " fix_type
+    
+    read -p "Are you sure? (yes/no): " confirm
+    if [[ "$confirm" != "yes" ]]; then
+        echo "Cancelled"
+        return
+    fi
+    
+    case $fix_type in
+        1)
+            echo "Fixing critical vulnerabilities..."
+            vuln remediate --max-risk 90
+            ;;
+        2)
+            echo "Fixing compliance issues..."
+            comply remediate cis
+            ;;
+        3)
+            echo "Hardening containers..."
+            containers scan-all
+            # Apply policies
+            ;;
+        4)
+            echo "Applying security updates..."
+            sudo apt update && sudo apt upgrade -y
+            ;;
+        *)
+            echo -e "${RED}Invalid option${NC}"
+            ;;
+    esac
+}
+
+# Configure alerts
+alerts() {
+    echo -e "${YELLOW}Alert Configuration${NC}"
+    echo "Current webhook URL: ${WEBHOOK_URL:-Not set}"
+    echo
+    echo "1. Set webhook URL"
+    echo "2. Test alerts"
+    echo "3. View alert rules"
+    echo
+    read -p "Select option: " alert_opt
+    
+    case $alert_opt in
+        1)
+            read -p "Enter webhook URL: " webhook
+            echo "WEBHOOK_URL=\"$webhook\"" > ~/.config/security/alerts.conf
+            echo "Webhook URL saved"
+            ;;
+        2)
+            echo "Sending test alert..."
+            notify "Security Test" "This is a test alert" "info"
+            ;;
+        3)
+            echo "Active alert rules:"
+            cat /etc/prometheus/rules/security-alerts.yml 2>/dev/null | grep "alert:" || echo "No rules found"
+            ;;
+        *)
+            echo -e "${RED}Invalid option${NC}"
+            ;;
+    esac
+}
+
+# Help function  
+help() {
+    echo -e "${BLUE}Security Control Panel Help${NC}"
+    echo "=========================="
+    echo
+    echo "Quick Commands:"
+    echo "  sec status    - Quick security status"
+    echo "  sec scan      - Run security scans"
+    echo "  sec monitor   - Live monitoring"
+    echo "  sec report    - Generate reports"
+    echo "  sec fix       - Auto-fix issues"
+    echo
+    echo "Additional Tools:"
+    echo "  scan          - Network scanner"
+    echo "  vuln          - Vulnerability checker"
+    echo "  comply        - Compliance checker"
+    echo "  containers    - Container security"
+    echo
+    echo "Examples:"
+    echo "  sec status"
+    echo "  scan 192.168.1.0/24"
+    echo "  vuln scan --targets nginx:latest"
+    echo "  comply scan cis"
+    echo
+    echo "Documentation: /workspace/docs/"
+}
+
+# Main function
+main() {
+    # Handle command line arguments
+    if [[ $# -gt 0 ]]; then
+        case "$1" in
+            status) status ;;
+            scan) scan ;;
+            monitor) monitor ;;
+            report) report ;;
+            fix) fix ;;
+            alerts) alerts ;;
+            help) help ;;
+            *) echo "Unknown command: $1"; help ;;
+        esac
+        exit 0
+    fi
+    
+    # Interactive mode
+    while true; do
+        show_menu
+        read -p "Select option: " choice
+        
+        case $choice in
+            1) status; read -p "Press Enter to continue..." ;;
+            2) scan; read -p "Press Enter to continue..." ;;
+            3) monitor ;;
+            4) containers ;;
+            5) comply ;;
+            6) report; read -p "Press Enter to continue..." ;;
+            7) fix; read -p "Press Enter to continue..." ;;
+            8) alerts; read -p "Press Enter to continue..." ;;
+            9) help; read -p "Press Enter to continue..." ;;
+            0) echo "Goodbye!"; exit 0 ;;
+            *) echo -e "${RED}Invalid option${NC}"; sleep 1 ;;
+        esac
+    done
+}
+
+# Create required directories
+mkdir -p ~/.config/security
+
+# Load any config
+[[ -f ~/.config/security/alerts.conf ]] && source ~/.config/security/alerts.conf
+
+# Run main
+main "$@"
