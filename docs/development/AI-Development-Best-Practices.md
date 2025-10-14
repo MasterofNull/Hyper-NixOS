@@ -1,6 +1,51 @@
 # AI Development Best Practices for Security Platform
 
+**IMPORTANT: This document contains proprietary information and is part of private intellectual property. Do not distribute or include in public releases.**
+
 This document outlines best practices for AI agents and developers working with the security platform.
+
+## 🔒 Critical: IP Protection Requirements
+
+### Content Classification
+
+AI agents MUST respect the following content classification:
+
+#### Private IP (Never Distribute):
+- All AI development documentation (AI-*.md files)
+- Audit and test scripts (audit-*.sh, test-*.sh)
+- Implementation details and reports
+- Lessons learned documents
+- Development methodologies
+- Internal architecture decisions
+
+#### Public Content (Safe to Share):
+- User guides (QUICKSTART.md)
+- Basic deployment documentation
+- Core platform scripts
+- General README files
+
+### Required Directory Structure
+
+```
+workspace/
+├── private-ip/                    # PROTECTED - Never share
+│   ├── ai-development/           # This document belongs here
+│   ├── audit-tools/              # Testing and audit scripts
+│   └── implementation-details/   # Detailed implementation docs
+│
+└── public/                       # OK to distribute
+    ├── README.md
+    ├── docs/guides/              # User guides only
+    └── scripts/                  # Core scripts only
+```
+
+### AI Agent Guidelines
+
+1. **Always Check Location**: Before suggesting file placement, verify if content is private IP
+2. **Respect Privacy**: Never include private-ip/ content in public distributions
+3. **Maintain Separation**: Keep clear boundaries between private and public content
+4. **Update .gitignore**: Ensure private-ip/ is excluded from version control
+5. **Document Status**: Mark private documents with IP notices
 
 ## 🤖 For AI Agents
 
@@ -267,34 +312,48 @@ main() {
 
 ### File Organization Standards
 
-1. **Directory Structure**
+1. **Directory Structure (WITH IP PROTECTION)**
    ```
    workspace/
-   ├── docs/                    # All documentation
-   │   ├── guides/             # User guides
-   │   ├── reports/            # Test/audit reports
-   │   ├── implementation/     # Technical details
-   │   ├── development/        # Developer docs
-   │   └── deployment/         # Deployment info
-   ├── scripts/                # Implementation scripts
-   │   ├── security/          # Security modules
-   │   └── monitoring/        # Monitoring tools
-   └── [root files]           # Only executables & configs
+   ├── private-ip/              # PROTECTED IP CONTENT
+   │   ├── ai-development/     # AI docs, lessons learned
+   │   ├── audit-tools/        # Test & audit scripts
+   │   └── implementation/     # Detailed implementation
+   │
+   ├── public/                  # PUBLIC DISTRIBUTION
+   │   ├── docs/               
+   │   │   ├── guides/         # User guides ONLY
+   │   │   └── deployment/     # Basic deployment ONLY
+   │   ├── scripts/            # Core platform scripts
+   │   └── README.md          # Public readme
+   │
+   └── [workspace files]        # Development files
    ```
 
-2. **Documentation Placement**
-   - User guides → `docs/guides/`
-   - Test reports → `docs/reports/`
-   - Technical docs → `docs/implementation/`
-   - Dev resources → `docs/development/`
-   - Deploy guides → `docs/deployment/`
+2. **Content Classification Rules**
+   
+   **Goes in private-ip/**:
+   - AI-Development-*.md
+   - AI-LESSONS-*.md
+   - AI-QUICK-*.md
+   - audit-platform.sh
+   - test-*.sh
+   - validate-*.sh
+   - *IMPLEMENTATION*.md
+   - *COMPLETE-*.md
+   
+   **Goes in public/**:
+   - README.md
+   - SECURITY-QUICKSTART.md
+   - deployment guides
+   - user guides
+   - core scripts
 
-3. **Root Directory Rules**
-   - Only executable scripts (.sh)
-   - Configuration files (.yaml, .json)
-   - Main README.md
-   - License files
-   - NO documentation dumps
+3. **Critical Rules**
+   - NEVER put private-ip/ content in public/
+   - ALWAYS use .gitignore for private-ip/
+   - MAINTAIN strict separation
+   - MARK private docs with IP notices
 
 ### Audit Compliance
 
@@ -452,14 +511,16 @@ main() {
 
 ## 🎯 Key Takeaways
 
-1. **Modularity First**: Always think in terms of independent modules
-2. **Resource Conscious**: Respect profile limits
-3. **Security by Design**: Build security in, don't bolt it on
-4. **Test Everything**: Automated tests prevent regressions
-5. **Document Always**: Code is read more than written
-6. **Organize Properly**: Clean structure = maintainable code
-7. **Audit Compliance**: 100% pass rate is the goal
+1. **IP Protection First**: Respect private-ip/ vs public/ separation
+2. **Modularity**: Always think in terms of independent modules
+3. **Resource Conscious**: Respect profile limits
+4. **Security by Design**: Build security in, don't bolt it on
+5. **Test Everything**: Automated tests prevent regressions
+6. **Document Always**: Code is read more than written
+7. **Organize Properly**: Clean structure = maintainable code
+8. **Audit Compliance**: 100% pass rate is the goal
+9. **Respect IP**: Never distribute private-ip/ content
 
 ---
 
-**Remember**: The best code is maintainable, secure, and scalable. This platform embodies these principles.
+**Remember**: This document is PRIVATE IP. The best code is maintainable, secure, and scalable - and respects intellectual property boundaries.

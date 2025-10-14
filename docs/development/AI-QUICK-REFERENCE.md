@@ -1,5 +1,7 @@
 # AI Agent Quick Reference Card
 
+**PROPRIETARY CONTENT - PRIVATE IP - DO NOT DISTRIBUTE**
+
 ## 🚀 Essential Commands
 
 ### Always Run After Implementation

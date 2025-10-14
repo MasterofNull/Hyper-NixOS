@@ -1,5 +1,7 @@
 # AI Development Lessons Learned
 
+**PRIVATE IP DOCUMENT - NOT FOR PUBLIC DISTRIBUTION**
+
 ## 📚 Key Lessons from Security Platform Implementation
 
 ### 1. **Audit Requirements Are Specific**
