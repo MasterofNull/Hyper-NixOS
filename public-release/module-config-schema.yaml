@@ -1,0 +1,273 @@
+# Security Module Configuration Schema
+# Allows fine-grained control over each module
+
+modules:
+  # Core module - always required
+  core:
+    enabled: true
+    version: "2.0"
+    features:
+      - framework
+      - logging
+      - events
+      - api
+    config:
+      log_level: "INFO"
+      event_retention_days: 30
+      api_port: 8443
+      
+  # CLI enhancements
+  cli:
+    enabled: true
+    features:
+      - enhanced_prompt
+      - auto_completion
+      - syntax_highlighting
+      - command_history
+      - fuzzy_search
+    themes:
+      - name: "security"
+        primary_color: "#00ff00"
+        alert_color: "#ff0000"
+        info_color: "#0080ff"
+    keybindings:
+      quick_scan: "ctrl+s"
+      check_all: "ctrl+c"
+      monitor_toggle: "ctrl+m"
+      
+  # Scanner module
+  scanner:
+    enabled: true
+    engines:
+      nmap:
+        enabled: true
+        max_rate: 1000
+        stealth_mode: true
+      masscan:
+        enabled: false
+        max_rate: 10000
+      custom:
+        enabled: true
+        scripts_dir: "/opt/scanner/scripts"
+    profiles:
+      quick:
+        timeout: 30
+        ports: "top-100"
+      standard:
+        timeout: 300
+        ports: "top-1000"
+      deep:
+        timeout: 3600
+        ports: "all"
+        
+  # Checker module  
+  checker:
+    enabled: true
+    checks:
+      system:
+        enabled: true
+        frequency: "hourly"
+      vulnerabilities:
+        enabled: true
+        scanners: ["trivy", "grype"]
+        severity_threshold: "MEDIUM"
+      compliance:
+        enabled: true
+        frameworks: ["CIS", "NIST"]
+        
+  # Monitor module
+  monitor:
+    enabled: true
+    backends:
+      prometheus:
+        enabled: true
+        retention: "15d"
+        scrape_interval: "15s"
+      elasticsearch:
+        enabled: false
+        retention: "30d"
+    alerts:
+      channels:
+        - type: "email"
+          enabled: true
+          smtp_server: "localhost"
+        - type: "slack"
+          enabled: false
+          webhook_url: ""
+        - type: "desktop"
+          enabled: true
+          
+  # Container security
+  containers:
+    enabled: true
+    runtime_protection:
+      enabled: true
+      block_privileged: true
+      enforce_user: "nonroot"
+      network_policies: true
+    scanning:
+      on_build: true
+      on_push: true
+      on_run: true
+      fail_on_critical: true
+      
+  # Compliance module
+  compliance:
+    enabled: true
+    frameworks:
+      CIS:
+        enabled: true
+        level: 2
+        auto_remediate: false
+      NIST:
+        enabled: true
+        controls: ["AC", "AU", "CM", "IA", "SC"]
+      PCI_DSS:
+        enabled: false
+        version: "4.0"
+      HIPAA:
+        enabled: false
+        
+  # AI detection
+  ai_detection:
+    enabled: false  # Enterprise only
+    models:
+      anomaly_detection:
+        enabled: true
+        sensitivity: 0.85
+        update_frequency: "daily"
+      behavior_analysis:
+        enabled: true
+        baseline_period: 7
+      threat_prediction:
+        enabled: false
+        confidence_threshold: 0.9
+        
+  # Forensics toolkit
+  forensics:
+    enabled: false  # Advanced only
+    tools:
+      memory_analysis:
+        enabled: true
+        volatility_version: "3"
+      disk_forensics:
+        enabled: true
+        autopsy_integration: true
+      network_forensics:
+        enabled: true
+        pcap_retention_days: 7
+        
+  # API security
+  api_security:
+    enabled: false  # Advanced only
+    gateway:
+      rate_limiting:
+        enabled: true
+        requests_per_minute: 100
+      authentication:
+        methods: ["api_key", "oauth2", "jwt"]
+        mfa_required: false
+      validation:
+        request_body: true
+        response_filtering: true
+        
+  # Multi-cloud
+  multi_cloud:
+    enabled: false  # Enterprise only
+    providers:
+      aws:
+        enabled: true
+        regions: ["us-east-1", "us-west-2"]
+        services: ["EC2", "S3", "Lambda", "RDS"]
+      azure:
+        enabled: false
+        subscriptions: []
+      gcp:
+        enabled: false
+        projects: []
+        
+  # Zero trust
+  zero_trust:
+    enabled: false  # Enterprise only
+    components:
+      identity_verification:
+        enabled: true
+        providers: ["okta", "auth0"]
+      micro_segmentation:
+        enabled: true
+        enforcement_mode: "monitor"
+      continuous_verification:
+        enabled: true
+        interval: 300
+        
+  # Orchestration
+  orchestration:
+    enabled: false  # Enterprise only
+    engines:
+      ansible:
+        enabled: true
+        vault_integration: true
+      terraform:
+        enabled: true
+        state_backend: "s3"
+      kubernetes:
+        enabled: true
+        admission_control: true
+
+# Global settings
+global:
+  performance:
+    max_cpu_percent: 80
+    max_memory_gb: 4
+    parallel_tasks: 4
+    cache_size_mb: 512
+    
+  security:
+    encryption:
+      at_rest: true
+      algorithm: "AES-256-GCM"
+    authentication:
+      require_mfa: false
+      session_timeout: 3600
+    audit:
+      enabled: true
+      log_all_actions: true
+      
+  integrations:
+    siem:
+      enabled: false
+      type: "splunk"
+      endpoint: ""
+    ticketing:
+      enabled: false
+      type: "jira"
+      project: ""
+    vault:
+      enabled: false
+      type: "hashicorp"
+      address: ""
+
+# Resource limits by profile
+profiles:
+  minimal:
+    max_memory_mb: 512
+    max_cpu_cores: 1
+    modules: ["core", "cli", "scanner", "checker", "monitor"]
+    
+  standard:
+    max_memory_mb: 2048
+    max_cpu_cores: 2
+    modules: ["core", "cli", "scanner", "checker", "monitor", 
+              "containers", "compliance"]
+              
+  advanced:
+    max_memory_mb: 4096
+    max_cpu_cores: 4
+    modules: ["core", "cli", "scanner", "checker", "monitor",
+              "containers", "compliance", "ai_detection", 
+              "forensics", "api_security"]
+              
+  enterprise:
+    max_memory_mb: 16384
+    max_cpu_cores: 8
+    modules: "all"

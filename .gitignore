@@ -1,20 +1,13 @@
-# Development and temporary files
-*.backup
-*.log
+# Private IP Content
+private-ip/
+**/private-ip/
+
+# Temporary files
+*.tmp
+*.bak
 *.swp
-*~
+*.log
+
+# OS files
 .DS_Store
-
-# Build artifacts
-result
-result-*
-
-# Development reference (internal development notes and reports)
-# Excluded from git to keep repository clean and focused
-dev-reference/
-
-# Local configuration overrides
-/var/lib/hypervisor/
-
-# Nix build outputs
-.direnv/
+Thumbs.db
