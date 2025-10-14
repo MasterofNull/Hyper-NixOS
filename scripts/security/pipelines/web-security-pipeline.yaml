@@ -1,0 +1,37 @@
+name: web_security_scan
+description: Comprehensive web application security testing pipeline
+
+targets:
+  - https://example.com
+  - https://api.example.com
+
+tests:
+  - name: port_scan
+    type: nmap
+    enabled: true
+    ports: "80,443,8080,8443"
+    scripts: "http-enum,http-headers,ssl-cert"
+    
+  - name: web_vulnerabilities
+    type: nuclei
+    enabled: true
+    templates: "cves,vulnerabilities,exposures,misconfiguration"
+    severity: "critical,high,medium"
+    
+  - name: container_scan
+    type: trivy
+    enabled: true
+    scan_type: image
+    severity: "CRITICAL,HIGH"
+
+thresholds:
+  critical: 0  # Fail if any critical findings
+  high: 5      # Fail if more than 5 high severity findings
+
+notifications:
+  always_notify: false
+  webhook_url: "${WEBHOOK_URL}"
+  email: "security@example.com"
+
+parallel: true
+stop_on_failure: false
