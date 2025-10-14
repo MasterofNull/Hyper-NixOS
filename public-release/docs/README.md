@@ -8,6 +8,7 @@ Welcome to the comprehensive documentation for the Security Platform v2.0.
 User-facing guides and tutorials
 - [Security Quick Start](guides/SECURITY-QUICKSTART.md) - Get started in 5 minutes
 - [Enterprise Quick Start](guides/ENTERPRISE_QUICK_START.md) - Enterprise deployment guide
+- [AI Features Guide](guides/AI_FEATURES_GUIDE.md) - Using AI/ML security features
 - [Security Tips & Tricks](guides/Security-Tips-Tricks-Documentation.md) - Advanced tips
 - [Defensive Validation Checklist](guides/defensive-validation-checklist.md) - Security validation
 

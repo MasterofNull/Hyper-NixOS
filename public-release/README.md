@@ -117,6 +117,7 @@ sec supply sbom .
 - [Scalable Security Framework Guide](SCALABLE-SECURITY-FRAMEWORK.md)
 - [Security Quick Start](SECURITY-QUICKSTART.md)
 - [Enterprise Deployment](ENTERPRISE_QUICK_START.md)
+- [AI Features Guide](docs/guides/AI_FEATURES_GUIDE.md) - Complete guide to AI/ML security features
 
 ## 🏗️ Architecture
 

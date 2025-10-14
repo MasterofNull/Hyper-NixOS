@@ -10,7 +10,7 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
-#### 2025-10-14: IP Protection Compliance
+#### 2025-10-14: IP Protection Compliance & AI Documentation Organization
 **Agent**: Claude
 **Actions Taken**:
 1. **Moved IP-Protected Content** from public-release to docs/dev:
@@ -28,9 +28,16 @@
 - From `public-release/docs/implementation/*.md` → `docs/dev/implementation/`
 - From `public-release/*-platform-*.sh` → `scripts/audit/`
 
+3. **Created User-Facing AI Documentation**:
+   - Added `public-release/docs/guides/AI_FEATURES_GUIDE.md` for AI/ML features in the system
+   - Updated public documentation to reference AI features guide
+
 **Key Learning**:
-- Always follow IP protection rules - AI docs, implementation details, and audit tools are private
-- Public release should only contain user-facing documentation and deployment scripts
+- Distinguish between AI docs for system development (private) vs AI features documentation (public)
+- AI development docs for Hyper-NixOS development go in docs/dev (IP-protected)
+- AI features documentation for users goes in public-release
+- Always follow IP protection rules - implementation details and audit tools are private
+- Public release should contain user-facing documentation including AI feature guides
 
 ---
 
