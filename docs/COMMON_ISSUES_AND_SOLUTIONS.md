@@ -107,6 +107,58 @@ modules/web/dashboard.nix:
 - **(2025-10-13)**: Comprehensive fix applied to `configuration.nix`, `modules/core/directories.nix`, and `modules/security/profiles.nix`. See `docs/dev/INFINITE_RECURSION_FIX_2025-10-13.md` for details.
 - **(2025-10-13 Update)**: Additional fix for `modules/core/keymap-sanitizer.nix` which had the same pattern. See `docs/dev/INFINITE_RECURSION_FIX_KEYMAP_2025-10-13.md` for details.
 
+### Issue: Undefined Variable 'elem' (or other lib functions)
+**Symptoms**:
+```
+error: undefined variable 'elem'
+       at /path/to/configuration.nix:XXX:XX:
+```
+
+**Root Cause**: Using library functions without the `lib.` prefix in files that don't have `with lib;` at the top.
+
+**Solutions**:
+
+#### ✅ **Fix #1: Add lib. prefix**
+```nix
+# ❌ WRONG (without `with lib;`)
+prometheus = lib.mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+
+# ✅ CORRECT
+prometheus = lib.mkIf (lib.elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+```
+
+#### ✅ **Fix #2: Use `with lib;` at the top**
+```nix
+{ config, lib, pkgs, ... }:
+
+with lib;  # Add this line
+
+{
+  # Now you can use elem without lib. prefix
+  prometheus = mkIf (elem "monitoring" config.hypervisor.featureManager.enabledFeatures) {
+```
+
+**Common lib functions that need prefix**:
+- `elem` - check if element is in list
+- `mkIf` - conditional configuration
+- `mkDefault` - set default value
+- `mkForce` - force override value
+- `mkOption` - define option
+- `mkEnableOption` - define boolean enable option
+- `optional` - return list with element if condition is true
+- `optionals` - return list if condition is true
+- `flatten` - flatten nested lists
+- `mapAttrsToList` - map over attribute set
+
+**Prevention**:
+1. Always use `lib.` prefix for safety
+2. If using `with lib;`, place it right after the function arguments
+3. Be consistent within a file - either use `with lib;` or always prefix
+4. When copying code between files, check if source has `with lib;`
+
+**Recent Fix**:
+- **(2025-10-14)**: Fixed undefined `elem` in `configuration-complete.nix` lines 168, 184, and 209 by adding `lib.` prefix.
+
 ### Issue: Module Not Loading/Working
 **Symptoms**:
 - Module configuration not applied

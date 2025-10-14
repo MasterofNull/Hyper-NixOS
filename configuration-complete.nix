@@ -165,7 +165,7 @@
     };
     
     # Monitoring (if enabled via features)
-    prometheus = lib.mkIf (elem "prometheus" config.hypervisor.featureManager.enabledFeatures) {
+    prometheus = lib.mkIf (lib.elem "prometheus" config.hypervisor.featureManager.enabledFeatures) {
       enable = true;
       port = 9090;
       exporters = {
@@ -181,7 +181,7 @@
     };
     
     # Web dashboard (if enabled)
-    nginx = lib.mkIf (elem "webDashboard" config.hypervisor.featureManager.enabledFeatures) {
+    nginx = lib.mkIf (lib.elem "webDashboard" config.hypervisor.featureManager.enabledFeatures) {
       enable = true;
       virtualHosts."dashboard.local" = {
         forceSSL = true;
@@ -206,7 +206,7 @@
       
       # Dashboard (if enabled)
       allowedTCPPorts = lib.optionals 
-        (elem "webDashboard" config.hypervisor.featureManager.enabledFeatures)
+        (lib.elem "webDashboard" config.hypervisor.featureManager.enabledFeatures)
         [ 8443 ];
     };
     

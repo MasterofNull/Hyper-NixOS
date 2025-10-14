@@ -244,6 +244,8 @@ mkIf (elem "feature" list)
 
 **Recent Fix (2025-10-13)**: Fixed undefined variable 'elem' errors in configuration.nix lines 323 and 345 by adding `lib.` prefix.
 
+**Recent Fix (2025-10-14)**: Fixed additional undefined 'elem' errors in configuration-complete.nix lines 168, 184, and 209 by adding `lib.` prefix. This is a common issue when copying code between files where one has `with lib;` and the other doesn't.
+
 ### Module Import Errors (Fixed 2025-10-13)
 **Problem**: Build error "getting status of '/nix/store/.../modules/core/base.nix': No such file or directory"
 
