@@ -24,6 +24,7 @@
     ./modules/core/optimized-system.nix
     
     # Feature management system
+    ./modules/system-tiers.nix  # System tier definitions (required by feature-manager)
     ./modules/features/feature-categories.nix
     ./modules/features/feature-manager.nix
     ./modules/features/adaptive-docs.nix

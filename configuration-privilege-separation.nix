@@ -16,6 +16,7 @@
     ./modules/core/directories.nix
     ./modules/core/portable-base.nix
     ./modules/core/optimized-system.nix
+    ./modules/system-tiers.nix  # System tier definitions
     
     # Security modules
     ./modules/security/base.nix

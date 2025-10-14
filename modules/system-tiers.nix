@@ -23,6 +23,79 @@ in
     '';
   };
 
+  options.hypervisor.tiers = mkOption {
+    type = types.attrsOf (types.submodule {
+      options = {
+        description = mkOption {
+          type = types.str;
+          description = "Description of this tier";
+        };
+        inherits = mkOption {
+          type = types.listOf types.str;
+          default = [];
+          description = "List of tiers this tier inherits from";
+        };
+        features = mkOption {
+          type = types.listOf types.str;
+          default = [];
+          description = "Features enabled in this tier";
+        };
+        services = mkOption {
+          type = types.listOf types.str;
+          default = [];
+          description = "Services enabled in this tier";
+        };
+        packages = mkOption {
+          type = types.listOf types.str;
+          default = [];
+          description = "Packages included in this tier";
+        };
+        requirements = mkOption {
+          type = types.submodule {
+            options = {
+              minRAM = mkOption {
+                type = types.int;
+                description = "Minimum RAM in MB";
+              };
+              recRAM = mkOption {
+                type = types.int;
+                description = "Recommended RAM in MB";
+              };
+              minCPUs = mkOption {
+                type = types.int;
+                description = "Minimum number of CPUs";
+              };
+              recCPUs = mkOption {
+                type = types.int;
+                description = "Recommended number of CPUs";
+              };
+              minDisk = mkOption {
+                type = types.int;
+                description = "Minimum disk space in GB";
+              };
+              recDisk = mkOption {
+                type = types.int;
+                description = "Recommended disk space in GB";
+              };
+              gpu = mkOption {
+                type = types.str;
+                default = "optional";
+                description = "GPU requirement: optional, recommended, or required";
+              };
+              nodes = mkOption {
+                type = types.str;
+                default = "1";
+                description = "Number of nodes required";
+              };
+            };
+          };
+          description = "Hardware requirements for this tier";
+        };
+      };
+    });
+    description = "Definition of system configuration tiers";
+  };
+
   config = {
     # Define feature sets for each tier
     hypervisor.tiers = {
