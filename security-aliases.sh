@@ -277,7 +277,13 @@ EOF
     echo -e "${YELLOW}Deploy with: docker-compose -f /tmp/monitoring-compose.yml up -d${NC}"
 }
 
+# Load advanced security functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[[ -f "$SCRIPT_DIR/advanced-security-functions.sh" ]] && source "$SCRIPT_DIR/advanced-security-functions.sh"
+[[ -f "$SCRIPT_DIR/scripts/automation/parallel-framework.sh" ]] && source "$SCRIPT_DIR/scripts/automation/parallel-framework.sh"
+
 echo -e "${GREEN}Security aliases loaded successfully!${NC}"
 echo -e "${BLUE}Type 'alias | grep -E \"sec-|net-|ir-|docker-\"' to see all security aliases${NC}"
 echo -e "${BLUE}Type 'harden-check' to run security hardening checklist${NC}"
 echo -e "${BLUE}Type 'security-report' to generate a security report${NC}"
+echo -e "${BLUE}Type 'help-security' to see advanced security functions${NC}"

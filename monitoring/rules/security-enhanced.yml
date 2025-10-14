@@ -1,0 +1,68 @@
+groups:
+  - name: security_enhanced
+    interval: 30s
+    rules:
+      # SSH Monitoring
+      - alert: SSHLoginFromUnknownIP
+        expr: ssh_login_unknown_ip > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "SSH login from unknown IP detected"
+          description: "SSH login from {{ $labels.source_ip }} to {{ $labels.instance }}"
+      
+      # Docker Security
+      - alert: DockerPrivilegedContainer
+        expr: docker_container_privileged == 1
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Privileged Docker container detected"
+          description: "Container {{ $labels.container_name }} is running with privileged mode"
+      
+      - alert: DockerSuspiciousVolumeMount
+        expr: docker_volume_mount_suspicious == 1
+        for: 1m
+        labels:
+          severity: high
+          category: security
+        annotations:
+          summary: "Suspicious Docker volume mount detected"
+          description: "Container {{ $labels.container_name }} mounted {{ $labels.mount_path }}"
+      
+      # Parallel Execution Monitoring
+      - alert: HighParallelJobFailureRate
+        expr: rate(parallel_job_failures_total[5m]) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High parallel job failure rate"
+          description: "{{ $value }}% of parallel jobs failing"
+      
+      # File Integrity
+      - alert: CriticalFileModified
+        expr: file_integrity_violation{path=~"/etc/passwd|/etc/shadow|/etc/ssh/.*"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Critical system file modified"
+          description: "File {{ $labels.path }} was modified"
+      
+      # Network Anomalies
+      - alert: UnusualOutboundTraffic
+        expr: rate(node_network_transmit_bytes_total[5m]) > 100000000
+        for: 10m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "Unusual outbound network traffic"
+          description: "High outbound traffic detected: {{ $value | humanize }}B/s"
