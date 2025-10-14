@@ -1,6 +1,6 @@
 # Hyper-NixOS
 
-A comprehensive, security-focused virtualization platform built on NixOS that provides advanced VM management with enterprise-grade features while maintaining ease of use.
+A comprehensive, security-focused virtualization platform built on NixOS that provides advanced VM management with enterprise-grade features while maintaining ease of use. Get started in minutes with our quick install one-liner, or choose from multiple installation methods to suit your needs.
 
 ## 🚀 Quick Install (Recommended)
 

@@ -10,23 +10,28 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
-#### 2025-10-14: Verified Quick Install One-Liner in README
+#### 2025-10-14: Updated Documentation with Quick Install One-Liner
 **Agent**: Claude
-**Task**: Ensure quick install one-liner is the primary installation method
+**Task**: Ensure quick install one-liner is prominently featured in all installation documentation
 
-**Verification Results**:
-1. **README.md already contains the correct quick install one-liner**
-   - Located at the top as "Quick Install (Recommended)"
-   - Uses correct script path: `./scripts/system_installer.sh`
-   - All parameters verified: `--fast`, `--hostname`, `--action`, `--source`, `--reboot`
-   - Alternative installation methods preserved below
+**Changes Made**:
+1. **Updated docs/INSTALLATION_GUIDE.md**
+   - Moved quick install one-liner to the very top of the guide
+   - Replaced outdated curl command with correct one-liner
+   - Prerequisites moved below quick install section
 
-2. **Installation Script Verified**:
-   - `scripts/system_installer.sh` exists and is executable
-   - All parameters in one-liner are valid and documented
-   - Script supports the exact usage shown in README
+2. **Updated docs/QUICK_START.md**
+   - Replaced outdated curl command with correct one-liner
+   - Positioned as primary installation method
 
-**Status**: No changes needed - README already has the correct content
+3. **Enhanced README.md**
+   - Added mention of one-liner in main description text
+   - Makes it easier to find when scanning the document
+
+**Key Improvements**:
+- Quick install is now consistently the first option users see
+- All documentation uses the same correct one-liner command
+- Installation path is clear and prominent across all guides
 
 ---
 
