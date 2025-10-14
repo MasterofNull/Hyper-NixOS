@@ -10,6 +10,43 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Fixed mkOption 'check' Argument Error
+**Agent**: Claude
+**Task**: Fix "function 'mkOption' called with unexpected argument 'check'" error
+
+**Error**:
+```
+error: function 'mkOption' called with unexpected argument 'check'
+       at /nix/store/.../lib/options.nix:67:5
+```
+
+**Root Cause**: The `check` argument was being used directly in `mkOption`, but NixOS doesn't support this. Validation should be done through type definitions.
+
+**Fix Applied**:
+```nix
+# Before (incorrect):
+userName = lib.mkOption {
+  type = lib.types.str;
+  default = "hypervisor";
+  description = "Username for the management user account";
+  check = name: builtins.match "^[a-z_][a-z0-9_-]*$" name != null;
+};
+
+# After (correct):
+userName = lib.mkOption {
+  type = lib.types.strMatching "^[a-z_][a-z0-9_-]*$";
+  default = "hypervisor";
+  description = "Username for the management user account (must follow Unix naming conventions)";
+};
+```
+
+**Files Modified**:
+- `modules/core/options.nix` - Changed validation approach from `check` to `strMatching`
+
+**Key Learning**: Always use type constructors like `strMatching`, `ints.between`, etc. for validation in NixOS options, never a separate `check` argument.
+
+---
+
 #### 2025-10-14: Fixed Missing hypervisor.enable Option
 **Agent**: Claude
 **Task**: Fix "The option `hypervisor.enable' does not exist" error

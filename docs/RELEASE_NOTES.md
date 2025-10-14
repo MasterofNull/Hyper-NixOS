@@ -1,5 +1,20 @@
 # Hyper-NixOS Release Notes
 
+## Version 2.0.1 - NixOS Option Validation Fix
+*Release Date: October 14, 2025*
+
+### 🐛 Bug Fixes
+
+#### Configuration System
+- **Fixed**: `mkOption` error when using invalid 'check' argument
+- **Improvement**: Migrated to proper type-based validation using `strMatching`
+
+### 📝 Documentation Updates
+- Added comprehensive guide for NixOS option validation patterns
+- Updated common issues documentation with validation examples
+
+---
+
 ## Version 2.0.0 - Production Ready with Best Practices
 *Release Date: October 14, 2025*
 
