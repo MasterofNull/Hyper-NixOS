@@ -237,11 +237,13 @@ in {
     };
     
     # Create a dedicated user for VM services
-    users.users.hypervisor-vm = {
+    # This is defined separately to ensure it's not confused with regular users
+    users.users.hypervisor-vm = mkIf (!(elem "hypervisor-vm" (cfg.vmUsers ++ cfg.vmOperators ++ cfg.systemAdmins))) {
       isSystemUser = true;
       group = "hypervisor-users";
       description = "Hypervisor VM management service user";
       extraGroups = [ "libvirtd" "kvm" ];
+      uid = 2999; # Fixed UID to ensure consistency
     };
   };
 }
