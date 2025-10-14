@@ -104,7 +104,7 @@ in {
     enabledFeatures = mkOption {
       type = types.listOf types.str;
       default = [];
-      description = "List of enabled features (for custom profile)";
+      description = "List of enabled features (automatically set based on profile, or manually for custom profile)";
     };
     
     riskTolerance = mkOption {
@@ -129,12 +129,6 @@ in {
       type = types.bool;
       default = true;
       description = "Generate security impact report on build";
-    };
-    
-    enabledFeatures = mkOption {
-      type = types.listOf types.str;
-      default = [];
-      description = "List of enabled features";
     };
   };
   
