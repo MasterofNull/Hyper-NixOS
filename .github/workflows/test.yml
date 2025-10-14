@@ -254,6 +254,7 @@ jobs:
           
           tar --exclude='.git' \
               --exclude='dev-reference' \
+              --exclude='docs/dev' \
               --exclude='*.backup' \
               --exclude='*.log' \
               -czf hyper-nixos-${{ github.ref_name }}.tar.gz .
