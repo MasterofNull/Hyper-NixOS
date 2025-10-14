@@ -14,6 +14,7 @@
     ./modules/core/hypervisor-base.nix  # Base hypervisor setup when enabled
     
     # Only import modules whose options we're actually setting below
+    ./modules/features/feature-categories.nix  # Defines hypervisor.features
     ./modules/features/feature-manager.nix  # We use hypervisor.featureManager
     ./modules/core/first-boot.nix  # First boot configuration wizard
     ./modules/system-tiers.nix  # System tier definitions

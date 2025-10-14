@@ -10,6 +10,37 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Fixed Missing 'hypervisor.features' Attribute Error
+**Agent**: Claude
+**Task**: Fix "attribute 'features' missing" error in feature-manager.nix
+
+**Error**:
+```
+error: attribute 'features' missing
+       at /nix/store/.../modules/features/feature-manager.nix:9:14:
+            8|   cfg = config.hypervisor.featureManager;
+            9|   features = config.hypervisor.features;
+```
+
+**Root Cause**: The `feature-manager.nix` module was trying to access `config.hypervisor.features`, but `feature-categories.nix` (which defines this option) wasn't imported in `configuration-minimal.nix`.
+
+**Fix Applied**: Added the missing import to `configuration-minimal.nix`:
+```nix
+imports = [
+    # ...
+    ./modules/features/feature-categories.nix  # Defines hypervisor.features
+    ./modules/features/feature-manager.nix  # We use hypervisor.featureManager
+    # ...
+];
+```
+
+**Files Modified**:
+- `configuration-minimal.nix` - Added import for feature-categories.nix
+
+**Key Learning**: When a module depends on options defined in another module, both modules must be imported. The `feature-manager.nix` module depends on `hypervisor.features` which is defined in `feature-categories.nix`.
+
+---
+
 #### 2025-10-14: Fixed mkOption 'check' Argument Error
 **Agent**: Claude
 **Task**: Fix "function 'mkOption' called with unexpected argument 'check'" error
