@@ -10,6 +10,45 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Fixed Missing hypervisor.enable Option
+**Agent**: Claude
+**Task**: Fix "The option `hypervisor.enable' does not exist" error
+
+**Error**: 
+```
+error: The option `hypervisor.enable' does not exist. Definition values:
+       - In `/nix/store/.../configuration-minimal.nix': true
+```
+
+**Changes Made**:
+1. **Added missing option definition** in `modules/core/options.nix`:
+   - Added `hypervisor.enable` as top-level boolean option
+   - Default: false, Description: "Enable the Hyper-NixOS virtualization platform"
+
+2. **Created base hypervisor module** `modules/core/hypervisor-base.nix`:
+   - Sets up core virtualization services when `hypervisor.enable = true`
+   - Configures libvirtd, QEMU/KVM, required packages
+   - Creates hypervisor directories and user/group settings
+   - Enables kernel modules and IOMMU support
+
+3. **Updated all configuration files** to import core modules:
+   - Added `./modules/core/options.nix` import to all config files
+   - Added `./modules/core/hypervisor-base.nix` import
+   - Added `hypervisor.enable = true;` where missing
+
+**Files Modified**:
+- `modules/core/options.nix` - Added hypervisor.enable option
+- `modules/core/hypervisor-base.nix` - Created new base module
+- `configuration.nix` - Added core module imports
+- `configuration-minimal.nix` - Added core module imports
+- `configuration-enhanced.nix` - Added imports and hypervisor.enable
+- `configuration-complete.nix` - Added imports and hypervisor.enable
+- `configuration-privilege-separation.nix` - Added imports and hypervisor.enable
+
+**Key Learning**: Always ensure core options are defined before use. The modular architecture requires explicit imports of option definition modules.
+
+---
+
 #### 2025-10-14: Comprehensive Installation Scripts and Methods Update
 **Agent**: Claude
 **Task**: Update all quick start scripts and install methods to ensure correct functionality

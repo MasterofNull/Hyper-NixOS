@@ -3,11 +3,16 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./modules/core/options.nix
+    ./modules/core/hypervisor-base.nix
     ./modules/core/base-system.nix
     ./modules/security/ssh-enhanced.nix
     ./modules/security/docker-enhanced.nix
     ./modules/monitoring/enhanced-monitoring.nix
   ];
+
+  # Enable hypervisor
+  hypervisor.enable = true;
 
   # Enhanced SSH Security
   security.ssh.enhanced = {

@@ -9,6 +9,8 @@
     ./hardware-configuration.nix
     
     # Core modules
+    ./modules/core/options.nix
+    ./modules/core/hypervisor-base.nix
     ./modules/core/system.nix
     ./modules/core/packages.nix
     ./modules/core/directories.nix
@@ -30,6 +32,9 @@
 
   # System identification
   networking.hostName = "hyper-nixos";
+  
+  # Enable hypervisor
+  hypervisor.enable = true;
   
   # Enable privilege separation
   hypervisor.security.privileges = {
