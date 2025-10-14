@@ -101,9 +101,9 @@ echo
 
 # 5. Check documentation
 echo -e "${PURPLE}Checking Documentation...${NC}"
-test_check "Main framework docs" "[[ -f SCALABLE-SECURITY-FRAMEWORK.md ]]"
-test_check "Implementation status" "[[ -f IMPLEMENTATION-STATUS.md ]]"
-test_check "Verification docs" "[[ -f COMPLETE-IMPLEMENTATION-VERIFICATION.md ]]"
+test_check "Main framework docs" "[[ -f docs/SCALABLE-SECURITY-FRAMEWORK.md ]]"
+test_check "Implementation status" "[[ -f docs/implementation/IMPLEMENTATION-STATUS.md ]]"
+test_check "Verification docs" "[[ -f docs/implementation/COMPLETE-IMPLEMENTATION-VERIFICATION.md ]]"
 echo
 
 # 6. Check Python syntax (simple)

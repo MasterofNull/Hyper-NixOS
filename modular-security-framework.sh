@@ -20,6 +20,17 @@ readonly PROFILE_STANDARD="standard"
 readonly PROFILE_ADVANCED="advanced"
 readonly PROFILE_ENTERPRISE="enterprise"
 
+# Resource limits by profile
+readonly MAX_MEMORY_MINIMAL="512M"
+readonly MAX_MEMORY_STANDARD="2048M"
+readonly MAX_MEMORY_ADVANCED="4096M"
+readonly MAX_MEMORY_ENTERPRISE="16384M"
+
+readonly MAX_CPU_MINIMAL="25"
+readonly MAX_CPU_STANDARD="50"
+readonly MAX_CPU_ADVANCED="75"
+readonly MAX_CPU_ENTERPRISE="90"
+
 # Installation directory
 INSTALL_DIR="${SECURITY_HOME:-$HOME/.security}"
 CONFIG_DIR="$INSTALL_DIR/config"
