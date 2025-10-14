@@ -1,5 +1,7 @@
 # User Setup Guide for Hyper-NixOS
 
+> **📢 New!** Enhanced security features are now available! See the [Security Features User Guide](user-guides/SECURITY-FEATURES-USER-GUIDE.md) and try the [Hands-On Security Tutorial](user-guides/HANDS-ON-SECURITY-TUTORIAL.md) to learn about SSH monitoring, Docker security, parallel processing, and automated workflows.
+
 This guide explains how to set up users with the appropriate privileges for Hyper-NixOS.
 
 ## Overview
