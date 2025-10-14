@@ -8,35 +8,35 @@
   hypervisor.gui.enableAtBoot = true;
   
   # Additional Wayland-native GUI tools
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages =  [
     # VM management
-    virt-manager  # Uses GTK, works natively on Wayland
+    pkgs.virt-manager  # Uses GTK, works natively on Wayland
     
     # System monitoring
-    btop          # Modern system monitor (TUI)
+    pkgs.btop          # Modern system monitor (TUI)
     
     # File manager
-    nnn           # Terminal file manager
-    thunar        # GUI file manager (GTK, Wayland-native)
+    pkgs.nnn           # Terminal file manager
+    pkgs.thunar        # GUI file manager (GTK, Wayland-native)
     
     # Terminal emulator (already included in Sway, but can add more)
-    foot          # Lightweight Wayland terminal
-    kitty         # GPU-accelerated terminal
+    pkgs.foot          # Lightweight Wayland terminal
+    pkgs.kitty         # GPU-accelerated terminal
     
     # Text editor
-    neovim        # Terminal editor
-    helix         # Modern terminal editor
+    pkgs.neovim        # Terminal editor
+    pkgs.helix         # Modern terminal editor
     
     # Browser (Wayland-native)
-    firefox-wayland
+    pkgs.firefox-wayland
     
     # Productivity
-    wdisplays     # Display configuration for Wayland
-    grim          # Screenshot tool for Wayland
-    slurp         # Region selector for screenshots
+    pkgs.wdisplays     # Display configuration for Wayland
+    pkgs.grim          # Screenshot tool for Wayland
+    pkgs.slurp         # Region selector for screenshots
     
     # System utilities
-    pavucontrol   # Audio control (works on Wayland)
+    pkgs.pavucontrol   # Audio control (works on Wayland)
   ];
   
   # Sway configuration file

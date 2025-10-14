@@ -25,14 +25,14 @@
   };
   
   # Bridge utilities for network management
-  environment.systemPackages = with pkgs; [
-    bridge-utils
-    vlan
-    iproute2
-    iptables
-    ebtables
-    tcpdump
-    wireshark-cli  # tshark for traffic analysis
+  environment.systemPackages =  [
+    pkgs.bridge-utils
+    pkgs.vlan
+    pkgs.iproute2
+    pkgs.iptables
+    pkgs.ebtables
+    pkgs.tcpdump
+    pkgs.wireshark-cli  # tshark for traffic analysis
   ];
   
   # Network isolation management script

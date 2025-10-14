@@ -400,7 +400,7 @@ in {
     };
     
     # Add template management script
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages =  [
       (writeScriptBin "hv-template" ''
         #!${bash}/bin/bash
         case "$1" in

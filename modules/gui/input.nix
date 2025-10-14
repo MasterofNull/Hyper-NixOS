@@ -122,25 +122,25 @@
   };
 
   # Install essential input device tools
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages = [
     # Brightness control utility (works with screen and keyboard backlight)
-    brightnessctl
+    pkgs.brightnessctl
     
     # Input device configuration and debugging tools
-    libinput
-    evtest            # Event device testing
+    pkgs.libinput
+    pkgs.evtest            # Event device testing
     
     # ACPI event monitoring and debugging
-    acpi
-    acpid
+    pkgs.acpi
+    pkgs.acpid
     
     # Wayland-specific tools
-    wl-clipboard      # Wayland clipboard utilities
-    wtype             # Simulate keyboard/mouse events (Wayland equivalent of xdotool)
-    ydotool           # Universal input automation (works with Wayland)
+    pkgs.wl-clipboard      # Wayland clipboard utilities
+    pkgs.wtype             # Simulate keyboard/mouse events (Wayland equivalent of xdotool)
+    pkgs.ydotool           # Universal input automation (works with Wayland)
     
     # Multitouch gesture support for Wayland
-    libinput-gestures
+    pkgs.libinput-gestures
   ];
 
   # Udev rules for input devices (ensure proper permissions)

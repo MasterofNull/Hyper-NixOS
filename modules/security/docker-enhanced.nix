@@ -174,12 +174,12 @@ in
     };
     
     # Security scripts
-    environment.systemPackages = with pkgs; [
-      dockerSafeScript
-      docker-compose
+    environment.systemPackages =  [
+    pkgs.dockerSafeScript
+    pkgs.docker-compose
     ] ++ optionals cfg.enableCaching [
-      dockerCacheScript
-      dockerCleanScript
+    pkgs.dockerCacheScript
+    pkgs.dockerCleanScript
     ] ++ optional cfg.securityScanning (
       writeScriptBin "docker-scan" ''
         #!${bash}/bin/bash

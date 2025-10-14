@@ -5,6 +5,14 @@
 # Allows users to customize system features at any time
 #
 
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/common.sh"
+source "${SCRIPT_DIR}/lib/ui.sh"
+
+# Initialize script
+init_script "$(basename "$0")"
+
 set -euo pipefail
 
 # Colors for UI

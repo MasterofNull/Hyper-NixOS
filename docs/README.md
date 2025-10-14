@@ -32,6 +32,9 @@ Welcome to the Hyper-NixOS documentation. This guide will help you find the info
 ### Development Documentation
 - **[Developer Resources](dev/)** - For contributors (not included in public releases)
 
+### Community & Support
+- **[Community and Support](COMMUNITY_AND_SUPPORT.md)** - Getting help, contributing, and staying connected
+
 ## 🔍 Quick Links
 
 ### By Task

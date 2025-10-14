@@ -5,9 +5,9 @@
 
 {
   # Install alert dependencies
-  environment.systemPackages = with pkgs; [
-    mailutils  # For email alerts
-    curl       # For webhooks
+  environment.systemPackages = [
+    pkgs.mailutils  # For email alerts
+    pkgs.curl       # For webhooks
   ];
   
   # Systemd service for alert manager

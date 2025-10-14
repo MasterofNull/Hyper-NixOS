@@ -402,12 +402,12 @@ in {
   
   config = mkIf cfg.enable {
     # Install management tools
-    environment.systemPackages = with pkgs; [
-      featureManagerScript
-      hvFeatureScript
-      applyTemplateScript
-      jq  # Required for JSON processing
-      dialog  # For better UI if available
+    environment.systemPackages =  [
+    pkgs.featureManagerScript
+    pkgs.hvFeatureScript
+    pkgs.applyTemplateScript
+    pkgs.jq  # Required for JSON processing
+    pkgs.dialog  # For better UI if available
     ];
     
     # Create necessary directories

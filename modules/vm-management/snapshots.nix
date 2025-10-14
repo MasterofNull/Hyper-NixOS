@@ -4,9 +4,9 @@
 # Automates snapshot creation, retention, and cleanup
 
 {
-  environment.systemPackages = with pkgs; [
-    libvirt
-    qemu_kvm
+  environment.systemPackages =  [
+    pkgs.libvirt
+    pkgs.qemu_kvm
   ];
   
   # Snapshot management script

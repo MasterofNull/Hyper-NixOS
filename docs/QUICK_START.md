@@ -1,6 +1,11 @@
 # Hyper-NixOS Quick Start Guide
 
+<!-- Language: en -->
+<!-- Auto-translate: https://translate.google.com/translate?sl=en&tl=auto&u=https://github.com/hyper-nixos/docs/QUICK_START.md -->
+
 Get up and running with Hyper-NixOS in minutes!
+
+> 🌐 **Need this in another language?** Right-click and select "Translate" in your browser, or see our [Translation Guide](TRANSLATION_GUIDE.md).
 
 ## 🚀 New Installation Workflow
 
@@ -327,8 +332,13 @@ Now that you're up and running:
 
 - **Built-in Help**: `hv help <topic>`
 - **Documentation**: `/etc/hypervisor/docs/`
-- **Community**: Visit our forums and chat
-- **Issues**: Report bugs on GitHub
+- **Community Guide**: [Community and Support](COMMUNITY_AND_SUPPORT.md)
+
+### Quick Support Links
+- **GitHub**: https://github.com/Hyper-NixOS/Hyper-NixOS
+- **Issues**: https://github.com/Hyper-NixOS/Hyper-NixOS/issues
+- **Contact**: Discord - [@quin-tessential](https://discord.com/users/quin-tessential)
+- **Security**: Contact via Discord or GitHub Security Advisory
 
 ---
 

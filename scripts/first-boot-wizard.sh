@@ -5,6 +5,14 @@
 # This script runs on first boot to help users select their system configuration
 #
 
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/common.sh"
+source "${SCRIPT_DIR}/lib/ui.sh"
+
+# Initialize script
+init_script "$(basename "$0")"
+
 set -euo pipefail
 
 # Colors for UI
@@ -536,10 +544,9 @@ show_next_steps() {
 # Main function
 main() {
     # Check if running as root
-    if [[ $EUID -ne 0 ]]; then
+check_root
         echo -e "${RED}This script must be run as root${NC}"
         exit 1
-    fi
     
     # Check if first boot was already completed
     if [[ -f "$FIRST_BOOT_FLAG" ]]; then

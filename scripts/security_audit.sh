@@ -9,6 +9,14 @@
 # Checks for common vulnerabilities and misconfigurations
 #
 
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/common.sh"
+source "${SCRIPT_DIR}/lib/ui.sh"
+
+# Initialize script
+init_script "$(basename "$0")"
+
 set -euo pipefail
 PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
@@ -16,12 +24,6 @@ AUDIT_LOG="/var/lib/hypervisor/logs/security-audit-$(date +%Y%m%d-%H%M%S).log"
 mkdir -p "$(dirname "$AUDIT_LOG")"
 
 # Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-NC='\033[0m'
 
 ISSUES_FOUND=0
 WARNINGS_FOUND=0

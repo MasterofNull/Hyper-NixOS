@@ -113,10 +113,10 @@ in
   
   config = mkIf cfg.enable {
     # Install required packages
-    environment.systemPackages = with pkgs; [
-      sshfs
-      fuse
-      libnotify
+    environment.systemPackages =  [
+    pkgs.sshfs
+    pkgs.fuse
+    pkgs.libnotify
     ] ++ optional cfg.autoMount sshmScript;
     
     # SSH login monitoring

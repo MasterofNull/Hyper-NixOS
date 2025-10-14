@@ -158,9 +158,9 @@
   };
   
   # Environment for log access
-  environment.systemPackages = with pkgs; [
-    syslogng
-    lnav  # Advanced log viewer
-    multitail  # Multi-file tail
+  environment.systemPackages = [
+    pkgs.syslogng
+    pkgs.lnav  # Advanced log viewer
+    pkgs.multitail  # Multi-file tail
   ];
 }
