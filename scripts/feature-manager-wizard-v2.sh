@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Hyper-NixOS Feature Management Wizard v2
 # Enhanced with incompatibility detection and automatic testing

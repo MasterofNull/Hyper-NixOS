@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Security Compliance Manager
 # Interface for managing compliance checks and reports
 

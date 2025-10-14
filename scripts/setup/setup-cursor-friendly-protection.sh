@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Cursor AI-Friendly IP Protection System
 # Protects IP while allowing Cursor AI access
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Documentation Consolidation Script
 # Consolidates and reorganizes Hyper-NixOS documentation

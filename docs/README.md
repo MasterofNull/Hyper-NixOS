@@ -1,74 +1,53 @@
-# Security Platform Documentation
+# Hyper-NixOS Documentation
 
-Welcome to the comprehensive documentation for the Security Platform v2.0.
+Welcome to the Hyper-NixOS documentation. This guide will help you find the information you need quickly.
 
 ## 📚 Documentation Structure
 
-### 🚀 [Guides](guides/)
-User-facing guides and tutorials
-- [Security Quick Start](guides/SECURITY-QUICKSTART.md) - Get started in 5 minutes
-- [Enterprise Quick Start](guides/ENTERPRISE_QUICK_START.md) - Enterprise deployment guide
-- [Security Tips & Tricks](guides/Security-Tips-Tricks-Documentation.md) - Advanced tips
-- [Defensive Validation Checklist](guides/defensive-validation-checklist.md) - Security validation
+### Getting Started
+- **[Quick Start Guide](QUICK_START.md)** - Get up and running in 5 minutes
+- **[Installation Guide](INSTALLATION_GUIDE.md)** - Complete installation instructions
+- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 
-### 📊 [Reports](reports/)
-Audit results and validation reports
-- [Final Audit Summary](reports/FINAL-AUDIT-SUMMARY.md) - Comprehensive audit results
-- [Feature Test Report](reports/FEATURE-TEST-REPORT.md) - Feature testing outcomes
-- [QA Validation Report](reports/QA_VALIDATION_REPORT.md) - Quality assurance results
-- [Implementation Validated](reports/IMPLEMENTATION-VALIDATED.md) - Validation certificate
+### User Documentation
+- **[User Guides](user-guides/)** - Day-to-day usage guides
+  - [Basic VM Management](user-guides/basic-vm-management.md)
+  - [Advanced Features](user-guides/advanced-features.md)
+  - [Automation Recipes](user-guides/automation-cookbook.md)
 
-### 🔧 [Implementation](implementation/)
-Technical implementation details
-- [Complete Implementation Summary](implementation/COMPLETE-IMPLEMENTATION-SUMMARY.md)
-- [Implementation Verification](implementation/COMPLETE-IMPLEMENTATION-VERIFICATION.md)
-- [Security Countermeasures Analysis](implementation/security-countermeasures-analysis.md)
-- [System Analysis & Integration Plan](implementation/System-Analysis-And-Integration-Plan.md)
+### Administrator Documentation
+- **[Admin Guides](admin-guides/)** - System administration
+  - [System Administration](admin-guides/system-administration.md)
+  - [Security Configuration](admin-guides/security-configuration.md)
+  - [Network Configuration](admin-guides/network-configuration.md)
+  - [Monitoring Setup](admin-guides/monitoring-setup.md)
 
-### 👨‍💻 [Development](development/)
-Developer resources and guidelines
-- [AI Development Best Practices](development/AI-Development-Best-Practices.md) - Comprehensive guide
-- [AI Lessons Learned](development/AI-LESSONS-LEARNED.md) - **Critical insights from implementation**
-- [AI Quick Reference](development/AI-QUICK-REFERENCE.md) - Essential commands and fixes
-- [Advanced Patterns Integration](development/ADVANCED-PATTERNS-INTEGRATION-GUIDE.md)
-- [Additional Improvements](development/ADDITIONAL-IMPROVEMENTS.md)
-- [Security Framework Roadmap](development/security-framework-roadmap.md)
+### Reference Documentation
+- **[Reference](reference/)** - Technical reference
+  - [Configuration Options](reference/configuration-reference.md)
+  - [CLI Reference](reference/cli-reference.md)
+  - [Architecture Overview](reference/architecture-overview.md)
+  - [API Documentation](reference/api-reference.md)
 
-### 📦 [Deployment](deployment/)
-Deployment guides and release information
-- [Deployment Guide](deployment/DEPLOYMENT-GUIDE.md) - Comprehensive deployment instructions
-- [Release Notes v2.0](deployment/RELEASE-NOTES-V2.0.md) - Latest version information
-- [Shipping Checklist](deployment/SHIPPING-CHECKLIST.md) - Pre-release validation
+### Development Documentation
+- **[Developer Resources](dev/)** - For contributors (not included in public releases)
 
-### 📋 General Documentation
-- [Scalable Security Framework](SCALABLE-SECURITY-FRAMEWORK.md) - Architecture overview
-- [Platform Overview](PLATFORM-OVERVIEW.md) - Executive summary
-- [Project Summary](PROJECT_SUMMARY.md) - Project details
-- [Final Delivery Summary](FINAL-DELIVERY-SUMMARY.md) - Completion summary
-- [Credits](CREDITS.md) - Acknowledgments
+## 🔍 Quick Links
 
-## 🎯 Quick Links
+### By Task
+- **Installing**: [Installation Guide](INSTALLATION_GUIDE.md)
+- **First VM**: [Quick Start](QUICK_START.md#create-your-first-vm)
+- **Troubleshooting**: [Common Issues](TROUBLESHOOTING.md)
+- **Security Setup**: [Security Configuration](admin-guides/security-configuration.md)
+- **Network Setup**: [Network Configuration](admin-guides/network-configuration.md)
 
-### For Users
-- Start here: [Security Quick Start Guide](guides/SECURITY-QUICKSTART.md)
-- Commands: See main [README](../README.md)
+### By User Type
+- **New Users**: Start with [Quick Start](QUICK_START.md)
+- **System Admins**: See [Admin Guides](admin-guides/)
+- **Developers**: See [Developer Resources](dev/)
 
-### For Developers & AI Agents
-- Best practices: [AI Development Guide](development/AI-Development-Best-Practices.md)
-- **Lessons learned**: [AI Lessons Learned](development/AI-LESSONS-LEARNED.md)
-- Quick reference: [AI Quick Reference](development/AI-QUICK-REFERENCE.md)
-- Roadmap: [Framework Roadmap](development/security-framework-roadmap.md)
+## 📖 Documentation Versions
 
-### For Enterprise
-- Deployment: [Enterprise Quick Start](guides/ENTERPRISE_QUICK_START.md)
-- Full guide: [Deployment Guide](deployment/DEPLOYMENT-GUIDE.md)
-
-## 📊 Documentation Stats
-- **Total Documents**: 30+
-- **Total Lines**: 6,000+
-- **Categories**: 5 (Guides, Reports, Implementation, Development, Deployment)
-- **Last Updated**: October 2024
-
----
-
-For the main project README, see [../README.md](../README.md)
+- **Version**: 1.0.0
+- **Last Updated**: $(date +%Y-%m-%d)
+- **License**: See [LICENSE](/LICENSE) in project root

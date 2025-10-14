@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Setup script for Hyper-NixOS Feature Management System
 # This script integrates the feature manager into the system

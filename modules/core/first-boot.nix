@@ -3,9 +3,8 @@
 
 { config, lib, pkgs, ... }:
 
-with lib;
-
 let
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
   cfg = config.hypervisor.firstBoot;
   
   firstBootScript = pkgs.writeScriptBin "first-boot-wizard" ''

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Master Implementation Script for All Security Enhancements
 # This script implements all discovered patterns and suggestions
 

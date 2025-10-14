@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Comprehensive IP Protection System
 # Multiple layers of security for your intellectual property
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Hyper-NixOS First Boot Configuration Wizard
 # This script runs on first boot to help users select their system configuration

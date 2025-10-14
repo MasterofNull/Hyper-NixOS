@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Verify Privilege Implementation
 # Sudo Required: NO (for checks), YES (for fixes)

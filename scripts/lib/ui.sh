@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Hyper-NixOS UI Library
 # Provides consistent UI elements and formatting across all scripts

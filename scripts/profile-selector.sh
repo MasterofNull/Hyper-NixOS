@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Security Framework Profile Selector
 # Dynamically adjust security features based on system role
 

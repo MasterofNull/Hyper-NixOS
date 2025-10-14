@@ -3,9 +3,8 @@
 # Portable Base Configuration for Hyper-NixOS
 # Ensures system can run on various platforms and architectures
 
-with lib;
-
 let
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
   cfg = config.hypervisor.portable;
   
   # Platform detection

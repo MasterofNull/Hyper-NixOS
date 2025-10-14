@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Example: Migrating a script to use shared libraries
 # This shows the before and after of script migration

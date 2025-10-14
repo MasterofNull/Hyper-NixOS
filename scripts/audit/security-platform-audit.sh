@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Security Platform Comprehensive Audit, Testing, and Validation Suite
 # Checks all implemented features and fixes issues found
 

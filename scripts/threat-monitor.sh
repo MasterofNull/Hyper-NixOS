@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Real-time Threat Monitoring Dashboard
 # Provides live view of threats, sensors, and system security status

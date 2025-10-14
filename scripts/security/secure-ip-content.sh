@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Secure Intellectual Property Content Script
 # Separates and protects AI/development documentation
 

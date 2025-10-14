@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Fix common NixOS anti-patterns in Hyper-NixOS modules
 #
@@ -83,7 +84,7 @@ fix_with_lib() {
     local changed=false
     
     # Check if file uses 'with lib;'
-    if ! grep -q "^with lib;" "$file"; then
+    if ! grep -qE "^[[:space:]]*with lib;" "$file"; then
         return 1
     fi
     
@@ -106,7 +107,7 @@ fix_with_lib() {
     
     # Replace 'with lib;' with inherit
     awk -v inherit="$inherit_line" '
-        /^with lib;/ {
+        /^[[:space:]]*with lib;/ {
             print "let"
             print inherit
             print "in"
@@ -157,7 +158,7 @@ fix_with_pkgs() {
     while IFS= read -r line; do
         if [[ "$line" =~ "with pkgs;" ]]; then
             in_packages=true
-        elif [[ "$in_packages" == true ]] && [[ "$line" =~ \]; ]]; then
+        elif [[ "$in_packages" == true ]] && [[ "$line" =~ \]\; ]]; then
             in_packages=false
         elif [[ "$in_packages" == true ]] && [[ "$line" =~ ^[[:space:]]+([a-zA-Z0-9_-]+) ]]; then
             packages+="${BASH_REMATCH[1]} "

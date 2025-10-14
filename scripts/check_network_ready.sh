@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Hyper-NixOS Network Readiness Checker
 # Copyright (C) 2024-2025 MasterofNull

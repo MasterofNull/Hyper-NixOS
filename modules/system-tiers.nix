@@ -3,7 +3,9 @@
 
 { lib, ... }:
 
-with lib;
+let
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
+in
 
 {
   options.hypervisor.systemTier = mkOption {

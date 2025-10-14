@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Purpose: Legacy manual per-VM limit applier (deprecated)
 # Note: Libvirt hook now applies limits automatically from JSON profiles.
 # Usage: per_vm_limits.sh <domain> [cpu_quota] [mem_max]

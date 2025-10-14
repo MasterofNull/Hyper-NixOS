@@ -1,21 +1,37 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Hyper-NixOS Script Migration Tool
 # Helps migrate scripts to use shared libraries
 #
 
 # Use the new libraries ourselves!
-source /etc/hypervisor/scripts/lib/common.sh || {
-    # Fallback if libraries not available
-    HYPERVISOR_SCRIPTS="${HYPERVISOR_SCRIPTS:-/etc/hypervisor/scripts}"
-    source "${HYPERVISOR_SCRIPTS}/lib/common.sh" 2>/dev/null || {
-        echo "ERROR: Cannot load common library" >&2
-        exit 1
-    }
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Initialize
-init_script "migrate-to-libraries" false
+# Try to load from project directory first
+if [[ -f "$PROJECT_ROOT/scripts/lib/common.sh" ]]; then
+    source "$PROJECT_ROOT/scripts/lib/common.sh"
+elif [[ -f "/etc/hypervisor/scripts/lib/common.sh" ]]; then
+    source "/etc/hypervisor/scripts/lib/common.sh"
+else
+    echo "ERROR: Cannot load common library" >&2
+    echo "Continuing with basic functionality..." >&2
+    # Define minimal functions needed
+    print_error() { echo "ERROR: $*" >&2; }
+    print_info() { echo "INFO: $*"; }
+    print_success() { echo "SUCCESS: $*"; }
+    print_warning() { echo "WARNING: $*"; }
+    confirm() { 
+        read -r -p "$1 [y/N]: " response
+        [[ "$response" =~ ^[Yy]$ ]]
+    }
+fi
+
+# Initialize (if function exists)
+if command -v init_script >/dev/null 2>&1; then
+    init_script "migrate-to-libraries" false
+fi
 
 # Configuration
 DRY_RUN=false
@@ -259,8 +275,9 @@ main() {
     fi
     
     # Check if libraries exist
-    if [[ ! -f "${HYPERVISOR_SCRIPTS}/lib/common.sh" ]]; then
-        print_error "Common library not found at: ${HYPERVISOR_SCRIPTS}/lib/common.sh"
+    local lib_path="${PROJECT_ROOT}/scripts/lib/common.sh"
+    if [[ ! -f "$lib_path" ]] && [[ ! -f "/etc/hypervisor/scripts/lib/common.sh" ]]; then
+        print_error "Common library not found"
         print_info "Please ensure shared libraries are installed first"
         exit 1
     fi

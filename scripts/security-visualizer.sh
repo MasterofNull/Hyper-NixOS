@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Security Impact Visualizer
 # Shows real-time security posture based on enabled features

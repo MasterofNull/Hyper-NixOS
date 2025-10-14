@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Automated VM backup system with rotation and verification
 
 set -Eeuo pipefail

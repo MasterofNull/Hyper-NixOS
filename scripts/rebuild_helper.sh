@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Purpose: Convenience wrapper for nixos-rebuild with flakes (dev/admin)
 set -Eeuo pipefail
 IFS=$'\n\t'

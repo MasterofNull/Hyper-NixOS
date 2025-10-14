@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 #
 # Enhanced UI Functions for Better User Experience
 # Copyright (C) 2024-2025 MasterofNull

@@ -3,9 +3,8 @@
 # Optimized Hyper-NixOS System Configuration
 # Implements performance, security, and maintainability improvements
 
-with lib;
-
 let
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
   cfg = config.hypervisor.optimized;
   
   # Custom packages

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Purpose: Convert a VM JSON profile into libvirt XML and define/start it
 # Inputs: PROFILE_JSON (path)
 # Outputs: domain XML at /var/lib/hypervisor/xml/<name>.xml; domain started via virsh

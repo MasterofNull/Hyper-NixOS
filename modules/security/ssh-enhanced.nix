@@ -1,8 +1,7 @@
 { config, pkgs, lib, ... }:
 
-with lib;
-
 let
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
   cfg = config.security.ssh.enhanced;
   
   # SSH mount helper script

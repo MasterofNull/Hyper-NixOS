@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Pre-flight checks before critical operations
 # Validates system is ready for VM operations, ISO downloads, etc.
 

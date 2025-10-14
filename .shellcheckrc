@@ -1,0 +1,15 @@
+# Hyper-NixOS ShellCheck Configuration
+
+# Enable all optional checks
+enable=all
+
+# Exclude certain checks project-wide
+disable=SC2034  # Unused variables (used in sourced scripts)
+disable=SC2154  # Referenced but not assigned (from sourced scripts)
+disable=SC1091  # Not following sourced files
+
+# Set shell
+shell=bash
+
+# External sources
+external-sources=true

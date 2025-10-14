@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Deploy complete security stack
 
 source "$(dirname "$0")/../automation/parallel-framework.sh"

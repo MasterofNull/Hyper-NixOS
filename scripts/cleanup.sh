@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Purpose: Housekeeping helper to remove repo-local tmp folder (dev only)
 # Note: Not used in production NixOS flow.
 set -euo pipefail

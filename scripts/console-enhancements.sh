@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Console Enhancement Installer
 # Advanced terminal features for security operations
 

@@ -3,9 +3,8 @@
 
 { config, lib, pkgs, ... }:
 
-with lib;
-
 let
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
   cfg = config.hypervisor.systemDetection;
   
   # System detection script that consolidates existing detection logic

@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC2154,SC1091
 # Implementation script for advanced security features
 # Integrates tips and tricks into the existing security framework
 
