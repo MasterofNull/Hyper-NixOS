@@ -23,7 +23,7 @@ Rather than disparate tools, modern security frameworks integrate everything int
 
 1. **Run Defense Validation Script**
    ```bash
-   ./defensive-validation.sh
+   ./scripts/security/defensive-validation.sh
    ```
    - Identify gaps in current defenses
    - Prioritize based on risk score

@@ -59,7 +59,7 @@ ssh_login_history 5
 #### 1.3 Run Security Validation
 ```bash
 # Check your defenses
-./defensive-validation.sh | head -20
+./scripts/security/defensive-validation.sh | head -20
 
 # Look for patterns:
 # ✓ (checkmark) = Good
@@ -426,7 +426,7 @@ echo "===================================="
 # Parallel audit tasks
 audit_tasks=(
     "docker images -q | xargs -I {} docker-scan {} > $AUDIT_DIR/docker-vulns.txt 2>&1"
-    "./defensive-validation.sh > $AUDIT_DIR/validation.txt 2>&1"
+    "./scripts/security/defensive-validation.sh > $AUDIT_DIR/validation.txt 2>&1"
     "lynis audit system --quick > $AUDIT_DIR/lynis.txt 2>&1"
     "ss -tulpn > $AUDIT_DIR/open-ports.txt 2>&1"
     "last -100 > $AUDIT_DIR/login-history.txt"
@@ -582,7 +582,7 @@ daily_check() {
     done
     
     # Security validation
-    ./defensive-validation.sh | grep -E "Score|FAIL"
+    ./scripts/security/defensive-validation.sh | grep -E "Score|FAIL"
     
     # Generate report
     {

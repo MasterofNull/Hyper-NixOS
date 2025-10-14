@@ -227,7 +227,7 @@ check-updates
 docker ps
 
 # 5. Quick validation (2 minutes)
-./defensive-validation.sh | grep FAIL
+./scripts/security/defensive-validation.sh | grep FAIL
 ```
 
 ### Weekly Security Maintenance 🔧
@@ -301,7 +301,7 @@ echo "Container Health:"
 docker ps --format "table {{.Names}}\t{{.Status}}"
 echo
 echo "Security Validation:"
-./defensive-validation.sh | grep -E "PASS|FAIL" | tail -10
+./scripts/security/defensive-validation.sh | grep -E "PASS|FAIL" | tail -10
 EOF
 
 chmod +x ~/morning-security-report.sh

@@ -363,7 +363,7 @@ deploy_stack() {
 
 3. **Validation Steps**
    ```bash
-   ./defensive-validation.sh
+   ./scripts/security/defensive-validation.sh
    ./tests/integration-tests.sh
    ```
 

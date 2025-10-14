@@ -89,9 +89,9 @@ audit_file_structure() {
     
     # Check main scripts exist and are executable
     local main_scripts=(
-        "security-platform-deploy.sh"
-        "modular-security-framework.sh"
-        "console-enhancements.sh"
+        "scripts/deployment/security-platform-deploy.sh"
+        "scripts/security/framework/modular-security-framework.sh"
+        "scripts/console-enhancements.sh"
         "profile-selector.sh"
     )
     

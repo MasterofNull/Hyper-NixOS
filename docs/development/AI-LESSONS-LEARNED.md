@@ -132,7 +132,7 @@ vim affected-file.sh
 1. **Parse Audit Requirements Early**
    ```python
    # Analyze what the audit is checking for
-   audit_checks = parse_audit_script("audit-platform.sh")
+   audit_checks = parse_audit_script("scripts/audit/audit-platform.sh")
    requirements = extract_requirements(audit_checks)
    ```
 

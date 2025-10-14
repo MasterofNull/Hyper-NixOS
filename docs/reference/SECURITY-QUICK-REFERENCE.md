@@ -5,8 +5,8 @@
 ### 🔍 Security Status & Validation
 ```bash
 security-status                    # Overall security health check
-./defensive-validation.sh          # Comprehensive defense validation
-./defensive-validation.sh | grep FAIL  # Show only failures
+./scripts/security/defensive-validation.sh          # Comprehensive defense validation
+./scripts/security/defensive-validation.sh | grep FAIL  # Show only failures
 harden-check                      # Security hardening checklist
 ```
 
@@ -291,7 +291,7 @@ echo "security_scan_duration_seconds{target=\"$TARGET\"} $DURATION" \
 security-scan:
   script:
     - docker-scan $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-    - ./defensive-validation.sh
+    - ./scripts/security/defensive-validation.sh
   only:
     - master
 ```
