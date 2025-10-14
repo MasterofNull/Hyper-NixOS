@@ -6,6 +6,7 @@
     ./modules/core/options.nix
     ./modules/core/hypervisor-base.nix
     ./modules/core/base-system.nix
+    ./modules/system-tiers.nix  # System tier definitions
     ./modules/security/ssh-enhanced.nix
     ./modules/security/docker-enhanced.nix
     ./modules/monitoring/enhanced-monitoring.nix
