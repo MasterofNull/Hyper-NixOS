@@ -8,7 +8,6 @@ The Hyper-NixOS documentation has been completely reorganized into a clean, logi
 
 ### **Root Documentation (`docs/`)**
 - **[README.md](README.md)** - Main documentation index and navigation
-- **[AI_ASSISTANT_CONTEXT.md](AI_ASSISTANT_CONTEXT.md)** - Essential context for future AI assistants
 - **[DESIGN_EVOLUTION.md](DESIGN_EVOLUTION.md)** - Historical design decisions and evolution
 - **[COMMON_ISSUES_AND_SOLUTIONS.md](COMMON_ISSUES_AND_SOLUTIONS.md)** - Comprehensive troubleshooting guide
 

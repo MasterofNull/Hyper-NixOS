@@ -223,16 +223,13 @@ sec version
 sec status --modules
 ```
 
-### 2. Run Test Suite
+### 2. Verify Installation
 ```bash
-# Quick tests
-./audit-platform.sh
+# Check platform status
+sec status
 
-# Comprehensive tests
-./test-platform-features.sh
-
-# Validate implementation
-./validate-implementation.sh
+# View system health
+sec check
 ```
 
 ### 3. Security Scan Test

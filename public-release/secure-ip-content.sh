@@ -89,9 +89,6 @@ AUDIT_DOCS=(
     "docs/reports/FINAL-AUDIT-SUMMARY.md"
     "docs/reports/QA_VALIDATION_REPORT.md"
     "docs/reports/IMPLEMENTATION-VALIDATED.md"
-    "audit-platform.sh"
-    "test-platform-features.sh"
-    "validate-implementation.sh"
     "security-platform-audit.sh"
 )
 

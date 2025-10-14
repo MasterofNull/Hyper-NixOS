@@ -58,8 +58,8 @@
 ✓ modular-security-framework.sh  # Framework installer
 ✓ console-enhancements.sh        # Terminal improvements
 ✓ profile-selector.sh            # Profile management
-✓ audit-platform.sh              # System auditing
-✓ validate-implementation.sh     # Validation tool
+✓ security-setup.sh              # Security setup
+✓ setup-security-framework.sh    # Framework setup
 ```
 
 ### Configuration
@@ -73,7 +73,6 @@
 ```
 ✓ README.md                      # Main documentation
 ✓ SECURITY-QUICKSTART.md         # Quick start guide
-✓ AI-Development-Best-Practices.md # AI/Dev guide
 ✓ SCALABLE-SECURITY-FRAMEWORK.md # Architecture guide
 ✓ ENTERPRISE_QUICK_START.md      # Enterprise guide
 ✓ All other .md files            # Supporting docs

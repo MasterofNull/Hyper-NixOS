@@ -43,10 +43,8 @@ Deployment guides and release information
 - Start here: [Security Quick Start Guide](guides/SECURITY-QUICKSTART.md)
 - Commands: See main [README](../README.md)
 
-### For Developers & AI Agents
-- Best practices: [AI Development Guide](development/AI-Development-Best-Practices.md)
-- **Lessons learned**: [AI Lessons Learned](development/AI-LESSONS-LEARNED.md)
-- Quick reference: [AI Quick Reference](development/AI-QUICK-REFERENCE.md)
+### For Developers
+- See development resources in the [Development](development/) section
 - Roadmap: [Framework Roadmap](development/security-framework-roadmap.md)
 
 ### For Enterprise

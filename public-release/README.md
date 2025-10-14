@@ -115,10 +115,8 @@ sec supply sbom .
 ## 📚 Documentation
 
 - [Scalable Security Framework Guide](SCALABLE-SECURITY-FRAMEWORK.md)
-- [Implementation Status](IMPLEMENTATION-STATUS.md)
 - [Security Quick Start](SECURITY-QUICKSTART.md)
 - [Enterprise Deployment](ENTERPRISE_QUICK_START.md)
-- [AI Development Practices](AI-Development-Best-Practices.md)
 
 ## 🏗️ Architecture
 
