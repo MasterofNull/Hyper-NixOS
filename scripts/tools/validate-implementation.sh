@@ -17,9 +17,9 @@ echo
 echo -e "${BOLD}Checking security-platform-deploy.sh implementations...${NC}"
 echo
 
-if [[ -f security-platform-deploy.sh ]]; then
-    echo "File size: $(wc -c < security-platform-deploy.sh) bytes"
-    echo "Line count: $(wc -l < security-platform-deploy.sh) lines"
+if [[ -f scripts/deployment/security-platform-deploy.sh ]]; then
+    echo "File size: $(wc -c < scripts/deployment/security-platform-deploy.sh) bytes"
+    echo "Line count: $(wc -l < scripts/deployment/security-platform-deploy.sh) lines"
     echo
     
     # Count implementations
