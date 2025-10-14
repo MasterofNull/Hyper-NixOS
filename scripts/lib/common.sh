@@ -524,3 +524,243 @@ EOF
 
 # Export privilege management functions
 export -f check_sudo_requirement check_vm_group_membership get_actual_user is_running_as_sudo operation_requires_sudo show_sudo_warning
+
+# ============================================================================
+# Enhanced Common Functions
+# ============================================================================
+
+# Source additional libraries if available
+load_hypervisor_libraries() {
+    local lib_dir="${HYPERVISOR_SCRIPTS}/lib"
+    
+    # Source UI library
+    if [[ -f "$lib_dir/ui.sh" ]]; then
+        source "$lib_dir/ui.sh"
+    fi
+    
+    # Source system library
+    if [[ -f "$lib_dir/system.sh" ]]; then
+        source "$lib_dir/system.sh"
+    fi
+}
+
+# Enhanced root checking with options
+check_root() {
+    local require_root="${1:-true}"
+    local allow_sudo_elevation="${2:-true}"
+    local custom_message="${3:-}"
+    
+    if [[ $EUID -eq 0 ]]; then
+        return 0
+    fi
+    
+    if [[ "$require_root" == "false" ]]; then
+        return 0
+    fi
+    
+    # Custom or default error message
+    local error_msg="${custom_message:-This operation requires root privileges}"
+    
+    if [[ "$allow_sudo_elevation" == "true" ]] && command -v sudo >/dev/null 2>&1; then
+        log_info "Elevating privileges with sudo..."
+        exec sudo -E "$0" "$@"
+    else
+        if command -v print_error >/dev/null 2>&1; then
+            print_error "$error_msg"
+        else
+            echo "ERROR: $error_msg" >&2
+        fi
+        exit 1
+    fi
+}
+
+# Standard script initialization
+init_script() {
+    local script_name="${1:-$(basename "$0" .sh)}"
+    local require_root="${2:-false}"
+    local load_libs="${3:-true}"
+    
+    # Set script name for logging
+    export SCRIPT_NAME="$script_name"
+    
+    # Set up logging
+    init_logging "$script_name"
+    
+    # Load additional libraries
+    if [[ "$load_libs" == "true" ]]; then
+        load_hypervisor_libraries
+    fi
+    
+    # Check root if required
+    if [[ "$require_root" == "true" ]]; then
+        check_root
+    fi
+    
+    # Log script start
+    log_info "Starting $script_name (PID: $$)"
+    
+    # Set up cleanup on exit
+    trap 'cleanup_on_exit' EXIT
+}
+
+# Standard cleanup function
+cleanup_on_exit() {
+    local exit_code=$?
+    
+    # Log script end
+    if [[ $exit_code -eq 0 ]]; then
+        log_info "Script ${SCRIPT_NAME:-unknown} completed successfully"
+    else
+        log_error "Script ${SCRIPT_NAME:-unknown} failed with exit code: $exit_code"
+    fi
+    
+    # Run any registered cleanup handlers
+    _run_cleanup
+    
+    return $exit_code
+}
+
+# Create directory with proper permissions
+create_directory() {
+    local dir="$1"
+    local owner="${2:-root:root}"
+    local perms="${3:-755}"
+    
+    if [[ ! -d "$dir" ]]; then
+        mkdir -p "$dir" || {
+            log_error "Failed to create directory: $dir"
+            return 1
+        }
+        
+        if [[ $EUID -eq 0 ]]; then
+            chown "$owner" "$dir" 2>/dev/null || true
+            chmod "$perms" "$dir" 2>/dev/null || true
+        fi
+        
+        log_info "Created directory: $dir"
+    fi
+}
+
+# Safe file backup
+backup_file() {
+    local file="$1"
+    local backup_dir="${2:-${HYPERVISOR_STATE}/backups}"
+    
+    if [[ ! -f "$file" ]]; then
+        return 0
+    fi
+    
+    create_directory "$backup_dir"
+    
+    local basename=$(basename "$file")
+    local timestamp=$(date +%Y%m%d-%H%M%S)
+    local backup_file="$backup_dir/${basename}.${timestamp}"
+    
+    cp -p "$file" "$backup_file" || {
+        log_error "Failed to backup file: $file"
+        return 1
+    }
+    
+    log_info "Backed up $file to $backup_file"
+    echo "$backup_file"
+}
+
+# Wait for process with timeout
+wait_for_process() {
+    local pid=$1
+    local timeout=${2:-30}
+    local interval=${3:-1}
+    local elapsed=0
+    
+    while kill -0 "$pid" 2>/dev/null; do
+        if [[ $elapsed -ge $timeout ]]; then
+            log_error "Process $pid timed out after ${timeout}s"
+            return 1
+        fi
+        
+        sleep "$interval"
+        ((elapsed += interval))
+    done
+    
+    return 0
+}
+
+# Retry command with backoff
+retry_with_backoff() {
+    local max_attempts=${1:-3}
+    local initial_delay=${2:-1}
+    shift 2
+    local command=("$@")
+    
+    local attempt=1
+    local delay=$initial_delay
+    
+    while [[ $attempt -le $max_attempts ]]; do
+        if "${command[@]}"; then
+            return 0
+        fi
+        
+        if [[ $attempt -lt $max_attempts ]]; then
+            log_warn "Command failed (attempt $attempt/$max_attempts), retrying in ${delay}s..."
+            sleep "$delay"
+            delay=$((delay * 2))
+        fi
+        
+        ((attempt++))
+    done
+    
+    log_error "Command failed after $max_attempts attempts: ${command[*]}"
+    return 1
+}
+
+# Check if service is active
+is_service_active() {
+    local service="$1"
+    
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl is-active --quiet "$service" 2>/dev/null
+    else
+        # Fallback for non-systemd
+        pgrep -x "$service" >/dev/null 2>&1
+    fi
+}
+
+# Get config value with default
+get_config_value() {
+    local key="$1"
+    local default="${2:-}"
+    local config_file="${3:-$HYPERVISOR_CONFIG}"
+    
+    if [[ -f "$config_file" ]]; then
+        local value
+        value=$(jq -r ".$key // empty" "$config_file" 2>/dev/null) || value=""
+        echo "${value:-$default}"
+    else
+        echo "$default"
+    fi
+}
+
+# Set config value
+set_config_value() {
+    local key="$1"
+    local value="$2"
+    local config_file="${3:-$HYPERVISOR_CONFIG}"
+    
+    # Ensure config directory exists
+    create_directory "$(dirname "$config_file")"
+    
+    if [[ -f "$config_file" ]]; then
+        # Update existing config
+        local tmp_file="${config_file}.tmp"
+        jq ".$key = \"$value\"" "$config_file" > "$tmp_file" && \
+            mv "$tmp_file" "$config_file"
+    else
+        # Create new config
+        echo "{\"$key\": \"$value\"}" | jq . > "$config_file"
+    fi
+}
+
+# Export enhanced functions
+export -f check_root init_script cleanup_on_exit create_directory backup_file
+export -f wait_for_process retry_with_backoff is_service_active
+export -f get_config_value set_config_value load_hypervisor_libraries
