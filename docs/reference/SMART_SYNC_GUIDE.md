@@ -323,7 +323,7 @@ Edit the script to use your fork:
 sudo nano /etc/hypervisor/scripts/smart_sync_hypervisor.sh
 
 # Change these lines:
-GITHUB_REPO="YourUsername/Hyper-NixOS"
+GITHUB_REPO="MasterofNull/Hyper-NixOS"
 DEFAULT_BRANCH="your-branch"
 ```
 

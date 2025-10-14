@@ -10,6 +10,29 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Comprehensive Installation Scripts and Methods Update
+**Agent**: Claude
+**Task**: Update all quick start scripts and install methods to ensure correct functionality
+
+**Changes Made**:
+1. **Updated Outdated Installation Commands**:
+   - Fixed `docs/archive/old-guides/MINIMAL_INSTALL_WORKFLOW.md` - replaced curl command
+   - Fixed `scripts/update-installer-for-minimal.sh` - updated embedded docs
+   - Fixed `docs/reference/SMART_SYNC_GUIDE.md` - corrected repo reference
+
+2. **Corrected Offline Installation**:
+   - Updated README.md to remove non-existent `create-offline-bundle.sh`
+   - Provided correct offline installation method using `--skip-update-check`
+
+3. **Verified Consistency**:
+   - All documentation now uses the same one-liner
+   - All test files reference correct script names
+   - All parameters verified as functional
+
+**Key Achievement**: Complete consistency across all installation documentation
+
+---
+
 #### 2025-10-14: Updated Documentation with Quick Install One-Liner
 **Agent**: Claude
 **Task**: Ensure quick install one-liner is prominently featured in all installation documentation

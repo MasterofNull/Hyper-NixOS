@@ -72,12 +72,12 @@ For air-gapped environments:
 git clone https://github.com/MasterofNull/Hyper-NixOS
 cd Hyper-NixOS
 
-# Create offline bundle
-./scripts/create-offline-bundle.sh
+# Copy the entire directory to a USB drive or other media
+# Transfer to target machine
 
-# Transfer to target machine and install
-cd /path/to/bundle
-sudo bash ./scripts/system_installer.sh --offline
+# On the target machine
+cd /path/to/Hyper-NixOS
+sudo bash ./scripts/system_installer.sh --skip-update-check --source .
 ```
 
 ## 🎮 Basic Usage
