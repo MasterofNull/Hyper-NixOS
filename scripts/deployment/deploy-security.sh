@@ -331,8 +331,8 @@ EOF
     
     # Copy other core tools
     for tool in security-control.sh sec-monitor sec-report sec-incident; do
-        if [[ -f "$WORKSPACE_DIR/$tool" ]]; then
-            cp "$WORKSPACE_DIR/$tool" "$INSTALL_DIR/bin/"
+        if [[ -f "$WORKSPACE_DIR/scripts/security/$tool" ]]; then
+            cp "$WORKSPACE_DIR/scripts/security/$tool" "$INSTALL_DIR/bin/"
             chmod +x "$INSTALL_DIR/bin/$tool"
         fi
     done

@@ -70,7 +70,7 @@ main() {
     echo -e "\n${YELLOW}Installing security tools...${NC}"
     
     # Main control center
-    cp "$SCRIPT_DIR/security-control.sh" security/sec-control
+    cp "$SCRIPT_DIR/../security/security-control.sh" security/sec-control
     chmod +x security/sec-control
     echo -e "${GREEN}✓ Installed sec-control${NC}"
     

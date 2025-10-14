@@ -32,13 +32,13 @@ backup_file() {
 echo -e "${YELLOW}1. Integrating advanced security functions...${NC}"
 
 # Add to existing security-aliases.sh
-if [[ -f "security-aliases.sh" ]]; then
-    backup_file "security-aliases.sh"
+if [[ -f "scripts/security/security-aliases.sh" ]]; then
+    backup_file "scripts/security/security-aliases.sh"
     
     # Check if already integrated
-    if ! grep -q "advanced-security-functions" security-aliases.sh; then
-        echo -e "\n# Load advanced security functions" >> security-aliases.sh
-        echo "source \$(dirname \"\${BASH_SOURCE[0]}\")/advanced-security-functions.sh" >> security-aliases.sh
+    if ! grep -q "advanced-security-functions" scripts/security/security-aliases.sh; then
+        echo -e "\n# Load advanced security functions" >> scripts/security/security-aliases.sh
+        echo "source \$(dirname \"\${BASH_SOURCE[0]}\")/advanced-security-functions.sh" >> scripts/security/security-aliases.sh
         echo -e "${GREEN}✓ Integrated advanced functions${NC}"
     else
         echo -e "${BLUE}ℹ Advanced functions already integrated${NC}"

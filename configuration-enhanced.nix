@@ -100,7 +100,7 @@
   programs.bash.interactiveShellInit = ''
     # Load security functions
     [[ -f ${./scripts/security/security-aliases.sh} ]] && source ${./scripts/security/security-aliases.sh}
-    [[ -f ${./scripts/automation/advanced-security-functions.sh} ]] && source ${./scripts/automation/advanced-security-functions.sh}
+    [[ -f ${./scripts/security/advanced-security-functions.sh} ]] && source ${./scripts/security/advanced-security-functions.sh}
     
     # Parallel execution framework
     [[ -f ${./scripts/automation/parallel-framework.sh} ]] && source ${./scripts/automation/parallel-framework.sh}
