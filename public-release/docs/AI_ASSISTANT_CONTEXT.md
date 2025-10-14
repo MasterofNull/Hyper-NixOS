@@ -348,6 +348,7 @@ hyper-nixos/
 5. CI test failures → See CI/CD Testing Considerations above
 6. Undefined Nix variables → Add `lib.` prefix to standard functions
 7. Test scripts exiting early → Use subshells for commands that may exit
+8. Python/script syntax errors in Nix → Escape single quotes as `''` in multiline strings
 
 ### Debug Commands
 ```bash
