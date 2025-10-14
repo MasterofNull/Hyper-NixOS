@@ -182,6 +182,101 @@ The difference between "seems complete" and "actually complete" is comprehensive
 4. **Update tests** - Ensure they check the right things
 5. **Maintain standards** - Consistency is key
 
+## 🐛 Common NixOS Configuration Errors
+
+### 5. **Duplicate Attribute Definitions**
+
+**Issue Encountered**: `attribute 'users.users.hypervisor-vm' already defined` error
+
+**Example Error**:
+```
+error: attribute 'users.users.hypervisor-vm' already defined at /nix/store/.../modules/security/privilege-separation.nix:72:5
+       at /nix/store/.../modules/security/privilege-separation.nix:240:5:
+          239|     # Create a dedicated user for VM services
+          240|     users.users.hypervisor-vm = {
+             |     ^
+          241|       isSystemUser = true;
+```
+
+**Root Cause**: The same attribute was defined twice in the configuration:
+1. First implicitly within a `mkMerge` block
+2. Second as an explicit definition later in the file
+
+**Solution**: Consolidate all definitions into a single `mkMerge` block:
+
+```nix
+# ❌ Wrong - Duplicate definitions
+users.users = mkMerge (
+  map (user: {
+    ${user} = { extraGroups = [...]; };
+  }) userList
+);
+
+# Later in the file...
+users.users.hypervisor-vm = {  # This causes duplicate!
+  isSystemUser = true;
+  ...
+};
+
+# ✅ Correct - Single consolidated definition
+users.users = mkMerge ([
+  # Dynamic user configurations
+  (mkMerge (
+    map (user: {
+      ${user} = { extraGroups = [...]; };
+    }) userList
+  ))
+  
+  # Static system user
+  {
+    hypervisor-vm = {
+      isSystemUser = true;
+      group = "hypervisor-users";
+      description = "Hypervisor VM management service user";
+      extraGroups = [ "libvirtd" "kvm" ];
+    };
+  }
+]);
+```
+
+**How to Find Similar Issues**:
+
+1. **Search for duplicate user definitions**:
+   ```bash
+   grep -h 'users\.users\.[a-zA-Z0-9-]* =' modules/**/*.nix | \
+     sed 's/.*users\.users\.\([a-zA-Z0-9-]*\) =.*/\1/' | \
+     sort | uniq -d
+   ```
+
+2. **Search for duplicate service definitions**:
+   ```bash
+   grep -h 'systemd\.services\.[a-zA-Z0-9-]* =' modules/**/*.nix | \
+     sed 's/.*systemd\.services\.\([a-zA-Z0-9-]*\) =.*/\1/' | \
+     sort | uniq -d
+   ```
+
+3. **Check for mkMerge patterns that might cause issues**:
+   ```bash
+   grep -B2 -A5 'users\.(users|groups) = mkMerge' modules/**/*.nix
+   ```
+
+4. **General duplicate attribute search pattern**:
+   ```bash
+   # For any attribute path
+   ATTR_PATH="users.users"  # or systemd.services, etc.
+   grep -n "$ATTR_PATH\.[a-zA-Z0-9-]* =" modules/**/*.nix | \
+     awk -F: '{print $3}' | sort | uniq -d
+   ```
+
+**Prevention Tips**:
+- Always use `mkMerge` when combining attribute sets
+- Keep all definitions for the same attribute path together
+- Use a single location for system user/group definitions
+- Run `nixos-rebuild dry-build` before applying changes
+- Consider using `mkIf` for conditional definitions
+
+**Key Takeaway**: NixOS attribute sets cannot have duplicate keys. When using `mkMerge` or module composition, ensure each attribute is only defined once across all merged sets.
+
 ---
 
 **Remember**: Perfect is better than good enough when it comes to production systems. The extra effort to go from 97% to 100% ensures reliability and professionalism.

@@ -880,6 +880,79 @@ grafana = lib.mkIf (lib.elem "monitoring" config.hypervisor.featureManager.enabl
 
 **Prevention**: Always use `lib.` prefix for standard library functions unless explicitly imported with `with lib;`
 
+### Issue: Duplicate Attribute Definitions
+**Symptoms**:
+```
+error: attribute 'users.users.hypervisor-vm' already defined at /nix/store/.../modules/security/privilege-separation.nix:72:5
+       at /nix/store/.../modules/security/privilege-separation.nix:240:5:
+```
+
+**Root Cause**: The same attribute is defined multiple times in the configuration, which NixOS doesn't allow. Common scenarios:
+1. Defining an attribute both inside and outside a `mkMerge` block
+2. Multiple modules defining the same user/service/group
+3. Incorrect module composition
+
+**Solutions**:
+
+#### ✅ **Fix: Consolidate into Single mkMerge Block**
+```nix
+# ❌ WRONG - Duplicate definitions
+users.users = mkMerge (
+  map (user: {
+    ${user} = { extraGroups = [...]; };
+  }) userList
+);
+
+# Later in the file...
+users.users.hypervisor-vm = {  # This causes duplicate!
+  isSystemUser = true;
+  ...
+};
+
+# ✅ CORRECT - Single consolidated definition
+users.users = mkMerge ([
+  # Dynamic user configurations
+  (mkMerge (
+    map (user: {
+      ${user} = { extraGroups = [...]; };
+    }) userList
+  ))
+  
+  # Static system user
+  {
+    hypervisor-vm = {
+      isSystemUser = true;
+      group = "hypervisor-users";
+      description = "Hypervisor VM management service user";
+      extraGroups = [ "libvirtd" "kvm" ];
+    };
+  }
+]);
+```
+
+**Detection Commands**:
+```bash
+# Find duplicate user definitions
+grep -h 'users\.users\.[a-zA-Z0-9-]* =' modules/**/*.nix | \
+  sed 's/.*users\.users\.\([a-zA-Z0-9-]*\) =.*/\1/' | \
+  sort | uniq -d
+
+# Find duplicate service definitions
+grep -h 'systemd\.services\.[a-zA-Z0-9-]* =' modules/**/*.nix | \
+  sed 's/.*systemd\.services\.\([a-zA-Z0-9-]*\) =.*/\1/' | \
+  sort | uniq -d
+
+# Check for problematic mkMerge patterns
+grep -B2 -A5 'users\.(users|groups) = mkMerge' modules/**/*.nix
+```
+
+**Prevention**:
+1. Always use `mkMerge` when combining multiple attribute sets
+2. Keep all definitions for the same attribute path in one place
+3. Use `mkIf` for conditional definitions instead of multiple files
+4. Run `nixos-rebuild dry-build` before applying changes
+5. Document which module "owns" system users/services
+
 **Related Documentation**:
 - [CI GitHub Actions Guide](./dev/CI_GITHUB_ACTIONS_GUIDE.md)
 - [CI Test Fixes 2025-10-13](./dev/CI_TEST_FIXES_2025-10-13.md)
