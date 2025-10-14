@@ -2,6 +2,10 @@
 
 ## 🚨 CRITICAL: This checklist MUST be followed before ANY commit, push, or merge
 
+## 🚢 SHIPPING TRIGGER: When user says "let's ship" or similar
+
+When the user indicates readiness to ship (using phrases like "let's ship", "ready to ship", "ship it", etc.), this checklist becomes **MANDATORY** and must be completed before any further action.
+
 ### Documentation Update Checklist
 
 Before committing any changes:

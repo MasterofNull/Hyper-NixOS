@@ -48,10 +48,10 @@ let
   # Determine which modules to load based on configuration
   modulesToLoad = 
     (if config.hypervisor.enable then featureModules.core else []) ++
-    (if cfg.enable && elem "privilegeSeparation" cfg.enabledFeatures then featureModules.privilegeSeparation else []) ++
-    (if cfg.enable && elem "threatDetection" cfg.enabledFeatures then featureModules.threatDetection else []) ++
-    (if cfg.enable && elem "optimization" cfg.enabledFeatures then featureModules.optimization else []) ++
-    (if cfg.enable && elem "documentation" cfg.enabledFeatures then featureModules.documentation else []);
+    (if cfg.enable && lib.elem "privilegeSeparation" cfg.enabledFeatures then featureModules.privilegeSeparation else []) ++
+    (if cfg.enable && lib.elem "threatDetection" cfg.enabledFeatures then featureModules.threatDetection else []) ++
+    (if cfg.enable && lib.elem "optimization" cfg.enabledFeatures then featureModules.optimization else []) ++
+    (if cfg.enable && lib.elem "documentation" cfg.enabledFeatures then featureModules.documentation else []);
 
 in {
   imports = modulesToLoad;

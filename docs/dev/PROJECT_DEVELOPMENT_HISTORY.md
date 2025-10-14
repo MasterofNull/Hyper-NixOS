@@ -10,6 +10,81 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Comprehensive Installation Scripts and Methods Update
+**Agent**: Claude
+**Task**: Update all quick start scripts and install methods to ensure correct functionality
+
+**Changes Made**:
+1. **Updated Outdated Installation Commands**:
+   - Fixed `docs/archive/old-guides/MINIMAL_INSTALL_WORKFLOW.md` - replaced curl command
+   - Fixed `scripts/update-installer-for-minimal.sh` - updated embedded docs
+   - Fixed `docs/reference/SMART_SYNC_GUIDE.md` - corrected repo reference
+
+2. **Corrected Offline Installation**:
+   - Updated README.md to remove non-existent `create-offline-bundle.sh`
+   - Provided correct offline installation method using `--skip-update-check`
+
+3. **Verified Consistency**:
+   - All documentation now uses the same one-liner
+   - All test files reference correct script names
+   - All parameters verified as functional
+
+**Key Achievement**: Complete consistency across all installation documentation
+
+---
+
+#### 2025-10-14: Updated Documentation with Quick Install One-Liner
+**Agent**: Claude
+**Task**: Ensure quick install one-liner is prominently featured in all installation documentation
+
+**Changes Made**:
+1. **Updated docs/INSTALLATION_GUIDE.md**
+   - Moved quick install one-liner to the very top of the guide
+   - Replaced outdated curl command with correct one-liner
+   - Prerequisites moved below quick install section
+
+2. **Updated docs/QUICK_START.md**
+   - Replaced outdated curl command with correct one-liner
+   - Positioned as primary installation method
+
+3. **Enhanced README.md**
+   - Added mention of one-liner in main description text
+   - Makes it easier to find when scanning the document
+
+**Key Improvements**:
+- Quick install is now consistently the first option users see
+- All documentation uses the same correct one-liner command
+- Installation path is clear and prominent across all guides
+
+---
+
+#### 2025-10-14: Fixed Undefined Variable Errors in Feature Modules
+**Agent**: Claude
+**Issue**: Build errors due to undefined variables in feature modules
+
+**Errors Fixed**:
+1. **Undefined `flatten`, `elem`, `foldl'`, etc. in feature modules**
+   - Root cause: Missing `lib.` prefix for Nix library functions
+   - Files affected:
+     - `modules/features/feature-manager.nix`
+     - `modules/features/module-loader.nix`
+     - `modules/features/adaptive-docs.nix`
+     - `modules/features/tier-templates.nix`
+     - `modules/features/feature-categories.nix`
+
+**Changes Applied**:
+- Added `lib.` prefix to all library functions (flatten, elem, filter, unique, etc.)
+- Added `pkgs.` prefix to all package references (writeScriptBin, bash, jq)
+- Added `optionalString` to inherit statement in feature-categories.nix
+- Updated `docs/COMMON_ISSUES_AND_SOLUTIONS.md` with comprehensive guide
+
+**Key Learning**:
+- Always use explicit `lib.` prefix for library functions
+- Always use explicit `pkgs.` prefix for packages
+- Test modules with `nixos-rebuild dry-build --show-trace`
+
+---
+
 #### 2025-10-14: System-Wide Best Practices Audit
 **Agent**: Claude
 **Tasks Completed**:

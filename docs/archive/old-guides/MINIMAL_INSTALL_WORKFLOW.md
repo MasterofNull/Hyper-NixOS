@@ -13,8 +13,8 @@ Hyper-NixOS now uses a minimal installation approach:
 ### 1. Install Minimal System
 
 ```bash
-# Download and run installer
-curl -fsSL https://raw.githubusercontent.com/yourusername/hyper-nixos/main/scripts/system_installer.sh | sudo bash
+# Quick install one-liner
+bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/system_installer.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
 This installs:

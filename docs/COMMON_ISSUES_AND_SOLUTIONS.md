@@ -281,6 +281,69 @@ hypervisor.TOPIC.enable = true;  # Make sure this is set
 - Test module enable/disable behavior
 - Document module dependencies
 
+### Issue: Undefined Variable Errors in Nix Modules
+**Symptoms**:
+```
+error: undefined variable 'flatten'
+error: undefined variable 'elem'
+error: undefined variable 'concatStringsSep'
+```
+
+**Root Cause**: Nix library functions must be prefixed with `lib.` unless the file has `with lib;` at the top.
+
+**Solutions**:
+
+#### ✅ **Add lib. Prefix to All Library Functions**
+```nix
+# Wrong
+flatten (map getTierFeatures currentTier.inherits)
+elem "feature" enabledFeatures
+concatStringsSep "\n" items
+
+# Correct
+lib.flatten (map getTierFeatures currentTier.inherits)
+lib.elem "feature" enabledFeatures
+lib.concatStringsSep "\n" items
+```
+
+#### ✅ **Common Functions That Need lib. Prefix**
+```nix
+lib.flatten        # Flatten nested lists
+lib.elem          # Check if element is in list
+lib.filter        # Filter list elements
+lib.unique        # Remove duplicates from list
+lib.foldl'        # Left fold (strict)
+lib.mapAttrs      # Map over attribute set
+lib.mapAttrsToList # Map attrs to list
+lib.findFirst     # Find first matching element
+lib.attrValues    # Get values from attribute set
+lib.length        # Get list length
+lib.concatStringsSep     # Join strings with separator
+lib.concatMapStringsSep  # Map and join with separator
+lib.optionalString       # Conditional string
+```
+
+#### ✅ **For Package References Use pkgs. Prefix**
+```nix
+# Wrong
+writeScriptBin "script" ''
+  #!${bash}/bin/bash
+  ${jq}/bin/jq ...
+''
+
+# Correct
+pkgs.writeScriptBin "script" ''
+  #!${pkgs.bash}/bin/bash
+  ${pkgs.jq}/bin/jq ...
+''
+```
+
+**Prevention**:
+- Always use `lib.` prefix for library functions
+- Always use `pkgs.` prefix for packages
+- Or use `with lib;` at the top of the module (but explicit prefixes are preferred)
+- Test module syntax with `nixos-rebuild dry-build --show-trace`
+
 ### Issue: Git Not Available During Installation
 **Symptoms**:
 ```

@@ -15,7 +15,7 @@ let
   getTierFeatures = tier: let
     currentTier = config.hypervisor.tiers.${tier};
     inheritedFeatures = if currentTier ? inherits
-      then flatten (map getTierFeatures currentTier.inherits)
+      then lib.flatten (map getTierFeatures currentTier.inherits)
       else [];
   in inheritedFeatures ++ (currentTier.features or []);
   
@@ -66,15 +66,15 @@ let
       critical = 5;
     };
     
-    scores = flatten (mapAttrsToList (catName: cat:
-      mapAttrsToList (featName: feat:
-        if elem featName enabledFeatures && feat ? risk
+    scores = lib.flatten (lib.mapAttrsToList (catName: cat:
+      lib.mapAttrsToList (featName: feat:
+        if lib.elem featName enabledFeatures && feat ? risk
         then riskValues.${feat.risk} or 0
         else 0
       ) cat.features
     ) features);
     
-  in foldl' (a: b: a + b) 0 scores;
+  in lib.foldl' (a: b: a + b) 0 scores;
   
   # Generate security profile based on selections
   generateSecurityProfile = enabledFeatures: let
@@ -147,8 +147,8 @@ in {
       ]
       else if cfg.profile == "full" then
         # All non-critical features
-        flatten (mapAttrsToList (catName: cat:
-          mapAttrsToList (featName: feat:
+        lib.flatten (lib.mapAttrsToList (catName: cat:
+          lib.mapAttrsToList (featName: feat:
             if feat.risk != "critical" then featName else null
           ) cat.features
         ) features)
@@ -160,10 +160,10 @@ in {
     assertions = [
       {
         assertion = cfg.riskTolerance != "paranoid" || 
-          all (feat: 
+          lib.all (feat: 
             let 
-              risk = findFirst (f: f.name == feat) {} 
-                (flatten (mapAttrsToList (c: cat: attrValues cat.features) features));
+              risk = lib.findFirst (f: f.name == feat) {} 
+                (lib.flatten (lib.mapAttrsToList (c: cat: lib.attrValues cat.features) features));
             in risk.risk or "minimal" == "minimal" || risk.risk == "low"
           ) cfg.enabledFeatures;
         message = "Paranoid risk tolerance selected but high-risk features enabled";
@@ -197,11 +197,11 @@ in {
       
       ## Enabled Features
       
-      ${concatStringsSep "\n" (map (feat: 
+      ${lib.concatStringsSep "\n" (map (feat: 
         let
-          featureInfo = findFirst (f: true) {} 
-            (flatten (mapAttrsToList (catName: cat: 
-              mapAttrsToList (featName: f: 
+          featureInfo = lib.findFirst (f: true) {} 
+            (lib.flatten (lib.mapAttrsToList (catName: cat: 
+              lib.mapAttrsToList (featName: f: 
                 if featName == feat then f else null
               ) cat.features
             ) features));
@@ -209,11 +209,11 @@ in {
           "### ${feat}\n" +
           "- Risk Level: ${featureInfo.risk or "unknown"}\n" +
           "- Description: ${featureInfo.description or "No description"}\n" +
-          (if featureInfo ? impacts && length featureInfo.impacts > 0 then
-            "- Security Impacts:\n" + concatMapStringsSep "\n" (i: "  - ${i}") featureInfo.impacts
+          (if featureInfo ? impacts && lib.length featureInfo.impacts > 0 then
+            "- Security Impacts:\n" + lib.concatMapStringsSep "\n" (i: "  - ${i}") featureInfo.impacts
           else "") +
-          (if featureInfo ? mitigations && length featureInfo.mitigations > 0 then
-            "\n- Recommended Mitigations:\n" + concatMapStringsSep "\n" (m: "  - ${m}") featureInfo.mitigations
+          (if featureInfo ? mitigations && lib.length featureInfo.mitigations > 0 then
+            "\n- Recommended Mitigations:\n" + lib.concatMapStringsSep "\n" (m: "  - ${m}") featureInfo.mitigations
           else "")
       ) cfg.enabledFeatures)}
       
@@ -239,8 +239,8 @@ in {
       
       \`\`\`mermaid
       graph TD
-      ${concatStringsSep "\n" (mapAttrsToList (feat: deps:
-        concatMapStringsSep "\n" (dep: "    ${dep} --> ${feat}") deps
+      ${lib.concatStringsSep "\n" (lib.mapAttrsToList (feat: deps:
+        lib.concatMapStringsSep "\n" (dep: "    ${dep} --> ${feat}") deps
       ) featureDependencies)}
       \`\`\`
       EOF
@@ -250,7 +250,7 @@ in {
     
     # Configure enabled features in other modules
     services = mkMerge (map (feat:
-      mkIf (elem feat cfg.enabledFeatures) (
+      mkIf (lib.elem feat cfg.enabledFeatures) (
         # Enable corresponding service configurations
         if feat == "webDashboard" then {
           nginx.enable = true;

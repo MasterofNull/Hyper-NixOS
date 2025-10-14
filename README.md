@@ -1,214 +1,167 @@
-# Comprehensive Security Platform
+# Hyper-NixOS
 
-<!-- Language: en -->
-<!-- For translations: Right-click this page and select "Translate" in your browser -->
+A comprehensive, security-focused virtualization platform built on NixOS that provides advanced VM management with enterprise-grade features while maintaining ease of use. Get started in minutes with our quick install one-liner, or choose from multiple installation methods to suit your needs.
 
-A scalable, modular security platform that adapts from lightweight container deployments to full enterprise security operations centers.
+## 🚀 Quick Install (Recommended)
 
-## 🌐 Language Support
-
-**Documentation Language**: English  
-**For translations**: 
-- Use your browser's translate feature (right-click → Translate)
-- See [Translation Guide](docs/TRANSLATION_GUIDE.md) for more options
-
-## 🚀 Quick Start
+Get Hyper-NixOS up and running with a single command:
 
 ```bash
-# Deploy the platform
-sudo ./security-platform-deploy.sh
-
-# Auto-select optimal profile based on system resources
-./profile-selector.sh --auto
-
-# Start using the platform
-sec help
-sec check
-sec monitor start
+bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/system_installer.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
-## 📋 Features
+This one-liner will:
+- Install git if needed
+- Clone the Hyper-NixOS repository
+- Run the installer with optimal settings
+- Configure your system
+- Reboot into Hyper-NixOS
 
-### Core Security Modules
-- **🔐 Zero-Trust Architecture** - Identity verification, mTLS, micro-segmentation
-- **🤖 AI-Powered Detection** - ML-based anomaly detection with multiple models
-- **🌐 API Security Gateway** - Rate limiting, validation, GraphQL protection
-- **📱 Mobile Security** - iOS/Android scanning, remote management
-- **🔗 Supply Chain Security** - SBOM generation, dependency scanning
-- **🔍 Advanced Forensics** - Memory analysis, evidence collection
-- **☁️ Multi-Cloud Support** - AWS, Azure, GCP unified management
-- **🔧 Automated Patching** - Risk-based, staged deployment
-- **🎯 Threat Hunting** - MITRE ATT&CK, behavioral analytics
-- **🔑 Secrets Management** - Auto-rotation, temporary access
+After reboot, the first-boot wizard will help you select the appropriate system tier based on your hardware.
 
-### Console Enhancements
-- **Oh My Zsh** with custom security theme
-- **FZF** fuzzy search integration
-- **Tmux** security monitoring layouts
-- **Custom key bindings** for quick actions
-- **Rich aliases** and security functions
+## 🎯 Features
 
-## 🎚️ Deployment Profiles
+### Core Capabilities
+- **🔒 Security-First Design** - Two-phase security model, privilege separation
+- **🚀 Revolutionary VM Management** - Operate VMs without sudo
+- **📦 Modular Architecture** - Enable only what you need
+- **🎨 Intuitive Interface** - Console menu or optional GUI
+- **🔧 Enterprise Ready** - Clustering, HA, automated backups
+- **🤖 AI-Powered Security** - Threat detection and response
+- **📊 Comprehensive Monitoring** - Prometheus, Grafana, alerts
+- **🌐 Multi-Architecture** - x86_64, ARM64, RISC-V support
 
-| Profile | Memory | CPU | Use Case | Modules |
-|---------|--------|-----|----------|---------|
-| **Minimal** | <512MB | 25% | Containers, IoT | Core only |
-| **Standard** | <2GB | 50% | Servers, VMs | +Compliance, Containers |
-| **Advanced** | <4GB | 75% | Security Teams | +AI, Forensics, API |
-| **Enterprise** | <16GB | 90% | Large Orgs | All modules |
+### System Tiers
+| Tier | RAM | Use Case |
+|------|-----|----------|
+| **Minimal** | 2-4GB | Core virtualization only |
+| **Standard** | 4-8GB | + Monitoring & Security |
+| **Enhanced** | 8-16GB | + Desktop & Advanced Features |
+| **Professional** | 16-32GB | + AI Security & Automation |
+| **Enterprise** | 32GB+ | + Clustering & High Availability |
 
-## 📦 Installation
+## 📋 Prerequisites
 
-### Prerequisites
-- Linux (Ubuntu 20.04+, RHEL 8+, or similar)
-- Python 3.8+
-- Docker (optional, for container security)
-- Root access for system integration
+- **OS**: NixOS 23.11 or newer (or any Linux for NixOS installation)
+- **RAM**: Minimum 2GB (4GB+ recommended)
+- **CPU**: x86_64 or ARM64 with virtualization support
+- **Disk**: 20GB minimum (50GB+ recommended)
+- **Network**: Internet connection for initial setup
 
-### Full Installation
+## 🛠️ Alternative Installation Methods
+
+### Manual Installation
+For more control over the installation process:
+
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd security-platform
+git clone https://github.com/MasterofNull/Hyper-NixOS
+cd Hyper-NixOS
 
-# Run the deployment script
-sudo ./security-platform-deploy.sh
+# Run the installer
+sudo bash ./scripts/system_installer.sh
 
-# Select a profile (or use --auto)
-./profile-selector.sh --select
+# Follow the interactive prompts
 ```
 
-### Minimal Installation
+### Offline Installation
+For air-gapped environments:
+
 ```bash
-# For resource-constrained environments
-./modular-security-framework.sh --minimal
+# On a connected machine, clone the repository
+git clone https://github.com/MasterofNull/Hyper-NixOS
+cd Hyper-NixOS
+
+# Copy the entire directory to a USB drive or other media
+# Transfer to target machine
+
+# On the target machine
+cd /path/to/Hyper-NixOS
+sudo bash ./scripts/system_installer.sh --skip-update-check --source .
 ```
 
-## 🎮 Usage
+## 🎮 Basic Usage
 
-### Basic Commands
+After installation, access the main menu:
+
 ```bash
-# System security check
-sec check
+# Console menu (default)
+# Automatically starts on login
 
-# Network scanning
-sec scan 192.168.1.0/24
+# Or manually via
+hypervisor-menu
 
-# Start monitoring
-sec monitor start
-
-# View alerts
-sec alert list
+# GUI (if enabled)
+# Access via desktop environment
 ```
 
-### Advanced Features
+### Common Operations
+
 ```bash
-# AI threat detection
-sec ai analyze
+# Create a VM
+hv create my-vm
 
-# API security validation
-sec api validate
+# Start/stop VMs
+hv start my-vm
+hv stop my-vm
 
-# Mobile device scan
-sec mobile scan --device android-001
+# List VMs
+hv list
 
-# Supply chain check
-sec supply sbom .
+# Access VM console
+hv console my-vm
 ```
-
-### Console Shortcuts
-- `Ctrl+S` - Quick security status
-- `Ctrl+X,S` - Start security scan
-- `fsec` - Fuzzy search security logs
-- `fkill` - Process management with security context
 
 ## 📚 Documentation
 
-- [Scalable Security Framework Guide](SCALABLE-SECURITY-FRAMEWORK.md)
-- [Implementation Status](IMPLEMENTATION-STATUS.md)
-- [Security Quick Start](SECURITY-QUICKSTART.md)
-- [Enterprise Deployment](ENTERPRISE_QUICK_START.md)
-- [AI Development Practices](AI-Development-Best-Practices.md)
+- **[Quick Start Guide](docs/QUICK_START.md)** - Get running in minutes
+- **[User Guide](docs/user-guides/USER_GUIDE.md)** - Complete usage documentation
+- **[Admin Guide](docs/admin-guides/ADMIN_GUIDE.md)** - System administration
+- **[Feature Catalog](docs/FEATURE_CATALOG.md)** - All available features
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## 🏗️ Architecture
 
+Hyper-NixOS uses a modular NixOS-based architecture:
+
 ```
-security-platform/
-├── modules/              # Security modules
-│   ├── core/            # Core framework
-│   ├── ai_detection/    # AI/ML models
-│   ├── api_security/    # API gateway
-│   ├── zero_trust/      # Zero-trust components
-│   └── ...
-├── config/              # Configuration files
-├── scripts/             # Utility scripts
-├── docs/                # Documentation
-└── console/             # Terminal enhancements
+modules/
+├── core/           # System essentials
+├── security/       # Security configurations
+├── virtualization/ # VM management
+├── monitoring/     # Metrics and logging
+├── features/       # Optional features
+└── enterprise/     # Enterprise features
 ```
 
-## 🔧 Configuration
+## 🔒 Security
 
-### Profile Configuration
-```yaml
-# ~/.security/profile.conf
-PROFILE=standard
-MAX_MEMORY=2048M
-MAX_CPU_PERCENT=50
-ENABLED_MODULES="core,scanner,monitor,containers"
-```
-
-### Module Configuration
-Edit `module-config-schema.yaml` to customize individual modules.
-
-## 🧪 Testing
-
-```bash
-# Run comprehensive audit
-./audit-platform.sh
-
-# Test specific features
-./test-platform-features.sh
-
-# Validate implementation
-./validate-implementation.sh
-```
-
-## 🚦 Status
-
-- ✅ **All features implemented** (100%)
-- ✅ **Documentation complete** (30+ comprehensive guides)
-- ✅ **Code quality** (A- grade, 92/100)
-- ✅ **NixOS best practices** (100% compliant)
-- ✅ **Security platform tests** (36% automated, 100% manual)
-- ✅ **Ready for production**
+- **Two-Phase Security Model**: Permissive setup → Hardened production
+- **Privilege Separation**: VM operations don't require sudo
+- **Defense in Depth**: Multiple security layers
+- **Zero-Trust Principles**: Verify everything
+- **Comprehensive Auditing**: All actions logged
 
 ## 🤝 Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Security community for best practices
-- Open source projects that inspired this platform
-- Contributors and testers
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## 📞 Support
 
-For comprehensive support information, see our [Community and Support Guide](docs/COMMUNITY_AND_SUPPORT.md).
+- **Documentation**: [Full documentation](docs/README.md)
+- **Issues**: [GitHub Issues](https://github.com/MasterofNull/Hyper-NixOS/issues)
+- **Community**: [GitHub Discussions](https://github.com/MasterofNull/Hyper-NixOS/discussions)
 
-### Quick Links
-- **Documentation**: `/docs` directory
-- **GitHub**: https://github.com/Hyper-NixOS/Hyper-NixOS
-- **Issues**: https://github.com/Hyper-NixOS/Hyper-NixOS/issues
-- **Contact**: Discord - [@quin-tessential](https://discord.com/users/quin-tessential)
+## 📜 License
+
+Hyper-NixOS is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+## 🙏 Credits
+
+See [CREDITS.md](CREDITS.md) for a full list of contributors and acknowledgments.
 
 ---
 
-**Latest Update**: October 2025
-**Version**: 2.0
-**Status**: Production Ready
-**Quality Score**: A- (92/100)
+**Current Version**: v2.0.0 - Production Ready  
+**Repository**: https://github.com/MasterofNull/Hyper-NixOS  
+**Status**: Active Development

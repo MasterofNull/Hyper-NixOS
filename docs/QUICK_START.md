@@ -7,17 +7,15 @@ Get up and running with Hyper-NixOS in minutes!
 
 > 🌐 **Need this in another language?** Right-click and select "Translate" in your browser, or see our [Translation Guide](TRANSLATION_GUIDE.md).
 
-## 🚀 New Installation Workflow
+## 🚀 Quick Install (Recommended)
 
-Hyper-NixOS now uses a minimal installation approach that grows with your needs:
+Get Hyper-NixOS running with a single command:
 
-### 1. Install Minimal System
 ```bash
-# One-line installation
-curl -fsSL https://raw.githubusercontent.com/yourusername/hyper-nixos/main/scripts/system_installer.sh | sudo bash
-
-# This installs only core virtualization components
+bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/system_installer.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
+
+This one-liner installs the minimal system with only core virtualization components.
 
 ### 2. First Boot Configuration
 After installation and reboot, a configuration wizard will automatically start to help you select the appropriate system tier based on your hardware and use case.

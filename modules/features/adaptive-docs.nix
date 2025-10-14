@@ -330,7 +330,7 @@ in {
       mkdir -p /etc/hypervisor/docs/{beginner,intermediate,expert}
       
       # Generate docs for each verbosity level
-      ${concatStringsSep "\n" (mapAttrsToList (level: settings: ''
+      ${lib.concatStringsSep "\n" (lib.mapAttrsToList (level: settings: ''
         cat > /etc/hypervisor/docs/${level}/vm-quick-start.md <<'EOF'
         ${if settings.verbosity == "high" then ''
           # Virtual Machine Quick Start Guide
