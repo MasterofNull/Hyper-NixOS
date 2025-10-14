@@ -591,6 +591,50 @@ pkgs.writeScriptBin "script" ''
 - Or use `with lib;` at the top of the module (but explicit prefixes are preferred)
 - Test module syntax with `nixos-rebuild dry-build --show-trace`
 
+### Issue: Missing Attribute Error - Module Dependencies
+**Symptoms**:
+```
+error: attribute 'features' missing
+       at /nix/store/.../modules/features/feature-manager.nix:9:14:
+            8|   cfg = config.hypervisor.featureManager;
+            9|   features = config.hypervisor.features;
+```
+
+**Root Cause**: A module is trying to access an option (`config.hypervisor.features`) that is defined in another module that hasn't been imported.
+
+**Solutions**:
+
+#### ✅ **Import All Required Modules**
+If module A depends on options defined in module B, both must be imported:
+```nix
+imports = [
+  ./modules/features/feature-categories.nix  # Defines hypervisor.features
+  ./modules/features/feature-manager.nix     # Uses hypervisor.features
+];
+```
+
+#### ✅ **Check Module Dependencies**
+Common module dependencies in Hyper-NixOS:
+- `feature-manager.nix` requires `feature-categories.nix`
+- `tier-templates.nix` requires `feature-categories.nix`
+- Many modules require `core/options.nix` for base options
+
+#### ✅ **Verify Option Definitions**
+To find where an option is defined:
+```bash
+# Search for option definition
+grep -r "options\.hypervisor\.features\s*=" modules/
+
+# Check if a module is imported
+grep -h "feature-categories\.nix" configuration*.nix
+```
+
+**Prevention**:
+- When creating modules that reference other options, document the dependencies
+- Import modules in the correct order (dependencies first)
+- Keep related options in the same module when possible
+- Test configurations with `nixos-rebuild dry-build --show-trace`
+
 ### Issue: Git Not Available During Installation
 **Symptoms**:
 ```
