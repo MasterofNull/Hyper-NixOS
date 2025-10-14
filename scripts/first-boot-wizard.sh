@@ -373,6 +373,7 @@ update_main_config() {
     ./modules/core/system.nix
     ./modules/core/packages.nix
     ./modules/core/directories.nix
+    ./modules/core/first-boot.nix
     
     # System tiers definition
     ./modules/system-tiers.nix

@@ -10,6 +10,34 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-14: Documentation Consolidation & First Boot Integration
+**Agent**: Claude
+**Tasks Completed**:
+
+1. **Documentation Consolidation Plan**:
+   - Created comprehensive consolidation plan to reduce from 117 to ~40 files
+   - Organized into clear hierarchy: core, user, admin, reference, and dev docs
+   - Maintained README, CREDITS, and LICENSE in project root as required
+
+2. **First Boot Integration**:
+   - Updated `configuration-minimal.nix` to enable first boot wizard by default
+   - Added `hypervisor.firstBoot.enable = true` and `autoStart = true`
+   - Ensured system-tiers.nix module is imported
+
+3. **Documentation Organization Script**:
+   - Created `scripts/consolidate-documentation.sh` for automated consolidation
+   - Merges overlapping content into focused guides
+   - Creates clear navigation indexes
+   - Archives redundant files
+
+**Key Improvements**:
+- Clear documentation hierarchy
+- No duplicate content
+- First boot wizard automatically runs on fresh installs
+- Easy navigation for different user types
+
+---
+
 #### 2025-10-14: Minimal Installation Workflow Implementation
 **Agent**: Claude
 **Feature Implemented**: Tiered installation system with first-boot configuration

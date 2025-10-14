@@ -12,6 +12,7 @@
     # Only import modules whose options we're actually setting below
     ./modules/features/feature-manager.nix  # We use hypervisor.featureManager
     ./modules/core/first-boot.nix  # First boot configuration wizard
+    ./modules/system-tiers.nix  # System tier definitions
   ];
 
   # System identification
@@ -53,6 +54,12 @@
       profile = "balanced";
       riskTolerance = "balanced";
       generateReport = true;
+    };
+    
+    # Enable first boot wizard
+    firstBoot = {
+      enable = true;
+      autoStart = true;
     };
   };
   
