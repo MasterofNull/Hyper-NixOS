@@ -47,11 +47,27 @@ This folder is:
 4. Not to be shared outside the development team
 
 ### For AI Agents
-When working with these documents:
+
+**🚀 QUICK START**: Read `AI_DOCS_INDEX.md` for navigation, then `AI_QUICK_REFERENCE.md` for instant patterns.
+
+**Core Documents** (Read in order):
+1. `AI_QUICK_REFERENCE.md` - Instant pattern lookup (5 min)
+2. `AI_ASSISTANT_CONTEXT.md` - Detailed patterns & context (20 min)
+3. `AI_DOCUMENTATION_PROTOCOL.md` - How to maintain docs (15 min)
+4. `AI_DOCS_INDEX.md` - Navigation hub (reference as needed)
+
+**🚨 CRITICAL RULE**: When user gives ANY feedback/suggestion:
+1. Update AI docs IMMEDIATELY (without being asked)
+2. Make it permanent behavior
+3. Never require user to repeat themselves
+
+**When working with these documents**:
 1. Always read relevant context files before making changes
-2. Update documentation after implementing fixes
-3. Preserve historical context and design rationale
-4. Follow the protocols defined in these documents
+2. **Automatically update docs when user gives feedback** (NEW - most important!)
+3. Update documentation after implementing fixes
+4. Preserve historical context and design rationale
+5. Follow the protocols defined in these documents
+6. Search for pattern bugs, don't just fix individual issues
 
 ---
 © 2024-2025 MasterofNull - All Rights Reserved
