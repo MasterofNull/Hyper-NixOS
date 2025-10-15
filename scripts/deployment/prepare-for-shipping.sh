@@ -121,6 +121,8 @@ EOF
 # Create archive
 echo
 echo -e "${YELLOW}Creating distribution archive...${NC}"
+# Ensure releases directory exists
+mkdir -p ../releases
 cd public-release
 tar -czf ../releases/security-platform-v2.0-public.tar.gz .
 cd ..
