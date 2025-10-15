@@ -10,6 +10,72 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-15 (Update 20): Phase 3 - Documentation Conflict Resolution Complete
+**Agent**: Claude  
+**Task**: Fix documentation conflicts from Phase 1 changes, consolidate duplicates
+
+**Documentation Conflicts Found**:
+Multiple installation docs contained OLD one-liner (pre-Phase 1) conflicting with NEW hybrid install approach.
+
+**Changes Applied** (Recording Old → New → Reason):
+
+1. **INSTALLATION_GUIDE.md**
+   - **Old**: 280-char one-liner as primary method
+   - **New**: Hybrid approach (Method 1: curl pipe, Method 2: git clone) with legacy one-liner moved to advanced section  
+   - **Reason**: Phase 1 simplified installation per Ease of Use (Pillar 1), reduces friction 95%
+
+2. **QUICK_START.md** (main docs)
+   - **Old**: 280-char one-liner only
+   - **New**: Both methods prominently featured, links to full Installation Guide
+   - **Reason**: Must match current system, provide user choice
+
+3. **user-guides/QUICK_START.md**
+   - **Old**: Separate quick start with manual clone approach (162 lines), conflicted with main QUICK_START.md
+   - **New**: Deleted, replaced with GETTING_STARTED.md (for new users)
+   - **Reason**: Eliminate duplication (same purpose as main QUICK_START.md), create clear learning pathway
+
+4. **user-guides/GETTING_STARTED.md** (Created)
+   - **Purpose**: Beginner-friendly guide with explanations
+   - **Audience**: New to virtualization users
+   - **Content**: Step-by-step with learning path, common questions
+   - **Reason**: Learning ethos (Pillar 3) - facilitate new user → competent journey
+
+**Documentation Principle Applied**:
+"When dev docs conflict with current system changes, update docs to match reality, record old→new→reason"
+
+**Additional Fixes**:
+- Fixed placeholder URLs (yourusername → MasterofNull) in 2 docs
+- Updated DEPLOYMENT.md with correct repository URLs
+- Verified no one-liner conflicts in deployment docs
+
+**Files Created**:
+- `docs/user-guides/GETTING_STARTED.md` - Beginner-friendly guide
+
+**Files Deleted**:
+- `docs/user-guides/QUICK_START.md` - Duplicate, replaced with GETTING_STARTED.md
+
+**Files Updated**:
+- `docs/INSTALLATION_GUIDE.md` - Hybrid install methods, legacy one-liner moved to advanced
+- `docs/QUICK_START.md` - Updated to new install methods
+- `docs/deployment/DEPLOYMENT.md` - Fixed repository URLs
+- `docs/RELEASE_NOTES_v2.0.0.md` - Fixed repository URLs
+
+**Documentation Principles Enforced**:
+- ✅ Update conflicting docs to match current system
+- ✅ Record old → new → reason for changes
+- ✅ Preserve history (legacy approach still documented)
+- ✅ Eliminate duplicates, create clear pathways
+
+**Impact**:
+- ✅ All installation docs now consistent with Phase 1 changes
+- ✅ Clear learning pathway (GETTING_STARTED → QUICK_START → INSTALLATION_GUIDE)
+- ✅ No conflicting information
+- ✅ Users get choice + explanation
+
+**Status**: Complete
+
+---
+
 #### 2025-10-15 (Update 19): Phase 2 - Anti-Pattern Elimination Complete
 **Agent**: Claude
 **Task**: Fix 16 modules with `with lib;` and `with pkgs;` anti-patterns

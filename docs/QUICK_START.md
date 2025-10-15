@@ -5,22 +5,28 @@
 
 Get up and running with Hyper-NixOS in minutes!
 
-> 🌐 **Need this in another language?** Right-click and select "Translate" in your browser, or see our [Translation Guide](TRANSLATION_GUIDE.md).
+> 🌐 **Need this in another language?** Right-click and select "Translate" in your browser, or see our [Translation Guide](TRANSLATION_GUIDE.md).  
+> 📖 **For detailed installation**, see the [Installation Guide](INSTALLATION_GUIDE.md).
 
-## 🚀 Quick Install (Recommended)
+## 🚀 Quick Install (Choose Your Method)
 
-Get Hyper-NixOS running with our one-line installer:
-
+### ⚡ Fastest: One Command
 ```bash
-bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/system_installer.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
+curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
 ```
 
-This is the **recommended installation method** that automatically:
-- ✅ Installs git if not present
-- ✅ Clones the latest Hyper-NixOS repository
-- ✅ Runs the installer with optimal settings
-- ✅ Configures your system and switches to Hyper-NixOS
-- ✅ Reboots into your new hypervisor platform
+### 🔍 Safest: Inspect First
+```bash
+git clone https://github.com/MasterofNull/Hyper-NixOS.git
+cd Hyper-NixOS
+sudo ./install.sh
+```
+
+**Both methods automatically**:
+- ✅ Install git if not present
+- ✅ Set up Hyper-NixOS with optimal settings
+- ✅ Detect your hardware
+- ✅ Configure base system
 
 The installer sets up the minimal system with only core virtualization components, allowing you to choose additional features during first boot.
 

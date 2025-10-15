@@ -4,14 +4,14 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/hyper-nixos.git
-cd hyper-nixos
+git clone https://github.com/MasterofNull/Hyper-NixOS.git
+cd Hyper-NixOS
 
 # Run the installer
 sudo ./install.sh
 
 # Or deploy with flakes
-nix flake init -t github:yourusername/hyper-nixos
+nix flake init -t github:MasterofNull/Hyper-NixOS
 sudo nixos-rebuild switch --flake .#hypervisor
 ```
 
@@ -55,7 +55,7 @@ reboot
 
 ```bash
 # Add Hyper-NixOS channel
-nix-channel --add https://github.com/yourusername/hyper-nixos/archive/main.tar.gz hyper-nixos
+nix-channel --add https://github.com/MasterofNull/Hyper-NixOS/archive/main.tar.gz hyper-nixos
 nix-channel --update
 
 # Create configuration
@@ -551,8 +551,8 @@ hv-import-cloud --provider aws --instance i-1234567890
 ## Support
 
 - Documentation: https://hyper-nixos.org/docs
-- Community: https://github.com/yourusername/hyper-nixos/discussions
-- Issues: https://github.com/yourusername/hyper-nixos/issues
+- Community: https://github.com/MasterofNull/Hyper-NixOS/discussions
+- Issues: https://github.com/MasterofNull/Hyper-NixOS/issues
 
 ## Next Steps
 
