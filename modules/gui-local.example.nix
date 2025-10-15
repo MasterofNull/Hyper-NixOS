@@ -55,6 +55,8 @@
   '';
   
   # Enable audio support
+  # NOTE: These services may not exist in minimal configurations
+  # Ensure rtkit and pipewire modules are available before using this example
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;

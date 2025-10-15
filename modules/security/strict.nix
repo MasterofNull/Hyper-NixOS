@@ -84,9 +84,11 @@
     "z /etc/hypervisor 0750 root root -"
   ];
   
-  # Additional AppArmor profiles for QEMU
-  security.apparmor.enable = lib.mkForce true;
-  security.apparmor.packages = [ pkgs.apparmor-profiles ];
+  # Additional AppArmor profiles for QEMU - only if available
+  security.apparmor = lib.mkIf (config.security ? apparmor) {
+    enable = lib.mkForce true;
+    packages = [ pkgs.apparmor-profiles ];
+  };
   
   # Kernel hardening overrides (stricter than default)
   # Note: Base hardening is in security/kernel-hardening.nix
