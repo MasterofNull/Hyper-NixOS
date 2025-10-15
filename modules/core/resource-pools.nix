@@ -1,4 +1,4 @@
-# Resource Pools and Permissions Module - Inspired by Proxmox
+# Resource Pools and Permissions Module - Enterprise Access Control
 { config, lib, pkgs, ... }:
 
 with lib;

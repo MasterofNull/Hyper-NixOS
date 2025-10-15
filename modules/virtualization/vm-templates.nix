@@ -1,4 +1,4 @@
-# VM Templates and Cloning System - Inspired by Proxmox
+# VM Templates and Cloning System - Rapid Deployment Framework
 { config, lib, pkgs, ... }:
 
 with lib;

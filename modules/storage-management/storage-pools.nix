@@ -1,4 +1,4 @@
-# Storage Abstraction Layer - Inspired by Proxmox Storage Model
+# Storage Abstraction Layer - Enterprise Storage Management
 { config, lib, pkgs, ... }:
 
 with lib;

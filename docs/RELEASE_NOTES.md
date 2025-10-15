@@ -182,7 +182,7 @@ We are excited to announce the first official release of Hyper-NixOS - a compreh
 
 For users migrating from other virtualization platforms:
 
-- **From Proxmox**: Use our migration scripts in `/tools/migration/`
+- **From Other Platforms**: Use our migration scripts in `/tools/migration/`
 - **From VMware**: VMDK images can be converted with `qemu-img`
 - **From VirtualBox**: VDI images supported via conversion
 

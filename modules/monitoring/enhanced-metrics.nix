@@ -1,4 +1,4 @@
-# Enhanced Monitoring Integration - Inspired by Proxmox
+# Enhanced Monitoring Integration - Enterprise Observability
 { config, lib, pkgs, ... }:
 
 with lib;
@@ -26,7 +26,7 @@ let
         description = "Collection interval in seconds";
       };
       
-      # RRD-style graphs (Proxmox-compatible)
+      # RRD-style graphs (enterprise-compatible)
       graphs = {
         cpu = mkOption {
           type = types.bool;

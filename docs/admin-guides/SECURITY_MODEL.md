@@ -390,7 +390,7 @@ sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
 
 ### Hypervisor Systems Comparison
 
-| Feature | Hyper-NixOS (This System) | Proxmox | ESXi Free | Hyper-V |
+| Feature | Hyper-NixOS (This System) | Other Enterprise Platform | ESXi Free | Hyper-V |
 |---------|--------------------------|---------|-----------|---------|
 | **Autologin** | ✅ Optional (secure) | ❌ No | ❌ No | ❌ No |
 | **Granular sudo** | ✅ Yes (VM ops only) | ❌ Full sudo | N/A | N/A |

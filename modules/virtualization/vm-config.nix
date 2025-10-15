@@ -1,4 +1,4 @@
-# Enhanced VM Configuration Module - Inspired by Proxmox
+# Enhanced VM Configuration Module - Enterprise Virtualization
 { config, lib, pkgs, ... }:
 
 with lib;

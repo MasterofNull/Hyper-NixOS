@@ -1,4 +1,4 @@
-# Cluster Configuration Module - Inspired by Proxmox Clustering
+# Cluster Configuration Module - Enterprise High Availability
 { config, lib, pkgs, ... }:
 
 with lib;

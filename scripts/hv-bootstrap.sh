@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # hv-bootstrap - Bootstrap NixOS VMs with auto-install ISO
-# Inspired by nixmoxer from Proxmox-NixOS
+# Enterprise VM deployment and provisioning
 #
 
 set -euo pipefail

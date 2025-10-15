@@ -1,4 +1,4 @@
-# Enhanced Backup System - Inspired by Proxmox Backup
+# Enhanced Backup System - Enterprise Backup and Recovery
 { config, lib, pkgs, ... }:
 
 with lib;
