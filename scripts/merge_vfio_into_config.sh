@@ -9,7 +9,7 @@ trap 'exit $?' EXIT HUP INT TERM
 
 CONFIG_DIR="/etc/hypervisor/src/modules"
 LOCAL_VFIO="/var/lib/hypervisor/vfio-boot.local.nix"
-TARGET_CONFIG="/etc/nixos/configuration/configuration.nix"
+TARGET_CONFIG="/etc/nixos/configuration.nix"
 
 require() { for b in $DIALOG jq; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done; }
 require
@@ -23,7 +23,7 @@ if ! $DIALOG --yesno "Append VFIO config to $TARGET_CONFIG and run nixos-rebuild
   exit 0
 fi
 
-backup="/etc/nixos/configuration/configuration.nix.bak.$(date +%s)"
+backup="/etc/nixos/configuration.nix.bak.$(date +%s)"
 sudo cp "$TARGET_CONFIG" "$backup"
 
 # Append an import if not present

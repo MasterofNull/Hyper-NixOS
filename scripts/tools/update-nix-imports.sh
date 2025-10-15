@@ -18,17 +18,17 @@ update_imports() {
     sed -i 's|./configuration-|./variants/configuration-|g' "$file"
     
     # Special case for files in variants/ that need to go up two levels
-    if [[ "$file" == configuration/variants/* ]]; then
+    if [[ "$file" == profiles/* ]]; then
         sed -i 's|./core/hardware-configuration.nix|../core/hardware-configuration.nix|g' "$file"
         sed -i 's|../modules/|../../modules/|g' "$file"
     fi
 }
 
 # Update main configuration
-update_imports "configuration/configuration.nix"
+update_imports "configuration.nix"
 
 # Update all variant configurations
-for variant in configuration/variants/*.nix; do
+for variant in profiles/*.nix; do
     if [ -f "$variant" ]; then
         update_imports "$variant"
     fi

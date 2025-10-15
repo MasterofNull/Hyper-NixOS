@@ -85,7 +85,7 @@ msg "Checking critical configuration files..."
 critical_files=(
   "/etc/hypervisor/flake.nix"
   "/etc/hypervisor/src/configuration.nix"
-  "/etc/nixos/configuration/core/hardware-configuration.nix"
+  "/etc/nixos/hardware-configuration.nix"
 )
 
 for file in "${critical_files[@]}"; do

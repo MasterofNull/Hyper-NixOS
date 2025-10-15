@@ -27,7 +27,7 @@ readonly DIM='\033[2m'
 readonly NC='\033[0m' # No Color
 
 # Configuration files
-readonly CONFIG_FILE="/etc/nixos/configuration/configuration.nix"
+readonly CONFIG_FILE="/etc/nixos/configuration.nix"
 readonly FEATURES_FILE="/etc/nixos/hypervisor-features.nix"
 readonly BACKUP_DIR="/etc/nixos/backups"
 readonly FEATURES_DB="/etc/hypervisor/features/features-database.json"

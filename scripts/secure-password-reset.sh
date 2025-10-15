@@ -84,7 +84,7 @@ verify_admin_auth() {
     fi
     
     # Challenge 2: Installation date (from first file in /etc/nixos)
-    local install_date=$(stat -c %y /etc/nixos/configuration/configuration.nix 2>/dev/null | cut -d' ' -f1)
+    local install_date=$(stat -c %y /etc/nixos/configuration.nix 2>/dev/null | cut -d' ' -f1)
     echo "What date was this system installed (YYYY-MM-DD)?"
     read -r date_answer
     
