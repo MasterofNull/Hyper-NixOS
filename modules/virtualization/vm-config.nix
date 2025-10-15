@@ -1,538 +1,652 @@
-# Enhanced VM Configuration Module - Enterprise Virtualization
+# Tag-Based VM Configuration Module with Policy Inheritance
+# Uses a unique tag-based system for VM configuration with policy templates
 { config, lib, pkgs, ... }:
 
 with lib;
 let
-  cfg = config.hypervisor.vms;
+  cfg = config.hypervisor.compute;
   
-  # Common volume options for different disk types
-  volumeOptions = {
+  # Tag definitions for flexible VM configuration
+  tagDefinition = {
     options = {
-      size = mkOption {
+      name = mkOption {
         type = types.str;
-        description = "Size of the volume (e.g., '32G', '100G', '1T')";
-        example = "32G";
+        description = "Tag name";
       };
       
-      cache = mkOption {
-        type = types.enum [ "none" "writethrough" "writeback" "unsafe" "directsync" ];
-        default = "none";
-        description = "Cache mode for the disk";
+      category = mkOption {
+        type = types.enum [ "performance" "security" "network" "storage" "lifecycle" "compliance" ];
+        description = "Tag category for organization";
       };
       
-      format = mkOption {
-        type = types.enum [ "raw" "qcow2" "vmdk" "vdi" ];
-        default = "qcow2";
-        description = "Disk image format";
+      values = mkOption {
+        type = types.attrsOf types.anything;
+        default = {};
+        description = "Tag-specific configuration values";
       };
       
-      discard = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Enable discard/trim support";
-      };
-      
-      iothread = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Enable I/O thread for better performance";
-      };
-      
-      ssd = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Emulate SSD (sets rotation rate to 1)";
-      };
-      
-      backup = mkOption {
-        type = types.bool;
-        default = true;
-        description = "Include this disk in backups";
-      };
-      
-      replicate = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Enable replication for this disk";
-      };
-      
-      aio = mkOption {
-        type = types.enum [ "native" "threads" "io_uring" ];
-        default = "native";
-        description = "Asynchronous I/O mode";
-      };
-      
-      mbps_rd = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = "Read speed limit in MB/s";
-      };
-      
-      mbps_wr = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = "Write speed limit in MB/s";
-      };
-      
-      iops_rd = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = "Read IOPS limit";
-      };
-      
-      iops_wr = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = "Write IOPS limit";
-      };
-    };
-  };
-  
-  # Network interface options
-  netOptions = {
-    options = {
-      model = mkOption {
-        type = types.enum [ "virtio" "e1000" "e1000e" "rtl8139" "vmxnet3" ];
-        default = "virtio";
-        description = "Network card model";
-      };
-      
-      bridge = mkOption {
-        type = types.str;
-        description = "Network bridge to connect to";
-        example = "vmbr0";
-      };
-      
-      tag = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = "VLAN tag (1-4094)";
-      };
-      
-      firewall = mkOption {
-        type = types.bool;
-        default = true;
-        description = "Enable firewall on this interface";
-      };
-      
-      link_down = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Simulate unplugged cable";
-      };
-      
-      macaddr = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "MAC address (auto-generated if not specified)";
-        example = "52:54:00:12:34:56";
-      };
-      
-      mtu = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = "MTU size";
-      };
-      
-      queues = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = "Number of packet queues for multiqueue";
-      };
-      
-      rate = mkOption {
-        type = types.nullOr types.float;
-        default = null;
-        description = "Rate limit in MB/s";
-      };
-    };
-  };
-  
-  # CPU configuration options
-  cpuOptions = {
-    options = {
-      type = mkOption {
-        type = types.str;
-        default = "host";
-        description = "CPU type (host, kvm64, or specific model)";
-        example = "Skylake-Server";
-      };
-      
-      flags = mkOption {
-        type = types.listOf types.str;
-        default = [];
-        description = "CPU flags to add/remove";
-        example = [ "+aes" "-svm" "+avx2" ];
-      };
-      
-      hidden = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Hide KVM signature from VM";
-      };
-    };
-  };
-  
-  # Cloud-init options
-  cloudInitOptions = {
-    options = {
-      enable = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Enable cloud-init support";
-      };
-      
-      user = mkOption {
-        type = types.str;
-        default = "cloud-user";
-        description = "Default user for cloud-init";
-      };
-      
-      password = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Password for default user (use passwordHash instead)";
-      };
-      
-      passwordHash = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Password hash for default user";
-      };
-      
-      sshKeys = mkOption {
-        type = types.listOf types.str;
-        default = [];
-        description = "SSH public keys to add";
-      };
-      
-      nameservers = mkOption {
-        type = types.listOf types.str;
-        default = [];
-        description = "DNS nameservers";
-        example = [ "8.8.8.8" "8.8.4.4" ];
-      };
-      
-      searchdomain = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "DNS search domain";
-      };
-      
-      upgrade = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Upgrade packages on first boot";
-      };
-      
-      packages = mkOption {
-        type = types.listOf types.str;
-        default = [];
-        description = "Additional packages to install";
-        example = [ "qemu-guest-agent" "curl" "vim" ];
-      };
-      
-      userData = mkOption {
-        type = types.nullOr types.lines;
-        default = null;
-        description = "Custom cloud-init user data";
-      };
-    };
-  };
-  
-  # PCI device passthrough options
-  pciDeviceOptions = {
-    options = {
-      host = mkOption {
-        type = types.str;
-        description = "Host PCI ID (e.g., '01:00.0')";
-      };
-      
-      pcie = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Present as PCIe device (requires Q35 machine type)";
-      };
-      
-      rombar = mkOption {
-        type = types.bool;
-        default = true;
-        description = "Include ROM BAR";
-      };
-      
-      romfile = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Custom ROM file";
-      };
-      
-      x-vga = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Enable VGA mode (for GPU passthrough)";
-      };
-    };
-  };
-  
-  # VM configuration options
-  vmOptions = {
-    options = {
-      enable = mkOption {
-        type = types.bool;
-        default = true;
-        description = "Whether to create this VM";
-      };
-      
-      # Basic settings
-      memory = mkOption {
+      priority = mkOption {
         type = types.int;
-        description = "Memory size in MB";
-        example = 4096;
+        default = 50;
+        description = "Priority for conflict resolution (higher wins)";
       };
-      
-      balloon = mkOption {
-        type = types.int;
-        default = 0;
-        description = "Minimum memory for ballooning (0 to disable)";
-      };
-      
-      cores = mkOption {
-        type = types.int;
-        default = 1;
-        description = "Number of CPU cores per socket";
-      };
-      
-      sockets = mkOption {
-        type = types.int;
-        default = 1;
-        description = "Number of CPU sockets";
-      };
-      
-      vcpus = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = "Number of hotpluggable CPUs";
-      };
-      
-      cpu = mkOption {
-        type = types.submodule cpuOptions;
-        default = {};
-        description = "CPU configuration";
-      };
-      
-      numa = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Enable NUMA support";
-      };
-      
-      # Machine settings
-      machine = mkOption {
+    };
+  };
+  
+  # Policy templates that can be inherited
+  policyTemplate = {
+    options = {
+      name = mkOption {
         type = types.str;
-        default = "q35";
-        description = "Machine type (pc, q35, etc.)";
-      };
-      
-      bios = mkOption {
-        type = types.enum [ "seabios" "ovmf" ];
-        default = "seabios";
-        description = "BIOS type";
-      };
-      
-      # Boot settings
-      boot = mkOption {
-        type = types.str;
-        default = "order=scsi0;ide2;net0";
-        description = "Boot order";
-      };
-      
-      bootdisk = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Primary boot disk";
-      };
-      
-      # Display settings
-      vga = mkOption {
-        type = types.enum [ "std" "cirrus" "vmware" "qxl" "serial0" "serial1" "serial2" "serial3" "none" "virtio" ];
-        default = "std";
-        description = "VGA hardware type";
-      };
-      
-      # Disks
-      scsi = mkOption {
-        type = types.attrsOf (types.submodule volumeOptions);
-        default = {};
-        description = "SCSI disks";
-      };
-      
-      sata = mkOption {
-        type = types.attrsOf (types.submodule volumeOptions);
-        default = {};
-        description = "SATA disks";
-      };
-      
-      ide = mkOption {
-        type = types.attrsOf (types.submodule volumeOptions);
-        default = {};
-        description = "IDE disks";
-      };
-      
-      virtio = mkOption {
-        type = types.attrsOf (types.submodule volumeOptions);
-        default = {};
-        description = "VirtIO disks";
-      };
-      
-      # Network interfaces
-      net = mkOption {
-        type = types.attrsOf (types.submodule netOptions);
-        default = {};
-        description = "Network interfaces";
-      };
-      
-      # PCI passthrough
-      hostpci = mkOption {
-        type = types.attrsOf (types.submodule pciDeviceOptions);
-        default = {};
-        description = "PCI devices to pass through";
-      };
-      
-      # USB devices
-      usb = mkOption {
-        type = types.attrsOf (types.attrs);
-        default = {};
-        description = "USB devices";
-      };
-      
-      # Serial ports
-      serial = mkOption {
-        type = types.attrsOf types.str;
-        default = {};
-        description = "Serial devices";
-      };
-      
-      # Features
-      agent = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Enable QEMU Guest Agent";
-      };
-      
-      tablet = mkOption {
-        type = types.bool;
-        default = true;
-        description = "Enable USB tablet device for mouse";
-      };
-      
-      kvm = mkOption {
-        type = types.bool;
-        default = true;
-        description = "Enable KVM hardware virtualization";
-      };
-      
-      acpi = mkOption {
-        type = types.bool;
-        default = true;
-        description = "Enable ACPI";
-      };
-      
-      # Cloud-init
-      cloudInit = mkOption {
-        type = types.submodule cloudInitOptions;
-        default = {};
-        description = "Cloud-init configuration";
-      };
-      
-      # Advanced options
-      args = mkOption {
-        type = types.str;
-        default = "";
-        description = "Additional QEMU command line arguments";
-      };
-      
-      hookscript = mkOption {
-        type = types.nullOr types.path;
-        default = null;
-        description = "Hook script for VM lifecycle events";
+        description = "Policy template name";
       };
       
       description = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "VM description";
+        type = types.str;
+        default = "";
+        description = "Policy description";
       };
       
       tags = mkOption {
         type = types.listOf types.str;
         default = [];
-        description = "Tags for grouping/filtering";
+        description = "Tags to apply when this policy is used";
       };
       
-      protection = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Protect VM from accidental deletion";
+      constraints = mkOption {
+        type = types.attrsOf types.anything;
+        default = {};
+        description = "Constraints that must be satisfied";
       };
       
-      # Resource limits
-      cpulimit = mkOption {
-        type = types.nullOr types.float;
-        default = null;
-        description = "CPU usage limit (0.0-sockets*cores)";
-      };
-      
-      cpuunits = mkOption {
-        type = types.int;
-        default = 1024;
-        description = "CPU weight for scheduling (1-262144)";
-      };
-      
-      # Migration settings
-      migrate_downtime = mkOption {
-        type = types.float;
-        default = 0.1;
-        description = "Maximum downtime during migration (seconds)";
-      };
-      
-      migrate_speed = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = "Maximum migration speed (MB/s)";
-      };
-      
-      # Startup/shutdown
-      onboot = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Start VM on host boot";
-      };
-      
-      startup = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Startup order and delay";
-        example = "order=2,up=30";
-      };
-      
-      shutdown = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Shutdown timeout";
-        example = "timeout=60";
+      defaults = mkOption {
+        type = types.attrsOf types.anything;
+        default = {};
+        description = "Default values provided by this policy";
       };
     };
   };
+  
+  # Compute unit definition (our unique VM abstraction)
+  computeUnit = {
+    options = {
+      # Unique identification
+      uuid = mkOption {
+        type = types.str;
+        default = "";
+        description = "Auto-generated UUID for the compute unit";
+      };
+      
+      # Human-friendly naming
+      labels = mkOption {
+        type = types.attrsOf types.str;
+        default = {};
+        description = "Key-value labels for identification";
+        example = { app = "web"; env = "prod"; tier = "frontend"; };
+      };
+      
+      # Tag-based configuration
+      tags = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = "Tags to apply for configuration";
+        example = [ "high-performance" "secure-boot" "gpu-enabled" ];
+      };
+      
+      # Policy inheritance
+      policies = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = "Policy templates to inherit";
+        example = [ "web-server" "production" ];
+      };
+      
+      # Resource requirements (abstract units)
+      resources = {
+        compute = mkOption {
+          type = types.submodule {
+            options = {
+              units = mkOption {
+                type = types.int;
+                default = 100;
+                description = "Abstract compute units (100 = 1 vCPU equivalent)";
+              };
+              
+              burst = mkOption {
+                type = types.nullOr types.int;
+                default = null;
+                description = "Burst compute units available";
+              };
+              
+              architecture = mkOption {
+                type = types.enum [ "x86_64" "aarch64" "riscv64" "wasm" ];
+                default = "x86_64";
+                description = "Instruction set architecture";
+              };
+              
+              features = mkOption {
+                type = types.listOf types.str;
+                default = [];
+                description = "Required CPU features";
+                example = [ "avx512" "aes" "vmx" ];
+              };
+            };
+          };
+          default = {};
+          description = "Compute resource requirements";
+        };
+        
+        memory = mkOption {
+          type = types.submodule {
+            options = {
+              size = mkOption {
+                type = types.str;
+                default = "1Gi";
+                description = "Memory size (Ki, Mi, Gi, Ti notation)";
+              };
+              
+              hugepages = mkOption {
+                type = types.nullOr types.str;
+                default = null;
+                description = "Hugepage size if required";
+              };
+              
+              bandwidth = mkOption {
+                type = types.nullOr types.int;
+                default = null;
+                description = "Memory bandwidth requirement in GB/s";
+              };
+            };
+          };
+          default = {};
+          description = "Memory resource requirements";
+        };
+        
+        accelerators = mkOption {
+          type = types.listOf (types.submodule {
+            options = {
+              type = mkOption {
+                type = types.enum [ "gpu" "fpga" "tpu" "dpu" ];
+                description = "Accelerator type";
+              };
+              
+              model = mkOption {
+                type = types.nullOr types.str;
+                default = null;
+                description = "Specific model requirement";
+              };
+              
+              count = mkOption {
+                type = types.int;
+                default = 1;
+                description = "Number of accelerators";
+              };
+              
+              capabilities = mkOption {
+                type = types.listOf types.str;
+                default = [];
+                description = "Required capabilities";
+              };
+            };
+          });
+          default = [];
+          description = "Hardware accelerator requirements";
+        };
+      };
+      
+      # Workload definition
+      workload = {
+        type = mkOption {
+          type = types.enum [ "persistent" "ephemeral" "batch" "interactive" ];
+          default = "persistent";
+          description = "Workload type affecting scheduling";
+        };
+        
+        profile = mkOption {
+          type = types.nullOr (types.enum [ "cpu-intensive" "memory-intensive" "io-intensive" "gpu-compute" "realtime" ]);
+          default = null;
+          description = "Workload profile for optimization";
+        };
+        
+        sla = mkOption {
+          type = types.submodule {
+            options = {
+              availability = mkOption {
+                type = types.nullOr types.float;
+                default = null;
+                description = "Required availability (0.99 = 99%)";
+              };
+              
+              latency = mkOption {
+                type = types.nullOr types.str;
+                default = null;
+                description = "Maximum latency tolerance";
+                example = "10ms";
+              };
+              
+              iops = mkOption {
+                type = types.nullOr types.int;
+                default = null;
+                description = "Required IOPS";
+              };
+            };
+          };
+          default = {};
+          description = "Service level agreement requirements";
+        };
+      };
+      
+      # Storage attachments (referenced by capability)
+      storage = mkOption {
+        type = types.listOf (types.submodule {
+          options = {
+            name = mkOption {
+              type = types.str;
+              description = "Storage attachment name";
+            };
+            
+            capability = mkOption {
+              type = types.str;
+              description = "Required storage capability";
+              example = "fast-nvme";
+            };
+            
+            size = mkOption {
+              type = types.str;
+              description = "Size requirement";
+              example = "100Gi";
+            };
+            
+            performance = mkOption {
+              type = types.nullOr (types.submodule {
+                options = {
+                  iops = mkOption { type = types.nullOr types.int; default = null; };
+                  throughput = mkOption { type = types.nullOr types.str; default = null; };
+                };
+              });
+              default = null;
+              description = "Performance requirements";
+            };
+            
+            features = mkOption {
+              type = types.listOf types.str;
+              default = [];
+              description = "Required features";
+              example = [ "encryption" "snapshots" "replication" ];
+            };
+          };
+        });
+        default = [];
+        description = "Storage attachments";
+      };
+      
+      # Network attachments (capability-based)
+      network = mkOption {
+        type = types.listOf (types.submodule {
+          options = {
+            name = mkOption {
+              type = types.str;
+              description = "Network attachment name";
+            };
+            
+            capability = mkOption {
+              type = types.str;
+              description = "Network capability required";
+              example = "public-internet";
+            };
+            
+            bandwidth = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Bandwidth requirement";
+              example = "10Gbps";
+            };
+            
+            latency = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Latency requirement";
+              example = "< 1ms";
+            };
+            
+            features = mkOption {
+              type = types.listOf types.str;
+              default = [];
+              description = "Required network features";
+              example = [ "ipv6" "jumbo-frames" "sr-iov" ];
+            };
+          };
+        });
+        default = [];
+        description = "Network attachments";
+      };
+      
+      # Placement constraints
+      placement = {
+        affinity = mkOption {
+          type = types.listOf (types.submodule {
+            options = {
+              type = mkOption {
+                type = types.enum [ "required" "preferred" "anti" ];
+                description = "Affinity type";
+              };
+              
+              scope = mkOption {
+                type = types.enum [ "host" "rack" "zone" "region" ];
+                description = "Affinity scope";
+              };
+              
+              labelSelector = mkOption {
+                type = types.attrsOf types.str;
+                description = "Label selector for affinity";
+              };
+              
+              weight = mkOption {
+                type = types.int;
+                default = 100;
+                description = "Weight for preferred affinity";
+              };
+            };
+          });
+          default = [];
+          description = "Affinity rules";
+        };
+        
+        spread = mkOption {
+          type = types.nullOr (types.submodule {
+            options = {
+              topology = mkOption {
+                type = types.str;
+                description = "Topology key for spreading";
+                example = "kubernetes.io/hostname";
+              };
+              
+              maximum = mkOption {
+                type = types.int;
+                default = 1;
+                description = "Maximum units per topology domain";
+              };
+            };
+          });
+          default = null;
+          description = "Spread constraints";
+        };
+      };
+      
+      # Lifecycle hooks
+      lifecycle = {
+        preStart = mkOption {
+          type = types.lines;
+          default = "";
+          description = "Commands to run before starting";
+        };
+        
+        postStart = mkOption {
+          type = types.lines;
+          default = "";
+          description = "Commands to run after starting";
+        };
+        
+        preStop = mkOption {
+          type = types.lines;
+          default = "";
+          description = "Commands to run before stopping";
+        };
+        
+        postStop = mkOption {
+          type = types.lines;
+          default = "";
+          description = "Commands to run after stopping";
+        };
+        
+        healthCheck = mkOption {
+          type = types.nullOr (types.submodule {
+            options = {
+              type = mkOption {
+                type = types.enum [ "http" "tcp" "script" ];
+                description = "Health check type";
+              };
+              
+              config = mkOption {
+                type = types.attrsOf types.anything;
+                description = "Health check configuration";
+              };
+              
+              interval = mkOption {
+                type = types.str;
+                default = "30s";
+                description = "Check interval";
+              };
+              
+              timeout = mkOption {
+                type = types.str;
+                default = "5s";
+                description = "Check timeout";
+              };
+            };
+          });
+          default = null;
+          description = "Health check configuration";
+        };
+      };
+      
+      # Advanced features
+      features = {
+        isolation = mkOption {
+          type = types.submodule {
+            options = {
+              type = mkOption {
+                type = types.enum [ "vm" "container" "firecracker" "kata" "wasm" ];
+                default = "vm";
+                description = "Isolation technology";
+              };
+              
+              securityLevel = mkOption {
+                type = types.enum [ "standard" "hardened" "confidential" ];
+                default = "standard";
+                description = "Security isolation level";
+              };
+              
+              selinux = mkOption {
+                type = types.bool;
+                default = true;
+                description = "Enable SELinux isolation";
+              };
+            };
+          };
+          default = {};
+          description = "Isolation configuration";
+        };
+        
+        persistence = mkOption {
+          type = types.submodule {
+            options = {
+              stateful = mkOption {
+                type = types.bool;
+                default = true;
+                description = "Whether the compute unit is stateful";
+              };
+              
+              checkpoints = mkOption {
+                type = types.bool;
+                default = false;
+                description = "Enable checkpoint/restore";
+              };
+              
+              migration = mkOption {
+                type = types.enum [ "none" "cold" "live" ];
+                default = "cold";
+                description = "Migration capability";
+              };
+            };
+          };
+          default = {};
+          description = "Persistence features";
+        };
+      };
+    };
+  };
+  
+  # Function to resolve tags and policies into final configuration
+  resolveConfiguration = unit: let
+    # Collect all applicable tags
+    allTags = unit.tags ++ (flatten (map (p: cfg.policies.${p}.tags or []) unit.policies));
+    
+    # Get tag configurations sorted by priority
+    tagConfigs = sort (a: b: a.priority > b.priority) 
+      (map (t: cfg.tags.${t} or null) allTags);
+    
+    # Merge configurations respecting priority
+    mergedConfig = fold (a: b: recursiveUpdate b a.values) {} tagConfigs;
+  in mergedConfig;
+  
 in
 {
-  options.hypervisor.vms = mkOption {
-    type = types.attrsOf (types.submodule vmOptions);
-    default = {};
-    description = "Virtual machine definitions";
+  options.hypervisor.compute = {
+    # Global tags available for use
+    tags = mkOption {
+      type = types.attrsOf (types.submodule tagDefinition);
+      default = {};
+      description = "Available tags for compute units";
+      example = literalExample ''
+        {
+          high-performance = {
+            category = "performance";
+            priority = 100;
+            values = {
+              resources.compute.units = 800;
+              features.isolation.type = "vm";
+            };
+          };
+          secure-boot = {
+            category = "security";
+            priority = 90;
+            values = {
+              features.isolation.securityLevel = "hardened";
+            };
+          };
+        }
+      '';
+    };
+    
+    # Policy templates
+    policies = mkOption {
+      type = types.attrsOf (types.submodule policyTemplate);
+      default = {};
+      description = "Policy templates for compute units";
+      example = literalExample ''
+        {
+          web-server = {
+            description = "Standard web server configuration";
+            tags = [ "network-optimized" "public-facing" ];
+            defaults = {
+              resources.memory.size = "2Gi";
+              network = [{
+                name = "eth0";
+                capability = "public-internet";
+              }];
+            };
+          };
+        }
+      '';
+    };
+    
+    # Compute unit definitions
+    units = mkOption {
+      type = types.attrsOf (types.submodule computeUnit);
+      default = {};
+      description = "Compute unit definitions";
+    };
+    
+    # Global defaults
+    defaults = {
+      resourceMultiplier = mkOption {
+        type = types.float;
+        default = 1.0;
+        description = "Global resource multiplier for all units";
+      };
+      
+      defaultTags = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = "Tags applied to all units by default";
+      };
+      
+      scheduling = {
+        algorithm = mkOption {
+          type = types.enum [ "binpack" "spread" "random" "custom" ];
+          default = "binpack";
+          description = "Default scheduling algorithm";
+        };
+        
+        preemption = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Allow preemption of lower priority workloads";
+        };
+      };
+    };
   };
   
   config = {
-    # Generate VM configurations
-    # This would integrate with the existing Hyper-NixOS VM management
+    # Generate libvirt XML or other backend configurations
+    system.activationScripts.generateComputeUnits = mkIf (cfg.units != {}) ''
+      echo "Generating compute unit configurations..."
+      mkdir -p /var/lib/hypervisor/compute
+      
+      ${concatStringsSep "\n" (mapAttrsToList (name: unit: ''
+        # Generate configuration for ${name}
+        ${let
+          config = resolveConfiguration unit;
+          memory = if unit.resources.memory.size != "" then unit.resources.memory.size else "1Gi";
+          cpus = toString (unit.resources.compute.units / 100);
+        in ''
+          cat > /var/lib/hypervisor/compute/${name}.json << EOF
+          {
+            "name": "${name}",
+            "uuid": "${unit.uuid}",
+            "labels": ${builtins.toJSON unit.labels},
+            "resources": {
+              "cpus": ${cpus},
+              "memory": "${memory}",
+              "compute_units": ${toString unit.resources.compute.units}
+            },
+            "workload": ${builtins.toJSON unit.workload},
+            "features": ${builtins.toJSON unit.features},
+            "resolved_config": ${builtins.toJSON config}
+          }
+          EOF
+        ''}
+      '') cfg.units)}
+    '';
+    
+    # Create management commands
+    environment.systemPackages = with pkgs; [
+      (writeScriptBin "hv-compute" ''
+        #!${pkgs.bash}/bin/bash
+        # Compute unit management tool
+        
+        case "$1" in
+          list)
+            echo "Compute Units:"
+            ls -1 /var/lib/hypervisor/compute/*.json 2>/dev/null | while read f; do
+              name=$(basename "$f" .json)
+              labels=$(jq -r '.labels | to_entries | map("\(.key)=\(.value)") | join(",")' "$f")
+              echo "  $name [$labels]"
+            done
+            ;;
+          show)
+            if [ -z "$2" ]; then
+              echo "Usage: hv-compute show <unit-name>"
+              exit 1
+            fi
+            jq . "/var/lib/hypervisor/compute/$2.json"
+            ;;
+          *)
+            echo "Usage: hv-compute {list|show}"
+            ;;
+        esac
+      '')
+    ];
   };
 }

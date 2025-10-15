@@ -1,0 +1,1644 @@
+# Hyper-NixOS GraphQL Schema
+# Event-driven API with subscription support
+
+scalar Time
+scalar Duration
+scalar JSON
+
+# Compute Unit Types
+type ComputeUnit {
+  id: ID!
+  uuid: String!
+  labels: JSON!
+  tags: [String!]!
+  policies: [String!]!
+  resources: ComputeResources!
+  workload: WorkloadSpec!
+  storage: [StorageAttachment!]!
+  network: [NetworkAttachment!]!
+  placement: PlacementSpec!
+  lifecycle: LifecycleSpec!
+  features: ComputeFeatures!
+  status: ComputeStatus!
+  events: [Event!]!
+}
+
+type ComputeResources {
+  compute: ComputeSpec!
+  memory: MemorySpec!
+  accelerators: [AcceleratorSpec!]!
+}
+
+type ComputeSpec {
+  units: Int!
+  burst: Int
+  architecture: Architecture!
+  features: [String!]!
+}
+
+type MemorySpec {
+  size: String!
+  hugepages: String
+  bandwidth: Int
+}
+
+type AcceleratorSpec {
+  type: AcceleratorType!
+  model: String
+  count: Int!
+  capabilities: [String!]!
+}
+
+type WorkloadSpec {
+  type: WorkloadType!
+  profile: WorkloadProfile
+  sla: SLASpec!
+}
+
+type SLASpec {
+  availability: Float
+  latency: Duration
+  iops: Int
+}
+
+type StorageAttachment {
+  name: String!
+  capability: String!
+  size: String!
+  performance: StoragePerformance
+  features: [String!]!
+}
+
+type StoragePerformance {
+  iops: Int
+  throughput: String
+}
+
+type NetworkAttachment {
+  name: String!
+  capability: String!
+  bandwidth: String
+  latency: Duration
+  features: [String!]!
+}
+
+type PlacementSpec {
+  affinity: [AffinityRule!]!
+  spread: SpreadConstraint
+}
+
+type AffinityRule {
+  type: AffinityType!
+  scope: AffinityScope!
+  labelSelector: JSON!
+  weight: Int!
+}
+
+type SpreadConstraint {
+  topology: String!
+  maximum: Int!
+}
+
+type LifecycleSpec {
+  preStart: String
+  postStart: String
+  preStop: String
+  postStop: String
+  healthCheck: HealthCheckSpec
+}
+
+type HealthCheckSpec {
+  type: HealthCheckType!
+  config: JSON!
+  interval: Duration!
+  timeout: Duration!
+}
+
+type ComputeFeatures {
+  isolation: IsolationSpec!
+  persistence: PersistenceSpec!
+}
+
+type IsolationSpec {
+  type: IsolationType!
+  securityLevel: SecurityLevel!
+  selinux: Boolean!
+}
+
+type PersistenceSpec {
+  stateful: Boolean!
+  checkpoints: Boolean!
+  migration: MigrationType!
+}
+
+type ComputeStatus {
+  state: ComputeState!
+  health: HealthStatus!
+  resources: ResourceUsage!
+  lastUpdated: Time!
+}
+
+type ResourceUsage {
+  cpu: Float!
+  memory: Float!
+  disk: Float!
+  network: NetworkUsage!
+}
+
+type NetworkUsage {
+  rx: Int!
+  tx: Int!
+}
+
+# Storage Types
+type StorageTier {
+  name: String!
+  level: Int!
+  characteristics: TierCharacteristics!
+  providers: [StorageProvider!]!
+  policies: TierPolicies!
+  statistics: TierStatistics!
+}
+
+type TierCharacteristics {
+  latency: String!
+  throughput: String!
+  iops: String!
+  durability: Float!
+  cost: Float!
+}
+
+type StorageProvider {
+  name: String!
+  type: StorageType!
+  capacity: String!
+  location: String!
+  features: JSON!
+  status: ProviderStatus!
+}
+
+type TierPolicies {
+  promotion: PromotionPolicy!
+  demotion: DemotionPolicy!
+  retention: RetentionPolicy!
+}
+
+type PromotionPolicy {
+  enabled: Boolean!
+  threshold: JSON!
+  batchSize: String!
+}
+
+type DemotionPolicy {
+  enabled: Boolean!
+  threshold: JSON!
+  excludePatterns: [String!]!
+}
+
+type RetentionPolicy {
+  minTime: Duration
+  maxTime: Duration
+}
+
+type TierStatistics {
+  used: String!
+  available: String!
+  objects: Int!
+  heatScore: Float!
+}
+
+type HeatMapEntry {
+  path: String!
+  score: Float!
+  accessCount: Int!
+  lastAccess: Time!
+  tier: Int!
+  size: String!
+}
+
+# Mesh Clustering Types
+type MeshNode {
+  id: ID!
+  capabilities: NodeCapabilities!
+  location: NodeLocation!
+  roles: [NodeRole!]!
+  status: NodeStatus!
+  peers: [PeerConnection!]!
+}
+
+type NodeCapabilities {
+  compute: ComputeCapability!
+  storage: StorageCapability!
+  network: NetworkCapability!
+}
+
+type ComputeCapability {
+  available: Boolean!
+  capacity: Int!
+  specializations: [String!]!
+}
+
+type StorageCapability {
+  available: Boolean!
+  tiers: [Int!]!
+  capacity: String!
+}
+
+type NetworkCapability {
+  gateway: Boolean!
+  bandwidth: String!
+  features: [String!]!
+}
+
+type NodeLocation {
+  zone: String!
+  rack: String
+  geo: GeoLocation
+}
+
+type GeoLocation {
+  latitude: Float!
+  longitude: Float!
+  region: String!
+}
+
+type NodeStatus {
+  state: NodeState!
+  health: HealthStatus!
+  uptime: Duration!
+  lastSeen: Time!
+}
+
+type PeerConnection {
+  nodeId: String!
+  latency: Duration!
+  bandwidth: String!
+  state: ConnectionState!
+}
+
+type ConsensusState {
+  algorithm: ConsensusAlgorithm!
+  term: Int!
+  leader: String
+  members: [ConsensusMember!]!
+  committed: Int!
+}
+
+type ConsensusMember {
+  nodeId: String!
+  role: ConsensusRole!
+  lastContact: Time!
+  healthy: Boolean!
+}
+
+# Security Types
+type Capability {
+  name: String!
+  description: String!
+  resources: ResourcePermissions!
+  operations: [String!]!
+  delegation: DelegationRights!
+  conditions: [CapabilityCondition!]!
+}
+
+type ResourcePermissions {
+  compute: ComputePermissions!
+  storage: StoragePermissions!
+  network: NetworkPermissions!
+  cluster: ClusterPermissions!
+}
+
+type ComputePermissions {
+  create: Boolean!
+  modify: Boolean!
+  delete: Boolean!
+  control: Boolean!
+  console: Boolean!
+  limits: ResourceLimits
+}
+
+type ResourceLimits {
+  maxUnits: Int
+  maxResources: Int
+}
+
+type StoragePermissions {
+  read: Boolean!
+  write: Boolean!
+  allocate: Boolean!
+  snapshot: Boolean!
+  tiers: [Int!]!
+  quota: String
+}
+
+type NetworkPermissions {
+  configure: Boolean!
+  attach: Boolean!
+  create: Boolean!
+  capabilities: [String!]!
+}
+
+type ClusterPermissions {
+  join: Boolean!
+  configure: Boolean!
+  schedule: Boolean!
+}
+
+type DelegationRights {
+  allowed: Boolean!
+  maxDepth: Int!
+  restrictions: [String!]!
+}
+
+type CapabilityCondition {
+  type: ConditionType!
+  config: JSON!
+}
+
+type Principal {
+  id: ID!
+  type: PrincipalType!
+  identity: Identity!
+  grants: [CapabilityGrant!]!
+  audit: AuditSettings!
+}
+
+type Identity {
+  id: String!
+  attributes: JSON!
+  authentication: AuthenticationSettings!
+}
+
+type AuthenticationSettings {
+  methods: [AuthMethod!]!
+  mfa: MFASettings!
+}
+
+type MFASettings {
+  required: Boolean!
+  methods: [String!]!
+}
+
+type CapabilityGrant {
+  capability: String!
+  temporal: TemporalAccess!
+  scope: GrantScope
+  delegatedFrom: String
+}
+
+type TemporalAccess {
+  validity: ValidityPeriod
+  schedule: AccessSchedule
+  usage: UsageLimits
+  emergency: EmergencyAccess!
+}
+
+type ValidityPeriod {
+  start: Time
+  end: Time
+  duration: Duration
+}
+
+type AccessSchedule {
+  timezone: String!
+  windows: [AccessWindow!]!
+}
+
+type AccessWindow {
+  days: [DayOfWeek!]!
+  startTime: String!
+  endTime: String!
+}
+
+type UsageLimits {
+  maxUses: Int
+  rateLimit: RateLimit
+}
+
+type RateLimit {
+  requests: Int!
+  window: Duration!
+}
+
+type EmergencyAccess {
+  breakGlass: Boolean!
+  auditRequired: Boolean!
+  notificationList: [String!]!
+}
+
+type GrantScope {
+  labels: JSON!
+  resources: [String!]!
+}
+
+type AuditSettings {
+  logLevel: AuditLevel!
+  alerts: [AuditAlert!]!
+}
+
+type AuditAlert {
+  event: String!
+  notify: [String!]!
+}
+
+# Backup Types
+type BackupRepository {
+  name: String!
+  type: RepositoryType!
+  backend: BackupBackend!
+  deduplication: DeduplicationSettings!
+  retention: RetentionSettings!
+  performance: BackupPerformance!
+  statistics: BackupStatistics!
+}
+
+type BackupBackend {
+  location: String!
+  encryption: EncryptionSettings!
+  compression: CompressionSettings!
+}
+
+type EncryptionSettings {
+  enabled: Boolean!
+  algorithm: EncryptionAlgorithm!
+  keyDerivation: KeyDerivation!
+}
+
+type CompressionSettings {
+  algorithm: CompressionAlgorithm!
+  level: Int!
+  adaptive: Boolean!
+}
+
+type DeduplicationSettings {
+  enabled: Boolean!
+  algorithm: DedupAlgorithm!
+  chunkSize: ChunkSizeRange!
+  indexing: IndexingSettings!
+  similarity: SimilaritySettings!
+}
+
+type ChunkSizeRange {
+  min: Int!
+  avg: Int!
+  max: Int!
+}
+
+type IndexingSettings {
+  type: IndexType!
+  cache: String!
+  persistent: Boolean!
+}
+
+type SimilaritySettings {
+  enabled: Boolean!
+  threshold: Float!
+  algorithm: SimilarityAlgorithm!
+}
+
+type RetentionSettings {
+  mode: RetentionMode!
+  progressive: ProgressiveRetention
+  immutable: ImmutableSettings
+}
+
+type ProgressiveRetention {
+  keepAll: Int!
+  rules: [RetentionRule!]!
+}
+
+type RetentionRule {
+  age: Duration!
+  interval: Duration!
+}
+
+type ImmutableSettings {
+  enabled: Boolean!
+  period: Duration!
+}
+
+type BackupPerformance {
+  parallel: ParallelSettings!
+  bandwidth: BandwidthSettings
+  caching: CacheSettings!
+}
+
+type ParallelSettings {
+  streams: Int!
+  chunkers: Int!
+}
+
+type BandwidthSettings {
+  limit: String
+  burst: String
+}
+
+type CacheSettings {
+  metadata: String!
+  chunks: String!
+}
+
+type BackupStatistics {
+  totalSize: String!
+  dedupRatio: Float!
+  compressionRatio: Float!
+  chunksTotal: Int!
+  chunksUnique: Int!
+}
+
+type BackupSource {
+  name: String!
+  type: SourceType!
+  selection: SourceSelection!
+  strategy: BackupStrategy!
+  schedule: BackupSchedule!
+  dataHandling: DataHandling!
+  lastBackup: BackupInfo
+}
+
+type SourceSelection {
+  labels: JSON!
+  ids: [String!]!
+  patterns: [String!]!
+}
+
+type BackupStrategy {
+  mode: BackupMode!
+  consistency: ConsistencyLevel!
+  changeDetection: ChangeDetection!
+  preScript: String
+  postScript: String
+}
+
+type BackupSchedule {
+  continuous: Boolean!
+  interval: Duration
+  window: BackupWindow
+}
+
+type BackupWindow {
+  start: String!
+  end: String!
+}
+
+type DataHandling {
+  sensitivity: DataSensitivity!
+  compliance: [String!]!
+  geoRestrictions: [String!]!
+}
+
+type BackupInfo {
+  id: ID!
+  timestamp: Time!
+  size: String!
+  duration: Duration!
+  status: BackupStatus!
+}
+
+# Event Types
+type Event {
+  id: ID!
+  timestamp: Time!
+  type: EventType!
+  severity: EventSeverity!
+  source: String!
+  message: String!
+  metadata: JSON!
+}
+
+# Enumerations
+enum Architecture {
+  X86_64
+  AARCH64
+  RISCV64
+  WASM
+}
+
+enum AcceleratorType {
+  GPU
+  FPGA
+  TPU
+  DPU
+}
+
+enum WorkloadType {
+  PERSISTENT
+  EPHEMERAL
+  BATCH
+  INTERACTIVE
+}
+
+enum WorkloadProfile {
+  CPU_INTENSIVE
+  MEMORY_INTENSIVE
+  IO_INTENSIVE
+  GPU_COMPUTE
+  REALTIME
+}
+
+enum AffinityType {
+  REQUIRED
+  PREFERRED
+  ANTI
+}
+
+enum AffinityScope {
+  HOST
+  RACK
+  ZONE
+  REGION
+}
+
+enum HealthCheckType {
+  HTTP
+  TCP
+  SCRIPT
+}
+
+enum IsolationType {
+  VM
+  CONTAINER
+  FIRECRACKER
+  KATA
+  WASM
+}
+
+enum SecurityLevel {
+  STANDARD
+  HARDENED
+  CONFIDENTIAL
+}
+
+enum MigrationType {
+  NONE
+  COLD
+  LIVE
+}
+
+enum ComputeState {
+  PENDING
+  CREATING
+  RUNNING
+  STOPPING
+  STOPPED
+  FAILED
+  UNKNOWN
+}
+
+enum HealthStatus {
+  HEALTHY
+  DEGRADED
+  UNHEALTHY
+  UNKNOWN
+}
+
+enum StorageType {
+  MEMORY
+  NVME_LOCAL
+  SSD_ARRAY
+  HDD_ARRAY
+  OBJECT
+  TAPE
+  OPTICAL
+}
+
+enum ProviderStatus {
+  ONLINE
+  OFFLINE
+  DEGRADED
+  MAINTENANCE
+}
+
+enum NodeRole {
+  CONTROLLER
+  WORKER
+  STORAGE
+  EDGE
+  WITNESS
+}
+
+enum NodeState {
+  JOINING
+  ACTIVE
+  LEAVING
+  FAILED
+  MAINTENANCE
+}
+
+enum ConnectionState {
+  CONNECTED
+  CONNECTING
+  DISCONNECTED
+  ERROR
+}
+
+enum ConsensusAlgorithm {
+  RAFT
+  PBFT
+  TENDERMINT
+  AVALANCHE
+  HOTSTUFF
+}
+
+enum ConsensusRole {
+  LEADER
+  FOLLOWER
+  CANDIDATE
+  OBSERVER
+}
+
+enum ConditionType {
+  LABEL
+  TIME
+  LOCATION
+  RATE
+  CONTEXT
+}
+
+enum PrincipalType {
+  USER
+  SERVICE
+  GROUP
+  TOKEN
+}
+
+enum AuthMethod {
+  PASSWORD
+  PUBLICKEY
+  CERTIFICATE
+  OIDC
+  SAML
+  WEBAUTHN
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum AuditLevel {
+  NONE
+  BASIC
+  DETAILED
+  FULL
+}
+
+enum RepositoryType {
+  LOCAL
+  REMOTE
+  CLOUD
+  DISTRIBUTED
+}
+
+enum EncryptionAlgorithm {
+  AES_256_GCM
+  CHACHA20_POLY1305
+  AES_256_CTR_HMAC
+}
+
+enum KeyDerivation {
+  ARGON2ID
+  SCRYPT
+  PBKDF2
+}
+
+enum CompressionAlgorithm {
+  ZSTD
+  LZ4
+  BROTLI
+  NONE
+}
+
+enum DedupAlgorithm {
+  CONTENT_DEFINED
+  FIXED_BLOCK
+  VARIABLE_BLOCK
+  ROLLING_HASH
+}
+
+enum IndexType {
+  BLOOM_FILTER
+  HASH_TABLE
+  B_TREE
+  LSM_TREE
+}
+
+enum SimilarityAlgorithm {
+  MINHASH
+  SIMHASH
+  FUZZY_HASH
+}
+
+enum RetentionMode {
+  GRANDFATHER_FATHER_SON
+  PROGRESSIVE
+  CUSTOM
+}
+
+enum SourceType {
+  COMPUTE_UNIT
+  VOLUME
+  DATABASE
+  APPLICATION
+}
+
+enum BackupMode {
+  INCREMENTAL_FOREVER
+  SYNTHETIC_FULL
+  REVERSE_INCREMENTAL
+}
+
+enum ConsistencyLevel {
+  CRASH_CONSISTENT
+  APPLICATION_CONSISTENT
+  DATABASE_CONSISTENT
+}
+
+enum ChangeDetection {
+  TIMESTAMP
+  CHECKSUM
+  JOURNAL
+  CBT
+}
+
+enum DataSensitivity {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  SECRET
+}
+
+enum BackupStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  VERIFYING
+}
+
+enum EventType {
+  COMPUTE_CREATED
+  COMPUTE_UPDATED
+  COMPUTE_DELETED
+  COMPUTE_STATE_CHANGED
+  STORAGE_TIER_CHANGED
+  NODE_JOINED
+  NODE_LEFT
+  CONSENSUS_LEADER_CHANGED
+  CAPABILITY_GRANTED
+  CAPABILITY_REVOKED
+  BACKUP_STARTED
+  BACKUP_COMPLETED
+  BACKUP_FAILED
+}
+
+enum EventSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+# Query Root
+type Query {
+  # Compute queries
+  computeUnit(id: ID!): ComputeUnit
+  computeUnits(filter: ComputeFilter, limit: Int, offset: Int): [ComputeUnit!]!
+  
+  # Storage queries
+  storageTier(name: String!): StorageTier
+  storageTiers: [StorageTier!]!
+  heatMap(tier: Int, limit: Int): [HeatMapEntry!]!
+  
+  # Mesh queries
+  meshNode(id: ID!): MeshNode
+  meshNodes(roles: [NodeRole!]): [MeshNode!]!
+  consensusState: ConsensusState!
+  
+  # Security queries
+  capability(name: String!): Capability
+  capabilities: [Capability!]!
+  principal(id: ID!): Principal
+  principals(type: PrincipalType): [Principal!]!
+  checkAccess(principal: ID!, operation: String!, resource: String!): Boolean!
+  
+  # Backup queries
+  backupRepository(name: String!): BackupRepository
+  backupRepositories: [BackupRepository!]!
+  backupSource(name: String!): BackupSource
+  backupSources: [BackupSource!]!
+  backupHistory(source: String!, limit: Int): [BackupInfo!]!
+  
+  # System queries
+  systemStatus: SystemStatus!
+  events(filter: EventFilter, limit: Int): [Event!]!
+}
+
+# Mutation Root
+type Mutation {
+  # Compute mutations
+  createComputeUnit(input: CreateComputeUnitInput!): ComputeUnit!
+  updateComputeUnit(id: ID!, input: UpdateComputeUnitInput!): ComputeUnit!
+  deleteComputeUnit(id: ID!): Boolean!
+  controlComputeUnit(id: ID!, action: ControlAction!): ComputeUnit!
+  
+  # Storage mutations
+  moveData(source: String!, tier: Int!): Job!
+  createStorageTier(input: CreateStorageTierInput!): StorageTier!
+  updateStorageTier(name: String!, input: UpdateStorageTierInput!): StorageTier!
+  
+  # Mesh mutations
+  joinCluster(input: JoinClusterInput!): MeshNode!
+  leaveCluster(nodeId: ID!): Boolean!
+  updateNodeRoles(nodeId: ID!, roles: [NodeRole!]!): MeshNode!
+  
+  # Security mutations
+  createCapability(input: CreateCapabilityInput!): Capability!
+  grantCapability(input: GrantCapabilityInput!): CapabilityGrant!
+  revokeCapability(principal: ID!, capability: String!): Boolean!
+  createPrincipal(input: CreatePrincipalInput!): Principal!
+  
+  # Backup mutations
+  createBackupRepository(input: CreateBackupRepositoryInput!): BackupRepository!
+  createBackupSource(input: CreateBackupSourceInput!): BackupSource!
+  startBackup(source: String!): Job!
+  restoreBackup(backupId: ID!, target: String!): Job!
+  verifyBackup(backupId: ID!): Job!
+}
+
+# Subscription Root
+type Subscription {
+  # Compute subscriptions
+  computeUnitUpdated(id: ID): ComputeUnit!
+  computeUnitStateChanged(id: ID): ComputeUnit!
+  
+  # Storage subscriptions
+  storageTierUpdated(name: String): StorageTier!
+  dataMovement(tier: Int): DataMovementEvent!
+  
+  # Mesh subscriptions
+  meshTopologyChanged: MeshTopologyEvent!
+  consensusStateChanged: ConsensusState!
+  nodeStatusChanged(nodeId: ID): MeshNode!
+  
+  # Security subscriptions
+  capabilityGranted(principal: ID): CapabilityGrant!
+  capabilityRevoked(principal: ID): CapabilityRevocation!
+  securityAlert(severity: EventSeverity): SecurityAlert!
+  
+  # Backup subscriptions
+  backupProgress(source: String): BackupProgress!
+  backupCompleted(source: String): BackupInfo!
+  
+  # System subscriptions
+  systemEvent(type: EventType, severity: EventSeverity): Event!
+  jobProgress(jobId: ID!): JobProgress!
+}
+
+# Input Types
+input ComputeFilter {
+  labels: JSON
+  tags: [String!]
+  state: ComputeState
+  workloadType: WorkloadType
+}
+
+input CreateComputeUnitInput {
+  labels: JSON!
+  tags: [String!]!
+  policies: [String!]
+  resources: ComputeResourcesInput!
+  workload: WorkloadSpecInput!
+  storage: [StorageAttachmentInput!]
+  network: [NetworkAttachmentInput!]
+  placement: PlacementSpecInput
+  lifecycle: LifecycleSpecInput
+  features: ComputeFeaturesInput
+}
+
+input ComputeResourcesInput {
+  compute: ComputeSpecInput!
+  memory: MemorySpecInput!
+  accelerators: [AcceleratorSpecInput!]
+}
+
+input ComputeSpecInput {
+  units: Int!
+  burst: Int
+  architecture: Architecture
+  features: [String!]
+}
+
+input MemorySpecInput {
+  size: String!
+  hugepages: String
+  bandwidth: Int
+}
+
+input AcceleratorSpecInput {
+  type: AcceleratorType!
+  model: String
+  count: Int
+  capabilities: [String!]
+}
+
+input WorkloadSpecInput {
+  type: WorkloadType!
+  profile: WorkloadProfile
+  sla: SLASpecInput
+}
+
+input SLASpecInput {
+  availability: Float
+  latency: Duration
+  iops: Int
+}
+
+input StorageAttachmentInput {
+  name: String!
+  capability: String!
+  size: String!
+  performance: StoragePerformanceInput
+  features: [String!]
+}
+
+input StoragePerformanceInput {
+  iops: Int
+  throughput: String
+}
+
+input NetworkAttachmentInput {
+  name: String!
+  capability: String!
+  bandwidth: String
+  latency: Duration
+  features: [String!]
+}
+
+input PlacementSpecInput {
+  affinity: [AffinityRuleInput!]
+  spread: SpreadConstraintInput
+}
+
+input AffinityRuleInput {
+  type: AffinityType!
+  scope: AffinityScope!
+  labelSelector: JSON!
+  weight: Int
+}
+
+input SpreadConstraintInput {
+  topology: String!
+  maximum: Int
+}
+
+input LifecycleSpecInput {
+  preStart: String
+  postStart: String
+  preStop: String
+  postStop: String
+  healthCheck: HealthCheckSpecInput
+}
+
+input HealthCheckSpecInput {
+  type: HealthCheckType!
+  config: JSON!
+  interval: Duration
+  timeout: Duration
+}
+
+input ComputeFeaturesInput {
+  isolation: IsolationSpecInput
+  persistence: PersistenceSpecInput
+}
+
+input IsolationSpecInput {
+  type: IsolationType
+  securityLevel: SecurityLevel
+  selinux: Boolean
+}
+
+input PersistenceSpecInput {
+  stateful: Boolean
+  checkpoints: Boolean
+  migration: MigrationType
+}
+
+input UpdateComputeUnitInput {
+  labels: JSON
+  tags: [String!]
+  resources: ComputeResourcesInput
+  placement: PlacementSpecInput
+  lifecycle: LifecycleSpecInput
+}
+
+enum ControlAction {
+  START
+  STOP
+  RESTART
+  PAUSE
+  RESUME
+  MIGRATE
+}
+
+input CreateStorageTierInput {
+  name: String!
+  level: Int!
+  characteristics: TierCharacteristicsInput!
+  providers: [StorageProviderInput!]!
+  policies: TierPoliciesInput
+}
+
+input TierCharacteristicsInput {
+  latency: String!
+  throughput: String!
+  iops: String!
+  durability: Float
+  cost: Float
+}
+
+input StorageProviderInput {
+  name: String!
+  type: StorageType!
+  capacity: String!
+  location: String!
+  features: JSON
+}
+
+input TierPoliciesInput {
+  promotion: PromotionPolicyInput
+  demotion: DemotionPolicyInput
+  retention: RetentionPolicyInput
+}
+
+input PromotionPolicyInput {
+  enabled: Boolean
+  threshold: JSON
+  batchSize: String
+}
+
+input DemotionPolicyInput {
+  enabled: Boolean
+  threshold: JSON
+  excludePatterns: [String!]
+}
+
+input RetentionPolicyInput {
+  minTime: Duration
+  maxTime: Duration
+}
+
+input UpdateStorageTierInput {
+  characteristics: TierCharacteristicsInput
+  providers: [StorageProviderInput!]
+  policies: TierPoliciesInput
+}
+
+input JoinClusterInput {
+  nodeId: ID!
+  roles: [NodeRole!]!
+  capabilities: NodeCapabilitiesInput!
+  location: NodeLocationInput!
+}
+
+input NodeCapabilitiesInput {
+  compute: ComputeCapabilityInput
+  storage: StorageCapabilityInput
+  network: NetworkCapabilityInput
+}
+
+input ComputeCapabilityInput {
+  available: Boolean
+  capacity: Int
+  specializations: [String!]
+}
+
+input StorageCapabilityInput {
+  available: Boolean
+  tiers: [Int!]
+  capacity: String
+}
+
+input NetworkCapabilityInput {
+  gateway: Boolean
+  bandwidth: String
+  features: [String!]
+}
+
+input NodeLocationInput {
+  zone: String!
+  rack: String
+  geo: GeoLocationInput
+}
+
+input GeoLocationInput {
+  latitude: Float!
+  longitude: Float!
+  region: String!
+}
+
+input CreateCapabilityInput {
+  name: String!
+  description: String
+  resources: ResourcePermissionsInput!
+  operations: [String!]
+  delegation: DelegationRightsInput
+  conditions: [CapabilityConditionInput!]
+}
+
+input ResourcePermissionsInput {
+  compute: ComputePermissionsInput
+  storage: StoragePermissionsInput
+  network: NetworkPermissionsInput
+  cluster: ClusterPermissionsInput
+}
+
+input ComputePermissionsInput {
+  create: Boolean
+  modify: Boolean
+  delete: Boolean
+  control: Boolean
+  console: Boolean
+  limits: ResourceLimitsInput
+}
+
+input ResourceLimitsInput {
+  maxUnits: Int
+  maxResources: Int
+}
+
+input StoragePermissionsInput {
+  read: Boolean
+  write: Boolean
+  allocate: Boolean
+  snapshot: Boolean
+  tiers: [Int!]
+  quota: String
+}
+
+input NetworkPermissionsInput {
+  configure: Boolean
+  attach: Boolean
+  create: Boolean
+  capabilities: [String!]
+}
+
+input ClusterPermissionsInput {
+  join: Boolean
+  configure: Boolean
+  schedule: Boolean
+}
+
+input DelegationRightsInput {
+  allowed: Boolean
+  maxDepth: Int
+  restrictions: [String!]
+}
+
+input CapabilityConditionInput {
+  type: ConditionType!
+  config: JSON!
+}
+
+input GrantCapabilityInput {
+  principal: ID!
+  capability: String!
+  temporal: TemporalAccessInput
+  scope: GrantScopeInput
+}
+
+input TemporalAccessInput {
+  validity: ValidityPeriodInput
+  schedule: AccessScheduleInput
+  usage: UsageLimitsInput
+  emergency: EmergencyAccessInput
+}
+
+input ValidityPeriodInput {
+  start: Time
+  end: Time
+  duration: Duration
+}
+
+input AccessScheduleInput {
+  timezone: String
+  windows: [AccessWindowInput!]
+}
+
+input AccessWindowInput {
+  days: [DayOfWeek!]!
+  startTime: String!
+  endTime: String!
+}
+
+input UsageLimitsInput {
+  maxUses: Int
+  rateLimit: RateLimitInput
+}
+
+input RateLimitInput {
+  requests: Int!
+  window: Duration!
+}
+
+input EmergencyAccessInput {
+  breakGlass: Boolean
+  auditRequired: Boolean
+  notificationList: [String!]
+}
+
+input GrantScopeInput {
+  labels: JSON
+  resources: [String!]
+}
+
+input CreatePrincipalInput {
+  type: PrincipalType!
+  identity: IdentityInput!
+  grants: [CapabilityGrantInput!]
+  audit: AuditSettingsInput
+}
+
+input IdentityInput {
+  id: String!
+  attributes: JSON
+  authentication: AuthenticationSettingsInput
+}
+
+input AuthenticationSettingsInput {
+  methods: [AuthMethod!]
+  mfa: MFASettingsInput
+}
+
+input MFASettingsInput {
+  required: Boolean
+  methods: [String!]
+}
+
+input CapabilityGrantInput {
+  capability: String!
+  temporal: TemporalAccessInput
+  scope: GrantScopeInput
+}
+
+input AuditSettingsInput {
+  logLevel: AuditLevel
+  alerts: [AuditAlertInput!]
+}
+
+input AuditAlertInput {
+  event: String!
+  notify: [String!]!
+}
+
+input CreateBackupRepositoryInput {
+  name: String!
+  type: RepositoryType!
+  backend: BackupBackendInput!
+  deduplication: DeduplicationSettingsInput
+  retention: RetentionSettingsInput
+  performance: BackupPerformanceInput
+}
+
+input BackupBackendInput {
+  location: String!
+  encryption: EncryptionSettingsInput
+  compression: CompressionSettingsInput
+}
+
+input EncryptionSettingsInput {
+  enabled: Boolean
+  algorithm: EncryptionAlgorithm
+  keyDerivation: KeyDerivation
+}
+
+input CompressionSettingsInput {
+  algorithm: CompressionAlgorithm
+  level: Int
+  adaptive: Boolean
+}
+
+input DeduplicationSettingsInput {
+  enabled: Boolean
+  algorithm: DedupAlgorithm
+  chunkSize: ChunkSizeRangeInput
+  indexing: IndexingSettingsInput
+  similarity: SimilaritySettingsInput
+}
+
+input ChunkSizeRangeInput {
+  min: Int
+  avg: Int
+  max: Int
+}
+
+input IndexingSettingsInput {
+  type: IndexType
+  cache: String
+  persistent: Boolean
+}
+
+input SimilaritySettingsInput {
+  enabled: Boolean
+  threshold: Float
+  algorithm: SimilarityAlgorithm
+}
+
+input RetentionSettingsInput {
+  mode: RetentionMode
+  progressive: ProgressiveRetentionInput
+  immutable: ImmutableSettingsInput
+}
+
+input ProgressiveRetentionInput {
+  keepAll: Int
+  rules: [RetentionRuleInput!]
+}
+
+input RetentionRuleInput {
+  age: Duration!
+  interval: Duration!
+}
+
+input ImmutableSettingsInput {
+  enabled: Boolean
+  period: Duration
+}
+
+input BackupPerformanceInput {
+  parallel: ParallelSettingsInput
+  bandwidth: BandwidthSettingsInput
+  caching: CacheSettingsInput
+}
+
+input ParallelSettingsInput {
+  streams: Int
+  chunkers: Int
+}
+
+input BandwidthSettingsInput {
+  limit: String
+  burst: String
+}
+
+input CacheSettingsInput {
+  metadata: String
+  chunks: String
+}
+
+input CreateBackupSourceInput {
+  name: String!
+  type: SourceType!
+  selection: SourceSelectionInput!
+  strategy: BackupStrategyInput!
+  schedule: BackupScheduleInput!
+  dataHandling: DataHandlingInput!
+}
+
+input SourceSelectionInput {
+  labels: JSON
+  ids: [String!]
+  patterns: [String!]
+}
+
+input BackupStrategyInput {
+  mode: BackupMode
+  consistency: ConsistencyLevel
+  changeDetection: ChangeDetection
+  preScript: String
+  postScript: String
+}
+
+input BackupScheduleInput {
+  continuous: Boolean
+  interval: Duration
+  window: BackupWindowInput
+}
+
+input BackupWindowInput {
+  start: String!
+  end: String!
+}
+
+input DataHandlingInput {
+  sensitivity: DataSensitivity
+  compliance: [String!]
+  geoRestrictions: [String!]
+}
+
+input EventFilter {
+  types: [EventType!]
+  severity: EventSeverity
+  source: String
+  since: Time
+  until: Time
+}
+
+# Additional Types for Subscriptions
+type DataMovementEvent {
+  id: ID!
+  source: String!
+  destination: Int!
+  size: String!
+  progress: Float!
+  status: JobStatus!
+}
+
+type MeshTopologyEvent {
+  type: TopologyEventType!
+  nodes: [MeshNode!]!
+  connections: Int!
+}
+
+enum TopologyEventType {
+  NODE_ADDED
+  NODE_REMOVED
+  CONNECTION_CHANGED
+  PARTITION_DETECTED
+  PARTITION_HEALED
+}
+
+type CapabilityRevocation {
+  principal: ID!
+  capability: String!
+  reason: String!
+  timestamp: Time!
+}
+
+type SecurityAlert {
+  id: ID!
+  type: SecurityAlertType!
+  severity: EventSeverity!
+  principal: ID
+  resource: String
+  action: String!
+  message: String!
+  timestamp: Time!
+}
+
+enum SecurityAlertType {
+  UNAUTHORIZED_ACCESS
+  CAPABILITY_ABUSE
+  BREAK_GLASS_USED
+  ANOMALOUS_BEHAVIOR
+  COMPLIANCE_VIOLATION
+}
+
+type BackupProgress {
+  source: String!
+  progress: Float!
+  bytesProcessed: String!
+  bytesTotal: String!
+  currentFile: String
+  eta: Duration
+  speed: String!
+}
+
+type Job {
+  id: ID!
+  type: JobType!
+  status: JobStatus!
+  progress: Float!
+  created: Time!
+  started: Time
+  completed: Time
+  error: String
+  result: JSON
+}
+
+enum JobType {
+  DATA_MOVEMENT
+  BACKUP
+  RESTORE
+  VERIFICATION
+  MIGRATION
+  REBALANCE
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+type JobProgress {
+  job: Job!
+  details: JSON!
+}
+
+type SystemStatus {
+  version: String!
+  uptime: Duration!
+  nodes: Int!
+  computeUnits: Int!
+  storageUsed: String!
+  storageTotal: String!
+  health: HealthStatus!
+}
