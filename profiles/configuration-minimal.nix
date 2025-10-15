@@ -16,8 +16,9 @@
     # Only import modules whose options we're actually setting below
     ../modules/features/feature-categories.nix  # Defines hypervisor.features
     ../modules/features/feature-manager.nix  # We use hypervisor.featureManager
-    ../modules/core/first-boot.nix  # First boot configuration wizard
+    ../modules/core/first-boot.nix  # First boot comprehensive setup wizard
     ../modules/system-tiers.nix  # System tier definitions
+    ../modules/headless-vm-menu.nix  # Headless VM menu for boot-time
     ../modules/security/sudo-protection.nix  # Sudo password reset protection
     ../modules/security/credential-chain.nix  # Credential migration and tamper detection
   ] ++ lib.optionals (builtins.pathExists ./modules/users-migrated.nix) [
@@ -32,8 +33,23 @@
   ];
 
   # System identification
-  networking.hostName = "hyper-nixos";
+  networking.hostName = lib.mkDefault "hyper-nixos";  # Can be overridden by installer
   system.stateVersion = "24.05";
+  
+  # Helpful message on login
+  environment.etc."motd".text = lib.mkDefault ''
+    ╔═══════════════════════════════════════════════════════════╗
+    ║              Welcome to Hyper-NixOS                       ║
+    ║         Next-Generation Virtualization Platform           ║
+    ╚═══════════════════════════════════════════════════════════╝
+    
+    This system is ready for configuration.
+    
+    Run 'first-boot-menu' to start the setup wizard.
+    Or run 'system-setup-wizard' to configure your tier directly.
+    
+    Documentation: /etc/hypervisor/docs/
+  '';
   
   # Boot configuration
   boot = {
@@ -95,12 +111,39 @@
     };
   };
   
-  # Essential packages only
+  # Base packages for smooth hypervisor experience
   environment.systemPackages = with pkgs; [
+    # Essential editors and tools
     vim
+    nano
     git
+    curl
+    wget
+    htop
+    tmux
+    
+    # Virtualization management
     virt-manager
     virt-viewer
+    libvirt
+    qemu_kvm
+    
+    # System utilities
+    pciutils      # lspci for hardware detection
+    usbutils      # lsusb
+    dmidecode     # Hardware info
+    smartmontools # Disk health
+    
+    # Network tools
+    bridge-utils
+    iproute2
+    iptables
+    nftables
+    
+    # Helpful utilities for setup
+    dialog        # TUI dialogs
+    ncurses       # Terminal UI library
+    bashInteractive
   ];
   
   # Basic services

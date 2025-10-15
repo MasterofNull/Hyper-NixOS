@@ -64,7 +64,7 @@ in
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # System packages
     environment.systemPackages =  [
       # Core tools (Rust-based)

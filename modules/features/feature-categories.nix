@@ -438,7 +438,7 @@ in {
     description = "Feature configuration with risk assessment";
   };
   
-  config = {
+  config = lib.mkIf config.hypervisor.enable {
     # Export feature definitions for use by other modules
     hypervisor.features = featureCategories;
     

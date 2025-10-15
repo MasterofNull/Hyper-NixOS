@@ -124,9 +124,9 @@ in {
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Install polkit rules
-    environment.etc = mkMerge [
+    environment.etc = lib.mkMerge [
       (mkIf cfg.enableVMRules {
         "polkit-1/rules.d/50-hypervisor-vm-operations.rules".source = 
           "${vmOperationsRules}/etc/polkit-1/rules.d/50-hypervisor-vm-operations.rules";

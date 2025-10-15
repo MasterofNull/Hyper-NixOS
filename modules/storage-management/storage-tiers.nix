@@ -2,62 +2,62 @@
 # Implements a unique heat-map based storage tiering system
 { config, lib, pkgs, ... }:
 
-with lib;
+# Removed: with lib; - Using explicit lib. prefix for clarity
 let
   cfg = config.hypervisor.storage;
   
   # Storage tier definition with unique characteristics
   tierDefinition = {
     options = {
-      level = mkOption {
-        type = types.int;
+      level = lib.mkOption {
+        type = lib.types.int;
         description = "Tier level (0 = fastest, higher = slower)";
         example = 0;
       };
       
       characteristics = {
-        latency = mkOption {
-          type = types.str;
+        latency = lib.mkOption {
+          type = lib.types.str;
           description = "Expected latency range";
           example = "< 0.1ms";
         };
         
-        throughput = mkOption {
-          type = types.str;
+        throughput = lib.mkOption {
+          type = lib.types.str;
           description = "Throughput capability";
           example = "> 5GB/s";
         };
         
-        iops = mkOption {
-          type = types.str;
+        iops = lib.mkOption {
+          type = lib.types.str;
           description = "IOPS range";
           example = "> 100000";
         };
         
-        durability = mkOption {
-          type = types.float;
+        durability = lib.mkOption {
+          type = lib.types.float;
           default = 0.999999999;
           description = "Data durability (nines)";
         };
         
-        cost = mkOption {
-          type = types.float;
+        cost = lib.mkOption {
+          type = lib.types.float;
           default = 1.0;
           description = "Relative cost factor";
         };
       };
       
       # Backends that can provide this tier
-      providers = mkOption {
-        type = types.listOf (types.submodule {
+      providers = lib.mkOption {
+        type = lib.types.listOf (lib.types.submodule {
           options = {
-            name = mkOption {
-              type = types.str;
+            name = lib.mkOption {
+              type = lib.types.str;
               description = "Provider name";
             };
             
-            type = mkOption {
-              type = types.enum [ 
+            type = lib.mkOption {
+              type = lib.types.enum [ 
                 "memory"      # In-memory storage
                 "nvme-local"  # Local NVMe
                 "ssd-array"   # SSD storage array
@@ -69,19 +69,19 @@ let
               description = "Storage provider type";
             };
             
-            capacity = mkOption {
-              type = types.str;
+            capacity = lib.mkOption {
+              type = lib.types.str;
               description = "Total capacity";
               example = "10Ti";
             };
             
-            location = mkOption {
-              type = types.str;
+            location = lib.mkOption {
+              type = lib.types.str;
               description = "Physical or logical location";
             };
             
-            features = mkOption {
-              type = types.attrsOf types.bool;
+            features = lib.mkOption {
+              type = lib.types.attrsOf lib.types.bool;
               default = {};
               description = "Provider features";
               example = {
@@ -99,32 +99,32 @@ let
       
       # Policies for this tier
       policies = {
-        promotion = mkOption {
-          type = types.submodule {
+        promotion = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              enabled = mkOption {
-                type = types.bool;
+              enabled = lib.mkOption {
+                type = lib.types.bool;
                 default = true;
                 description = "Enable promotion to faster tier";
               };
               
-              threshold = mkOption {
-                type = types.submodule {
+              threshold = lib.mkOption {
+                type = lib.types.submodule {
                   options = {
-                    accessFrequency = mkOption {
-                      type = types.int;
+                    accessFrequency = lib.mkOption {
+                      type = lib.types.int;
                       default = 10;
                       description = "Access count per time window";
                     };
                     
-                    heatScore = mkOption {
-                      type = types.float;
+                    heatScore = lib.mkOption {
+                      type = lib.types.float;
                       default = 0.8;
                       description = "Heat score threshold (0-1)";
                     };
                     
-                    latencySensitivity = mkOption {
-                      type = types.float;
+                    latencySensitivity = lib.mkOption {
+                      type = lib.types.float;
                       default = 0.9;
                       description = "Latency sensitivity score";
                     };
@@ -134,8 +134,8 @@ let
                 description = "Promotion thresholds";
               };
               
-              batchSize = mkOption {
-                type = types.str;
+              batchSize = lib.mkOption {
+                type = lib.types.str;
                 default = "1Gi";
                 description = "Maximum batch size for promotion";
               };
@@ -145,26 +145,26 @@ let
           description = "Promotion policies";
         };
         
-        demotion = mkOption {
-          type = types.submodule {
+        demotion = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              enabled = mkOption {
-                type = types.bool;
+              enabled = lib.mkOption {
+                type = lib.types.bool;
                 default = true;
                 description = "Enable demotion to slower tier";
               };
               
-              threshold = mkOption {
-                type = types.submodule {
+              threshold = lib.mkOption {
+                type = lib.types.submodule {
                   options = {
-                    idleTime = mkOption {
-                      type = types.str;
+                    idleTime = lib.mkOption {
+                      type = lib.types.str;
                       default = "7d";
                       description = "Time without access";
                     };
                     
-                    heatScore = mkOption {
-                      type = types.float;
+                    heatScore = lib.mkOption {
+                      type = lib.types.float;
                       default = 0.2;
                       description = "Heat score threshold (0-1)";
                     };
@@ -174,8 +174,8 @@ let
                 description = "Demotion thresholds";
               };
               
-              excludePatterns = mkOption {
-                type = types.listOf types.str;
+              excludePatterns = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
                 default = [];
                 description = "Patterns to exclude from demotion";
                 example = [ "*.db" "critical-*" ];
@@ -186,18 +186,18 @@ let
           description = "Demotion policies";
         };
         
-        retention = mkOption {
-          type = types.submodule {
+        retention = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              minTime = mkOption {
-                type = types.nullOr types.str;
+              minTime = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
                 default = null;
                 description = "Minimum retention time";
                 example = "24h";
               };
               
-              maxTime = mkOption {
-                type = types.nullOr types.str;
+              maxTime = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
                 default = null;
                 description = "Maximum retention time";
                 example = "90d";
@@ -214,73 +214,73 @@ let
   # Data classification for intelligent placement
   dataClassification = {
     options = {
-      name = mkOption {
-        type = types.str;
+      name = lib.mkOption {
+        type = lib.types.str;
         description = "Classification name";
       };
       
-      patterns = mkOption {
-        type = types.listOf types.str;
+      patterns = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "File patterns matching this classification";
       };
       
       characteristics = {
-        accessPattern = mkOption {
-          type = types.enum [ "sequential" "random" "write-once" "append-only" ];
+        accessPattern = lib.mkOption {
+          type = lib.types.enum [ "sequential" "random" "write-once" "append-only" ];
           default = "random";
           description = "Expected access pattern";
         };
         
-        temperature = mkOption {
-          type = types.enum [ "hot" "warm" "cool" "cold" "frozen" ];
+        temperature = lib.mkOption {
+          type = lib.types.enum [ "hot" "warm" "cool" "cold" "frozen" ];
           default = "warm";
           description = "Initial data temperature";
         };
         
-        criticality = mkOption {
-          type = types.enum [ "critical" "important" "standard" "archival" ];
+        criticality = lib.mkOption {
+          type = lib.types.enum [ "critical" "important" "standard" "archival" ];
           default = "standard";
           description = "Data criticality level";
         };
         
-        compressibility = mkOption {
-          type = types.enum [ "high" "medium" "low" "none" ];
+        compressibility = lib.mkOption {
+          type = lib.types.enum [ "high" "medium" "low" "none" ];
           default = "medium";
           description = "Expected compressibility";
         };
       };
       
       placement = {
-        preferredTier = mkOption {
-          type = types.int;
+        preferredTier = lib.mkOption {
+          type = lib.types.int;
           default = 1;
           description = "Preferred storage tier";
         };
         
-        allowedTiers = mkOption {
-          type = types.listOf types.int;
+        allowedTiers = lib.mkOption {
+          type = lib.types.listOf lib.types.int;
           default = [];
           description = "Allowed storage tiers";
         };
         
-        replication = mkOption {
-          type = types.submodule {
+        replication = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              factor = mkOption {
-                type = types.int;
+              factor = lib.mkOption {
+                type = lib.types.int;
                 default = 2;
                 description = "Replication factor";
               };
               
-              crossTier = mkOption {
-                type = types.bool;
+              crossTier = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Allow cross-tier replication";
               };
               
-              geoDistributed = mkOption {
-                type = types.bool;
+              geoDistributed = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Require geographic distribution";
               };
@@ -297,26 +297,26 @@ let
   storageFabric = {
     # Global heat map tracking
     heatMap = {
-      enable = mkOption {
-        type = types.bool;
+      enable = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable heat map tracking";
       };
       
-      granularity = mkOption {
-        type = types.str;
+      granularity = lib.mkOption {
+        type = lib.types.str;
         default = "1Mi";
         description = "Heat tracking granularity";
       };
       
-      timeWindows = mkOption {
-        type = types.listOf types.str;
+      timeWindows = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [ "1h" "1d" "7d" "30d" ];
         description = "Time windows for heat calculation";
       };
       
-      algorithm = mkOption {
-        type = types.enum [ "exponential-decay" "sliding-window" "ml-predicted" ];
+      algorithm = lib.mkOption {
+        type = lib.types.enum [ "exponential-decay" "sliding-window" "ml-predicted" ];
         default = "exponential-decay";
         description = "Heat calculation algorithm";
       };
@@ -324,43 +324,43 @@ let
     
     # Data movement engine
     movement = {
-      enable = mkOption {
-        type = types.bool;
+      enable = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable automatic data movement";
       };
       
-      engine = mkOption {
-        type = types.enum [ "continuous" "scheduled" "triggered" ];
+      engine = lib.mkOption {
+        type = lib.types.enum [ "continuous" "scheduled" "triggered" ];
         default = "continuous";
         description = "Movement engine mode";
       };
       
       bandwidth = {
-        limit = mkOption {
-          type = types.nullOr types.str;
+        limit = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
           default = null;
           description = "Bandwidth limit for data movement";
           example = "100MB/s";
         };
         
-        priority = mkOption {
-          type = types.submodule {
+        priority = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              promotion = mkOption {
-                type = types.int;
+              promotion = lib.mkOption {
+                type = lib.types.int;
                 default = 70;
                 description = "Bandwidth % for promotions";
               };
               
-              demotion = mkOption {
-                type = types.int;
+              demotion = lib.mkOption {
+                type = lib.types.int;
                 default = 20;
                 description = "Bandwidth % for demotions";
               };
               
-              rebalance = mkOption {
-                type = types.int;
+              rebalance = lib.mkOption {
+                type = lib.types.int;
                 default = 10;
                 description = "Bandwidth % for rebalancing";
               };
@@ -371,23 +371,23 @@ let
         };
       };
       
-      schedule = mkOption {
-        type = types.nullOr (types.submodule {
+      schedule = lib.mkOption {
+        type = lib.types.nullOr (lib.types.submodule {
           options = {
-            promotionWindow = mkOption {
-              type = types.str;
+            promotionWindow = lib.mkOption {
+              type = lib.types.str;
               default = "* * * * *";
               description = "Cron schedule for promotions";
             };
             
-            demotionWindow = mkOption {
-              type = types.str;
+            demotionWindow = lib.mkOption {
+              type = lib.types.str;
               default = "0 2 * * *";
               description = "Cron schedule for demotions";
             };
             
-            rebalanceWindow = mkOption {
-              type = types.str;
+            rebalanceWindow = lib.mkOption {
+              type = lib.types.str;
               default = "0 4 * * 0";
               description = "Cron schedule for rebalancing";
             };
@@ -400,39 +400,39 @@ let
     
     # Caching layers
     caching = {
-      enable = mkOption {
-        type = types.bool;
+      enable = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable multi-tier caching";
       };
       
-      layers = mkOption {
-        type = types.listOf (types.submodule {
+      layers = lib.mkOption {
+        type = lib.types.listOf (lib.types.submodule {
           options = {
-            name = mkOption {
-              type = types.str;
+            name = lib.mkOption {
+              type = lib.types.str;
               description = "Cache layer name";
             };
             
-            size = mkOption {
-              type = types.str;
+            size = lib.mkOption {
+              type = lib.types.str;
               description = "Cache size";
               example = "100Gi";
             };
             
-            location = mkOption {
-              type = types.enum [ "memory" "nvme" "ssd" ];
+            location = lib.mkOption {
+              type = lib.types.enum [ "memory" "nvme" "ssd" ];
               description = "Cache location";
             };
             
-            policy = mkOption {
-              type = types.enum [ "lru" "lfu" "arc" "2q" "tinylfu" ];
+            policy = lib.mkOption {
+              type = lib.types.enum [ "lru" "lfu" "arc" "2q" "tinylfu" ];
               default = "arc";
               description = "Cache eviction policy";
             };
             
-            writePolicy = mkOption {
-              type = types.enum [ "write-through" "write-back" "write-around" ];
+            writePolicy = lib.mkOption {
+              type = lib.types.enum [ "write-through" "write-back" "write-around" ];
               default = "write-back";
               description = "Cache write policy";
             };
@@ -448,8 +448,8 @@ in
 {
   options.hypervisor.storage = {
     # Storage tiers
-    tiers = mkOption {
-      type = types.attrsOf (types.submodule tierDefinition);
+    tiers = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule tierDefinition);
       default = {};
       description = "Storage tier definitions";
       example = literalExample ''
@@ -481,30 +481,30 @@ in
     };
     
     # Data classifications
-    classifications = mkOption {
-      type = types.attrsOf (types.submodule dataClassification);
+    classifications = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule dataClassification);
       default = {};
       description = "Data classification rules";
     };
     
     # Storage fabric configuration
-    fabric = mkOption {
-      type = types.submodule storageFabric;
+    fabric = lib.mkOption {
+      type = lib.types.submodule storageFabric;
       default = {};
       description = "Storage fabric configuration";
     };
     
     # Default tier for unclassified data
-    defaultTier = mkOption {
-      type = types.int;
+    defaultTier = lib.mkOption {
+      type = lib.types.int;
       default = 1;
       description = "Default storage tier for new data";
     };
   };
   
-  config = {
+  config = lib.mkIf cfg.enable {
     # Storage tier management service
-    systemd.services.storage-tier-manager = mkIf cfg.fabric.movement.enable {
+    systemd.services.storage-tier-manager = lib.mkIf cfg.fabric.movement.enable {
       description = "Storage Tier Management Service";
       wantedBy = [ "multi-user.target" ];
       
@@ -539,7 +539,7 @@ in
     };
     
     # Heat map collector
-    systemd.services.storage-heatmap-collector = mkIf cfg.fabric.heatMap.enable {
+    systemd.services.storage-heatmap-collector = lib.mkIf cfg.fabric.heatMap.enable {
       description = "Storage Heat Map Collector";
       wantedBy = [ "multi-user.target" ];
       

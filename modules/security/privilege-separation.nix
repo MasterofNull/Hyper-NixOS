@@ -45,7 +45,7 @@ in {
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # User groups for different access levels
     users.groups = {
       # Basic VM management - no sudo needed

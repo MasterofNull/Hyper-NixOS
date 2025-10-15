@@ -733,7 +733,7 @@ in {
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Install educational content
     environment.systemPackages = [
       (generateEducationalContent "beginner")

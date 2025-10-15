@@ -278,7 +278,7 @@ in {
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Install documentation preferences
     environment.etc."hypervisor/doc-preferences.conf".text = ''
       # Documentation preferences

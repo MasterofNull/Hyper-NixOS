@@ -365,9 +365,9 @@ in {
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Merge custom templates with defaults
-    hypervisor.tierTemplates.availableTemplates = mkMerge [
+    hypervisor.tierTemplates.availableTemplates = lib.mkMerge [
       tierDefinitions
       (lib.mapAttrs (name: template: 
         if template.baseTemplate != null then

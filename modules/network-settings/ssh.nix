@@ -3,10 +3,21 @@
 # SSH Hardening Configuration
 # Consolidated SSH security settings
 
+let
+  cfg = config.hypervisor.security;
+in
 {
   options.hypervisor.security.sshStrictMode = lib.mkEnableOption "Enable strictest SSH configuration";
+  
+  options.hypervisor.security.sshHardening = {
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable SSH hardening configuration";
+    };
+  };
 
-  config = {
+  config = lib.mkIf config.hypervisor.security.sshHardening.enable {
     # ═══════════════════════════════════════════════════════════════
     # Standard SSH Configuration (Secure)
     # ═══════════════════════════════════════════════════════════════
@@ -27,7 +38,7 @@
         
         # Strong key exchange algorithms
         # In strict mode, use only the strongest algorithms
-        KexAlgorithms = if config.hypervisor.security.sshStrictMode then [
+        KexAlgorithms = if cfg.sshStrictMode then [
           "curve25519-sha256"
           "curve25519-sha256@libssh.org"
         ] else lib.mkDefault [
@@ -39,7 +50,7 @@
         
         # Modern ciphers only
         # In strict mode, use only the strongest ciphers
-        Ciphers = if config.hypervisor.security.sshStrictMode then [
+        Ciphers = if cfg.sshStrictMode then [
           "chacha20-poly1305@openssh.com"
           "aes256-gcm@openssh.com"
         ] else lib.mkDefault [
@@ -51,7 +62,7 @@
         
         # Strong MACs
         # In strict mode, use only the strongest MACs
-        Macs = if config.hypervisor.security.sshStrictMode then [
+        Macs = if cfg.sshStrictMode then [
           "hmac-sha2-512-etm@openssh.com"
           "hmac-sha2-256-etm@openssh.com"
         ] else lib.mkDefault [
@@ -61,9 +72,9 @@
         ];
         
         # Connection limits (strict mode)
-        MaxAuthTries = if config.hypervisor.security.sshStrictMode then 2 else lib.mkDefault 6;
-        MaxSessions = if config.hypervisor.security.sshStrictMode then 2 else lib.mkDefault 10;
-        LoginGraceTime = if config.hypervisor.security.sshStrictMode then 30 else lib.mkDefault 120;
+        MaxAuthTries = if cfg.sshStrictMode then 2 else lib.mkDefault 6;
+        MaxSessions = if cfg.sshStrictMode then 2 else lib.mkDefault 10;
+        LoginGraceTime = if cfg.sshStrictMode then 30 else lib.mkDefault 120;
       };
     };
     

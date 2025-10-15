@@ -2,26 +2,26 @@
 # Implements a modular VM construction system using composable components
 { config, lib, pkgs, ... }:
 
-with lib;
+# Removed: with lib; - Using explicit lib. prefix for clarity
 let
   cfg = config.hypervisor.composition;
   
   # Component definition - the building blocks
   componentDefinition = {
     options = {
-      name = mkOption {
-        type = types.str;
+      name = lib.mkOption {
+        type = lib.types.str;
         description = "Component name";
       };
       
-      version = mkOption {
-        type = types.str;
+      version = lib.mkOption {
+        type = lib.types.str;
         default = "1.0.0";
         description = "Component version";
       };
       
-      type = mkOption {
-        type = types.enum [ 
+      type = lib.mkOption {
+        type = lib.types.enum [ 
           "base"        # Base operating system
           "runtime"     # Language runtime (Node.js, Python, etc.)
           "framework"   # Application framework
@@ -36,45 +36,45 @@ let
       
       # Component properties
       properties = {
-        description = mkOption {
-          type = types.str;
+        description = lib.mkOption {
+          type = lib.types.str;
           default = "";
           description = "Component description";
         };
         
-        maintainer = mkOption {
-          type = types.str;
+        maintainer = lib.mkOption {
+          type = lib.types.str;
           default = "";
           description = "Component maintainer";
         };
         
-        tags = mkOption {
-          type = types.listOf types.str;
+        tags = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [];
           description = "Component tags";
         };
         
         compatibility = {
-          architectures = mkOption {
-            type = types.listOf types.str;
+          architectures = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
             default = [ "x86_64" ];
             description = "Compatible architectures";
           };
           
-          requires = mkOption {
-            type = types.listOf types.str;
+          requires = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
             default = [];
             description = "Required components";
           };
           
-          conflicts = mkOption {
-            type = types.listOf types.str;
+          conflicts = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
             default = [];
             description = "Conflicting components";
           };
           
-          provides = mkOption {
-            type = types.listOf types.str;
+          provides = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
             default = [];
             description = "Capabilities provided";
           };
@@ -84,27 +84,27 @@ let
       # Component configuration
       configuration = {
         # Resource modifications
-        resources = mkOption {
-          type = types.submodule {
+        resources = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              cpu = mkOption {
-                type = types.nullOr (types.submodule {
+              cpu = lib.mkOption {
+                type = lib.types.nullOr (lib.types.submodule {
                   options = {
-                    add = mkOption { type = types.int; default = 0; };
-                    multiply = mkOption { type = types.float; default = 1.0; };
-                    minimum = mkOption { type = types.int; default = 0; };
+                    add = lib.mkOption { type = lib.types.int; default = 0; };
+                    multiply = lib.mkOption { type = lib.types.float; default = 1.0; };
+                    minimum = lib.mkOption { type = lib.types.int; default = 0; };
                   };
                 });
                 default = null;
                 description = "CPU resource modifications";
               };
               
-              memory = mkOption {
-                type = types.nullOr (types.submodule {
+              memory = lib.mkOption {
+                type = lib.types.nullOr (lib.types.submodule {
                   options = {
-                    add = mkOption { type = types.str; default = "0"; };
-                    multiply = mkOption { type = types.float; default = 1.0; };
-                    minimum = mkOption { type = types.str; default = "0"; };
+                    add = lib.mkOption { type = lib.types.str; default = "0"; };
+                    multiply = lib.mkOption { type = lib.types.float; default = 1.0; };
+                    minimum = lib.mkOption { type = lib.types.str; default = "0"; };
                   };
                 });
                 default = null;
@@ -117,29 +117,29 @@ let
         };
         
         # Environment variables
-        environment = mkOption {
-          type = types.attrsOf types.str;
+        environment = lib.mkOption {
+          type = lib.types.attrsOf lib.types.str;
           default = {};
           description = "Environment variables to set";
         };
         
         # Ports to expose
-        ports = mkOption {
-          type = types.listOf (types.submodule {
+        ports = lib.mkOption {
+          type = lib.types.listOf (lib.types.submodule {
             options = {
-              internal = mkOption {
-                type = types.int;
+              internal = lib.mkOption {
+                type = lib.types.int;
                 description = "Internal port";
               };
               
-              external = mkOption {
-                type = types.nullOr types.int;
+              external = lib.mkOption {
+                type = lib.types.nullOr lib.types.int;
                 default = null;
                 description = "External port (null for dynamic)";
               };
               
-              protocol = mkOption {
-                type = types.enum [ "tcp" "udp" "sctp" ];
+              protocol = lib.mkOption {
+                type = lib.types.enum [ "tcp" "udp" "sctp" ];
                 default = "tcp";
                 description = "Protocol";
               };
@@ -150,27 +150,27 @@ let
         };
         
         # Volumes to mount
-        volumes = mkOption {
-          type = types.listOf (types.submodule {
+        volumes = lib.mkOption {
+          type = lib.types.listOf (lib.types.submodule {
             options = {
-              name = mkOption {
-                type = types.str;
+              name = lib.mkOption {
+                type = lib.types.str;
                 description = "Volume name";
               };
               
-              path = mkOption {
-                type = types.str;
+              path = lib.mkOption {
+                type = lib.types.str;
                 description = "Mount path";
               };
               
-              type = mkOption {
-                type = types.enum [ "persistent" "ephemeral" "config" "secret" ];
+              type = lib.mkOption {
+                type = lib.types.enum [ "persistent" "ephemeral" "config" "secret" ];
                 default = "persistent";
                 description = "Volume type";
               };
               
-              size = mkOption {
-                type = types.nullOr types.str;
+              size = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
                 default = null;
                 description = "Volume size";
               };
@@ -182,54 +182,54 @@ let
         
         # Startup hooks
         hooks = {
-          preInstall = mkOption {
-            type = types.lines;
+          preInstall = lib.mkOption {
+            type = lib.types.lines;
             default = "";
             description = "Pre-installation hook";
           };
           
-          postInstall = mkOption {
-            type = types.lines;
+          postInstall = lib.mkOption {
+            type = lib.types.lines;
             default = "";
             description = "Post-installation hook";
           };
           
-          configure = mkOption {
-            type = types.lines;
+          configure = lib.mkOption {
+            type = lib.types.lines;
             default = "";
             description = "Configuration hook";
           };
           
-          validate = mkOption {
-            type = types.lines;
+          validate = lib.mkOption {
+            type = lib.types.lines;
             default = "";
             description = "Validation hook";
           };
         };
         
         # Files to inject
-        files = mkOption {
-          type = types.attrsOf (types.submodule {
+        files = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.submodule {
             options = {
-              content = mkOption {
-                type = types.str;
+              content = lib.mkOption {
+                type = lib.types.str;
                 description = "File content";
               };
               
-              mode = mkOption {
-                type = types.str;
+              mode = lib.mkOption {
+                type = lib.types.str;
                 default = "0644";
                 description = "File mode";
               };
               
-              owner = mkOption {
-                type = types.str;
+              owner = lib.mkOption {
+                type = lib.types.str;
                 default = "root";
                 description = "File owner";
               };
               
-              group = mkOption {
-                type = types.str;
+              group = lib.mkOption {
+                type = lib.types.str;
                 default = "root";
                 description = "File group";
               };
@@ -241,28 +241,28 @@ let
         
         # Package management
         packages = {
-          install = mkOption {
-            type = types.listOf types.str;
+          install = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
             default = [];
             description = "Packages to install";
           };
           
-          remove = mkOption {
-            type = types.listOf types.str;
+          remove = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
             default = [];
             description = "Packages to remove";
           };
           
-          repositories = mkOption {
-            type = types.listOf (types.submodule {
+          repositories = lib.mkOption {
+            type = lib.types.listOf (lib.types.submodule {
               options = {
-                url = mkOption {
-                  type = types.str;
+                url = lib.mkOption {
+                  type = lib.types.str;
                   description = "Repository URL";
                 };
                 
-                key = mkOption {
-                  type = types.nullOr types.str;
+                key = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
                   default = null;
                   description = "Repository key";
                 };
@@ -276,29 +276,29 @@ let
       
       # Component interface
       interface = {
-        inputs = mkOption {
-          type = types.attrsOf (types.submodule {
+        inputs = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.submodule {
             options = {
-              type = mkOption {
-                type = types.str;
+              type = lib.mkOption {
+                type = lib.types.str;
                 description = "Input type";
                 example = "string";
               };
               
-              required = mkOption {
-                type = types.bool;
+              required = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Whether input is required";
               };
               
-              default = mkOption {
-                type = types.nullOr types.anything;
+              default = lib.mkOption {
+                type = lib.types.nullOr lib.types.anything;
                 default = null;
                 description = "Default value";
               };
               
-              description = mkOption {
-                type = types.str;
+              description = lib.mkOption {
+                type = lib.types.str;
                 default = "";
                 description = "Input description";
               };
@@ -308,21 +308,21 @@ let
           description = "Component inputs";
         };
         
-        outputs = mkOption {
-          type = types.attrsOf (types.submodule {
+        outputs = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.submodule {
             options = {
-              type = mkOption {
-                type = types.str;
+              type = lib.mkOption {
+                type = lib.types.str;
                 description = "Output type";
               };
               
-              value = mkOption {
-                type = types.str;
+              value = lib.mkOption {
+                type = lib.types.str;
                 description = "Output value expression";
               };
               
-              description = mkOption {
-                type = types.str;
+              description = lib.mkOption {
+                type = lib.types.str;
                 default = "";
                 description = "Output description";
               };
@@ -332,16 +332,16 @@ let
           description = "Component outputs";
         };
         
-        events = mkOption {
-          type = types.listOf (types.submodule {
+        events = lib.mkOption {
+          type = lib.types.listOf (lib.types.submodule {
             options = {
-              name = mkOption {
-                type = types.str;
+              name = lib.mkOption {
+                type = lib.types.str;
                 description = "Event name";
               };
               
-              description = mkOption {
-                type = types.str;
+              description = lib.mkOption {
+                type = lib.types.str;
                 default = "";
                 description = "Event description";
               };
@@ -357,40 +357,40 @@ let
   # Blueprint definition - compositions of components
   blueprintDefinition = {
     options = {
-      name = mkOption {
-        type = types.str;
+      name = lib.mkOption {
+        type = lib.types.str;
         description = "Blueprint name";
       };
       
-      description = mkOption {
-        type = types.str;
+      description = lib.mkOption {
+        type = lib.types.str;
         default = "";
         description = "Blueprint description";
       };
       
       # Component composition
-      components = mkOption {
-        type = types.listOf (types.submodule {
+      components = lib.mkOption {
+        type = lib.types.listOf (lib.types.submodule {
           options = {
-            component = mkOption {
-              type = types.str;
+            component = lib.mkOption {
+              type = lib.types.str;
               description = "Component name";
             };
             
-            alias = mkOption {
-              type = types.nullOr types.str;
+            alias = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
               default = null;
               description = "Component alias";
             };
             
-            inputs = mkOption {
-              type = types.attrsOf types.anything;
+            inputs = lib.mkOption {
+              type = lib.types.attrsOf lib.types.anything;
               default = {};
               description = "Input values";
             };
             
-            condition = mkOption {
-              type = types.nullOr types.str;
+            condition = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
               default = null;
               description = "Condition for inclusion";
             };
@@ -401,29 +401,29 @@ let
       };
       
       # Blueprint parameters
-      parameters = mkOption {
-        type = types.attrsOf (types.submodule {
+      parameters = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.submodule {
           options = {
-            type = mkOption {
-              type = types.str;
+            type = lib.mkOption {
+              type = lib.types.str;
               default = "string";
               description = "Parameter type";
             };
             
-            default = mkOption {
-              type = types.nullOr types.anything;
+            default = lib.mkOption {
+              type = lib.types.nullOr lib.types.anything;
               default = null;
               description = "Default value";
             };
             
-            description = mkOption {
-              type = types.str;
+            description = lib.mkOption {
+              type = lib.types.str;
               default = "";
               description = "Parameter description";
             };
             
-            validation = mkOption {
-              type = types.nullOr types.str;
+            validation = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
               default = null;
               description = "Validation expression";
             };
@@ -434,21 +434,21 @@ let
       };
       
       # Connections between components
-      connections = mkOption {
-        type = types.listOf (types.submodule {
+      connections = lib.mkOption {
+        type = lib.types.listOf (lib.types.submodule {
           options = {
-            from = mkOption {
-              type = types.str;
+            from = lib.mkOption {
+              type = lib.types.str;
               description = "Source component.output";
             };
             
-            to = mkOption {
-              type = types.str;
+            to = lib.mkOption {
+              type = lib.types.str;
               description = "Target component.input";
             };
             
-            transform = mkOption {
-              type = types.nullOr types.str;
+            transform = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
               default = null;
               description = "Value transformation";
             };
@@ -460,22 +460,22 @@ let
       
       # Layout hints
       layout = {
-        layers = mkOption {
-          type = types.listOf (types.submodule {
+        layers = lib.mkOption {
+          type = lib.types.listOf (lib.types.submodule {
             options = {
-              name = mkOption {
-                type = types.str;
+              name = lib.mkOption {
+                type = lib.types.str;
                 description = "Layer name";
               };
               
-              components = mkOption {
-                type = types.listOf types.str;
+              components = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
                 default = [];
                 description = "Components in this layer";
               };
               
-              order = mkOption {
-                type = types.int;
+              order = lib.mkOption {
+                type = lib.types.int;
                 default = 0;
                 description = "Layer order";
               };
@@ -485,8 +485,8 @@ let
           description = "Component layers";
         };
         
-        constraints = mkOption {
-          type = types.attrsOf types.anything;
+        constraints = lib.mkOption {
+          type = lib.types.attrsOf lib.types.anything;
           default = {};
           description = "Layout constraints";
         };
@@ -494,21 +494,21 @@ let
       
       # Validation rules
       validation = {
-        rules = mkOption {
-          type = types.listOf (types.submodule {
+        rules = lib.mkOption {
+          type = lib.types.listOf (lib.types.submodule {
             options = {
-              name = mkOption {
-                type = types.str;
+              name = lib.mkOption {
+                type = lib.types.str;
                 description = "Rule name";
               };
               
-              expression = mkOption {
-                type = types.str;
+              expression = lib.mkOption {
+                type = lib.types.str;
                 description = "Validation expression";
               };
               
-              message = mkOption {
-                type = types.str;
+              message = lib.mkOption {
+                type = lib.types.str;
                 description = "Error message";
               };
             };
@@ -523,34 +523,34 @@ let
   # Instance definition - instantiated blueprints
   instanceDefinition = {
     options = {
-      name = mkOption {
-        type = types.str;
+      name = lib.mkOption {
+        type = lib.types.str;
         description = "Instance name";
       };
       
-      blueprint = mkOption {
-        type = types.str;
+      blueprint = lib.mkOption {
+        type = lib.types.str;
         description = "Blueprint to instantiate";
       };
       
-      parameters = mkOption {
-        type = types.attrsOf types.anything;
+      parameters = lib.mkOption {
+        type = lib.types.attrsOf lib.types.anything;
         default = {};
         description = "Parameter values";
       };
       
       overrides = {
-        components = mkOption {
-          type = types.attrsOf (types.submodule {
+        components = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.submodule {
             options = {
-              inputs = mkOption {
-                type = types.attrsOf types.anything;
+              inputs = lib.mkOption {
+                type = lib.types.attrsOf lib.types.anything;
                 default = {};
                 description = "Input overrides";
               };
               
-              configuration = mkOption {
-                type = types.attrsOf types.anything;
+              configuration = lib.mkOption {
+                type = lib.types.attrsOf lib.types.anything;
                 default = {};
                 description = "Configuration overrides";
               };
@@ -560,22 +560,22 @@ let
           description = "Component overrides";
         };
         
-        resources = mkOption {
-          type = types.attrsOf types.anything;
+        resources = lib.mkOption {
+          type = lib.types.attrsOf lib.types.anything;
           default = {};
           description = "Resource overrides";
         };
       };
       
       placement = {
-        node = mkOption {
-          type = types.nullOr types.str;
+        node = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
           default = null;
           description = "Target node";
         };
         
-        tags = mkOption {
-          type = types.listOf types.str;
+        tags = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [];
           description = "Placement tags";
         };
@@ -587,57 +587,57 @@ in
 {
   options.hypervisor.composition = {
     # Component library
-    components = mkOption {
-      type = types.attrsOf (types.submodule componentDefinition);
+    components = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule componentDefinition);
       default = {};
       description = "Available components";
     };
     
     # Blueprint library
-    blueprints = mkOption {
-      type = types.attrsOf (types.submodule blueprintDefinition);
+    blueprints = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule blueprintDefinition);
       default = {};
       description = "Available blueprints";
     };
     
     # Instances
-    instances = mkOption {
-      type = types.attrsOf (types.submodule instanceDefinition);
+    instances = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule instanceDefinition);
       default = {};
       description = "Blueprint instances";
     };
     
     # Global settings
     settings = {
-      componentPath = mkOption {
-        type = types.listOf types.path;
+      componentPath = lib.mkOption {
+        type = lib.types.listOf lib.types.path;
         default = [ "/var/lib/hypervisor/components" ];
         description = "Component search paths";
       };
       
       validation = {
-        strict = mkOption {
-          type = types.bool;
+        strict = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Enable strict validation";
         };
         
-        timeout = mkOption {
-          type = types.int;
+        timeout = lib.mkOption {
+          type = lib.types.int;
           default = 30;
           description = "Validation timeout in seconds";
         };
       };
       
       caching = {
-        enable = mkOption {
-          type = types.bool;
+        enable = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Enable composition caching";
         };
         
-        ttl = mkOption {
-          type = types.int;
+        ttl = lib.mkOption {
+          type = lib.types.int;
           default = 3600;
           description = "Cache TTL in seconds";
         };
@@ -645,7 +645,7 @@ in
     };
   };
   
-  config = {
+  config = lib.mkIf cfg.enable {
     # Generate composed configurations
     system.activationScripts.generateCompositions = ''
       echo "Generating VM compositions..."
