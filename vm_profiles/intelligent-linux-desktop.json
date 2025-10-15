@@ -1,0 +1,30 @@
+{
+  "name": "intelligent-linux-desktop",
+  "description": "Intelligent defaults for Linux desktop VM - auto-detects hardware",
+  "_comment": "This template uses intelligent defaults based on system discovery",
+  "_detection_notes": {
+    "vcpus": "Auto-calculated as 25% of host cores (min 2)",
+    "memory_mb": "Auto-calculated as 2GB per vCPU, max 50% host RAM",
+    "disk_gb": "Standard 40GB for desktop Linux",
+    "disk_format": "qcow2 for SSD/NVMe (snapshots), raw for HDD (performance)",
+    "network_mode": "NAT for security by default, bridge available"
+  },
+  "os": "linux",
+  "cpus": "AUTO_DETECT",
+  "memory_mb": "AUTO_DETECT",
+  "disk_gb": 40,
+  "disk_format": "AUTO_DETECT",
+  "network": {
+    "mode": "nat",
+    "bridge": "AUTO_DETECT"
+  },
+  "features": {
+    "hugepages": false,
+    "vhost_net": true,
+    "memballoon": true
+  },
+  "display": {
+    "type": "spice",
+    "heads": 1
+  }
+}

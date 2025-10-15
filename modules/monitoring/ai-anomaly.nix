@@ -727,7 +727,7 @@ in
     };
     
     # AI monitoring CLI
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       (writeScriptBin "hv-ai" ''
         #!${pkgs.bash}/bin/bash
         # AI Monitoring Management Tool

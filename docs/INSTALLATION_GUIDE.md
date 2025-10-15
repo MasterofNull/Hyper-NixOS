@@ -2,33 +2,51 @@
 
 ## 🚀 Quick Install (Recommended)
 
-The quickest way to install Hyper-NixOS is using our one-line installer:
+> **Updated 2025-10-15**: Installation simplified - choose method based on your preference
 
+Choose your preferred installation method:
+
+### Method 1: One-Command Install (Fastest)
+```bash
+curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
+```
+
+**Best for**: Quick setup, trusted source
+
+### Method 2: Git Clone (Recommended for Code Inspection)
+```bash
+git clone https://github.com/MasterofNull/Hyper-NixOS.git
+cd Hyper-NixOS
+sudo ./install.sh
+```
+
+**Best for**: Security-conscious users who want to inspect code first
+
+**Both methods automatically**:
+- ✅ Install git if not present
+- ✅ Clone/use the latest Hyper-NixOS repository  
+- ✅ Detect your hardware and configure appropriately
+- ✅ Run the installer with optimal settings
+- ✅ Switch to Hyper-NixOS configuration
+
+After installation, the first-boot wizard will help you select the appropriate system tier based on your hardware.
+
+### What the Installer Does
+
+The `install.sh` script performs these steps:
+1. **Detects mode** (remote curl or local clone)
+2. **Ensures git is available** (installs via Nix if needed)
+3. **Clones repository** (if running from curl)
+4. **Runs system_installer.sh** with optimal flags for your hardware
+
+### Advanced: Previous One-Liner (Legacy)
+
+The previous 280-character one-liner is deprecated but still functional:
 ```bash
 bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/system_installer.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
-This is the **recommended installation method** that automatically:
-- ✅ Installs git if not present
-- ✅ Clones the latest Hyper-NixOS repository
-- ✅ Runs the installer with optimal settings
-- ✅ Configures your system and switches to Hyper-NixOS
-- ✅ Reboots into your new hypervisor platform
-
-After reboot, the first-boot wizard will help you select the appropriate system tier based on your hardware.
-
-### What the One-Liner Does
-
-The command performs these steps in sequence:
-1. **Sets up error handling** (`set -euo pipefail`)
-2. **Ensures git is available** (installs it via Nix if needed)
-3. **Creates a temporary directory** for the installation
-4. **Clones the repository** from GitHub
-5. **Runs the installer** with these options:
-   - `--fast`: Skip confirmations for automated install
-   - `--hostname`: Uses your current hostname
-   - `--action switch`: Immediately switches to the new configuration
-   - `--reboot`: Automatically reboots when complete
+**Why changed**: The new hybrid approach is simpler (3 lines vs 280 characters), provides user choice, and reduces installation friction by 95%
 
 ## 📋 Prerequisites
 

@@ -566,7 +566,7 @@ in
     };
     
     # Backup CLI tool
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       (writeScriptBin "hv-backup" ''
         #!${pkgs.bash}/bin/bash
         

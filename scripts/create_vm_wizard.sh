@@ -3,6 +3,7 @@
 # Source common library for standardized functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/system_discovery.sh" 2>/dev/null || true
 
 set -Eeuo pipefail
 IFS=$'\n\t'
@@ -11,6 +12,9 @@ PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 trap 'exit $?' EXIT HUP INT TERM
 IFS=$'\n\t'
 umask 077
+
+# Intelligent Defaults Framework - Design Ethos Third Pillar
+# Detect system capabilities and pre-fill with best practices
 
 PROFILES_DIR="${1:-/var/lib/hypervisor/vm_profiles}"
 ISOS_DIR="${2:-/var/lib/hypervisor/isos}"
@@ -29,19 +33,26 @@ WF_DIR="/var/lib/hypervisor/workflows"
 mkdir -p "$WF_DIR"
 STATE_FILE="$WF_DIR/create_vm_state.json"
 
-# Load defaults
+# Intelligent defaults based on system discovery
 total_mem_kb=$(awk '/MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
 avail_mem_kb=$(awk '/MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
 total_mem_mb=$(( total_mem_kb / 1024 ))
 avail_mem_mb=$(( avail_mem_kb / 1024 ))
 total_cpus=$(nproc 2>/dev/null || echo 1)
 
+# Generate intelligent defaults based on detected hardware
+DETECTED_STORAGE_TYPE=$(detect_storage_type 2>/dev/null || echo "ssd")
+RECOMMENDED_VCPUS=$(calculate_recommended_vcpus "$total_cpus" 25 2 2>/dev/null || echo "2")
+RECOMMENDED_RAM=$(calculate_recommended_ram "$total_mem_mb" "$RECOMMENDED_VCPUS" 2048 2>/dev/null || echo "4096")
+RECOMMENDED_DISK_FORMAT=$(recommend_disk_format "$DETECTED_STORAGE_TYPE" 2>/dev/null || echo "qcow2")
+
+# Best practice defaults (will be explained to user)
 name="my-vm"
-cpus="2"
-mem="4096"
-disk="20"
-mem_max="4096"
-arch="x86_64"
+cpus="$RECOMMENDED_VCPUS"
+mem="$RECOMMENDED_RAM"
+disk="40"  # Standard for desktop Linux
+mem_max="$RECOMMENDED_RAM"
+arch="$(get_cpu_arch 2>/dev/null || echo x86_64)"
 owner=""
 zone=""
 audio_model=""
@@ -135,9 +146,18 @@ $DIALOG --msgbox "Host resources detected:\n\nCPUs: ${total_cpus}\nTotal RAM: ${
 # Step inputs
 name=$(ask "VM name" "$name") || exit 0; save_state
 owner=$(ask "Owner (optional)" "$owner") || exit 0; save_state
-cpus=$(ask "vCPUs (host: ${total_cpus})" "$cpus") || exit 0; save_state
-mem=$(ask "Memory (MiB) (avail: ${avail_mem_mb}, total: ${total_mem_mb})" "$mem") || exit 0; save_state
-disk=$(ask "Disk size (GiB)" "$disk") || exit 0; save_state
+
+# CPU allocation with intelligent default explanation
+$DIALOG --msgbox "CPU Allocation\n\nDetected: ${total_cpus} cores on host\nRecommended: ${cpus} vCPUs (25% of host)\n\nBest Practice: Allocate 25-50% of host cores for balanced performance.\nThis allows the host OS and other VMs to run smoothly.\n\nYou can adjust this value in the next screen." 16 70
+cpus=$(ask "vCPUs [Recommended: ${cpus} based on ${total_cpus} host cores]" "$cpus") || exit 0; save_state
+
+# Memory allocation with intelligent default explanation
+$DIALOG --msgbox "Memory Allocation\n\nDetected: ${total_mem_mb}MB total, ${avail_mem_mb}MB available\nRecommended: ${mem}MB (2GB per vCPU)\n\nBest Practice: Allocate 2-4GB per vCPU, not exceeding 50% of host RAM.\nThis ensures good VM performance while leaving resources for the host.\n\nAdjust in the next screen if needed." 18 70
+mem=$(ask "Memory (MiB) [Recommended: ${mem} = ${cpus} vCPUs × 2GB]" "$mem") || exit 0; save_state
+
+# Disk allocation with format recommendation
+$DIALOG --msgbox "Disk Configuration\n\nDetected storage: ${DETECTED_STORAGE_TYPE}\nRecommended format: ${RECOMMENDED_DISK_FORMAT}\nRecommended size: ${disk}GB (standard for Linux desktop)\n\nBest Practice:\n• qcow2 format for SSD/NVMe (snapshots, thin provisioning)\n• Adjust size based on OS: Windows ~60GB, Linux ~40GB, Minimal ~20GB" 18 70
+disk=$(ask "Disk size (GiB) [Recommended: ${disk}GB for Linux]" "$disk") || exit 0; save_state
 
 # Optional variable memory (soft cap)
 if $DIALOG --yesno "Enable variable memory limit (soft cap)?\n\nThis sets a memory_max_mb higher than the initial memory, allowing flexibility." 12 70 ; then

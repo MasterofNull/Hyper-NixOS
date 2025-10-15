@@ -1,0 +1,35 @@
+{
+  "name": "intelligent-windows-desktop",
+  "description": "Intelligent defaults for Windows desktop VM - auto-detects hardware",
+  "_comment": "Windows requires more resources than Linux for optimal performance",
+  "_detection_notes": {
+    "vcpus": "Auto-calculated as 25-40% of host cores (min 4 for Windows)",
+    "memory_mb": "Auto-calculated as 4GB per vCPU for Windows (min 8GB total)",
+    "disk_gb": "80GB for Windows OS, applications, and updates",
+    "disk_format": "qcow2 for snapshots before Windows updates",
+    "network_mode": "NAT for security, isolated from host network"
+  },
+  "os": "windows",
+  "cpus": "AUTO_DETECT_MIN_4",
+  "memory_mb": "AUTO_DETECT_MIN_8192",
+  "disk_gb": 80,
+  "disk_format": "qcow2",
+  "network": {
+    "mode": "nat",
+    "bridge": "AUTO_DETECT"
+  },
+  "features": {
+    "hugepages": false,
+    "vhost_net": true,
+    "memballoon": true,
+    "uefi": true,
+    "secure_boot": false
+  },
+  "display": {
+    "type": "spice",
+    "heads": 1
+  },
+  "audio": {
+    "model": "ich9"
+  }
+}

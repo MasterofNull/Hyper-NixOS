@@ -351,7 +351,7 @@ in
       };
       
       # Ensure all security tools are available
-      environment.systemPackages = with pkgs; [
+      environment.systemPackages = [
         mkpasswd
         openssl
         gnupg

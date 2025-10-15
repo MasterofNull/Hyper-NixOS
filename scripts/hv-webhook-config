@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+# Webhook Configuration Tool
+# Easy setup for Discord, Slack, Telegram notifications
+# Inspired by: Pulse webhook system
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/logging.sh" 2>/dev/null || true
+
+# Colors
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly CYAN='\033[0;36m'
+readonly BOLD='\033[1m'
+readonly NC='\033[0m'
+
+CONFIG_FILE="/etc/hypervisor/webhooks.json"
+
+# Initialize config if doesn't exist
+init_config() {
+    if [ ! -f "$CONFIG_FILE" ]; then
+        mkdir -p "$(dirname "$CONFIG_FILE")"
+        cat > "$CONFIG_FILE" << 'EOF'
+{
+  "webhooks": [],
+  "rate_limit": 10,
+  "default_timeout": "10s"
+}
+EOF
+        chmod 600 "$CONFIG_FILE"
+    fi
+}
+
+# Add webhook
+cmd_add() {
+    init_config
+    
+    echo -e "${CYAN}Add Webhook${NC}\n"
+    
+    # Select type
+    echo "Webhook type:"
+    echo "  1) Discord"
+    echo "  2) Slack"
+    echo "  3) Telegram"
+    echo "  4) Custom"
+    echo ""
+    read -r -p "Select (1-4): " type_choice
+    
+    local webhook_type="custom"
+    case "$type_choice" in
+        1) webhook_type="discord" ;;
+        2) webhook_type="slack" ;;
+        3) webhook_type="telegram" ;;
+        4) webhook_type="custom" ;;
+    esac
+    
+    # Get URL
+    echo ""
+    read -r -p "Webhook URL: " url
+    
+    # Get events
+    echo ""
+    echo "Events to monitor (comma-separated):"
+    echo "  Examples: vm_down,storage_full,backup_failed,security_alert"
+    read -r -p "Events: " events
+    
+    # Add to config
+    local temp=$(mktemp)
+    jq \
+        --arg type "$webhook_type" \
+        --arg url "$url" \
+        --arg events "$events" \
+        '.webhooks += [{
+            enable: true,
+            type: $type,
+            url: $url,
+            events: ($events | split(",")),
+            retryAttempts: 3,
+            timeout: "10s"
+        }]' "$CONFIG_FILE" > "$temp"
+    
+    mv "$temp" "$CONFIG_FILE"
+    
+    echo -e "\n${GREEN}✓${NC} Webhook added"
+    echo "Test with: hv-send-webhook test 'Test message' info"
+}
+
+# List webhooks
+cmd_list() {
+    init_config
+    
+    echo -e "${CYAN}Configured Webhooks${NC}\n"
+    
+    local count=$(jq '.webhooks | length' "$CONFIG_FILE")
+    
+    if [ "$count" -eq 0 ]; then
+        echo "No webhooks configured"
+        echo "Add one with: hv-webhook-config add"
+        return
+    fi
+    
+    jq -r '.webhooks[] | "\(.type) - \(.url | .[0:50])... (\(.events | join(", ")))"' "$CONFIG_FILE"
+}
+
+# Remove webhook
+cmd_remove() {
+    init_config
+    
+    echo -e "${CYAN}Remove Webhook${NC}\n"
+    cmd_list
+    echo ""
+    read -r -p "Enter index to remove (0-based): " index
+    
+    local temp=$(mktemp)
+    jq "del(.webhooks[$index])" "$CONFIG_FILE" > "$temp"
+    mv "$temp" "$CONFIG_FILE"
+    
+    echo -e "${GREEN}✓${NC} Webhook removed"
+}
+
+# Test webhook
+cmd_test() {
+    init_config
+    
+    echo -e "${CYAN}Testing Webhooks${NC}\n"
+    hv-send-webhook test "Test alert from Hyper-NixOS" info
+    echo ""
+    echo "Check your notification channels for the test message"
+}
+
+# Help
+cmd_help() {
+    cat << EOF
+Webhook Configuration Tool
+
+Usage: hv-webhook-config <command>
+
+Commands:
+  add       Add new webhook
+  list      List configured webhooks
+  remove    Remove webhook
+  test      Send test notification
+  help      Show this help
+
+Examples:
+  # Add Discord webhook
+  hv-webhook-config add
+  # Select: 1 (Discord)
+  # Enter webhook URL
+  # Enter events: vm_down,storage_full
+
+  # List all webhooks
+  hv-webhook-config list
+
+  # Test webhooks
+  hv-webhook-config test
+
+Supported platforms:
+  • Discord
+  • Slack
+  • Telegram
+  • Microsoft Teams
+  • Gotify
+  • ntfy
+  • Custom webhooks
+
+EOF
+}
+
+# Main
+main() {
+    local command=${1:-help}
+    shift || true
+    
+    case "$command" in
+        add)
+            cmd_add "$@"
+            ;;
+        list|ls)
+            cmd_list
+            ;;
+        remove|rm)
+            cmd_remove "$@"
+            ;;
+        test)
+            cmd_test
+            ;;
+        help|--help|-h)
+            cmd_help
+            ;;
+        *)
+            echo "Unknown command: $command"
+            echo "Run 'hv-webhook-config help' for usage"
+            exit 1
+            ;;
+    esac
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    main "$@"
+fi

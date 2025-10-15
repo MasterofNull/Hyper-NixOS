@@ -261,7 +261,7 @@ in
     ];
     
     # Required packages
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       pkgs.suricata
       pkgs.jq
     ];

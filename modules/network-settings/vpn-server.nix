@@ -195,7 +195,7 @@ in
     };
     
     # VPN management tools
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       pkgs.wireguard-tools
       pkgs.qrencode  # For generating QR codes for mobile clients
     ] ++ lib.optionals cfg.openvpn.enable [

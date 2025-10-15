@@ -11,8 +11,21 @@ docs/dev/
 # Temporary files
 *.tmp
 *.bak
+*.backup*
 *.swp
 *.log
+*~
+
+# Build artifacts
+tools/target/
+tools/*/target/
+.cache/
+*.o
+*.so
+*.a
+
+# External reference repositories (not for distribution)
+external-repos/
 
 # OS files
 .DS_Store

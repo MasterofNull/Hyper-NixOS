@@ -623,7 +623,7 @@ in
     };
     
     # Mesh CLI tool
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       (writeScriptBin "hv-mesh" ''
         #!${pkgs.bash}/bin/bash
         # Mesh cluster management tool

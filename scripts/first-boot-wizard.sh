@@ -299,13 +299,38 @@ EOF
     read -r
 }
 
+# Recommend tier based on hardware
+recommend_tier() {
+    local ram_mb=$1
+    local cpu_cores=$2
+    local gpu=$3
+    
+    # Intelligent recommendation based on detected hardware
+    if [ "$ram_mb" -ge 65536 ] && [ "$cpu_cores" -ge 16 ]; then
+        echo "enterprise"
+    elif [ "$ram_mb" -ge 32768 ] && [ "$cpu_cores" -ge 8 ] && [ "$gpu" != "none" ]; then
+        echo "professional"
+    elif [ "$ram_mb" -ge 16384 ] && [ "$cpu_cores" -ge 4 ]; then
+        echo "enhanced"
+    elif [ "$ram_mb" -ge 8192 ] && [ "$cpu_cores" -ge 2 ]; then
+        echo "standard"
+    else
+        echo "minimal"
+    fi
+}
+
 # Tier selection menu
 select_tier() {
     local selected_tier=""
     
+    # Calculate intelligent recommendation
+    local recommended_tier=$(recommend_tier "$SYSTEM_RAM" "$SYSTEM_CPUS" "$SYSTEM_GPU")
+    
     while [[ -z $selected_tier ]]; do
         clear
         echo -e "${CYAN}${BOLD}Select Your System Configuration Tier${NC}\n"
+        echo -e "${GREEN}Your System:${NC} ${SYSTEM_CPUS} cores, ${SYSTEM_RAM}MB RAM, GPU: ${SYSTEM_GPU}"
+        echo -e "${YELLOW}Recommended Tier:${NC} ${BOLD}${recommended_tier}${NC} (based on detected hardware)\n"
         
         show_tier_info "minimal" "Core Virtualization Platform" "$BLUE"
         show_tier_info "standard" "Virtualization + Monitoring + Basic Security" "$GREEN"
@@ -315,14 +340,20 @@ select_tier() {
         
         echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
         echo
-        echo -e "Enter tier name for details, or type '${BOLD}select <tier>${NC}' to choose:"
-        echo -e "Example: ${BOLD}minimal${NC} (for details) or ${BOLD}select minimal${NC} (to choose)"
+        echo -e "Enter tier name for details, '${BOLD}recommend${NC}' to accept recommendation,"
+        echo -e "or type '${BOLD}select <tier>${NC}' to choose:"
+        echo -e "Example: ${BOLD}minimal${NC} (details) | ${BOLD}recommend${NC} (use ${recommended_tier}) | ${BOLD}select minimal${NC} (choose)"
         echo
         read -r -p "> " choice
         
         case $choice in
             minimal|standard|enhanced|professional|enterprise)
                 show_tier_details "$choice"
+                ;;
+            recommend|rec|r)
+                selected_tier="$recommended_tier"
+                echo -e "\n${GREEN}✓${NC} Using recommended tier: ${BOLD}${recommended_tier}${NC}"
+                sleep 2
                 ;;
             "select minimal"|"select standard"|"select enhanced"|"select professional"|"select enterprise")
                 selected_tier=$(echo "$choice" | cut -d' ' -f2)

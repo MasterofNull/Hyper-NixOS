@@ -638,7 +638,7 @@ in
     };
     
     # Capability management CLI
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       (writeScriptBin "hv-cap" ''
         #!${pkgs.bash}/bin/bash
         # Capability management tool

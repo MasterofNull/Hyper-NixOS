@@ -8,24 +8,62 @@ Next-generation virtualization platform built on NixOS with revolutionary featur
 
 ## 🚀 Quick Install
 
-Get started with Hyper-NixOS in seconds using our one-line installer:
+Get started with Hyper-NixOS in seconds:
 
+### Method 1: One-Command Install (Fastest)
 ```bash
-bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/system_installer.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
+curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
 ```
 
-> 💡 **Tip**: Triple-click the command above to select the entire line for easy copying!
+### Method 2: Git Clone (Recommended for Inspection)
+```bash
+git clone https://github.com/MasterofNull/Hyper-NixOS.git
+cd Hyper-NixOS
+sudo ./install.sh
+```
 
-This is the **recommended installation method** that automatically:
-- ✅ Installs git if not present
-- ✅ Clones the latest Hyper-NixOS repository
-- ✅ Runs the installer with optimal settings
-- ✅ Configures your system and switches to Hyper-NixOS
-- ✅ Reboots into your new hypervisor platform
+**Both methods automatically**:
+- ✅ Install git if not present
+- ✅ Clone/use the latest Hyper-NixOS repository
+- ✅ Detect your hardware and configure appropriately
+- ✅ Run the installer with optimal settings
+- ✅ Switch to Hyper-NixOS configuration
 
-After reboot, the first-boot wizard will help you select the appropriate system tier based on your hardware.
+After installation, the first-boot wizard will help you select the appropriate system tier based on your hardware.
 
-For manual installation or advanced options, see our [Deployment Guide](DEPLOYMENT.md).
+**Advanced Options**: Pass flags to installer: `sudo ./install.sh --reboot --action switch`
+
+For manual installation or advanced options, see our [Installation Guide](docs/INSTALLATION_GUIDE.md).
+
+---
+
+## 🎯 Quick Start with Intelligent Defaults
+
+After installation, use the unified `hv` command:
+
+```bash
+# Install CLI (if not already available)
+sudo ./scripts/install-hv-cli.sh
+
+# See what your system has
+hv discover
+
+# Interactive demo of intelligent defaults
+hv defaults-demo
+
+# Create your first VM with intelligent defaults
+hv vm-create
+
+# Configure security based on detected risks
+hv security-config
+
+# Set up backups optimized for your storage
+hv backup-config
+```
+
+**All wizards use intelligent defaults** based on detected hardware. Just press Enter to accept recommendations, or customize as needed.
+
+See the complete [Wizard Guide](docs/WIZARD_GUIDE.md) for all configuration wizards.
 
 ## 🌟 Features
 

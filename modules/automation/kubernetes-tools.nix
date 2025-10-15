@@ -9,7 +9,7 @@ in
   };
   
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       pkgs.kubectl
       pkgs.kubernetes-helm
       pkgs.k9s

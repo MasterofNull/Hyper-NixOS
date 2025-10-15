@@ -166,7 +166,7 @@ This release represents months of innovative development. Special thanks to:
 
 ### Fresh Installation
 ```bash
-curl -L https://raw.githubusercontent.com/yourusername/hyper-nixos/main/install.sh | sudo bash
+curl -L https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
 ```
 
 ### Minimum Requirements
@@ -191,7 +191,7 @@ curl -L https://raw.githubusercontent.com/yourusername/hyper-nixos/main/install.
 
 ## 🐞 Reporting Issues
 
-Please report issues at: https://github.com/yourusername/hyper-nixos/issues
+Please report issues at: https://github.com/MasterofNull/Hyper-NixOS/issues
 
 Include:
 - Hyper-NixOS version
