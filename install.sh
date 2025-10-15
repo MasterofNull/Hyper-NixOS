@@ -17,7 +17,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-REPO_URL="${HYPER_NIXOS_REPO:-https://github.com/yourusername/hyper-nixos}"
+REPO_URL="${HYPER_NIXOS_REPO:-https://github.com/MasterofNull/Hyper-NixOS}"
 BRANCH="${HYPER_NIXOS_BRANCH:-main}"
 INSTALL_PATH="/etc/nixos/hyper-nixos"
 MIN_RAM_GB=8
@@ -131,18 +131,91 @@ install_dependencies() {
     log_success "Dependencies installed"
 }
 
-# Clone repository
+# Check if we have a complete local installation
+check_local_files() {
+    local dir="$1"
+    local required_files=(
+        "flake.nix"
+        "configuration.nix"
+        "scripts/system_installer.sh"
+        "modules/core/options.nix"
+        "modules/security/base.nix"
+    )
+    
+    for file in "${required_files[@]}"; do
+        if [[ ! -f "$dir/$file" ]]; then
+            return 1
+        fi
+    done
+    
+    # Check for required directories
+    local required_dirs=(
+        "modules"
+        "scripts"
+        "docs"
+    )
+    
+    for dir_check in "${required_dirs[@]}"; do
+        if [[ ! -d "$dir/$dir_check" ]]; then
+            return 1
+        fi
+    done
+    
+    return 0
+}
+
+# Clone or copy repository
 clone_repository() {
-    log_info "Cloning Hyper-NixOS repository..."
+    # Get the directory where this script is located
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     
-    if [[ -d "$INSTALL_PATH" ]]; then
-        log_warn "Installation directory already exists. Backing up..."
-        mv "$INSTALL_PATH" "${INSTALL_PATH}.bak.$(date +%Y%m%d%H%M%S)"
+    # Check if we're running from a complete local installation
+    if check_local_files "$script_dir"; then
+        log_info "Detected complete local installation"
+        log_info "Using local files from: $script_dir"
+        
+        if [[ -d "$INSTALL_PATH" ]]; then
+            log_warn "Installation directory already exists. Backing up..."
+            mv "$INSTALL_PATH" "${INSTALL_PATH}.bak.$(date +%Y%m%d%H%M%S)"
+        fi
+        
+        # Copy the local files
+        log_info "Copying files to $INSTALL_PATH..."
+        mkdir -p "$(dirname "$INSTALL_PATH")"
+        cp -r "$script_dir" "$INSTALL_PATH"
+        
+        log_success "Files copied from local installation"
+    else
+        log_info "Local installation incomplete or not detected"
+        log_info "Attempting to clone from GitHub..."
+        
+        # Fix the repository URL to the correct one
+        local actual_repo_url="https://github.com/MasterofNull/Hyper-NixOS"
+        
+        if [[ -d "$INSTALL_PATH" ]]; then
+            log_warn "Installation directory already exists. Backing up..."
+            mv "$INSTALL_PATH" "${INSTALL_PATH}.bak.$(date +%Y%m%d%H%M%S)"
+        fi
+        
+        # Check if git is available
+        if ! command -v git &> /dev/null; then
+            log_error "Git is not installed and local files are incomplete"
+            log_error "Please either:"
+            log_error "  1. Download the complete ZIP file and extract it"
+            log_error "  2. Install git: nix-env -iA nixos.git"
+            exit 1
+        fi
+        
+        # Try to clone from the correct repository
+        if git clone --branch "$BRANCH" "$actual_repo_url" "$INSTALL_PATH"; then
+            log_success "Repository cloned to $INSTALL_PATH"
+        else
+            log_error "Failed to clone repository"
+            log_error "Please check your internet connection or download the ZIP file from:"
+            log_error "https://github.com/MasterofNull/Hyper-NixOS/archive/refs/heads/main.zip"
+            exit 1
+        fi
     fi
-    
-    git clone --branch "$BRANCH" "$REPO_URL" "$INSTALL_PATH"
-    
-    log_success "Repository cloned to $INSTALL_PATH"
 }
 
 # Generate hardware configuration if missing
