@@ -48,26 +48,64 @@ This folder is:
 
 ### For AI Agents
 
-**🚀 QUICK START**: Read `AI_DOCS_INDEX.md` for navigation, then `AI_QUICK_REFERENCE.md` for instant patterns.
+**🚨 CRITICAL: PREVENT AGENT CRASHES**
 
-**Core Documents** (Read in order):
-1. `AI_QUICK_REFERENCE.md` - Instant pattern lookup (5 min)
-2. `AI_ASSISTANT_CONTEXT.md` - Detailed patterns & context (20 min)
-3. `AI_DOCUMENTATION_PROTOCOL.md` - How to maintain docs (15 min)
-4. `AI_DOCS_INDEX.md` - Navigation hub (reference as needed)
+**START HERE:** Read `AGENT_QUICK_REFERENCE.md` - **5-minute crash prevention guide**
 
-**🚨 CRITICAL RULE**: When user gives ANY feedback/suggestion:
+### ⚠️ Known Issue: Agent Crashes with Broad Prompts
+
+**NEVER USE THIS PROMPT FORMAT:**
+```
+❌ "Hyper-NixOS task following dev folder conventions: [task]"
+```
+
+**WHY:** This causes agents to try reading all 30+ dev docs simultaneously, resulting in:
+- Agent crashes and freezes
+- Context window overflow
+- Incorrect or incomplete responses
+
+**SOLUTION:** Use specific, focused prompts. See `AGENT_QUICK_REFERENCE.md` for details.
+
+---
+
+### Agent Documentation (Available)
+
+**Essential Reading:**
+1. **`AGENT_QUICK_REFERENCE.md`** ⚡ - Ultra-quick crash prevention guide (5 min)
+2. **`AGENT_USAGE_GUIDE.md`** 📖 - Complete agent usage guide (20 min)
+
+**If These AI Context Files Exist, Read in Order:**
+1. `AI_QUICK_REFERENCE.md` - Instant pattern lookup
+2. `AI_ASSISTANT_CONTEXT.md` - Detailed patterns & context
+3. `AI_DOCUMENTATION_PROTOCOL.md` - How to maintain docs
+4. `AI_DOCS_INDEX.md` - Navigation hub
+
+---
+
+### 🚨 CRITICAL RULES for AI Agents
+
+**Rule 1: Use Focused Prompts**
+- ✅ Reference ONE specific file or doc at a time
+- ❌ NEVER reference "dev folder conventions" broadly
+- ✅ Be specific about exact locations and files
+
+**Rule 2: When User Gives Feedback**
 1. Update AI docs IMMEDIATELY (without being asked)
 2. Make it permanent behavior
 3. Never require user to repeat themselves
 
-**When working with these documents**:
+**Rule 3: Progressive Context Loading**
 1. Always read relevant context files before making changes
-2. **Automatically update docs when user gives feedback** (NEW - most important!)
+2. Load context progressively, not all at once
 3. Update documentation after implementing fixes
 4. Preserve historical context and design rationale
 5. Follow the protocols defined in these documents
 6. Search for pattern bugs, don't just fix individual issues
+
+**Rule 4: Avoid Crashes**
+- Maximum 3-5 dev docs per task
+- Use specific file references instead of broad conventions
+- Break complex tasks into smaller steps
 
 ---
 © 2024-2025 MasterofNull - All Rights Reserved
