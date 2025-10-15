@@ -1,5 +1,5 @@
-# First Boot Menu Service
-# Shows welcome menu on first boot and provides access to setup wizard
+# First Boot Setup Service
+# Launches comprehensive setup wizard on first boot
 
 { config, lib, pkgs, ... }:
 
@@ -7,16 +7,10 @@ let
   inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
   cfg = config.hypervisor.firstBoot;
   
-  # Create the first boot menu script
-  firstBootMenuScript = pkgs.writeScriptBin "first-boot-menu" ''
+  # Create the comprehensive setup wizard script
+  comprehensiveSetupWizardScript = pkgs.writeScriptBin "comprehensive-setup-wizard" ''
     #!${pkgs.bash}/bin/bash
-    exec ${pkgs.bash}/bin/bash ${./../../scripts/first-boot-menu.sh} "$@"
-  '';
-  
-  # Create the system setup wizard script
-  systemSetupWizardScript = pkgs.writeScriptBin "system-setup-wizard" ''
-    #!${pkgs.bash}/bin/bash
-    exec ${pkgs.bash}/bin/bash ${./../../scripts/system-setup-wizard.sh} "$@"
+    exec ${pkgs.bash}/bin/bash ${./../../scripts/comprehensive-setup-wizard.sh} "$@"
   '';
 in
 {
@@ -35,10 +29,9 @@ in
   };
   
   config = mkIf cfg.enable {
-    # Install both menu and wizard scripts
+    # Install comprehensive setup wizard
     environment.systemPackages = [ 
-      firstBootMenuScript 
-      systemSetupWizardScript
+      comprehensiveSetupWizardScript
     ];
     
     # Ensure the hypervisor directory exists
@@ -49,17 +42,13 @@ in
     ];
     
     # Create symlinks for easy access
-    environment.etc."hypervisor/bin/first-boot-menu" = {
-      source = "${firstBootMenuScript}/bin/first-boot-menu";
+    environment.etc."hypervisor/bin/setup-wizard" = {
+      source = "${comprehensiveSetupWizardScript}/bin/comprehensive-setup-wizard";
     };
     
-    environment.etc."hypervisor/bin/system-setup-wizard" = {
-      source = "${systemSetupWizardScript}/bin/system-setup-wizard";
-    };
-    
-    # Create systemd service for first boot menu
-    systemd.services.hypervisor-first-boot-menu = mkIf cfg.autoStart {
-      description = "Hyper-NixOS First Boot Menu";
+    # Create systemd service for comprehensive setup wizard
+    systemd.services.hypervisor-setup-wizard = mkIf cfg.autoStart {
+      description = "Hyper-NixOS Comprehensive Setup Wizard";
       
       # Only run on first boot (when setup is not complete and users were migrated)
       unitConfig = {
@@ -83,56 +72,58 @@ in
         # Ensure directory exists before running
         ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p /var/lib/hypervisor";
         
-        # Run the first boot menu
-        ExecStart = "${firstBootMenuScript}/bin/first-boot-menu";
+        # Run the comprehensive setup wizard
+        ExecStart = "${comprehensiveSetupWizardScript}/bin/comprehensive-setup-wizard";
         
-        # Create first boot flag after menu exits
-        ExecStartPost = "${pkgs.coreutils}/bin/touch /var/lib/hypervisor/.first-boot-complete";
+        # Setup complete flag is created by the wizard itself
       };
       
       # Run after basic system is up but before getty
-      after = [ "sysinit.target" "basic.target" "multi-user.target" ];
+      after = [ "sysinit.target" "basic.target" "multi-user.target" "libvirtd.service" ];
       before = [ "getty@tty1.service" ];
+      wants = [ "libvirtd.service" ];
       wantedBy = [ "multi-user.target" ];
       
       # Conflict with getty to take over tty1
       conflicts = [ "getty@tty1.service" ];
     };
     
-    # Override getty@tty1 to wait for first-boot menu if needed
+    # Override getty@tty1 to wait for setup wizard if needed
     systemd.services."getty@tty1" = mkIf cfg.autoStart {
       overrideStrategy = "asDropin";
       unitConfig = {
-        # Don't start getty@tty1 until first boot menu has run
-        ConditionPathExists = "/var/lib/hypervisor/.first-boot-complete";
+        # Don't start getty@tty1 until setup is complete
+        ConditionPathExists = "/var/lib/hypervisor/.setup-complete";
       };
     };
     
-    # Add reconfigure script for easy tier changes
-    environment.etc."hypervisor/bin/reconfigure-tier" = {
+    # Add reconfigure script for easy system reconfiguration
+    environment.etc."hypervisor/bin/reconfigure-system" = {
       mode = "0755";
       text = ''
         #!/usr/bin/env bash
-        # Reconfigure system tier
+        # Reconfigure Hyper-NixOS system
         
         if [[ $EUID -ne 0 ]]; then
           echo "This script must be run as root"
-          echo "Please run: sudo reconfigure-tier"
+          echo "Please run: sudo reconfigure-system"
           exit 1
         fi
         
         echo "╔═══════════════════════════════════════════════════════════════╗"
-        echo "║         Reconfigure Hyper-NixOS System Tier                  ║"
+        echo "║         Reconfigure Hyper-NixOS System                       ║"
         echo "╚═══════════════════════════════════════════════════════════════╝"
         echo
-        echo "This will run the system setup wizard to change your tier."
+        echo "This will run the comprehensive setup wizard."
         echo "Your current configuration will be backed up."
         echo
         read -p "Continue? (yes/no): " confirm
         
         if [[ $confirm =~ ^[Yy][Ee][Ss]$ ]]; then
-          # Run the setup wizard
-          ${systemSetupWizardScript}/bin/system-setup-wizard
+          # Remove setup complete flag to allow reconfiguration
+          rm -f /var/lib/hypervisor/.setup-complete
+          # Run the wizard
+          ${comprehensiveSetupWizardScript}/bin/comprehensive-setup-wizard
         else
           echo "Cancelled."
           exit 0
@@ -142,12 +133,11 @@ in
     
     # Add helpful aliases to the shell
     programs.bash.shellAliases = {
-      first-boot-menu = "sudo first-boot-menu";
-      setup-wizard = "sudo system-setup-wizard";
-      reconfigure-tier = "sudo reconfigure-tier";
+      setup-wizard = "sudo comprehensive-setup-wizard";
+      reconfigure-system = "sudo reconfigure-system";
     };
     
-    # Add to MOTD how to access the menu
+    # Add to MOTD how to access the system
     environment.etc."motd".text = mkDefault ''
       ╔═══════════════════════════════════════════════════════════════╗
       ║              Welcome to Hyper-NixOS                           ║
@@ -158,15 +148,15 @@ in
       ✓ System is configured and ready!
       
       Quick Commands:
-        • first-boot-menu     - View welcome menu
-        • reconfigure-tier    - Change system tier
-        • virt-manager        - Launch VM manager GUI
+        • vm-menu             - Headless VM management menu
+        • reconfigure-system  - Run setup wizard again
+        • virt-manager        - Launch VM manager GUI (if installed)
         • virsh list --all    - List all VMs
       '' else ''
       ⚠ System setup is not complete!
       
-      Run 'first-boot-menu' to start the setup wizard.
-      Or run 'system-setup-wizard' directly to configure your tier.
+      Run 'comprehensive-setup-wizard' to configure your system.
+      The setup wizard will launch automatically on next boot.
       ''}
       
       Documentation: /etc/hypervisor/docs/

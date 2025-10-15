@@ -10,6 +10,96 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-15 (Update 11): Streamlined to Comprehensive Setup Wizard with Headless VM Menu
+**Agent**: Claude
+**Task**: Streamline workflow - remove first boot menu, create comprehensive wizard with VM deployment, boot into headless VM menu
+
+**User Requirements**:
+> "Let's get rid of the first boot menu and instead go directly into the full system setup wizard, which helps the user fully setup and implement the features and services that their hardware supports. There should also be an option to deploy VMs within this wizard. The assumption being that after the completion of this wizard the system will be fully implemented, functioning, and populated with a VM or multiple VMs. After that the machine will boot into the headless VM menu with last boot auto selection (timer), basic VM controls, and creation, and an option to switch into the admin account (GUI and or non-GUI environment, allow GUI environment selection during setup wizard)."
+
+**Changes Made**:
+
+1. **Created comprehensive-setup-wizard.sh** - Complete system configuration:
+   - Hardware detection (RAM, CPU, GPU, IOMMU, NICs, virt support)
+   - Feature selection based on hardware capabilities
+   - GUI environment selection (Headless, GNOME, KDE, XFCE, LXQt)
+   - VM deployment with templates (Ubuntu, Windows, Dev VM, Custom)
+   - Generates complete configuration
+   - Creates VM profiles
+   - Rebuilds system and reboots
+
+2. **Created headless-vm-menu.sh** - Boot-time VM management:
+   - Auto-selects last used VM with 10s timer
+   - Shows all VMs with state indicators (● running, ○ stopped, ‖ paused)
+   - Basic VM controls (start, stop, pause, resume, console)
+   - Create new VMs
+   - Switch to admin GUI/CLI environment
+   - System shutdown option
+
+3. **Created modules/headless-vm-menu.nix** - Headless menu module:
+   - Systemd service on tty1
+   - Configurable auto-select timeout
+   - Takes over boot after setup complete
+   - Provides vm-menu command
+
+4. **Updated modules/core/first-boot.nix**:
+   - Removed first-boot-menu concept
+   - Launches comprehensive-setup-wizard directly
+   - Provides reconfigure-system command
+   - Updated MOTD
+
+5. **Removed/Deprecated**:
+   - Deleted first-boot-menu.sh (no longer needed)
+   - system-setup-wizard.sh (replaced by comprehensive version)
+
+**New Workflow**:
+```
+Install (migrate users/config) 
+    ↓
+Comprehensive Setup Wizard
+    - Hardware detection
+    - Feature selection  
+    - GUI environment
+    - VM deployment
+    - System rebuild
+    ↓
+Headless VM Menu (boot default)
+    - Auto-select last VM (10s timer)
+    - VM controls
+    - Admin access
+```
+
+**Files Created**:
+- `scripts/comprehensive-setup-wizard.sh` - Complete setup wizard
+- `scripts/headless-vm-menu.sh` - Boot-time VM menu
+- `modules/headless-vm-menu.nix` - Headless menu module
+- `docs/dev/STREAMLINED_INSTALLATION_WORKFLOW.md` - Complete documentation
+
+**Files Modified**:
+- `modules/core/first-boot.nix` - Launch comprehensive wizard directly
+- `profiles/configuration-minimal.nix` - Import headless menu module
+
+**Files Removed**:
+- `scripts/first-boot-menu.sh` - No longer needed
+
+**Key Features**:
+- Hardware-aware feature recommendations
+- Single comprehensive setup wizard
+- VM deployment during setup
+- Boot into headless VM menu with auto-select
+- GUI environment selection in wizard
+- Complete system after wizard (no additional config needed)
+- Easy reconfiguration anytime
+
+**Key Learning**:
+- Users want streamlined path: install → complete setup → working system
+- Wizard should handle everything in one place
+- VMs should be deployed during setup, not as afterthought
+- Headless boot menu with auto-select provides best hypervisor experience
+- GUI selection should be part of initial setup
+
+---
+
 #### 2025-10-15 (Update 10): Redesigned Installation Workflow with Two-Stage Boot Process
 **Agent**: Claude
 **Task**: Redesign installation workflow to provide clean progression: Install → First Boot Menu → System Setup Wizard

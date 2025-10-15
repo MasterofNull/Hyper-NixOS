@@ -16,8 +16,9 @@
     # Only import modules whose options we're actually setting below
     ../modules/features/feature-categories.nix  # Defines hypervisor.features
     ../modules/features/feature-manager.nix  # We use hypervisor.featureManager
-    ../modules/core/first-boot.nix  # First boot configuration wizard
+    ../modules/core/first-boot.nix  # First boot comprehensive setup wizard
     ../modules/system-tiers.nix  # System tier definitions
+    ../modules/headless-vm-menu.nix  # Headless VM menu for boot-time
     ../modules/security/sudo-protection.nix  # Sudo password reset protection
     ../modules/security/credential-chain.nix  # Credential migration and tamper detection
   ] ++ lib.optionals (builtins.pathExists ./modules/users-migrated.nix) [
