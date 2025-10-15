@@ -1,0 +1,268 @@
+#!/usr/bin/env bash
+# Hyper-NixOS Unified CLI
+# Intelligent defaults and user-friendly command interface
+# Part of Design Ethos - Third Pillar: Learning Through Guidance
+
+set -euo pipefail
+
+readonly VERSION="2.0.0"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Colors
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly CYAN='\033[0;36m'
+readonly BOLD='\033[1m'
+readonly NC='\033[0m'
+
+# Show main help
+show_help() {
+    cat << EOF
+${CYAN}╔════════════════════════════════════════════════════════════╗
+║  ${BOLD}Hyper-NixOS Unified CLI${NC}${CYAN} v${VERSION}                         "
+╚════════════════════════════════════════════════════════════╝${NC}
+
+${BOLD}USAGE:${NC}
+  hv <command> [options]
+
+${BOLD}WIZARDS (Intelligent Defaults):${NC}
+  ${GREEN}vm-create${NC}          Create VM with intelligent defaults
+  ${GREEN}first-boot${NC}          First-boot system configuration
+  ${GREEN}security-config${NC}     Configure security with smart detection
+  ${GREEN}network-config${NC}      Configure network topology
+  ${GREEN}backup-config${NC}       Setup backups with optimal settings
+  ${GREEN}storage-config${NC}      Configure storage tiers
+  ${GREEN}monitoring-config${NC}   Setup monitoring stack
+
+${BOLD}DISCOVERY & DEFAULTS:${NC}
+  ${BLUE}discover${NC}             Show complete system discovery report
+  ${BLUE}vm-defaults${NC} [os]     Show intelligent VM defaults
+  ${BLUE}defaults-demo${NC}        Interactive intelligent defaults demo
+
+${BOLD}VM MANAGEMENT:${NC}
+  ${YELLOW}vm${NC} list             List all VMs
+  ${YELLOW}vm${NC} start <name>     Start VM
+  ${YELLOW}vm${NC} stop <name>      Stop VM
+  ${YELLOW}vm${NC} status <name>    Show VM status
+  ${YELLOW}vm${NC} console <name>   Connect to VM console
+
+${BOLD}SYSTEM:${NC}
+  ${CYAN}status${NC}               Show hypervisor status
+  ${CYAN}health${NC}               Run health checks
+  ${CYAN}update${NC}               Update system
+  ${CYAN}rebuild${NC}              Rebuild NixOS configuration
+
+${BOLD}SECURITY:${NC}
+  ${MAGENTA}security-audit${NC}      Run security audit
+  ${MAGENTA}security-scan${NC}       Quick security scan
+  ${MAGENTA}firewall${NC} <action>   Manage firewall
+
+${BOLD}BACKUP:${NC}
+  backup now              Run backup immediately
+  backup list             List available backups
+  backup restore <id>     Restore from backup
+
+${BOLD}MONITORING:${NC}
+  metrics                 Show live metrics
+  logs [service]          View logs
+  alerts                  Show active alerts
+
+${BOLD}HELP:${NC}
+  help                    Show this help
+  help <command>          Show command-specific help
+  version                 Show version
+
+${BOLD}EXAMPLES:${NC}
+  ${GREEN}# Create VM with intelligent defaults${NC}
+  hv vm-create
+
+  ${GREEN}# See what hardware was detected${NC}
+  hv discover
+
+  ${GREEN}# Show recommended defaults for Windows VM${NC}
+  hv vm-defaults windows
+
+  ${GREEN}# Configure security based on detected threats${NC}
+  hv security-config
+
+  ${GREEN}# Interactive demo of intelligent defaults${NC}
+  hv defaults-demo
+
+${BOLD}DOCUMENTATION:${NC}
+  Full docs: /workspace/docs/
+  User guides: /workspace/docs/user-guides/
+  Quick start: hv help quick-start
+
+EOF
+}
+
+# Execute wizards
+cmd_vm_create() {
+    exec "$SCRIPT_DIR/create_vm_wizard.sh" "$@"
+}
+
+cmd_first_boot() {
+    exec "$SCRIPT_DIR/first-boot-wizard.sh" "$@"
+}
+
+cmd_security_config() {
+    exec "$SCRIPT_DIR/security-configuration-wizard.sh" "$@"
+}
+
+cmd_network_config() {
+    exec "$SCRIPT_DIR/network-configuration-wizard.sh" "$@"
+}
+
+cmd_backup_config() {
+    exec "$SCRIPT_DIR/backup-configuration-wizard.sh" "$@"
+}
+
+cmd_storage_config() {
+    exec "$SCRIPT_DIR/storage-configuration-wizard.sh" "$@"
+}
+
+cmd_monitoring_config() {
+    exec "$SCRIPT_DIR/monitoring-configuration-wizard.sh" "$@"
+}
+
+# Discovery commands
+cmd_discover() {
+    exec "$SCRIPT_DIR/hv-intelligent-defaults" discover "$@"
+}
+
+cmd_vm_defaults() {
+    exec "$SCRIPT_DIR/hv-intelligent-defaults" vm-defaults "$@"
+}
+
+cmd_defaults_demo() {
+    exec "$SCRIPT_DIR/hv-intelligent-defaults" demo "$@"
+}
+
+# VM management
+cmd_vm() {
+    local action=${1:-list}
+    shift || true
+    
+    case "$action" in
+        list|ls)
+            virsh list --all
+            ;;
+        start)
+            [ $# -eq 0 ] && { echo "Usage: hv vm start <name>"; exit 1; }
+            virsh start "$1"
+            ;;
+        stop)
+            [ $# -eq 0 ] && { echo "Usage: hv vm stop <name>"; exit 1; }
+            virsh shutdown "$1"
+            ;;
+        status)
+            [ $# -eq 0 ] && { echo "Usage: hv vm status <name>"; exit 1; }
+            virsh dominfo "$1"
+            ;;
+        console)
+            [ $# -eq 0 ] && { echo "Usage: hv vm console <name>"; exit 1; }
+            virsh console "$1"
+            ;;
+        *)
+            echo "Unknown VM action: $action"
+            echo "Available: list, start, stop, status, console"
+            exit 1
+            ;;
+    esac
+}
+
+# System commands
+cmd_status() {
+    echo -e "${CYAN}System Status:${NC}"
+    systemctl status libvirtd --no-pager
+}
+
+cmd_health() {
+    if [ -x "$SCRIPT_DIR/system_health_check.sh" ]; then
+        exec "$SCRIPT_DIR/system_health_check.sh" "$@"
+    else
+        echo "Health check script not found"
+    fi
+}
+
+cmd_rebuild() {
+    echo -e "${YELLOW}Rebuilding NixOS configuration...${NC}"
+    sudo nixos-rebuild switch
+}
+
+# Main dispatcher
+main() {
+    local command=${1:-help}
+    shift || true
+    
+    case "$command" in
+        # Wizards
+        vm-create|create-vm)
+            cmd_vm_create "$@"
+            ;;
+        first-boot)
+            cmd_first_boot "$@"
+            ;;
+        security-config)
+            cmd_security_config "$@"
+            ;;
+        network-config)
+            cmd_network_config "$@"
+            ;;
+        backup-config)
+            cmd_backup_config "$@"
+            ;;
+        storage-config)
+            cmd_storage_config "$@"
+            ;;
+        monitoring-config)
+            cmd_monitoring_config "$@"
+            ;;
+            
+        # Discovery
+        discover)
+            cmd_discover "$@"
+            ;;
+        vm-defaults)
+            cmd_vm_defaults "$@"
+            ;;
+        defaults-demo|demo)
+            cmd_defaults_demo "$@"
+            ;;
+            
+        # VM management
+        vm)
+            cmd_vm "$@"
+            ;;
+            
+        # System
+        status)
+            cmd_status "$@"
+            ;;
+        health|health-check)
+            cmd_health "$@"
+            ;;
+        rebuild)
+            cmd_rebuild "$@"
+            ;;
+            
+        # Help
+        help|--help|-h)
+            show_help
+            ;;
+        version|--version|-v)
+            echo "Hyper-NixOS CLI v${VERSION}"
+            ;;
+            
+        *)
+            echo -e "${RED}Unknown command: $command${NC}"
+            echo "Run 'hv help' for usage information"
+            exit 1
+            ;;
+    esac
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    main "$@"
+fi
