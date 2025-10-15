@@ -197,7 +197,8 @@ in
     };
   };
   
-  config = lib.mkIf cfg.enable (lib.mkMerge [
+  config = lib.mkMerge [
+    (lib.mkIf cfg.enable
     {
       # Install verification scripts
       environment.systemPackages = [ 
@@ -256,16 +257,16 @@ in
           ExecStart = "${credentialImporter}/bin/import-host-credentials";
         };
       };
-    }
+    })
     
     # Security monitoring - conditionally enable if audit services are available
-    (lib.mkIf (config.services ? auditd) {
+    (lib.mkIf (cfg.enable && (config.services ? auditd)) {
       services.auditd = {
         enable = true;
       };
     })
     
-    (lib.mkIf (config.security ? audit) {
+    (lib.mkIf (cfg.enable && (config.security ? audit)) {
       security.audit = {
         enable = true;
         rules = lib.mkAfter [
@@ -277,5 +278,5 @@ in
         ];
       };
     })
-  ]);
+  ];
 }

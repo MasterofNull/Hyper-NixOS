@@ -19,8 +19,10 @@ Welcome to the Hyper-NixOS documentation. This guide will help you find the info
 - **[Admin Guides](admin-guides/)** - System administration
   - [System Administration](admin-guides/system-administration.md)
   - [Security Configuration](admin-guides/security-configuration.md)
-  - [Network Configuration](admin-guides/network-configuration.md)
-  - [Monitoring Setup](admin-guides/monitoring-setup.md)
+  - [Network Configuration](admin-guides/NETWORK_CONFIGURATION.md)
+  - [Monitoring Setup](admin-guides/MONITORING_SETUP.md)
+  - [Enterprise Features](admin-guides/ENTERPRISE_FEATURES.md)
+  - [Enterprise Quick Start](guides/ENTERPRISE_QUICK_START.md)
 
 ### Reference Documentation
 - **[Reference](reference/)** - Technical reference
@@ -29,8 +31,13 @@ Welcome to the Hyper-NixOS documentation. This guide will help you find the info
   - [Architecture Overview](reference/architecture-overview.md)
   - [API Documentation](reference/api-reference.md)
 
+### Deployment & Operations
+- **[Deployment](deployment/)** - Production deployment
+  - [Deployment Guide](deployment/DEPLOYMENT.md)
+  - [Release Notes v2.0.0](RELEASE_NOTES_v2.0.0.md)
+
 ### Development Documentation
-- **[Developer Resources](dev/)** - For contributors (not included in public releases)
+- **[Developer Resources](dev/)** - For contributors (protected/IP documentation)
 
 ### Community & Support
 - **[Community and Support](COMMUNITY_AND_SUPPORT.md)** - Getting help, contributing, and staying connected

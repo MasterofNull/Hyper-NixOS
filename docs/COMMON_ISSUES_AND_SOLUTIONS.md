@@ -27,6 +27,8 @@ error: The option `services.auditd' does not exist. Definition values:
 
 **Root Cause**: The audit service module is not available in minimal NixOS configurations or when the audit module isn't imported. Security modules try to enable audit services unconditionally.
 
+**Module Structure Issue**: In some cases, the module structure itself can cause evaluation issues even with proper conditional checks. Nested `lib.mkIf` conditions can cause NixOS to evaluate options that don't exist.
+
 **Solutions**:
 
 #### ✅ **Option 1: Import the audit module** (Recommended)
@@ -40,7 +42,25 @@ Add to your configuration imports:
 }
 ```
 
-#### ✅ **Option 2: Disable audit-dependent modules**
+#### ✅ **Option 2: Fix module structure** (For module developers)
+If you're developing modules, ensure proper conditional structure:
+```nix
+# WRONG - Nested conditionals can cause evaluation issues:
+config = lib.mkIf cfg.enable (lib.mkMerge [
+  { ... }
+  (lib.mkIf (config.services ? auditd) { ... })
+]);
+
+# CORRECT - Flat structure with combined conditions:
+config = lib.mkMerge [
+  (lib.mkIf cfg.enable { ... })
+  (lib.mkIf (cfg.enable && (config.services ? auditd)) {
+    services.auditd = { enable = true; };
+  })
+];
+```
+
+#### ✅ **Option 3: Disable audit-dependent modules**
 If you don't need audit functionality:
 ```nix
 {
