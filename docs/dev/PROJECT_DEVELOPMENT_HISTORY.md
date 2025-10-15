@@ -58,6 +58,38 @@ security.audit = lib.mkIf (config.security ? audit) {
 
 ---
 
+#### 2025-10-15: Recreated Missing AI Documentation Files
+**Agent**: Claude
+**Task**: Restore missing AI_ASSISTANT_CONTEXT.md and AI_DOCUMENTATION_PROTOCOL.md files
+
+**Issue**: 
+The critical AI documentation files were missing from the repository, though they were referenced throughout the codebase and marked as mandatory reading in multiple places.
+
+**Root Cause**: 
+According to PROTECTED_DOCUMENTATION_NOTICE.md, these files were moved to a protected area on 2025-10-14 for IP protection, but they were not present in the current workspace.
+
+**Action Taken**: 
+Recreated both files based on:
+- Information extracted from PROJECT_DEVELOPMENT_HISTORY.md
+- References in other documentation files
+- Patterns and requirements mentioned throughout the codebase
+- The documented importance of these files for project continuity
+
+**Files Created**:
+- `docs/dev/AI_ASSISTANT_CONTEXT.md` - Comprehensive context with patterns, issues, and solutions
+- `docs/dev/AI_DOCUMENTATION_PROTOCOL.md` - Mandatory procedures for AI assistants
+
+**Key Improvements**:
+1. Consolidated all recent fixes and patterns discovered
+2. Added clear examples for common issues
+3. Included anti-patterns to avoid
+4. Structured for easy reference
+5. Added quick command references
+
+**Key Learning**: These AI documentation files are critical for project success. They should be maintained and updated with every significant change to ensure knowledge preservation and prevent repeated mistakes.
+
+---
+
 #### 2025-10-15: Fixed Bash Variable Escaping in credential-chain.nix
 **Agent**: Claude
 **Task**: Fix "undefined variable 'shadow_hash'" error in credential-chain.nix
