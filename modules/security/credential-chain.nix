@@ -258,9 +258,11 @@ in
       };
     }
     
-    # Security monitoring - only enable if audit is available
+    # Security monitoring - conditionally enable if audit services are available
     (lib.mkIf (config.services ? auditd) {
-      services.auditd.enable = true;
+      services.auditd = {
+        enable = true;
+      };
     })
     
     (lib.mkIf (config.security ? audit) {

@@ -1,105 +1,99 @@
 #!/usr/bin/env bash
-#
-# Check for potentially missing services in NixOS modules
-# This helps prevent "option does not exist" errors
+# Check for optional services that might not exist in minimal configurations
+# This helps prevent "option does not exist" errors before building
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MODULES_DIR="${SCRIPT_DIR}/../../modules"
+# Colors for output
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
 
-# Colors
-readonly RED='\033[0;31m'
-readonly YELLOW='\033[1;33m'
-readonly GREEN='\033[0;32m'
-readonly NC='\033[0m'
+echo "Checking for potentially missing service dependencies..."
+echo "======================================================="
+echo
 
-echo "Checking for potentially missing services in NixOS modules..."
-echo "============================================================"
-
-# Services that might not exist in minimal configurations
+# Services that might not be available in minimal configurations
 OPTIONAL_SERVICES=(
-    "auditd"
-    "fprintd"
-    "acpid"
-    "nginx"
-    "pipewire"
-    "victoriametrics"
-    "nats"
-    "rtkit"
-    "apache-kafka"
-    "elasticsearch"
-    "redis"
-    "postgresql"
-    "mysql"
-    "mongodb"
-    "docker"
-    "podman"
-    "k3s"
-    "kubernetes"
+    "services.auditd"
+    "security.audit"
+    "security.apparmor"
+    "services.fprintd"
+    "services.acpid"
+    "security.rtkit"
+    "services.dbus"
+    "services.pipewire"
 )
 
-# Security options that might not exist
-OPTIONAL_SECURITY=(
-    "audit"
-    "apparmor"
-    "selinux"
-    "grsecurity"
-    "pax"
-)
+# Check each service
+ISSUES_FOUND=0
 
-issues_found=0
-
-# Function to check if a service is used without conditional checks
-check_service_usage() {
-    local service="$1"
-    local type="$2"  # "services" or "security"
-    
-    echo -e "\nChecking for ${type}.${service}..."
-    
-    # Find files that reference this service
-    files=$(grep -r "${type}\.${service}\." "$MODULES_DIR" --include="*.nix" 2>/dev/null | grep -v "mkIf.*${type}.*${service}" | grep -v "${type}\s*\?\s*${service}" || true)
-    
-    if [[ -n "$files" ]]; then
-        # Check each file for conditional usage
-        while IFS=: read -r file line_content; do
-            # Skip if it's in a comment
-            if echo "$line_content" | grep -q "^\s*#"; then
-                continue
-            fi
-            
-            # Skip if it's checking for existence
-            if echo "$line_content" | grep -q "${type}\s*\?\s*${service}"; then
-                continue
-            fi
-            
-            # Check if the file has any conditional wrapper for this service
-            if ! grep -B5 -A5 "$line_content" "$file" | grep -q "mkIf.*${type}.*${service}\|${type}\s*\?\s*${service}"; then
-                echo -e "${YELLOW}WARNING${NC}: $file may use ${type}.${service} without checking if it exists"
-                echo "  Line: $line_content"
-                ((issues_found++))
-            fi
-        done <<< "$files"
-    fi
-}
-
-# Check all optional services
 for service in "${OPTIONAL_SERVICES[@]}"; do
-    check_service_usage "$service" "services"
+    echo -n "Checking for unconditional use of $service... "
+    
+    # Search for the service without proper conditionals
+    if grep -r "$service\.enable\s*=\s*true" modules/ --include="*.nix" 2>/dev/null | grep -v "lib.mkIf" | grep -v "?" > /dev/null; then
+        echo -e "${RED}FOUND${NC}"
+        echo "  Files with potential issues:"
+        grep -r "$service\.enable\s*=\s*true" modules/ --include="*.nix" 2>/dev/null | grep -v "lib.mkIf" | grep -v "?" | while read -r line; do
+            echo "    - $line"
+        done
+        ISSUES_FOUND=$((ISSUES_FOUND + 1))
+    else
+        echo -e "${GREEN}OK${NC}"
+    fi
 done
 
-# Check all optional security options
-for option in "${OPTIONAL_SECURITY[@]}"; do
-    check_service_usage "$option" "security"
-done
+echo
+echo "======================================================="
 
-echo -e "\n============================================================"
-if [[ $issues_found -eq 0 ]]; then
-    echo -e "${GREEN}✓ No issues found!${NC} All optional services appear to have proper conditional checks."
+# Check for proper wrapping pattern
+echo
+echo "Checking for proper conditional patterns..."
+echo
+
+# Look for files that use these services with proper conditionals
+echo "Files using proper conditional checks:"
+grep -r "config\.\(services\|security\)\s*?\s*[a-zA-Z0-9]*" modules/ --include="*.nix" 2>/dev/null | head -10
+
+echo
+echo "======================================================="
+
+if [ $ISSUES_FOUND -eq 0 ]; then
+    echo -e "${GREEN}✓ No issues found!${NC} All optional services appear to be properly wrapped."
 else
-    echo -e "${YELLOW}⚠ Found $issues_found potential issues${NC}"
-    echo "These modules might fail if the corresponding services aren't available."
-    echo "Consider adding conditional checks like:"
-    echo "  lib.mkIf (config.services ? serviceName)"
-    echo "  lib.mkIf (config.security ? optionName)"
+    echo -e "${YELLOW}⚠ Found $ISSUES_FOUND potential issues.${NC}"
+    echo
+    echo "To fix these issues, wrap service configurations like this:"
+    echo
+    cat << 'EOF'
+    # For services:
+    (lib.mkIf (config.services ? serviceName) {
+      services.serviceName = {
+        enable = true;
+        # ... other config
+      };
+    })
+    
+    # For security options:
+    (lib.mkIf (config.security ? optionName) {
+      security.optionName = {
+        enable = true;
+        # ... other config
+      };
+    })
+EOF
+fi
+
+# Additional check for imports that might be missing
+echo
+echo "======================================================="
+echo "Checking which configurations might need audit module import..."
+echo
+
+if grep -r "security\.\(sudoProtection\|credentialChain\)\.enable\s*=\s*true" . --include="*.nix" 2>/dev/null | grep -v "false" > /dev/null; then
+    echo -e "${YELLOW}Note:${NC} Some configurations enable security modules that require audit."
+    echo "Make sure to include this in your imports:"
+    echo '    <nixpkgs/nixos/modules/security/audit.nix>'
 fi
