@@ -10,6 +10,39 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-15 (Update 8): Fixed Audit Service Configuration in credential-chain.nix
+**Agent**: Claude
+**Task**: Fix "The option `services.auditd' does not exist" error
+
+**Error**: Same audit service error as before, but in credential-chain.nix
+
+**Root Cause**: The module structure had the audit conditionals inside a nested `lib.mkIf cfg.enable (lib.mkMerge [...])` which was causing evaluation issues even with proper conditional checks.
+
+**Fix Applied**: Restructured the module configuration:
+```nix
+# Before:
+config = lib.mkIf cfg.enable (lib.mkMerge [
+  { ... }
+  (lib.mkIf (config.services ? auditd) { ... })
+]);
+
+# After:
+config = lib.mkMerge [
+  (lib.mkIf cfg.enable { ... })
+  (lib.mkIf (cfg.enable && (config.services ? auditd)) { ... })
+];
+```
+
+**Files Modified**:
+- `modules/security/credential-chain.nix` - Restructured config to avoid nested conditionals
+
+**Key Learning**: 
+- Module structure matters for conditional evaluation
+- Avoid deeply nested `lib.mkIf` conditions
+- Combine conditions with `&&` for clearer logic
+
+---
+
 #### 2025-10-15 (Update 7): Removed AI-Generated Security Platform Remnants
 **Agent**: Claude
 **Task**: Remove shipping scripts and security platform files that were AI misunderstandings
