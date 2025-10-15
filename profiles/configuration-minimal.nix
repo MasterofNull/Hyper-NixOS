@@ -32,8 +32,23 @@
   ];
 
   # System identification
-  networking.hostName = "hyper-nixos";
+  networking.hostName = lib.mkDefault "hyper-nixos";  # Can be overridden by installer
   system.stateVersion = "24.05";
+  
+  # Helpful message on login
+  environment.etc."motd".text = lib.mkDefault ''
+    ╔═══════════════════════════════════════════════════════════╗
+    ║              Welcome to Hyper-NixOS                       ║
+    ║         Next-Generation Virtualization Platform           ║
+    ╚═══════════════════════════════════════════════════════════╝
+    
+    This system is ready for configuration.
+    
+    Run 'first-boot-menu' to start the setup wizard.
+    Or run 'system-setup-wizard' to configure your tier directly.
+    
+    Documentation: /etc/hypervisor/docs/
+  '';
   
   # Boot configuration
   boot = {
@@ -95,12 +110,39 @@
     };
   };
   
-  # Essential packages only
+  # Base packages for smooth hypervisor experience
   environment.systemPackages = with pkgs; [
+    # Essential editors and tools
     vim
+    nano
     git
+    curl
+    wget
+    htop
+    tmux
+    
+    # Virtualization management
     virt-manager
     virt-viewer
+    libvirt
+    qemu_kvm
+    
+    # System utilities
+    pciutils      # lspci for hardware detection
+    usbutils      # lsusb
+    dmidecode     # Hardware info
+    smartmontools # Disk health
+    
+    # Network tools
+    bridge-utils
+    iproute2
+    iptables
+    nftables
+    
+    # Helpful utilities for setup
+    dialog        # TUI dialogs
+    ncurses       # Terminal UI library
+    bashInteractive
   ];
   
   # Basic services

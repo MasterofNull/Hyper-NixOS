@@ -12,6 +12,28 @@
 # Repository: https://github.com/MasterofNull/Hyper-NixOS
 # Documentation: See README.md and docs/ directory
 #
+# INSTALLATION WORKFLOW:
+# =====================
+# 1. Installer detects and migrates:
+#    - Current username and password hashes
+#    - Hardware configuration (CPU, RAM, GPU, disks)
+#    - Existing user groups and permissions
+#    
+# 2. Applies minimal/base configuration:
+#    - Essential packages for smooth operation
+#    - Base virtualization services (libvirt, QEMU)
+#    - Network configuration for VMs
+#    - User credentials from host system
+#
+# 3. System switch and reboot:
+#    - Switches to new Hyper-NixOS configuration
+#    - Optionally reboots (--reboot flag)
+#
+# 4. First boot sequence:
+#    - First Boot Menu: Welcome screen with system info
+#    - System Setup Wizard: Tier selection and final config
+#    - Ready to use: VMs can be created immediately
+#
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077

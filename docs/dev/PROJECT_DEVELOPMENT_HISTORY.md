@@ -10,6 +10,87 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-15 (Update 10): Redesigned Installation Workflow with Two-Stage Boot Process
+**Agent**: Claude
+**Task**: Redesign installation workflow to provide clean progression: Install → First Boot Menu → System Setup Wizard
+
+**Requirements from User**:
+- Installer should apply base/minimal config with current username, password, and hardware from host
+- First boot should show a nice welcome menu with good base features/packages
+- Separate system setup wizard for final configuration (tier selection)
+
+**Changes Made**:
+
+1. **Enhanced configuration-minimal.nix**:
+   - Added comprehensive base packages (editors, network tools, system utilities, TUI helpers)
+   - Added helpful MOTD with quick commands and setup status
+   - Improved for smooth out-of-box experience
+
+2. **Created first-boot-menu.sh** - Simple welcome screen:
+   - Shows system information (RAM, CPU, GPU, Disk)
+   - Lists available configuration tiers
+   - Provides hardware-based recommendations
+   - Menu options: Launch wizard, view info, read docs, skip, or exit
+   - Non-intrusive: can skip and configure later
+
+3. **Created system-setup-wizard.sh** - Tier configuration wizard:
+   - Displays all 5 tiers (minimal, standard, enhanced, professional, enterprise)
+   - Shows detailed feature lists for each tier
+   - Hardware compatibility checking (✓ recommended, ⚠ minimum, ✗ insufficient)
+   - Safe configuration with automatic backups
+   - Can be run anytime for reconfiguration
+
+4. **Updated first-boot.nix module**:
+   - Two-stage systemd service (menu → wizard)
+   - Installs both scripts as system packages
+   - Creates shell aliases for easy access
+   - Only runs when setup incomplete AND users migrated
+   - Provides reconfigure-tier command
+
+5. **Updated system_installer.sh**:
+   - Added comprehensive workflow documentation in header
+   - Already migrates users, passwords, and hardware correctly
+   - Applies minimal config for smooth first boot
+
+**New Workflow**:
+```
+Install (migrate users/config) 
+    ↓
+Switch & Reboot
+    ↓
+First Boot Menu (welcome & info)
+    ↓
+System Setup Wizard (tier selection)
+    ↓
+Fully Configured System
+```
+
+**Files Created**:
+- `scripts/first-boot-menu.sh` - Welcome menu script
+- `scripts/system-setup-wizard.sh` - Setup wizard script
+- `docs/dev/INSTALLATION_WORKFLOW_REDESIGN.md` - Complete documentation
+
+**Files Modified**:
+- `profiles/configuration-minimal.nix` - Enhanced base packages and MOTD
+- `modules/core/first-boot.nix` - Two-stage boot system
+- `scripts/system_installer.sh` - Added workflow documentation
+
+**Key Benefits**:
+- Clear separation of concerns (install vs configure)
+- Better user experience (no repeated password prompts)
+- Informative welcome (understand before configuring)
+- Flexible timing (configure now or later)
+- Smooth progression (base system → configured system)
+- Reconfigurable anytime
+
+**Key Learning**:
+- Users want clean workflow stages, not combined wizards
+- Base configuration should include helpful packages for good UX
+- Welcome screen provides orientation before configuration
+- Separation allows users to explore before committing to tier
+
+---
+
 #### 2025-12-16 (Update 9): Fixed Audit Service Configuration in credential-chain.nix (Again)
 **Agent**: Claude
 **Task**: Fix "The option `services.auditd' does not exist" error in credential-chain.nix
