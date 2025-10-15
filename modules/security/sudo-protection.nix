@@ -172,23 +172,28 @@ in
       '';
     };
     
-    # Security monitoring for sudo usage
-    services.auditd.enable = true;
-    security.audit.enable = true;
-    security.audit.rules = [
-      # Monitor all sudo executions
-      "-a always,exit -F path=/usr/bin/sudo -F perm=x -k sudo_exec"
+    # Security monitoring for sudo usage - only enable if audit is available
+    services.auditd = lib.mkIf (config.services ? auditd) {
+      enable = true;
+    };
+    
+    security.audit = lib.mkIf (config.security ? audit) {
+      enable = true;
+      rules = [
+        # Monitor all sudo executions
+        "-a always,exit -F path=/usr/bin/sudo -F perm=x -k sudo_exec"
+        
+        # Monitor sudoers file changes
+        "-w /etc/sudoers -p wa -k sudoers_changes"
+        "-w /etc/sudoers.d/ -p wa -k sudoers_changes"
       
-      # Monitor sudoers file changes
-      "-w /etc/sudoers -p wa -k sudoers_changes"
-      "-w /etc/sudoers.d/ -p wa -k sudoers_changes"
-      
-      # Monitor password changes
-      "-w /usr/bin/passwd -p x -k passwd_changes"
-      
-      # Monitor our security scripts
-      "-w /etc/hypervisor/bin/ -p x -k hypervisor_security"
-    ];
+        # Monitor password changes
+        "-w /usr/bin/passwd -p x -k passwd_changes"
+        
+        # Monitor our security scripts
+        "-w /etc/hypervisor/bin/ -p x -k hypervisor_security"
+      ];
+    };
     
     # Additional PAM security
     security.pam.services.sudo = {

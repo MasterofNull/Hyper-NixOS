@@ -41,35 +41,40 @@
     Defaults !authenticate = false
   '';
   
-  # Enhanced audit rules
-  security.auditd.enable = true;
-  security.audit.rules = [
-    # Log all sudo usage
-    "-a always,exit -F arch=b64 -S execve -F euid=0 -F auid>=1000 -F auid!=-1 -k admin_commands"
-    
-    # Log all file access in sensitive directories
-    "-w /etc/nixos/ -p wa -k nixos_config"
-    "-w /etc/hypervisor/ -p wa -k hypervisor_config"
-    "-w /var/lib/hypervisor/ -p wa -k hypervisor_data"
-    
-    # Log all VM operations
-    "-w /var/lib/libvirt/ -p wa -k libvirt_ops"
-    "-w /etc/libvirt/ -p wa -k libvirt_config"
-    
-    # Log user/group changes
-    "-w /etc/passwd -p wa -k user_modification"
-    "-w /etc/group -p wa -k group_modification"
-    "-w /etc/shadow -p wa -k shadow_modification"
-    
-    # Log network configuration changes
-    "-w /etc/systemd/network/ -p wa -k network_config"
-    
-    # Log service changes
-    "-w /etc/systemd/system/ -p wa -k systemd_config"
-    
-    # Immutable rules (prevent disabling audit)
-    "-e 2"
-  ];
+  # Enhanced audit rules - only if audit is available
+  services.auditd = lib.mkIf (config.services ? auditd) {
+    enable = true;
+  };
+  
+  security.audit = lib.mkIf (config.security ? audit) {
+    rules = [
+      # Log all sudo usage
+      "-a always,exit -F arch=b64 -S execve -F euid=0 -F auid>=1000 -F auid!=-1 -k admin_commands"
+      
+      # Log all file access in sensitive directories
+      "-w /etc/nixos/ -p wa -k nixos_config"
+      "-w /etc/hypervisor/ -p wa -k hypervisor_config"
+      "-w /var/lib/hypervisor/ -p wa -k hypervisor_data"
+      
+      # Log all VM operations
+      "-w /var/lib/libvirt/ -p wa -k libvirt_ops"
+      "-w /etc/libvirt/ -p wa -k libvirt_config"
+      
+      # Log user/group changes
+      "-w /etc/passwd -p wa -k user_modification"
+      "-w /etc/group -p wa -k group_modification"
+      "-w /etc/shadow -p wa -k shadow_modification"
+      
+      # Log network configuration changes
+      "-w /etc/systemd/network/ -p wa -k network_config"
+      
+      # Log service changes
+      "-w /etc/systemd/system/ -p wa -k systemd_config"
+      
+      # Immutable rules (prevent disabling audit)
+      "-e 2"
+    ];
+  };
   
   # Stricter file permissions
   systemd.tmpfiles.rules = [

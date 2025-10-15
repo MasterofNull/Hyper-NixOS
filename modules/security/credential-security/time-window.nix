@@ -287,11 +287,13 @@ in
       "d /var/lib/hypervisor 0755 root root -"
     ];
     
-    # Audit time-sensitive operations
-    security.audit.rules = lib.mkAfter [
-      # Log time window checks
-      "-w /var/lib/hypervisor/.time-extension-token -p wa -k time_extension"
-      "-w /var/lib/hypervisor/.maintenance-window -p wa -k maintenance_window"
-    ];
+    # Audit time-sensitive operations - only if audit is available
+    security.audit = lib.mkIf (config.security ? audit) {
+      rules = lib.mkAfter [
+        # Log time window checks
+        "-w /var/lib/hypervisor/.time-extension-token -p wa -k time_extension"
+        "-w /var/lib/hypervisor/.maintenance-window -p wa -k maintenance_window"
+      ];
+    };
   };
 }

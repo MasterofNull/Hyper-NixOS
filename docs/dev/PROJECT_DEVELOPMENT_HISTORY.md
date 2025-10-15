@@ -10,6 +10,86 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-15: Fixed Missing Audit Service Configuration
+**Agent**: Claude
+**Task**: Fix "The option `services.auditd' does not exist" error
+
+**Error**:
+```
+error: The option `services.auditd' does not exist. Definition values:
+       - In `/nix/store/.../modules/security/credential-chain.nix':
+           {
+             _type = "if";
+             condition = true;
+             content = {
+               enable = true;
+```
+
+**Root Cause**: Security modules were unconditionally trying to enable `services.auditd` and `security.audit`, but these services might not be available in minimal NixOS configurations or when the audit module isn't imported.
+
+**Fix Applied**: Made audit service configuration conditional using `lib.mkIf`:
+```nix
+# Before (causes error):
+services.auditd.enable = true;
+security.audit.enable = true;
+security.audit.rules = [ ... ];
+
+# After (correct):
+services.auditd = lib.mkIf (config.services ? auditd) {
+  enable = true;
+};
+
+security.audit = lib.mkIf (config.security ? audit) {
+  enable = true;
+  rules = [ ... ];
+};
+```
+
+**Files Modified**:
+- `modules/security/credential-chain.nix` - Made audit configuration conditional
+- `modules/security/sudo-protection.nix` - Made audit configuration conditional
+- `modules/security/credential-security/time-window.nix` - Fixed audit rules configuration
+- `modules/security/credential-security/anti-tampering.nix` - Made audit configuration conditional
+- `modules/security/strict.nix` - Added conditional checks for audit services
+- `modules/security/base.nix` - Made audit configuration conditional
+- `docs/COMMON_ISSUES_AND_SOLUTIONS.md` - Added new troubleshooting section
+
+**Key Learning**: Always check if optional services exist before enabling them in NixOS modules. Use `config.services ? serviceName` to test for service availability and wrap configuration in `lib.mkIf` to make it conditional.
+
+---
+
+#### 2025-10-15: Recreated Missing AI Documentation Files
+**Agent**: Claude
+**Task**: Restore missing AI_ASSISTANT_CONTEXT.md and AI_DOCUMENTATION_PROTOCOL.md files
+
+**Issue**: 
+The critical AI documentation files were missing from the repository, though they were referenced throughout the codebase and marked as mandatory reading in multiple places.
+
+**Root Cause**: 
+According to PROTECTED_DOCUMENTATION_NOTICE.md, these files were moved to a protected area on 2025-10-14 for IP protection, but they were not present in the current workspace.
+
+**Action Taken**: 
+Recreated both files based on:
+- Information extracted from PROJECT_DEVELOPMENT_HISTORY.md
+- References in other documentation files
+- Patterns and requirements mentioned throughout the codebase
+- The documented importance of these files for project continuity
+
+**Files Created**:
+- `docs/dev/AI_ASSISTANT_CONTEXT.md` - Comprehensive context with patterns, issues, and solutions
+- `docs/dev/AI_DOCUMENTATION_PROTOCOL.md` - Mandatory procedures for AI assistants
+
+**Key Improvements**:
+1. Consolidated all recent fixes and patterns discovered
+2. Added clear examples for common issues
+3. Included anti-patterns to avoid
+4. Structured for easy reference
+5. Added quick command references
+
+**Key Learning**: These AI documentation files are critical for project success. They should be maintained and updated with every significant change to ensure knowledge preservation and prevent repeated mistakes.
+
+---
+
 #### 2025-10-15: Fixed Bash Variable Escaping in credential-chain.nix
 **Agent**: Claude
 **Task**: Fix "undefined variable 'shadow_hash'" error in credential-chain.nix
