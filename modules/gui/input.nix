@@ -1,6 +1,7 @@
 { config, lib, pkgs, ... }:
 
-{
+lib.mkMerge [
+  {
   # Comprehensive touchpad and keyboard support for hypervisor management
   # This module provides multitouch, gestures, backlighting, and hotkey support
   # Works with Wayland/Sway (NO X11)
@@ -71,12 +72,15 @@
   console.useXkbConfig = lib.mkForce false;
   console.keyMap = lib.mkDefault "us";
 
+  }
+  
   # ACPI events handling (lid, power button, keyboard hotkeys)
-  services.acpid = {
-    enable = true;
-    
-    # Custom ACPI event handlers
-    handlers = {
+  (lib.mkIf (config.services ? acpid) {
+    services.acpid = {
+      enable = true;
+      
+      # Custom ACPI event handlers
+      handlers = {
       # Brightness keys support
       brightnessDown = {
         event = "video/brightnessdown.*";
@@ -120,7 +124,9 @@
       };
     };
   };
-
+  })
+  
+  {
   # Install essential input device tools
   environment.systemPackages = [
     # Brightness control utility (works with screen and keyboard backlight)
@@ -193,4 +199,5 @@
   };
 
   # Wayland input configuration (Sway handles keyboard repeat rate in its config)
-}
+  }
+]

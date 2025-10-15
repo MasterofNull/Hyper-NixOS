@@ -4,22 +4,37 @@
 # Provides fingerprint reader support via fprintd and libfprint
 # Integrates with PAM for system-wide fingerprint authentication
 
+let
+  cfg = config.hypervisor.security.biometrics;
+in
 {
+  options.hypervisor.security.biometrics = {
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable biometric authentication support";
+    };
+  };
+
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    # Conditional fprintd configuration
+    (lib.mkIf (config.services ? fprintd) {
+      services.fprintd = {
+        enable = true;
+        
+        # Enable Time-of-Check-Time-of-Use (TOC/TOU) protection
+        # Prevents attacks where fingerprint data is modified between verification steps
+        tod.enable = true;
+        
+        # Enable driver for devices requiring Time-of-Day protocol
+        tod.driver = pkgs.libfprint-2-tod1-vfs0090;
+      };
+    })
+    
+    {
   # ═══════════════════════════════════════════════════════════════
   # Fingerprint Reader Support
   # ═══════════════════════════════════════════════════════════════
-  
-  # Enable fprintd daemon for fingerprint authentication
-  services.fprintd = {
-    enable = true;
-    
-    # Enable Time-of-Check-Time-of-Use (TOC/TOU) protection
-    # Prevents attacks where fingerprint data is modified between verification steps
-    tod.enable = true;
-    
-    # Enable driver for devices requiring Time-of-Day protocol
-    tod.driver = pkgs.libfprint-2-tod1-vfs0090;
-  };
 
   # ═══════════════════════════════════════════════════════════════
   # PAM Configuration for Fingerprint Authentication
@@ -117,9 +132,15 @@
   # System Configuration
   # ═══════════════════════════════════════════════════════════════
   
-  # Enable D-Bus (required by fprintd)
-  services.dbus.enable = true;
-
+  }
+  
+  # Conditional D-Bus configuration
+  (lib.mkIf (config.services ? dbus) {
+    # Enable D-Bus (required by fprintd)
+    services.dbus.enable = true;
+  })
+  
+  {
   # ═══════════════════════════════════════════════════════════════
   # Documentation and Usage Notes
   # ═══════════════════════════════════════════════════════════════
@@ -141,4 +162,6 @@
   #   https://fprint.freedesktop.org/supported-devices.html
   #
   # ═══════════════════════════════════════════════════════════════
+  }
+  ]);
 }

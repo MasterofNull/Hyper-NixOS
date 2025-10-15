@@ -197,79 +197,83 @@ in
     };
   };
   
-  config = lib.mkIf cfg.enable {
-    # Install verification scripts
-    environment.systemPackages = [ 
-      credentialVerifier 
-      credentialImporter 
-    ];
-    
-    # Systemd service to check credential integrity
-    systemd.services.credential-integrity-check = {
-      description = "Verify credential chain integrity";
-      after = [ "sysinit.target" ];
-      before = [ "hypervisor-first-boot.service" ];
-      wantedBy = [ "multi-user.target" ];
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
+      # Install verification scripts
+      environment.systemPackages = [ 
+        credentialVerifier 
+        credentialImporter 
+      ];
       
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = "${credentialVerifier}/bin/verify-credentials check";
-        ExecStartPost = pkgs.writeShellScript "check-tamper" ''
-          if [[ -f /var/lib/hypervisor/.tamper-detected ]]; then
-            case "${cfg.triggerOnTamper}" in
-              lock|both)
-                # Lock the system
-                touch /var/lib/hypervisor/.security-lockdown
-                # Disable first-boot
-                touch /var/lib/hypervisor/.first-boot-complete
-                ;;
-            esac
-            
-            case "${cfg.triggerOnTamper}" in
-              alert|both)
-                # Send security alert
-                logger -p security.crit "SECURITY: Credential tampering detected - system locked"
-                # In production, this could send email/SMS alerts
-                ;;
-            esac
-          fi
-        '';
-      };
-    };
-    
-    # Import service that runs before first-boot
-    systemd.services.import-host-credentials = {
-      description = "Import host system credentials if available";
-      after = [ "sysinit.target" ];
-      before = [ "hypervisor-first-boot.service" ];
-      wantedBy = [ "multi-user.target" ];
-      
-      unitConfig = {
-        ConditionPathExists = "/tmp/hyper-nixos-creds.enc";
+      # Systemd service to check credential integrity
+      systemd.services.credential-integrity-check = {
+        description = "Verify credential chain integrity";
+        after = [ "sysinit.target" ];
+        before = [ "hypervisor-first-boot.service" ];
+        wantedBy = [ "multi-user.target" ];
+        
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${credentialVerifier}/bin/verify-credentials check";
+          ExecStartPost = pkgs.writeShellScript "check-tamper" ''
+            if [[ -f /var/lib/hypervisor/.tamper-detected ]]; then
+              case "${cfg.triggerOnTamper}" in
+                lock|both)
+                  # Lock the system
+                  touch /var/lib/hypervisor/.security-lockdown
+                  # Disable first-boot
+                  touch /var/lib/hypervisor/.first-boot-complete
+                  ;;
+              esac
+              
+              case "${cfg.triggerOnTamper}" in
+                alert|both)
+                  # Send security alert
+                  logger -p security.crit "SECURITY: Credential tampering detected - system locked"
+                  # In production, this could send email/SMS alerts
+                  ;;
+              esac
+            fi
+          '';
+        };
       };
       
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = "${credentialImporter}/bin/import-host-credentials";
+      # Import service that runs before first-boot
+      systemd.services.import-host-credentials = {
+        description = "Import host system credentials if available";
+        after = [ "sysinit.target" ];
+        before = [ "hypervisor-first-boot.service" ];
+        wantedBy = [ "multi-user.target" ];
+        
+        unitConfig = {
+          ConditionPathExists = "/tmp/hyper-nixos-creds.enc";
+        };
+        
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${credentialImporter}/bin/import-host-credentials";
+        };
       };
-    };
+    }
     
     # Security monitoring - only enable if audit is available
-    services.auditd = lib.mkIf (config.services ? auditd) {
-      enable = true;
-    };
+    (lib.mkIf (config.services ? auditd) {
+      services.auditd.enable = true;
+    })
     
-    security.audit = lib.mkIf (config.security ? audit) {
-      enable = true;
-      rules = lib.mkAfter [
-        # Monitor credential files
-        "-w /etc/shadow -p wa -k credential_changes"
-        "-w /etc/passwd -p wa -k credential_changes"
-        "-w /var/lib/hypervisor/.credential-hash -p wa -k credential_integrity"
-        "-w /var/lib/hypervisor/.tamper-detected -p wa -k security_alert"
-      ];
-    };
-  };
+    (lib.mkIf (config.security ? audit) {
+      security.audit = {
+        enable = true;
+        rules = lib.mkAfter [
+          # Monitor credential files
+          "-w /etc/shadow -p wa -k credential_changes"
+          "-w /etc/passwd -p wa -k credential_changes"
+          "-w /var/lib/hypervisor/.credential-hash -p wa -k credential_integrity"
+          "-w /var/lib/hypervisor/.tamper-detected -p wa -k security_alert"
+        ];
+      };
+    })
+  ]);
 }

@@ -381,7 +381,8 @@ in
     };
   };
   
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
     # Install anti-tampering tools
     environment.systemPackages = [
       antiTamperChecker
@@ -430,25 +431,28 @@ in
         ConditionPathExists = "!/var/lib/hypervisor/integrity";
       };
     };
+    }
     
     # Audit rules for monitoring - only if audit is available
-    security.audit = lib.mkIf (config.security ? audit) {
-      enable = true;
-      rules = [
-        # Monitor authentication files
-        "-w /etc/passwd -p wa -k auth_files"
-        "-w /etc/shadow -p wa -k auth_files"
-        "-w /etc/group -p wa -k auth_files"
-        "-w /etc/sudoers -p wa -k auth_files"
-        
-        # Monitor module loading
-        "-w /sbin/insmod -p x -k modules"
-        "-w /sbin/rmmod -p x -k modules"
-        "-w /sbin/modprobe -p x -k modules"
-        
-        # Monitor privileged commands
-        "-a always,exit -F arch=b64 -S execve -F uid=0 -k root_commands"
-      ];
-    };
-  };
+    (lib.mkIf (config.security ? audit) {
+      security.audit = {
+        enable = true;
+        rules = [
+          # Monitor authentication files
+          "-w /etc/passwd -p wa -k auth_files"
+          "-w /etc/shadow -p wa -k auth_files"
+          "-w /etc/group -p wa -k auth_files"
+          "-w /etc/sudoers -p wa -k auth_files"
+          
+          # Monitor module loading
+          "-w /sbin/insmod -p x -k modules"
+          "-w /sbin/rmmod -p x -k modules"
+          "-w /sbin/modprobe -p x -k modules"
+          
+          # Monitor privileged commands
+          "-a always,exit -F arch=b64 -S execve -F uid=0 -k root_commands"
+        ];
+      };
+    })
+  ]);
 }

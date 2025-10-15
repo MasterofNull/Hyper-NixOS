@@ -58,6 +58,57 @@ security.audit = lib.mkIf (config.security ? audit) {
 
 ---
 
+#### 2025-10-15: Fixed Optional Service Configurations in Non-Default Modules
+**Agent**: Claude
+**Task**: Fix potential "option does not exist" errors in optional modules
+
+**Context**: After fixing the audit service issues, we proactively fixed similar issues in optional modules that weren't imported by default but could cause errors if used.
+
+**Modules Fixed**:
+1. **`modules/security/biometrics.nix`**:
+   - Made `services.fprintd` conditional
+   - Made `services.dbus` conditional
+   - Added proper module structure with enable option
+
+2. **`modules/gui/input.nix`**:
+   - Made `services.acpid` conditional
+   - Wrapped in proper `lib.mkMerge` structure
+
+3. **`modules/security/base.nix`**:
+   - Made `security.apparmor` conditional
+   - Restructured with `lib.mkMerge`
+
+4. **`modules/security/strict.nix`**:
+   - Made `security.apparmor` conditional
+
+5. **`modules/gui-local.example.nix`**:
+   - Added warning comments about `security.rtkit` and `services.pipewire`
+
+**Tool Created**: `/workspace/scripts/tools/check-optional-services.sh`
+- Scans all modules for potentially missing service dependencies
+- Helps prevent "option does not exist" errors before rebuilding
+- Can be run as part of pre-build checks
+
+**Key Pattern**: Wrap optional services in conditional checks:
+```nix
+# For modules with enable options:
+config = lib.mkIf cfg.enable (lib.mkMerge [
+  (lib.mkIf (config.services ? optionalService) {
+    services.optionalService.enable = true;
+  })
+]);
+
+# For modules without enable options:
+lib.mkMerge [
+  { /* main config */ }
+  (lib.mkIf (config.services ? optionalService) {
+    services.optionalService = { /* config */ };
+  })
+]
+```
+
+---
+
 #### 2025-10-15: Recreated Missing AI Documentation Files
 **Agent**: Claude
 **Task**: Restore missing AI_ASSISTANT_CONTEXT.md and AI_DOCUMENTATION_PROTOCOL.md files

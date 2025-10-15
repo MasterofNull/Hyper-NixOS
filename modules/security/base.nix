@@ -4,7 +4,8 @@
 # Core security settings that apply to all profiles
 # Consolidated from security-production.nix
 
-{
+lib.mkMerge [
+  {
   # ═══════════════════════════════════════════════════════════════
   # Security Assertions
   # ═══════════════════════════════════════════════════════════════
@@ -109,12 +110,7 @@
     ForwardToSyslog=yes
   '';
 
-  # ═══════════════════════════════════════════════════════════════
-  # AppArmor
-  # ═══════════════════════════════════════════════════════════════
-  security.apparmor.enable = true;
-  security.apparmor.policies."qemu-system-x86_64".profile = builtins.readFile ../apparmor/qemu-system-x86_64;
-  boot.kernelParams = [ "apparmor=1" "security=apparmor" ];
+  }
 
   # ═══════════════════════════════════════════════════════════════
   # Sudo Configuration
@@ -142,4 +138,16 @@
     # Compliance reporting
     pkgs.lynis
   ];
-}
+  }
+  
+  # ═══════════════════════════════════════════════════════════════
+  # AppArmor - only if available
+  # ═══════════════════════════════════════════════════════════════
+  (lib.mkIf (config.security ? apparmor) {
+    security.apparmor = {
+      enable = true;
+      policies."qemu-system-x86_64".profile = builtins.readFile ../apparmor/qemu-system-x86_64;
+    };
+    boot.kernelParams = [ "apparmor=1" "security=apparmor" ];
+  })
+]
