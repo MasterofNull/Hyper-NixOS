@@ -9,6 +9,7 @@ This document catalogs common issues encountered in Hyper-NixOS, their root caus
 - [Module and Configuration Issues](#module-and-configuration-issues)
 - [CI/CD and Testing Issues](#cicd-and-testing-issues)
 - [Hardware and Kernel Issues](#hardware-and-kernel-issues)
+- [Service Configuration Issues](#service-configuration-issues)
 
 ## 🚨 **Critical Issues**
 
@@ -1654,3 +1655,73 @@ boot.kernelModules = lib.mkForce [ "kvm-intel" ];
 - IOMMU parameters (`intel_iommu=on` and `amd_iommu=on`) are also included for both vendors
 - The kernel ignores parameters for hardware it doesn't have
 - This approach ensures the system works on any x86_64 hardware without modification
+
+## 🔧 **Service Configuration Issues**
+
+### Issue: "The option `services.auditd' does not exist"
+**Symptoms**:
+```
+error: The option `services.auditd' does not exist. Definition values:
+       - In `/nix/store/.../modules/security/credential-chain.nix':
+           {
+             _type = "if";
+             condition = true;
+             content = {
+               enable = true;
+```
+
+**Root Cause**: 
+The security modules are trying to enable the audit daemon service (`services.auditd`), but this service might not be available in minimal NixOS configurations or when the audit module isn't imported.
+
+**Impact**: 
+Build failure when using security modules on minimal NixOS installations.
+
+**Solutions**:
+
+#### ✅ **Option 1: Use the fixed modules (Recommended)**
+The security modules have been updated to conditionally enable audit services only when they're available:
+
+```nix
+# Security monitoring - only if audit is available
+services.auditd = lib.mkIf (config.services ? auditd) {
+  enable = true;
+};
+
+security.audit = lib.mkIf (config.security ? audit) {
+  enable = true;
+  rules = [ ... ];
+};
+```
+
+#### ✅ **Option 2: Enable audit support in your configuration**
+If you want audit logging, ensure the audit module is available:
+
+```nix
+# In your configuration.nix
+{
+  # Enable audit daemon
+  security.auditd.enable = true;
+  
+  # Or import the audit module explicitly if needed
+  imports = [
+    # ... other imports
+  ];
+}
+```
+
+**Files Fixed**:
+- `modules/security/credential-chain.nix`
+- `modules/security/sudo-protection.nix`
+- `modules/security/credential-security/time-window.nix`
+- `modules/security/credential-security/anti-tampering.nix`
+- `modules/security/strict.nix`
+- `modules/security/base.nix`
+
+**Prevention**:
+- Always check if optional services exist before enabling them
+- Use conditional expressions: `lib.mkIf (config.services ? serviceName)`
+- Test modules with minimal NixOS configurations
+- Document service dependencies in module descriptions
+
+**Key Learning**:
+Not all NixOS services are available in every configuration. Security modules should gracefully handle missing optional services to maintain compatibility with minimal installations.

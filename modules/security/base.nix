@@ -60,34 +60,39 @@
   };
 
   # ═══════════════════════════════════════════════════════════════
-  # Audit Logging
+  # Audit Logging - only if audit is available
   # ═══════════════════════════════════════════════════════════════
-  security.auditd.enable = true;
-  security.audit.enable = true;
-  security.audit.rules = [
-    # Log all libvirt operations
-    "-a always,exit -F arch=b64 -S execve -F path=/run/current-system/sw/bin/virsh -F key=vm-operation"
-    
-    # Log VM deletion attempts
-    "-a always,exit -F arch=b64 -S execve -F path=/run/current-system/sw/bin/virsh -F a1=undefine -F key=vm-deletion"
-    "-a always,exit -F arch=b64 -S execve -F path=/run/current-system/sw/bin/virsh -F a1=destroy -F key=vm-destroy"
-    
-    # Log sudo usage
-    "-a always,exit -F arch=b64 -S execve -F path=/run/wrappers/bin/sudo -F key=sudo-command"
-    
-    # Log file access to sensitive areas
-    "-w /etc/nixos -p wa -k nixos-config"
-    "-w /etc/hypervisor/src -p wa -k hypervisor-config"
-    
-    # Log authentication events
-    "-w /var/log/auth.log -p wa -k auth-log"
-    "-w /var/log/lastlog -p wa -k logins"
-    
-    # Log user/group modifications
-    "-w /etc/passwd -p wa -k identity"
-    "-w /etc/group -p wa -k identity"
-    "-w /etc/shadow -p wa -k identity"
-  ];
+  services.auditd = lib.mkIf (config.services ? auditd) {
+    enable = true;
+  };
+  
+  security.audit = lib.mkIf (config.security ? audit) {
+    enable = true;
+    rules = [
+      # Log all libvirt operations
+      "-a always,exit -F arch=b64 -S execve -F path=/run/current-system/sw/bin/virsh -F key=vm-operation"
+      
+      # Log VM deletion attempts
+      "-a always,exit -F arch=b64 -S execve -F path=/run/current-system/sw/bin/virsh -F a1=undefine -F key=vm-deletion"
+      "-a always,exit -F arch=b64 -S execve -F path=/run/current-system/sw/bin/virsh -F a1=destroy -F key=vm-destroy"
+      
+      # Log sudo usage
+      "-a always,exit -F arch=b64 -S execve -F path=/run/wrappers/bin/sudo -F key=sudo-command"
+      
+      # Log file access to sensitive areas
+      "-w /etc/nixos -p wa -k nixos-config"
+      "-w /etc/hypervisor/src -p wa -k hypervisor-config"
+      
+      # Log authentication events
+      "-w /var/log/auth.log -p wa -k auth-log"
+      "-w /var/log/lastlog -p wa -k logins"
+      
+      # Log user/group modifications
+      "-w /etc/passwd -p wa -k identity"
+      "-w /etc/group -p wa -k identity"
+      "-w /etc/shadow -p wa -k identity"
+    ];
+  };
 
   # ═══════════════════════════════════════════════════════════════
   # Journald Configuration

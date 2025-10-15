@@ -256,15 +256,20 @@ in
       };
     };
     
-    # Security monitoring
-    services.auditd.enable = true;
-    security.audit.enable = true;
-    security.audit.rules = lib.mkAfter [
-      # Monitor credential files
-      "-w /etc/shadow -p wa -k credential_changes"
-      "-w /etc/passwd -p wa -k credential_changes"
-      "-w /var/lib/hypervisor/.credential-hash -p wa -k credential_integrity"
-      "-w /var/lib/hypervisor/.tamper-detected -p wa -k security_alert"
-    ];
+    # Security monitoring - only enable if audit is available
+    services.auditd = lib.mkIf (config.services ? auditd) {
+      enable = true;
+    };
+    
+    security.audit = lib.mkIf (config.security ? audit) {
+      enable = true;
+      rules = lib.mkAfter [
+        # Monitor credential files
+        "-w /etc/shadow -p wa -k credential_changes"
+        "-w /etc/passwd -p wa -k credential_changes"
+        "-w /var/lib/hypervisor/.credential-hash -p wa -k credential_integrity"
+        "-w /var/lib/hypervisor/.tamper-detected -p wa -k security_alert"
+      ];
+    };
   };
 }
