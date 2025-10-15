@@ -1,6 +1,20 @@
 # Hyper-NixOS Master Configuration
 # Version: 1.0.0
 # 
+# Copyright (c) 2024-2025 MasterofNull
+# Licensed under the MIT License - see LICENSE file
+#
+# This configuration uses:
+# - NixOS module system (MIT License, NixOS contributors)
+# - SystemD for service management (LGPL-2.1+)
+# - QEMU/KVM via Libvirt for virtualization (GPL-2.0, LGPL-2.1+)
+# - Prometheus/Grafana for monitoring (Apache 2.0, AGPL-3.0)
+#
+# For complete license information, see:
+# - LICENSE - Hyper-NixOS license
+# - THIRD_PARTY_LICENSES.md - All dependencies
+# - CREDITS.md - Attributions
+# 
 # This is the complete configuration including all features and modules.
 # Customize by editing the options below or using the setup wizard.
 # 

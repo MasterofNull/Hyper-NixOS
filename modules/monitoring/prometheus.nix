@@ -1,3 +1,21 @@
+# Hyper-NixOS Prometheus Monitoring Module
+#
+# Copyright (c) 2024-2025 MasterofNull
+# Licensed under the MIT License
+#
+# This module configures:
+# - Prometheus (Apache License 2.0, The Prometheus Authors)
+# - Grafana (AGPL-3.0, Grafana Labs) - used as-is from nixpkgs
+# - Node Exporter (Apache License 2.0, The Prometheus Authors)
+#
+# Prometheus and its components are used under their respective licenses.
+# See THIRD_PARTY_LICENSES.md for complete license information.
+#
+# Attribution:
+# - Prometheus: https://prometheus.io/
+# - Grafana: https://grafana.com/
+# - Monitoring patterns inspired by Prometheus best practices
+
 { config, lib, pkgs, ... }:
 {
   options.hypervisor.monitoring = {

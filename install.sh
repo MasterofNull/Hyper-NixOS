@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 # Hyper-NixOS Universal Installer
-# Copyright (C) 2024-2025 MasterofNull
+# Copyright (c) 2024-2025 MasterofNull
+# Licensed under the MIT License - see LICENSE file
+#
+# This installer uses:
+# - Bash (GPL-3.0+, Free Software Foundation)
+# - Git for repository operations (GPL-2.0)
+# - curl/wget for downloads (MIT-like/GPL-3.0+)
+# - tar for archive extraction
+#
+# For complete license information, see:
+# - LICENSE - Hyper-NixOS license  
+# - THIRD_PARTY_LICENSES.md - All dependencies
+# - CREDITS.md - Attributions
 # 
 # This script works in two modes:
 # 1. Local mode: Run from cloned repository
