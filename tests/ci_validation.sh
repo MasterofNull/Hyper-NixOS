@@ -58,7 +58,7 @@ check_dir() {
 echo "━━━ Core Files ━━━"
 check_file "README" "README.md"
 check_file "Credits" "CREDITS.md"
-check_file "Enterprise Quick Start" "ENTERPRISE_QUICK_START.md"
+check_file "Enterprise Quick Start" "docs/user-guides/ENTERPRISE_QUICK_START.md"
 
 echo ""
 echo "━━━ Directories ━━━"

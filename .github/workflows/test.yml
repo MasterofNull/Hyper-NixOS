@@ -106,7 +106,7 @@ jobs:
           required_files=(
             "README.md"
             "CREDITS.md"
-            "ENTERPRISE_QUICK_START.md"
+            "docs/user-guides/ENTERPRISE_QUICK_START.md"
             "scripts/system_installer.sh"
             "scripts/menu.sh"
             "configuration.nix"
@@ -334,7 +334,7 @@ jobs:
             
             ### Documentation
             - `README.md` - Quick start guide
-            - `ENTERPRISE_QUICK_START.md` - Enterprise features reference
+            - `docs/user-guides/ENTERPRISE_QUICK_START.md` - Enterprise features reference
             - `docs/ENTERPRISE_FEATURES.md` - Complete guide
             
             ### Status
