@@ -10,6 +10,40 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-15 (Update 7): Removed AI-Generated Security Platform Remnants
+**Agent**: Claude
+**Task**: Remove shipping scripts and security platform files that were AI misunderstandings
+
+**Identified as AI Remnants**:
+These files were about a separate "Security Platform" product, not Hyper-NixOS:
+- All "shipping" related files (prepare-for-shipping.sh, SHIPPING-*.md)
+- Security platform deployment scripts (security-platform-deploy.sh, deploy-security.sh)
+- Security platform audit/test scripts in scripts/audit/
+- Security platform documentation (DEPLOYMENT-GUIDE.md, RELEASE-NOTES-V2.0.md)
+
+**Files/Directories Removed**:
+1. **Scripts**:
+   - `scripts/deployment/` directory (contained only security platform scripts)
+   - `scripts/audit/` directory (contained only security platform tests)
+   - All shipping/security platform related scripts
+
+2. **Documentation**:
+   - `docs/deployment/SHIPPING-SUMMARY.md`
+   - `docs/deployment/SHIPPING-CHECKLIST.md`
+   - `docs/deployment/DEPLOYMENT-GUIDE.md`
+   - `docs/deployment/RELEASE-NOTES-V2.0.md`
+
+3. **Directories**:
+   - `releases/` directory (only used by shipping script)
+
+**Key Learning**:
+- AI can sometimes generate files for the wrong product/context
+- Always verify that generated content matches the actual project (Hyper-NixOS hypervisor)
+- Remove remnants that don't align with the core system purpose
+- The legitimate Hyper-NixOS deployment guide remains at `docs/deployment/DEPLOYMENT.md`
+
+---
+
 #### 2025-10-15 (Update 6): Removed Unused Compressed Files
 **Agent**: Claude
 **Task**: Remove compressed files not being used by the system
