@@ -77,6 +77,15 @@ config = lib.mkIf cfg.enable (lib.mkMerge [
 ]);
 ```
 
+**Other Services That May Cause Similar Issues**:
+- `security.apparmor` - Not available in all configurations
+- `services.fprintd` - Fingerprint daemon (biometrics.nix)
+- `services.acpid` - ACPI daemon (gui/input.nix)
+- `security.rtkit` - Real-time kit (gui-local.example.nix)
+- `services.dbus` - D-Bus system (biometrics.nix)
+
+**Note**: Most of these are in optional modules that aren't imported by default
+
 ## 🚨 **Critical Issues**
 
 ### Issue: "Neither the root account nor any wheel user has a password"
