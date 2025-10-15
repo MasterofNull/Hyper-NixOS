@@ -227,7 +227,7 @@ sudo mv /tmp/hypervisor-features.desktop /usr/share/applications/
 
 # Update module imports
 echo -e "\n${BLUE}Checking module configuration...${NC}"
-CONFIG_FILE="/etc/nixos/configuration.nix"
+CONFIG_FILE="/etc/nixos/configuration/configuration.nix"
 if [[ -f "$CONFIG_FILE" ]]; then
     # Check if tier-templates module is imported
     if ! grep -q "tier-templates.nix" "$CONFIG_FILE"; then

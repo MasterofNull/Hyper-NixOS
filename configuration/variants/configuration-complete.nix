@@ -6,34 +6,34 @@
 {
   imports = [
     # Hardware
-    ./hardware-configuration.nix
+    ../core/hardware-configuration.nix
     
     # Core modules
-    ./modules/core/options.nix
-    ./modules/core/hypervisor-base.nix
-    ./modules/core/system.nix
-    ./modules/core/packages.nix
-    ./modules/core/directories.nix
-    ./modules/core/portable-base.nix
-    ./modules/core/optimized-system.nix
-    ./modules/core/keymap-sanitizer.nix
+    ../../modules/core/options.nix
+    ../../modules/core/hypervisor-base.nix
+    ../../modules/core/system.nix
+    ../../modules/core/packages.nix
+    ../../modules/core/directories.nix
+    ../../modules/core/portable-base.nix
+    ../../modules/core/optimized-system.nix
+    ../../modules/core/keymap-sanitizer.nix
     
     # Feature system
-    ./modules/system-tiers.nix  # System tier definitions (required by feature-manager)
-    ./modules/features/feature-categories.nix
-    ./modules/features/feature-manager.nix
-    ./modules/features/adaptive-docs.nix
-    ./modules/features/educational-content.nix
+    ../../modules/system-tiers.nix  # System tier definitions (required by feature-manager)
+    ../../modules/features/feature-categories.nix
+    ../../modules/features/feature-manager.nix
+    ../../modules/features/adaptive-docs.nix
+    ../../modules/features/educational-content.nix
     
     # Security modules
-    ./modules/security/base.nix
-    ./modules/security/profiles.nix
-    ./modules/security/privilege-separation.nix
-    ./modules/security/polkit-rules.nix
+    ../../modules/security/base.nix
+    ../../modules/security/profiles.nix
+    ../../modules/security/privilege-separation.nix
+    ../../modules/security/polkit-rules.nix
     
     # Virtualization
-    ./modules/virtualization/libvirt.nix
-    ./modules/virtualization/performance.nix
+    ../../modules/virtualization/libvirt.nix
+    ../../modules/virtualization/performance.nix
     
     # Note: Networking and service configurations are handled directly in this file
     

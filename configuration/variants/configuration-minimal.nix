@@ -7,28 +7,28 @@
 {
   imports = [
     # Hardware configuration (always needed)
-    ./hardware-configuration.nix
+    ../core/hardware-configuration.nix
     
     # Core options module (defines hypervisor.enable and other core options)
-    ./modules/core/options.nix
-    ./modules/core/hypervisor-base.nix  # Base hypervisor setup when enabled
+    ../../modules/core/options.nix
+    ../../modules/core/hypervisor-base.nix  # Base hypervisor setup when enabled
     
     # Only import modules whose options we're actually setting below
-    ./modules/features/feature-categories.nix  # Defines hypervisor.features
-    ./modules/features/feature-manager.nix  # We use hypervisor.featureManager
-    ./modules/core/first-boot.nix  # First boot configuration wizard
-    ./modules/system-tiers.nix  # System tier definitions
-    ./modules/security/sudo-protection.nix  # Sudo password reset protection
-    ./modules/security/credential-chain.nix  # Credential migration and tamper detection
-  ] ++ lib.optionals (builtins.pathExists ./modules/users-migrated.nix) [
+    ../../modules/features/feature-categories.nix  # Defines hypervisor.features
+    ../../modules/features/feature-manager.nix  # We use hypervisor.featureManager
+    ../../modules/core/first-boot.nix  # First boot configuration wizard
+    ../../modules/system-tiers.nix  # System tier definitions
+    ../../modules/security/sudo-protection.nix  # Sudo password reset protection
+    ../../modules/security/credential-chain.nix  # Credential migration and tamper detection
+  ] ++ lib.optionals (builtins.pathExists ../../modules/users-migrated.nix) [
     # Import migrated user configuration if it exists (from host system)
-    ./modules/users-migrated.nix
-  ] ++ lib.optionals (builtins.pathExists ./modules/users-local.nix) [
+    ../../modules/users-migrated.nix
+  ] ++ lib.optionals (builtins.pathExists ../../modules/users-local.nix) [
     # Import local user configuration if it exists (created by installer)
-    ./modules/users-local.nix
-  ] ++ lib.optionals (builtins.pathExists ./modules/system-local.nix) [
+    ../../modules/users-local.nix
+  ] ++ lib.optionals (builtins.pathExists ../../modules/system-local.nix) [
     # Import local system configuration if it exists (created by installer)
-    ./modules/system-local.nix
+    ../../modules/system-local.nix
   ];
 
   # System identification
@@ -120,8 +120,8 @@
     
     # Only define default users if no migration or local config exists
     users = lib.optionalAttrs (
-      !(builtins.pathExists ./modules/users-migrated.nix) &&
-      !(builtins.pathExists ./modules/users-local.nix)
+      !(builtins.pathExists ../../modules/users-migrated.nix) &&
+      !(builtins.pathExists ../../modules/users-local.nix)
     ) {
       admin = {
         isNormalUser = true;

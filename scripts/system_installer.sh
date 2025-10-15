@@ -243,8 +243,8 @@ prompt_and_update_if_desired() {
 }
 
 ensure_hardware_config() {
-  if [[ ! -f /etc/nixos/hardware-configuration.nix ]]; then
-    msg "Generating /etc/nixos/hardware-configuration.nix"
+  if [[ ! -f /etc/nixos/configuration/core/hardware-configuration.nix ]]; then
+    msg "Generating /etc/nixos/configuration/core/hardware-configuration.nix"
     nixos-generate-config --root /
   fi
 }
@@ -364,8 +364,8 @@ write_host_flake() {
       nixosConfigurations.__HOST__ = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
-          /etc/nixos/hardware-configuration.nix
-          (hypervisor + "/configuration-minimal.nix")
+          /etc/nixos/configuration/core/hardware-configuration.nix
+          (hypervisor + "/configuration/variants/configuration-minimal.nix")
         ];
       };
     };

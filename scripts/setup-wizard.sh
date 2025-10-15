@@ -568,9 +568,9 @@ apply_configuration() {
         echo "✓ Configuration saved"
         
         # Update main configuration to import features
-        if ! grep -q "hypervisor-features.nix" /etc/nixos/configuration.nix; then
+        if ! grep -q "hypervisor-features.nix" /etc/nixos/configuration/configuration.nix; then
             echo "✓ Adding import to configuration.nix"
-            sudo sed -i '/imports = \[/a\    ./hypervisor-features.nix' /etc/nixos/configuration.nix
+            sudo sed -i '/imports = \[/a\    ./hypervisor-features.nix' /etc/nixos/configuration/configuration.nix
         fi
         
         echo
@@ -612,7 +612,7 @@ show_recommendations() {
         echo "   cat /etc/hypervisor/reports/feature-security-impact.md"
         echo
         echo "2. Configure user access:"
-        echo "   sudo vim /etc/nixos/configuration.nix"
+        echo "   sudo vim /etc/nixos/configuration/configuration.nix"
         echo
         echo "3. Monitor system logs:"
         echo "   journalctl -u hypervisor -f"

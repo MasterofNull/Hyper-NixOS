@@ -26,7 +26,7 @@ readonly BOLD='\033[1m'
 readonly NC='\033[0m' # No Color
 
 # Configuration
-readonly CONFIG_FILE="/etc/nixos/configuration.nix"
+readonly CONFIG_FILE="/etc/nixos/configuration/configuration.nix"
 readonly TIER_CONFIG="/etc/nixos/hypervisor-tier.nix"
 readonly FIRST_BOOT_FLAG="/var/lib/hypervisor/.first-boot-complete"
 
