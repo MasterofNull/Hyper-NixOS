@@ -183,7 +183,157 @@ ensure_git() {
     stop_spinner success "Git installed successfully"
 }
 
-# Remote mode: Clone repo and run installer
+# Prompt for download method
+prompt_download_method() {
+    echo
+    print_line "═" 70
+    center_text "Download Method Selection"
+    print_line "═" 70
+    echo
+    print_info "Choose how to download Hyper-NixOS:"
+    echo
+    echo "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication"
+    echo "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup"
+    echo "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token"
+    echo "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install"
+    echo
+    
+    local choice
+    while true; do
+        read -p "$(echo -e "${CYAN}Select method [1-4]:${NC} ")" choice
+        case "$choice" in
+            1|2|3|4)
+                echo "$choice"
+                return 0
+                ;;
+            *)
+                print_error "Invalid choice. Please enter 1, 2, 3, or 4."
+                ;;
+        esac
+    done
+}
+
+# Configure git credentials for HTTPS
+configure_git_https() {
+    local token="$1"
+    
+    if [[ -n "$token" ]]; then
+        print_status "Configuring git with personal access token..."
+        
+        # Store token in git credential helper
+        git config --global credential.helper store
+        
+        # Create credential file
+        mkdir -p ~/.git-credentials
+        echo "https://${token}@github.com" > ~/.git-credentials/github
+        chmod 600 ~/.git-credentials/github
+        
+        print_success "Git credentials configured"
+    fi
+}
+
+# Setup SSH for git if needed
+setup_git_ssh() {
+    print_info "Checking SSH key for GitHub..."
+    
+    # Check if SSH key exists
+    if [[ ! -f ~/.ssh/id_rsa && ! -f ~/.ssh/id_ed25519 ]]; then
+        print_warning "No SSH key found."
+        echo
+        read -p "$(echo -e "${CYAN}Generate new SSH key? [y/N]:${NC} ")" generate_key
+        
+        if [[ "${generate_key,,}" == "y" ]]; then
+            print_status "Generating SSH key..."
+            ssh-keygen -t ed25519 -C "hyper-nixos-installer" -f ~/.ssh/id_ed25519 -N ""
+            print_success "SSH key generated: ~/.ssh/id_ed25519.pub"
+            echo
+            print_warning "You need to add this key to your GitHub account:"
+            echo
+            cat ~/.ssh/id_ed25519.pub
+            echo
+            read -p "$(echo -e "${YELLOW}Press Enter after adding the key to GitHub...${NC}")" 
+        else
+            print_error "SSH key required for SSH clone method"
+            return 1
+        fi
+    fi
+    
+    # Test SSH connection
+    print_status "Testing GitHub SSH connection..."
+    if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+        print_success "GitHub SSH authentication successful"
+        return 0
+    else
+        print_error "GitHub SSH authentication failed"
+        print_info "Please add your SSH key to GitHub: https://github.com/settings/keys"
+        return 1
+    fi
+}
+
+# Get GitHub personal access token
+get_github_token() {
+    echo
+    print_info "GitHub Personal Access Token is required for HTTPS authentication."
+    print_info "Generate one at: https://github.com/settings/tokens"
+    print_info "Required scopes: repo (full control of private repositories)"
+    echo
+    
+    local token
+    read -sp "$(echo -e "${CYAN}Enter GitHub token (input hidden):${NC} ")" token
+    echo
+    
+    if [[ -z "$token" ]]; then
+        print_error "No token provided"
+        return 1
+    fi
+    
+    echo "$token"
+    return 0
+}
+
+# Download via tarball
+download_tarball() {
+    local dest="$1"
+    local branch="${2:-main}"
+    
+    print_status "Downloading tarball from GitHub..."
+    
+    local tarball_url="https://github.com/MasterofNull/Hyper-NixOS/archive/refs/heads/${branch}.tar.gz"
+    local tarball_file="${dest}/hyper-nixos.tar.gz"
+    
+    if command -v curl >/dev/null 2>&1; then
+        if curl -L --progress-bar -o "$tarball_file" "$tarball_url"; then
+            print_success "Tarball downloaded"
+        else
+            print_error "Failed to download tarball"
+            return 1
+        fi
+    elif command -v wget >/dev/null 2>&1; then
+        if wget --show-progress -O "$tarball_file" "$tarball_url"; then
+            print_success "Tarball downloaded"
+        else
+            print_error "Failed to download tarball"
+            return 1
+        fi
+    else
+        print_error "Neither curl nor wget available"
+        return 1
+    fi
+    
+    print_status "Extracting tarball..."
+    mkdir -p "${dest}/hyper-nixos"
+    
+    if tar -xzf "$tarball_file" -C "${dest}/hyper-nixos" --strip-components=1; then
+        print_success "Tarball extracted"
+        rm -f "$tarball_file"
+        return 0
+    else
+        print_error "Failed to extract tarball"
+        return 1
+    fi
+}
+
+# Remote mode: Download repo and run installer
 remote_install() {
     echo
     print_line "=" 70
@@ -193,57 +343,143 @@ remote_install() {
     
     print_status "Starting remote installation..."
     
-    # Ensure git is available
-    ensure_git
-    
     # Create temporary directory
     local tmpdir
     tmpdir=$(mktemp -d -t hyper-nixos-install.XXXXXX)
     trap 'rm -rf "$tmpdir"' EXIT
     
-    print_status "Cloning Hyper-NixOS repository..."
+    # Prompt for download method
+    local download_method
+    download_method=$(prompt_download_method)
     
-    # Clone the repository with progress
-    local repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+    local repo_url
     local clone_output
     clone_output=$(mktemp)
     
-    if [[ -t 1 ]]; then
-        # Terminal: show progress
-        if git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
-           tee "$clone_output" | \
-           grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
-           while read -r percent; do
-               printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
-           done
-        then
-            printf "\r\033[K"  # Clear line
-            print_success "Repository cloned successfully"
-        else
-            printf "\r\033[K"
-            print_error "Failed to clone repository from $repo_url"
-            echo
-            echo "Error details:"
-            tail -n 10 "$clone_output"
-            rm -f "$clone_output"
+    case "$download_method" in
+        1)
+            # HTTPS clone (public)
+            print_status "Using HTTPS clone (public access)..."
+            ensure_git
+            repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+            
+            if [[ -t 1 ]]; then
+                # Terminal: show progress
+                if git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
+                   tee "$clone_output" | \
+                   grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
+                   while read -r percent; do
+                       printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
+                   done
+                then
+                    printf "\r\033[K"  # Clear line
+                    print_success "Repository cloned successfully"
+                else
+                    printf "\r\033[K"
+                    print_error "Failed to clone repository from $repo_url"
+                    echo
+                    echo "Error details:"
+                    tail -n 10 "$clone_output"
+                    rm -f "$clone_output"
+                    exit 1
+                fi
+            else
+                # Non-terminal: quiet clone
+                if ! git clone -q "$repo_url" "$tmpdir/hyper-nixos" 2>"$clone_output"; then
+                    print_error "Failed to clone repository from $repo_url"
+                    echo "Error details:"
+                    cat "$clone_output"
+                    rm -f "$clone_output"
+                    exit 1
+                fi
+                print_success "Repository cloned successfully"
+            fi
+            ;;
+            
+        2)
+            # SSH clone
+            print_status "Using SSH clone (authenticated)..."
+            ensure_git
+            
+            if ! setup_git_ssh; then
+                print_error "SSH setup failed. Falling back to HTTPS..."
+                repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+            else
+                repo_url="git@github.com:MasterofNull/Hyper-NixOS.git"
+            fi
+            
+            print_status "Cloning repository via SSH..."
+            if git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
+               tee "$clone_output" | \
+               grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
+               while read -r percent; do
+                   printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
+               done
+            then
+                printf "\r\033[K"
+                print_success "Repository cloned successfully"
+            else
+                printf "\r\033[K"
+                print_error "Failed to clone repository"
+                tail -n 10 "$clone_output"
+                rm -f "$clone_output"
+                exit 1
+            fi
+            ;;
+            
+        3)
+            # HTTPS with token
+            print_status "Using HTTPS clone with personal access token..."
+            ensure_git
+            
+            local github_token
+            if ! github_token=$(get_github_token); then
+                print_error "Failed to get GitHub token"
+                exit 1
+            fi
+            
+            configure_git_https "$github_token"
+            repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+            
+            print_status "Cloning repository with token authentication..."
+            if GIT_TERMINAL_PROMPT=0 git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
+               tee "$clone_output" | \
+               grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
+               while read -r percent; do
+                   printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
+               done
+            then
+                printf "\r\033[K"
+                print_success "Repository cloned successfully"
+            else
+                printf "\r\033[K"
+                print_error "Failed to clone repository. Check your token permissions."
+                tail -n 10 "$clone_output"
+                rm -f "$clone_output"
+                exit 1
+            fi
+            ;;
+            
+        4)
+            # Tarball download
+            print_status "Using tarball download (no git required)..."
+            
+            if ! download_tarball "$tmpdir"; then
+                print_error "Tarball download failed"
+                exit 1
+            fi
+            ;;
+            
+        *)
+            print_error "Invalid download method"
             exit 1
-        fi
-    else
-        # Non-terminal: quiet clone with error handling
-        if ! git clone -q "$repo_url" "$tmpdir/hyper-nixos" 2>"$clone_output"; then
-            print_error "Failed to clone repository from $repo_url"
-            echo "Error details:"
-            cat "$clone_output"
-            rm -f "$clone_output"
-            exit 1
-        fi
-        print_success "Repository cloned successfully"
-    fi
+            ;;
+    esac
     
     rm -f "$clone_output"
     
     cd "$tmpdir/hyper-nixos" || {
-        print_error "Failed to enter cloned repository directory"
+        print_error "Failed to enter repository directory"
         exit 1
     }
     

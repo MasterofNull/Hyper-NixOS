@@ -29,6 +29,14 @@ sudo ./install.sh
 - ✅ Run the installer with optimal settings
 - ✅ Switch to Hyper-NixOS configuration
 
+> **New in 2025-10-15**: Remote installation now offers multiple download options:
+> - **Git Clone (HTTPS)** - Public access, no authentication
+> - **Git Clone (SSH)** - Authenticated with SSH key (auto-generates if needed)
+> - **Git Clone (Token)** - Authenticated with GitHub personal access token
+> - **Tarball Download** - Fastest option, no git required
+>
+> The installer will prompt you to choose your preferred method.
+
 After installation, the first-boot wizard will help you select the appropriate system tier based on your hardware.
 
 **Advanced Options**: Pass flags to installer: `sudo ./install.sh --reboot --action switch`
