@@ -381,9 +381,11 @@ in
       
       # Only run on first boot
       unitConfig = {
-        ConditionPathExists = "!/var/lib/hypervisor/.first-boot-complete";
-        # Also don't run if custom user config exists
-        ConditionPathExists = "!/etc/nixos/modules/users-local.nix";
+        # Check multiple conditions - both must be true for service to run
+        ConditionPathExists = [
+          "!/var/lib/hypervisor/.first-boot-complete"
+          "!/etc/nixos/modules/users-local.nix"
+        ];
       };
       
       serviceConfig = {
