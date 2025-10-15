@@ -37,13 +37,23 @@
    - Fixed links in `README.md`
    - Updated paths in `scripts/audit/validate-implementation.sh`
 
+**Update**: Further refinement based on user feedback:
+1. **Reverted README.md** to previous correct version (removed documentation path updates)
+2. **Moved essential files to docs/**:
+   - `README.md` → `docs/README_MAIN.md`
+   - `CREDITS.md` → `docs/CREDITS_MAIN.md`
+   - `LICENSE` → `docs/LICENSE_MAIN`
+3. **Created symbolic links** in root directory pointing to docs/ files
+
 **Key Learning**: 
 1. Documentation structure must be strictly enforced:
-   - Root: Only README.md, LICENSE, CREDITS.md
+   - Root: Only symbolic links to essential files
+   - All actual files: In docs/ folder
    - User docs: In docs/ with proper categorization
    - Dev/IP docs: In docs/dev/ (protected content)
 2. Always update references when moving files
 3. No duplicate documentation - single source of truth
+4. Use symlinks for compatibility with tools expecting root files
 
 **Files Modified**:
 - Multiple files moved (see changes above)
