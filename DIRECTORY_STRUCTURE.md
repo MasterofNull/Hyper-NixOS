@@ -106,6 +106,9 @@ Contains:
 - Development history and learnings
 - Architecture documentation
 - Reference repository information
+- **Agent usage guides** (crash prevention)
+
+**Important for AI Agents**: Read `AGENT_QUICK_REFERENCE.md` first to prevent crashes!
 
 **See**: `/docs/dev/README_PROTECTED.md` for access restrictions
 
