@@ -18,6 +18,7 @@
     ./modules/features/feature-manager.nix  # We use hypervisor.featureManager
     ./modules/core/first-boot.nix  # First boot configuration wizard
     ./modules/system-tiers.nix  # System tier definitions
+    ./modules/security/sudo-protection.nix  # Sudo password reset protection
   ] ++ lib.optionals (builtins.pathExists ./modules/users-local.nix) [
     # Import local user configuration if it exists (created by installer)
     ./modules/users-local.nix
