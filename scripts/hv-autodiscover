@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+# Hyper-NixOS Auto-Discovery Tool
+# Discovers libvirt instances and cluster members on the network
+# Inspired by: Pulse auto-discovery architecture
+# Part of Design Ethos - Ease of Use (Pillar 1)
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/logging.sh" 2>/dev/null || {
+    log_info() { echo "[INFO] $*"; }
+    log_warn() { echo "[WARN] $*"; }
+}
+
+# Colors
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly CYAN='\033[0;36m'
+readonly BOLD='\033[1m'
+readonly NC='\033[0m'
+
+# Scan network for libvirt instances
+scan_network() {
+    local subnet=${1:-192.168.1.0/24}
+    local libvirt_port=16509  # libvirt TLS port
+    local alt_port=16514      # libvirt SSH tunnel port
+    
+    echo -e "${YELLOW}Scanning network for libvirt instances...${NC}"
+    echo -e "${CYAN}Subnet: $subnet${NC}\n"
+    
+    local discovered=()
+    
+    # Check if nmap is available
+    if command -v nmap &> /dev/null; then
+        # Fast scan with nmap
+        echo "Using nmap for fast scanning..."
+        local results=$(nmap -p ${libvirt_port},${alt_port} -T4 --open "$subnet" 2>/dev/null | \
+            grep "Nmap scan report" | awk '{print $NF}' | tr -d '()')
+        
+        for ip in $results; do
+            discovered+=("$ip")
+        done
+    else
+        echo "nmap not found, using slower nc scan..."
+        # Fallback: use nc for slower scan
+        # Parse subnet to get range
+        local base_ip=$(echo "$subnet" | cut -d'/' -f1 | cut -d'.' -f1-3)
+        
+        for i in {1..254}; do
+            local ip="${base_ip}.${i}"
+            if nc -z -w1 "$ip" $libvirt_port 2>/dev/null; then
+                discovered+=("$ip")
+            fi
+        done
+    fi
+    
+    echo "${discovered[@]}"
+}
+
+# Probe libvirt instance
+probe_libvirt() {
+    local host=$1
+    
+    echo -e "${YELLOW}Probing $host...${NC}"
+    
+    # Try to connect via virsh
+    if virsh -c "qemu+ssh://root@${host}/system" list --all &> /dev/null; then
+        echo -e "${GREEN}✓${NC} Accessible via SSH"
+        
+        # Get hostname
+        local hostname=$(virsh -c "qemu+ssh://root@${host}/system" hostname 2>/dev/null || echo "$host")
+        
+        # Get VM count
+        local vm_count=$(virsh -c "qemu+ssh://root@${host}/system" list --all 2>/dev/null | grep -c " running\| shut off" || echo "0")
+        
+        echo "  Hostname: $hostname"
+        echo "  VMs: $vm_count"
+        echo ""
+        
+        return 0
+    else
+        echo -e "${YELLOW}⚠${NC} Not accessible (may require SSH key setup)"
+        return 1
+    fi
+}
+
+# Generate configuration for discovered nodes
+generate_config() {
+    local discovered_nodes=("$@")
+    
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗"
+    echo -e "║  ${BOLD}Discovered Nodes Configuration${NC}${CYAN}                       "
+    echo -e "╚════════════════════════════════════════════════════════════╝${NC}\n"
+    
+    local config_file="/etc/hypervisor/discovered-nodes.json"
+    
+    cat > "$config_file" << EOF
+{
+  "discovered_at": "$(date -Iseconds)",
+  "nodes": [
+EOF
+    
+    local first=true
+    for node in "${discovered_nodes[@]}"; do
+        [ "$first" = false ] && echo "," >> "$config_file"
+        first=false
+        
+        cat >> "$config_file" << EOF
+    {
+      "host": "$node",
+      "port": 16509,
+      "protocol": "qemu+ssh",
+      "discovered": true
+    }
+EOF
+    done
+    
+    cat >> "$config_file" << EOF
+
+  ]
+}
+EOF
+    
+    echo -e "${GREEN}✓${NC} Configuration saved to: $config_file"
+    echo ""
+    echo "To add to cluster, run:"
+    echo "  hv cluster add-node <hostname>"
+}
+
+# Main
+main() {
+    local command=${1:-scan}
+    shift || true
+    
+    case "$command" in
+        scan)
+            local subnet=${1:-$(ip route | grep default | awk '{print $3}' | sed 's/\.[0-9]*$/.0\/24/')}
+            local nodes=($(scan_network "$subnet"))
+            
+            if [ ${#nodes[@]} -eq 0 ]; then
+                echo "No libvirt instances discovered"
+                exit 0
+            fi
+            
+            echo -e "${GREEN}Discovered ${#nodes[@]} potential node(s)${NC}\n"
+            
+            for node in "${nodes[@]}"; do
+                probe_libvirt "$node"
+            done
+            
+            if [ ${#nodes[@]} -gt 0 ]; then
+                generate_config "${nodes[@]}"
+            fi
+            ;;
+            
+        probe)
+            if [ $# -eq 0 ]; then
+                echo "Usage: hv-autodiscover probe <host>"
+                exit 1
+            fi
+            probe_libvirt "$1"
+            ;;
+            
+        help|--help|-h)
+            cat << EOF
+Hyper-NixOS Auto-Discovery Tool
+
+Discovers libvirt instances and cluster members on your network.
+
+Usage: hv-autodiscover <command> [options]
+
+Commands:
+  scan [subnet]     Scan network for libvirt instances
+                    Default subnet: auto-detected from default route
+  
+  probe <host>      Probe specific host for libvirt
+  
+  help              Show this help
+
+Examples:
+  # Auto-discover on local network
+  hv-autodiscover scan
+
+  # Scan specific subnet
+  hv-autodiscover scan 10.0.0.0/24
+
+  # Probe specific host
+  hv-autodiscover probe 192.168.1.100
+
+Learned from: Pulse auto-discovery architecture
+EOF
+            ;;
+            
+        *)
+            echo "Unknown command: $command"
+            echo "Run 'hv-autodiscover help' for usage"
+            exit 1
+            ;;
+    esac
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    main "$@"
+fi

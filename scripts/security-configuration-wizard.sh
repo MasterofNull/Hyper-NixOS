@@ -9,6 +9,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/system_discovery.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/ui.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/logging.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/error_handling.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/config_backup.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/dry_run.sh" 2>/dev/null || true
+
+# Setup error handling
+setup_error_trap "security-configuration-wizard.sh"
+
+# Parse dry-run argument
+parse_dry_run_arg "$@"
 
 # Colors
 readonly RED='\033[0;31m'
@@ -224,10 +234,15 @@ EOF
 
 # Main wizard
 main() {
+    log_wizard_start "security-configuration-wizard"
+    dry_run_summary_start
+    
     clear
     echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗"
     echo -e "║  ${BOLD}Hyper-NixOS Security Configuration Wizard${NC}${CYAN}            "
     echo -e "╚════════════════════════════════════════════════════════════╝${NC}\n"
+    
+    is_dry_run && echo -e "${DRY_RUN_COLOR}[DRY RUN MODE]${NC} Preview only - no changes will be made\n"
     
     # Detect current security posture
     echo -e "${YELLOW}Analyzing system security posture...${NC}\n"
@@ -309,9 +324,15 @@ EOF
     echo ""
     echo -e "${YELLOW}Configuring security features for ${BOLD}${selected_level}${NC}${YELLOW} level...${NC}\n"
     
+    # Backup existing configuration
+    if [ -f "$CONFIG_FILE" ]; then
+        backup_config "$CONFIG_FILE" "Pre-security-config backup"
+    fi
+    
     # Create configuration
-    mkdir -p "$(dirname "$CONFIG_FILE")"
-    cat > "$CONFIG_FILE" << EOF
+    dry_run_mkdir "$(dirname "$CONFIG_FILE")"
+    
+    local config_content=$(cat << EOF
 {
   "security_level": "${selected_level}",
   "configured_at": "$(date -Iseconds)",
@@ -389,6 +410,16 @@ FEATURES
   esac)
 }
 EOF
+)
+    
+    # Write configuration (respects dry-run mode)
+    if is_dry_run; then
+        dry_run_show_config "Security Configuration" "$config_content"
+    else
+        safe_write_file "$CONFIG_FILE" "$config_content"
+        log_config_change "$CONFIG_FILE" "security_level" "unknown" "$selected_level"
+        log_audit "security_configured" "$USER" "level=${selected_level}"
+    fi
     
     echo -e "${GREEN}✓${NC} Security configuration saved to $CONFIG_FILE"
     echo -e "${GREEN}✓${NC} Security level: ${BOLD}${selected_level}${NC}"
@@ -403,6 +434,10 @@ EOF
     echo -e "  2. Apply configuration: ${BOLD}nixos-rebuild switch${NC}"
     echo -e "  3. Run security audit: ${BOLD}hv security-audit${NC}"
     echo ""
+    
+    dry_run_summary_end
+    log_wizard_end "security-configuration-wizard" "success"
+    
     echo -e "${GREEN}Security configuration complete!${NC}"
 }
 

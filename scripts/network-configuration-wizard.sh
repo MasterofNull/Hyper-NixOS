@@ -8,6 +8,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/system_discovery.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/logging.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/error_handling.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/config_backup.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/dry_run.sh" 2>/dev/null || true
+
+setup_error_trap "network-configuration-wizard.sh"
+parse_dry_run_arg "$@"
 
 # Colors
 readonly GREEN='\033[0;32m'

@@ -230,6 +230,17 @@ main() {
         defaults-demo|demo)
             cmd_defaults_demo "$@"
             ;;
+        autodiscover|auto-discover)
+            exec "$SCRIPT_DIR/hv-autodiscover" "$@"
+            ;;
+            
+        # Webhooks
+        webhook-config)
+            exec "$SCRIPT_DIR/hv-webhook-config" "$@"
+            ;;
+        send-webhook)
+            hv-send-webhook "$@"
+            ;;
             
         # VM management
         vm)
