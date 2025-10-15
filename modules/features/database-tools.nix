@@ -144,7 +144,7 @@ in
     };
     
     # Database management tools
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       # PostgreSQL tools
     ] ++ lib.optionals cfg.postgresql.enable [
       cfg.postgresql.package

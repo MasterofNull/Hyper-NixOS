@@ -69,7 +69,7 @@ in
   
   config = lib.mkIf cfg.enable {
     # Base development packages
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       # Version control (if enabled)
     ] ++ lib.optionals cfg.versionControl [
       pkgs.git

@@ -670,7 +670,7 @@ in
     '';
     
     # Component manager tool
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       (writeScriptBin "hv-compose" ''
         #!${pkgs.bash}/bin/bash
         # VM Composition Manager

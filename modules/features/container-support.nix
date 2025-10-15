@@ -78,7 +78,7 @@ in
     };
     
     # Container management tools
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       # Core tools
       pkgs.skopeo        # Container image operations
       pkgs.podman-tui    # TUI for podman
