@@ -57,10 +57,22 @@
   # Enable audio support
   # NOTE: These services may not exist in minimal configurations
   # Ensure rtkit and pipewire modules are available before using this example
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    pulse.enable = true;
-  };
+  # Uncomment the following lines if these services are available:
+  
+  # security.rtkit.enable = true;
+  # services.pipewire = {
+  #   enable = true;
+  #   alsa.enable = true;
+  #   pulse.enable = true;
+  # };
+  
+  # Or use conditional configuration (safer):
+  # } // lib.optionalAttrs (config.security ? rtkit) {
+  #   security.rtkit.enable = true;
+  # } // lib.optionalAttrs (config.services ? pipewire) {
+  #   services.pipewire = {
+  #     enable = true;
+  #     alsa.enable = true;
+  #     pulse.enable = true;
+  #   };
 }

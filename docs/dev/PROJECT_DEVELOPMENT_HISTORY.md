@@ -33,8 +33,12 @@ services.auditd.enable = true;
 
 **Files Modified**:
 - `modules/security/credential-chain.nix` - Fixed audit service conditional configuration
+- `modules/gui-local.example.nix` - Commented out rtkit and pipewire services that might not exist
 
-**Key Learning**: When fixing a pattern across multiple files, use grep to ensure ALL instances are caught. The credential-chain module was missed in the previous fix.
+**Key Learning**: 
+1. When fixing a pattern across multiple files, use grep to ensure ALL instances are caught. The credential-chain module was missed in the previous fix.
+2. Example files should have optional services commented out or use conditional patterns to avoid errors when users copy them.
+3. Created `scripts/tools/check-optional-services.sh` to proactively find these issues before build time.
 
 ---
 
