@@ -48,6 +48,38 @@ let
     # Security check: Verify this is truly a first boot scenario
     echo -e "''${GREEN}Performing security checks...''${NC}"
     
+    # Check for credential chain tampering
+    if [[ -f "/var/lib/hypervisor/.tamper-detected" ]]; then
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo -e "''${RED}     SECURITY ALERT: CREDENTIAL TAMPERING DETECTED!             ''${NC}"
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo
+        echo "This system has detected unauthorized changes to credentials."
+        echo "First-boot wizard has been disabled for security."
+        echo
+        echo "Details logged in: /var/lib/hypervisor/.tamper-detected"
+        echo
+        echo "Contact your security administrator immediately."
+        exit 1
+    fi
+    
+    # Check if credentials were migrated
+    if [[ -f "/etc/nixos/modules/users-migrated.nix" ]]; then
+        echo -e "''${GREEN}═══════════════════════════════════════════════════════════════''${NC}"
+        echo -e "''${GREEN}        Credentials Successfully Migrated from Host             ''${NC}"
+        echo -e "''${GREEN}═══════════════════════════════════════════════════════════════''${NC}"
+        echo
+        echo "User credentials have been securely migrated from:"
+        cat /etc/hypervisor/migrated-from 2>/dev/null || echo "Previous system"
+        echo
+        echo "First-boot password setup is not required."
+        echo "Proceeding with system tier configuration only..."
+        echo
+        
+        # Skip password setup, go directly to tier selection
+        SKIP_PASSWORD_SETUP=true
+    fi
+    
     # Check if first boot flag already exists
     if [[ -f "$FIRST_BOOT_FLAG" ]]; then
         echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
@@ -112,14 +144,15 @@ let
         fi
     fi
     
-    # Password security setup
-    echo
-    echo -e "''${BLUE}═══════════════════════════════════════════════════════════════''${NC}"
-    echo -e "''${BLUE}                 Security Configuration                         ''${NC}"
-    echo -e "''${BLUE}═══════════════════════════════════════════════════════════════''${NC}"
-    echo
-    echo "Setting up secure passwords for system users..."
-    echo
+    # Password security setup (skip if credentials were migrated)
+    if [[ "''${SKIP_PASSWORD_SETUP:-false}" != "true" ]]; then
+        echo
+        echo -e "''${BLUE}═══════════════════════════════════════════════════════════════''${NC}"
+        echo -e "''${BLUE}                 Security Configuration                         ''${NC}"
+        echo -e "''${BLUE}═══════════════════════════════════════════════════════════════''${NC}"
+        echo
+        echo "Setting up secure passwords for system users..."
+        echo
     
     # Find all users
     WHEEL_USERS=$(getent group wheel | cut -d: -f4 | tr ',' ' ')
@@ -229,6 +262,8 @@ EOF
     echo "• Passwords expire on next login for security"
     echo "• All sudo operations are logged"
     echo
+    
+    fi  # End of password setup section
     
     # Ask about system tier
     echo -e "''${BLUE}Select your system tier:''${NC}"

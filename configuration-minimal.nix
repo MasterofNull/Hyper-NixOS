@@ -19,6 +19,10 @@
     ./modules/core/first-boot.nix  # First boot configuration wizard
     ./modules/system-tiers.nix  # System tier definitions
     ./modules/security/sudo-protection.nix  # Sudo password reset protection
+    ./modules/security/credential-chain.nix  # Credential migration and tamper detection
+  ] ++ lib.optionals (builtins.pathExists ./modules/users-migrated.nix) [
+    # Import migrated user configuration if it exists (from host system)
+    ./modules/users-migrated.nix
   ] ++ lib.optionals (builtins.pathExists ./modules/users-local.nix) [
     # Import local user configuration if it exists (created by installer)
     ./modules/users-local.nix
@@ -114,8 +118,11 @@
   users = {
     mutableUsers = false;
     
-    # Only define default admin user if installer hasn't created users-local.nix
-    users = lib.optionalAttrs (!(builtins.pathExists ./modules/users-local.nix)) {
+    # Only define default users if no migration or local config exists
+    users = lib.optionalAttrs (
+      !(builtins.pathExists ./modules/users-migrated.nix) &&
+      !(builtins.pathExists ./modules/users-local.nix)
+    ) {
       admin = {
         isNormalUser = true;
         description = "System Administrator";
