@@ -11,7 +11,7 @@ let
   firstBootScript = pkgs.writeScriptBin "first-boot-wizard" ''
     #!${pkgs.bash}/bin/bash
     # First Boot Configuration Wizard
-    # This is a minimal version that ensures the system can be configured
+    # This integrates with the GUI wizard when available
     
     set -euo pipefail
     
