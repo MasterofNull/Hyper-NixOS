@@ -1,154 +1,261 @@
-# First Boot Security Model
+# First Boot Security Guide
 
-## Overview
+## Quick Start: Immediate Security Improvements
 
-Hyper-NixOS uses a secure first-boot configuration system that allows initial setup without pre-configured passwords while maintaining security through multiple protection layers.
+### 1. Move Credential File Out of /tmp
 
-## Security Protections
-
-### 1. **First Boot Detection**
-
-The wizard includes multiple checks to ensure it only runs on truly unconfigured systems:
+Instead of `/tmp/hyper-nixos-creds.enc`, use a secure location:
 
 ```bash
-# Check 1: First boot flag
-if [[ -f "/var/lib/hypervisor/.first-boot-complete" ]]; then
-    # System already configured - EXIT
-fi
+# In installer script, change:
+CRED_FILE="/run/install/hyper-nixos-creds.enc"  # RAM-only location
 
-# Check 2: Custom user configuration
-if [[ -f "/etc/nixos/modules/users-local.nix" ]]; then
-    # Installer already configured users - EXIT
-fi
-
-# Check 3: Existing passwords
-if [[ $USERS_WITH_PASSWORDS -gt 0 ]]; then
-    # Warn and require explicit confirmation
-fi
+# Create secure directory
+mkdir -p /run/install
+chmod 700 /run/install
+mount -t tmpfs -o size=10M,mode=700 tmpfs /run/install
 ```
 
-### 2. **Systemd Service Conditions**
+### 2. Use systemd Credentials (Recommended)
 
-The service won't start if:
-- First boot flag exists (`ConditionPathExists = "!/var/lib/hypervisor/.first-boot-complete"`)
-- Custom user config exists (`ConditionPathExists = "!/etc/nixos/modules/users-local.nix"`)
-
-### 3. **One-Time Execution**
-
-Once run successfully:
-- Creates `/var/lib/hypervisor/.first-boot-complete` flag
-- Disables `hypervisor.firstBoot.autoStart` in configuration
-- Service won't run again even after reboot
-
-### 4. **TTY-Only Execution**
-
-- Requires physical or console access (TTY)
-- Cannot be run over SSH or remote connections
-- Prevents remote exploitation
-
-## Configuration Flow
-
-```
-System Boot
-    ↓
-Check Conditions:
-- No first-boot flag?
-- No users-local.nix?
-- allowNoPasswordLogin = true?
-    ↓ All Yes
-Start First Boot Wizard
-    ↓
-Security Checks:
-- Already configured? → EXIT
-- Passwords exist? → WARN
-    ↓
-Set Admin Passwords
-    ↓
-Configure System Tier
-    ↓
-Create Completion Flag
-    ↓
-Normal Operation
-```
-
-## Security Considerations
-
-### Why This is Safe
-
-1. **Physical Access Required**: TTY-only prevents remote attacks
-2. **Multiple Guards**: Several checks prevent re-execution
-3. **Explicit Flag**: `allowNoPasswordLogin` must be explicitly set
-4. **Limited Window**: Only works on first boot
-5. **Audit Trail**: All actions logged to systemd journal
-
-### Potential Risks & Mitigations
-
-| Risk | Mitigation |
-|------|------------|
-| Someone boots unconfigured system | Physical security, BIOS passwords |
-| Flag file deleted | Wizard checks for existing passwords |
-| Service re-enabled | Multiple condition checks |
-| Remote exploitation | TTY-only requirement |
-
-## Best Practices
-
-### For Deployment
-
-1. **Pre-configure when possible**: Use installer with users-local.nix
-2. **Physical security**: Secure server rooms during initial setup
-3. **Quick configuration**: Run setup immediately after installation
-4. **Remove after setup**: Consider removing `allowNoPasswordLogin` after configuration
-
-### For Production
+For NixOS 23.11+, use systemd's built-in credential encryption:
 
 ```nix
-# After first boot, consider updating configuration:
-users = {
-  mutableUsers = false;
-  # allowNoPasswordLogin = true;  # Comment out or remove
+# In your first-boot service
+systemd.services.hypervisor-first-boot = {
+  serviceConfig = {
+    # Credentials are automatically encrypted at rest
+    LoadCredential = [
+      "admin-password:/run/install/admin.cred"
+    ];
+  };
+  
+  script = ''
+    # Access decrypted credential in service
+    ADMIN_HASH=$(cat "$CREDENTIALS_DIRECTORY/admin-password")
+  '';
 };
 ```
 
-## Manual Override
+### 3. Minimal Secure Password Function
 
-If you need to reconfigure the system tier later:
-
-```bash
-# Safe reconfiguration tool
-sudo /etc/hypervisor/bin/reconfigure-tier
-```
-
-This tool:
-- Requires sudo authentication
-- Prompts for confirmation
-- Doesn't bypass password requirements
-
-## Comparison with Alternatives
-
-| Method | Security | Convenience | Use Case |
-|--------|----------|-------------|----------|
-| Pre-set password in config | Low (visible in git) | High | Development only |
-| Cloud-init | Medium | High | Cloud deployments |
-| Manual post-install | High | Low | High-security environments |
-| **First-boot wizard** | **High** | **High** | **Recommended** |
-
-## Audit Logging
-
-All first-boot activities are logged:
+Add this to your first-boot script:
 
 ```bash
-# View first-boot logs
-journalctl -u hypervisor-first-boot
-
-# Check if first-boot was completed
-ls -la /var/lib/hypervisor/.first-boot-complete
+secure_password_prompt() {
+    local user="$1"
+    local password=""
+    local password_confirm=""
+    
+    while true; do
+        # Disable echo
+        read -s -p "Enter password for $user: " password
+        echo
+        read -s -p "Confirm password: " password_confirm
+        echo
+        
+        # Basic validation
+        if [[ "$password" != "$password_confirm" ]]; then
+            echo "Passwords don't match!" >&2
+            continue
+        fi
+        
+        if [[ ${#password} -lt 12 ]]; then
+            echo "Password must be at least 12 characters!" >&2
+            continue
+        fi
+        
+        # Check for common passwords
+        if [[ "$password" =~ (password|admin|user|123456) ]]; then
+            echo "Password too common!" >&2
+            continue
+        fi
+        
+        break
+    done
+    
+    # Generate hash with high rounds
+    echo -n "$password" | mkpasswd -m sha-512 -R 100000
+}
 ```
 
-## Summary
+### 4. Console-Only First Boot
 
-The first-boot security model provides a balance between:
-- **Security**: Multiple protection layers prevent misuse
-- **Usability**: No need to pre-configure passwords
-- **Flexibility**: Works with various deployment methods
+Prevent SSH during first boot:
 
-This approach aligns with Hyper-NixOS's two-phase security model: permissive during setup, hardened for production.
+```nix
+systemd.services.hypervisor-first-boot = {
+  serviceConfig = {
+    # ... existing config ...
+    
+    # Add environment check
+    Environment = "FIRST_BOOT_SECURE=1";
+  };
+  
+  preStart = ''
+    # Refuse to run over SSH
+    if [[ -n "''${SSH_CONNECTION:-}" ]]; then
+      echo "First boot must be run from console, not SSH!" >&2
+      exit 1
+    fi
+  '';
+};
+```
+
+### 5. Time-Limited First Boot
+
+Only allow first boot within 1 hour of installation:
+
+```bash
+# In first-boot script
+check_time_window() {
+    local install_time=$(stat -c %Y /etc/machine-id 2>/dev/null || echo 0)
+    local current_time=$(date +%s)
+    local elapsed=$((current_time - install_time))
+    
+    # 3600 seconds = 1 hour
+    if [[ $elapsed -gt 3600 ]]; then
+        echo "First boot time window expired!" >&2
+        echo "Manual setup required - contact administrator" >&2
+        exit 1
+    fi
+}
+```
+
+## Complete Example Integration
+
+Here's how to integrate these improvements into your existing first-boot.nix:
+
+```nix
+{ config, lib, pkgs, ... }:
+let
+  # Secure first boot script with improvements
+  secureFirstBootScript = pkgs.writeScriptBin "first-boot-wizard" ''
+    #!${pkgs.bash}/bin/bash
+    set -euo pipefail
+    
+    # Security checks
+    if [[ $EUID -ne 0 ]]; then
+        echo "Must run as root!" >&2
+        exit 1
+    fi
+    
+    if [[ -n "''${SSH_CONNECTION:-}" ]]; then
+        echo "Must run from console, not SSH!" >&2
+        exit 1
+    fi
+    
+    # Time window check (1 hour from install)
+    INSTALL_TIME=$(stat -c %Y /etc/machine-id 2>/dev/null || echo 0)
+    CURRENT_TIME=$(date +%s)
+    if [[ $((CURRENT_TIME - INSTALL_TIME)) -gt 3600 ]]; then
+        echo "First boot window expired!" >&2
+        exit 1
+    fi
+    
+    # Secure password function
+    secure_password() {
+        local user="$1"
+        local pass=""
+        local confirm=""
+        
+        while true; do
+            read -s -p "Password for $user: " pass
+            echo
+            read -s -p "Confirm: " confirm
+            echo
+            
+            [[ "$pass" != "$confirm" ]] && echo "Mismatch!" && continue
+            [[ ''${#pass} -lt 12 ]] && echo "Too short!" && continue
+            [[ "$pass" =~ (password|admin|123) ]] && echo "Too common!" && continue
+            
+            break
+        done
+        
+        echo -n "$pass" | ${pkgs.mkpasswd}/bin/mkpasswd -m sha-512 -R 100000
+    }
+    
+    # Create admin securely
+    echo "Creating admin user..."
+    HASH=$(secure_password "admin")
+    
+    # Write config to secure location (not /tmp!)
+    cat > /run/admin-config.nix <<EOF
+    { config, lib, pkgs, ... }:
+    {
+      users.users.admin = {
+        isNormalUser = true;
+        extraGroups = [ "wheel" "libvirtd" "kvm" ];
+        hashedPassword = "$HASH";
+      };
+    }
+    EOF
+    
+    # Move to final location
+    mv /run/admin-config.nix /etc/nixos/admin-config.nix
+    chmod 600 /etc/nixos/admin-config.nix
+    
+    # ... rest of setup ...
+  '';
+in
+{
+  # ... your existing configuration ...
+  
+  # Use the secure script
+  environment.systemPackages = [ secureFirstBootScript ];
+}
+```
+
+## Additional Recommendations
+
+### For High Security Environments
+
+1. **Use Hardware Security Module (HSM)**:
+   ```nix
+   # Require FIDO2 key for admin
+   security.pam.u2f = {
+     enable = true;
+     control = "required";
+   };
+   ```
+
+2. **Enable Secure Boot**:
+   ```nix
+   boot.loader.systemd-boot.enable = true;
+   boot.loader.efi.canTouchEfiVariables = true;
+   boot.initrd.systemd.enable = true;  # For TPM2 support
+   ```
+
+3. **Use TPM2 for Credential Sealing**:
+   ```bash
+   # Seal password to TPM2 PCRs
+   echo -n "$PASSWORD_HASH" | systemd-creds encrypt \
+     --tpm2-device=auto --tpm2-pcrs=0,7 \
+     - /etc/credstore/admin.cred
+   ```
+
+### For Standard Deployments
+
+The minimal improvements above provide good security:
+- ✅ No credentials in world-readable locations
+- ✅ Strong password requirements
+- ✅ Console-only first boot
+- ✅ Time-limited setup window
+- ✅ High-cost password hashing
+
+## Testing Your Implementation
+
+```bash
+# Test password validation
+echo "weak" | secure_password_prompt "test" # Should fail
+echo "StrongP@ssw0rd123!" | secure_password_prompt "test" # Should succeed
+
+# Test SSH rejection
+SSH_CONNECTION="test" ./first-boot-wizard # Should fail
+
+# Test time window
+touch -t 202501010000 /etc/machine-id # Set old timestamp
+./first-boot-wizard # Should fail due to expired window
+```
+
+Remember: Security is about layers. Even implementing just the basic improvements significantly enhances your first boot security.

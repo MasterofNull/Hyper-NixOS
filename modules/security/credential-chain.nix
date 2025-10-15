@@ -21,33 +21,33 @@ let
         local passwd_hash=$(sha512sum /etc/passwd | cut -d' ' -f1)
         local machine_id=$(cat /etc/machine-id)
         
-        echo -n "${shadow_hash}:${passwd_hash}:${machine_id}" | sha512sum | cut -d' ' -f1
+        echo -n "''${shadow_hash}:''${passwd_hash}:''${machine_id}" | sha512sum | cut -d' ' -f1
     }
     
     # Check if credentials have been tampered with
     check_integrity() {
-        if [[ ! -f "$HASH_FILE" ]]; then
+        if [[ ! -f "''$HASH_FILE" ]]; then
             echo "No credential hash found - first boot allowed"
             return 0
         fi
         
-        local stored_hash=$(cat "$HASH_FILE")
+        local stored_hash=$(cat "''$HASH_FILE")
         local current_hash=$(compute_system_hash)
         
         if [[ "$stored_hash" != "$current_hash" ]]; then
             echo "SECURITY ALERT: Credential tampering detected!"
             
             # Create tamper flag
-            mkdir -p "$(dirname "$TAMPER_FLAG")"
-            cat > "$TAMPER_FLAG" <<EOF
+            mkdir -p "$(dirname "''$TAMPER_FLAG")"
+            cat > "''$TAMPER_FLAG" <<EOF
     Tamper detected at: $(date -Iseconds)
-    Expected hash: $stored_hash
-    Current hash: $current_hash
+    Expected hash: ''$stored_hash
+    Current hash: ''$current_hash
     EOF
             
             # Log security event
-            mkdir -p "$(dirname "$SECURITY_LOG")"
-            echo "[$(date -Iseconds)] SECURITY: Credential tamper detected" >> "$SECURITY_LOG"
+            mkdir -p "$(dirname "''$SECURITY_LOG")"
+            echo "[$(date -Iseconds)] SECURITY: Credential tamper detected" >> "''$SECURITY_LOG"
             
             return 1
         fi
@@ -63,14 +63,14 @@ let
             ;;
         update)
             # Only allow update in specific conditions
-            if [[ -f "$TAMPER_FLAG" ]]; then
+            if [[ -f "''$TAMPER_FLAG" ]]; then
                 echo "ERROR: Cannot update hash - tamper flag is set"
                 exit 1
             fi
             
             echo "Updating credential hash..."
-            compute_system_hash > "$HASH_FILE"
-            chmod 600 "$HASH_FILE"
+            compute_system_hash > "''$HASH_FILE"
+            chmod 600 "''$HASH_FILE"
             echo "Hash updated"
             ;;
         *)
@@ -96,7 +96,7 @@ let
     readonly NC='\033[0m'
     
     import_credentials() {
-        if [[ ! -f "$CRED_FILE" ]]; then
+        if [[ ! -f "''$CRED_FILE" ]]; then
             echo "No credential package found"
             return 1
         fi
@@ -104,7 +104,7 @@ let
         echo -e "''${YELLOW}Importing host credentials...''${NC}"
         
         # Decode the package
-        local package=$(base64 -d "$CRED_FILE")
+        local package=$(base64 -d "''$CRED_FILE")
         
         # Extract user information
         local username=$(echo "$package" | ${pkgs.jq}/bin/jq -r '.credentials.username')
@@ -130,45 +130,45 @@ let
         # Create user configuration
         cat > /etc/nixos/modules/users-migrated.nix <<EOF
     # Automatically generated from host system migration
-    # Migrated from: $migrated_from
+    # Migrated from: ''$migrated_from
     # Migration date: $(date -Iseconds)
     
     { config, lib, pkgs, ... }:
     
     {
-      users.users.$username = {
+      users.users.''$username = {
         isNormalUser = true;
-        description = "Migrated from $migrated_from";
-        hashedPassword = "$password_hash";
-        extraGroups = [ $(echo "$groups" | sed 's/ /", "/g' | sed 's/^/"/; s/$/"/') ];
+        description = "Migrated from ''$migrated_from";
+        hashedPassword = "''$password_hash";
+        extraGroups = [ ''$(echo "''$groups" | sed 's/ /", "/g' | sed 's/^/"/; s/$/"/') ];
       };
       
       # Mark that we have migrated credentials
-      environment.etc."hypervisor/migrated-from".text = "$migrated_from";
+      environment.etc."hypervisor/migrated-from".text = "''$migrated_from";
     }
     EOF
         
         # Create initial credential hash
-        mkdir -p "$(dirname "$HASH_FILE")"
+        mkdir -p "$(dirname "''$HASH_FILE")"
         ${credentialVerifier}/bin/verify-credentials update
         
         # Log the import
-        mkdir -p "$(dirname "$IMPORT_LOG")"
-        echo "[$(date -Iseconds)] Imported credentials for $username from $migrated_from" >> "$IMPORT_LOG"
+        mkdir -p "$(dirname "''$IMPORT_LOG")"
+        echo "[''$(date -Iseconds)] Imported credentials for ''$username from ''$migrated_from" >> "''$IMPORT_LOG"
         
         # Secure cleanup
-        shred -u "$CRED_FILE" 2>/dev/null || rm -f "$CRED_FILE"
+        shred -u "''$CRED_FILE" 2>/dev/null || rm -f "''$CRED_FILE"
         
         echo -e "''${GREEN}✓ Credentials imported successfully''${NC}"
-        echo "  User: $username"
-        echo "  Groups: $groups"
-        echo "  Source: $migrated_from"
+        echo "  User: ''$username"
+        echo "  Groups: ''$groups"
+        echo "  Source: ''$migrated_from"
         
         return 0
     }
     
     # Main
-    if [[ $EUID -ne 0 ]]; then
+    if [[ ''$EUID -ne 0 ]]; then
         echo "This script must be run as root"
         exit 1
     fi
