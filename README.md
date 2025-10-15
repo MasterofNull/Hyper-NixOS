@@ -220,7 +220,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ### Development Setup
 ```bash
 # Fork and clone
-git clone https://github.com/yourusername/hyper-nixos.git
+git clone https://github.com/MasterofNull/Hyper-NixOS.git
 cd hyper-nixos
 
 # Create development environment
@@ -265,108 +265,11 @@ Built with ❤️ using:
 
 ## 📞 Support
 
-- 📖 [Documentation](https://hyper-nixos.org)
-- 💬 [Discussions](https://github.com/yourusername/hyper-nixos/discussions)
-- 🐛 [Issue Tracker](https://github.com/yourusername/hyper-nixos/issues)
-- 💼 [Commercial Support](https://hyper-nixos.org/support)
+- 📖 [Documentation](docs/)
+- 💬 [Discussions](https://github.com/MasterofNull/Hyper-NixOS/discussions)
+- 🐛 [Issue Tracker](https://github.com/MasterofNull/Hyper-NixOS/issues)
+- 💼 [Commercial Support](https://github.com/MasterofNull/Hyper-NixOS)
 
 ---
 
 **Ready to revolutionize your infrastructure? [Get started now!](DEPLOYMENT.md)**
----
-
-## 📄 License and Attribution
-
-### Hyper-NixOS License
-
-**Hyper-NixOS** is licensed under the **MIT License**.
-
-```
-Copyright (c) 2024-2025 MasterofNull
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-```
-
-See [LICENSE](LICENSE) for the complete MIT License text.
-
-### Third-Party Components
-
-Hyper-NixOS integrates many excellent open source projects:
-
-**Core Stack**:
-- **NixOS** (MIT) - Operating system foundation
-- **QEMU/KVM** (GPL-2.0) - Virtualization engine
-- **Libvirt** (LGPL-2.1+) - Virtualization management
-- **SystemD** (LGPL-2.1+) - Service management
-
-**Monitoring**:
-- **Prometheus** (Apache 2.0) - Metrics collection
-- **Grafana** (AGPL-3.0) - Visualization
-- **Node Exporter** (Apache 2.0) - System metrics
-
-**Security**:
-- **AppArmor** (GPL-2.0) - Mandatory access control
-- **PolicyKit** (LGPL-2.1+) - Authorization framework
-
-And many more! See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for the complete list.
-
-### Documentation
-
-For comprehensive licensing information:
-- **[LICENSE](LICENSE)** - Hyper-NixOS MIT License
-- **[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)** - All dependency licenses
-- **[CREDITS.md](CREDITS.md)** - Project attributions
-- **[docs/LICENSING_ATTRIBUTION_GUIDE.md](docs/LICENSING_ATTRIBUTION_GUIDE.md)** - Developer guide
-
-### Compliance
-
-All components are used in compliance with their respective licenses:
-- GPL/LGPL components: Used as system programs/libraries without modification
-- Apache 2.0 components: Properly attributed
-- AGPL components: Used unmodified from nixpkgs
-- Source code available through nixpkgs
-
-**We respect and acknowledge all upstream open source contributions.**
-
----
-
-## 🙏 Acknowledgments
-
-Hyper-NixOS would not be possible without the incredible work of:
-
-- **NixOS Community** - For the amazing distribution
-- **QEMU/KVM Developers** - For virtualization technology
-- **Libvirt Team** - For the management layer
-- **Prometheus & Grafana Teams** - For monitoring tools
-- **Linux Kernel Developers** - For KVM and security modules
-- **All open source contributors** - For making this possible
-
-See [CREDITS.md](CREDITS.md) for complete acknowledgments.
-
-**Thank you to the open source community! 🎉**
-
----
-
-## 📞 Contact
-
-- **Project**: Hyper-NixOS
-- **Lead**: MasterofNull
-- **Repository**: https://github.com/MasterofNull/Hyper-NixOS
-- **License**: MIT License
-
-For licensing questions, see our [documentation](docs/LICENSING_ATTRIBUTION_GUIDE.md).
-
----
-
-**© 2024-2025 MasterofNull and Contributors**  
-**Licensed under the MIT License**
-
-*Built with ❤️ and open source*
