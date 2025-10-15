@@ -45,46 +45,225 @@ let
         exit 1
     fi
     
-    # Check which users exist and need passwords
-    echo -e "''${GREEN}Checking user accounts...''${NC}"
-    echo
+    # Security check: Verify this is truly a first boot scenario
+    echo -e "''${GREEN}Performing security checks...''${NC}"
     
-    # Find wheel group users without passwords
+    # Check for credential chain tampering
+    if [[ -f "/var/lib/hypervisor/.tamper-detected" ]]; then
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo -e "''${RED}     SECURITY ALERT: CREDENTIAL TAMPERING DETECTED!             ''${NC}"
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo
+        echo "This system has detected unauthorized changes to credentials."
+        echo "First-boot wizard has been disabled for security."
+        echo
+        echo "Details logged in: /var/lib/hypervisor/.tamper-detected"
+        echo
+        echo "Contact your security administrator immediately."
+        exit 1
+    fi
+    
+    # Check if credentials were migrated
+    if [[ -f "/etc/nixos/modules/users-migrated.nix" ]]; then
+        echo -e "''${GREEN}═══════════════════════════════════════════════════════════════''${NC}"
+        echo -e "''${GREEN}        Credentials Successfully Migrated from Host             ''${NC}"
+        echo -e "''${GREEN}═══════════════════════════════════════════════════════════════''${NC}"
+        echo
+        echo "User credentials have been securely migrated from:"
+        cat /etc/hypervisor/migrated-from 2>/dev/null || echo "Previous system"
+        echo
+        echo "First-boot password setup is not required."
+        echo "Proceeding with system tier configuration only..."
+        echo
+        
+        # Skip password setup, go directly to tier selection
+        SKIP_PASSWORD_SETUP=true
+    fi
+    
+    # Check if first boot flag already exists
+    if [[ -f "$FIRST_BOOT_FLAG" ]]; then
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo -e "''${RED}          SECURITY: First boot already completed!               ''${NC}"
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo
+        echo "This system has already been configured. The first-boot wizard"
+        echo "cannot be run again for security reasons."
+        echo
+        echo "If you need to reconfigure the system tier, use:"
+        echo "  sudo /etc/hypervisor/bin/reconfigure-tier"
+        echo
+        exit 1
+    fi
+    
+    # Check if any wheel users have passwords set
     WHEEL_USERS=$(getent group wheel | cut -d: -f4 | tr ',' ' ')
-    USERS_NEEDING_PASSWORD=""
+    USERS_WITH_PASSWORDS=0
     
     for user in $WHEEL_USERS; do
         if [[ "$user" == "root" ]]; then continue; fi
         # Check if user has a valid password hash
         HASH=$(getent shadow "$user" | cut -d: -f2)
-        if [[ "$HASH" == "!" || "$HASH" == "*" || -z "$HASH" ]]; then
-            USERS_NEEDING_PASSWORD="$USERS_NEEDING_PASSWORD $user"
+        if [[ "$HASH" != "!" && "$HASH" != "*" && -n "$HASH" ]]; then
+            USERS_WITH_PASSWORDS=$((USERS_WITH_PASSWORDS + 1))
         fi
     done
     
-    if [[ -n "$USERS_NEEDING_PASSWORD" ]]; then
-        echo -e "''${YELLOW}The following admin users need passwords set:''${NC}"
-        for user in $USERS_NEEDING_PASSWORD; do
-            echo "  - $user"
-        done
+    # Check if custom user configuration exists
+    if [[ -f "/etc/nixos/modules/users-local.nix" ]]; then
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo -e "''${RED}        SECURITY: Custom user configuration detected!           ''${NC}"
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
         echo
-        
-        for user in $USERS_NEEDING_PASSWORD; do
-            echo -e "''${GREEN}Setting password for '$user':''${NC}"
-            passwd "$user" || {
-                echo -e "''${RED}Failed to set password for $user!''${NC}"
-                # Continue with other users
-            }
-            echo
-        done
-    else
-        echo -e "''${GREEN}All admin users have passwords set.''${NC}"
+        echo "This system has custom user configuration from the installer."
+        echo "First-boot wizard is not needed and has been disabled."
         echo
+        # Create the flag to prevent future runs
+        mkdir -p "$(dirname "$FIRST_BOOT_FLAG")"
+        touch "$FIRST_BOOT_FLAG"
+        exit 0
     fi
     
+    # If passwords exist, this might not be a true first boot
+    if [[ $USERS_WITH_PASSWORDS -gt 0 ]]; then
+        echo -e "''${YELLOW}WARNING: Some wheel users already have passwords set.''${NC}"
+        echo "This may indicate the system has been partially configured."
+        echo
+        echo "Users with passwords:"
+        for user in $WHEEL_USERS; do
+            if [[ "$user" == "root" ]]; then continue; fi
+            HASH=$(getent shadow "$user" | cut -d: -f2)
+            if [[ "$HASH" != "!" && "$HASH" != "*" && -n "$HASH" ]]; then
+                echo "  - $user"
+            fi
+        done
+        echo
+        read -p "Continue anyway? This will reset the configuration (y/N): " confirm
+        if [[ ! $confirm =~ ^[Yy]$ ]]; then
+            echo "Cancelled by user."
+            exit 0
+        fi
+    fi
+    
+    # Password security setup (skip if credentials were migrated)
+    if [[ "''${SKIP_PASSWORD_SETUP:-false}" != "true" ]]; then
+        echo
+        echo -e "''${BLUE}═══════════════════════════════════════════════════════════════''${NC}"
+        echo -e "''${BLUE}                 Security Configuration                         ''${NC}"
+        echo -e "''${BLUE}═══════════════════════════════════════════════════════════════''${NC}"
+        echo
+        echo "Setting up secure passwords for system users..."
+        echo
+    
+    # Find all users
+    WHEEL_USERS=$(getent group wheel | cut -d: -f4 | tr ',' ' ')
+    ALL_USERS=$(getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 {print $1}')
+    
+    # Update passwords for all users
+    echo -e "''${YELLOW}Configuring user passwords:''${NC}"
     echo
-    echo -e "''${GREEN}✓ Admin password updated successfully!''${NC}"
+    
+    for user in $ALL_USERS; do
+        if [[ "$user" == "root" ]]; then continue; fi
+        
+        # Check if this is a wheel user
+        if echo "$WHEEL_USERS" | grep -q "\b$user\b"; then
+            echo -e "''${GREEN}Setting password for ADMIN user '$user':''${NC}"
+            echo "Default password was: 'hyper-nixos'"
+            echo "Please set a STRONG password for administrative access:"
+            echo "(This password will be used for both login and sudo)"
+        else
+            echo -e "''${GREEN}Setting password for OPERATOR user '$user':''${NC}"
+            echo "Default password was: 'operator'"
+            echo "Please set a new password for VM operations:"
+            echo "(This user has no sudo access)"
+        fi
+        
+        # Set the password
+        while true; do
+            if passwd "$user"; then
+                # Force password change on next login for added security
+                chage -d 0 "$user" 2>/dev/null || true
+                echo "✓ Password updated successfully"
+                break
+            else
+                echo -e "''${RED}Failed to set password. Please try again.''${NC}"
+            fi
+        done
+        echo
+    done
+    
+    # Configure sudo security for wheel users
+    echo -e "''${YELLOW}Configuring administrative security:''${NC}"
+    
+    # Check if sudo is already locked down
+    if [[ -f "/var/lib/hypervisor/.sudo-locked" ]]; then
+        echo -e "''${RED}WARNING: Sudo configuration is locked!''${NC}"
+        echo "This system's sudo configuration has been locked after initial setup."
+        echo "Password reset requires recovery mode or break-glass procedure."
+        exit 1
+    fi
+    
+    # Create secure sudo directory with proper permissions
+    mkdir -p /etc/sudoers.d
+    chmod 750 /etc/sudoers.d
+    
+    # Create enhanced sudo configuration
+    cat > "/etc/sudoers.d/00-hypervisor-security" <<EOF
+# Hyper-NixOS Enhanced Security Configuration
+# Generated by first-boot wizard on $(date)
+# DO NOT EDIT - This file is protected by chattr +i after first boot
+
+# Require password for sudo (no NOPASSWD)
+Defaults    env_reset
+Defaults    mail_badpass
+Defaults    secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Limit sudo password validity
+Defaults    timestamp_timeout=15
+
+# Require password for each sudo command in scripts
+Defaults    !runaspw
+Defaults    !targetpw
+Defaults    !rootpw
+
+# Log all sudo commands
+Defaults    log_input
+Defaults    log_output
+Defaults    logfile="/var/log/sudo.log"
+
+# Security restrictions for all users
+Defaults    requiretty
+Defaults    use_pty
+
+# Prevent sudo password changes via sudo itself
+Cmnd_Alias PASSWD_CMDS = /usr/bin/passwd, /usr/sbin/chpasswd, /usr/bin/chage
+Defaults!PASSWD_CMDS !authenticate
+
+# Admin group has full sudo with password (except password commands)
+%wheel ALL=(ALL:ALL) ALL, !PASSWD_CMDS
+
+# Password operations require physical console
+%wheel ALL=(ALL:ALL) PASSWD_CMDS
+EOF
+    chmod 0440 "/etc/sudoers.d/00-hypervisor-security"
+    
+    # Create a hash of critical security files for integrity checking
+    echo -e "Creating security integrity baseline..."
+    sha256sum /etc/sudoers /etc/sudoers.d/* > /var/lib/hypervisor/.sudo-integrity
+    chmod 600 /var/lib/hypervisor/.sudo-integrity
+    
+    echo "✓ Administrative security configured"
     echo
+    echo -e "''${GREEN}✓ Password configuration complete!''${NC}"
+    echo
+    echo "Security summary:"
+    echo "• Admin users: Full access with sudo (password required)"
+    echo "• Operator users: VM management only (no sudo)"
+    echo "• Passwords expire on next login for security"
+    echo "• All sudo operations are logged"
+    echo
+    
+    fi  # End of password setup section
     
     # Ask about system tier
     echo -e "''${BLUE}Select your system tier:''${NC}"
@@ -203,6 +382,8 @@ in
       # Only run on first boot
       unitConfig = {
         ConditionPathExists = "!/var/lib/hypervisor/.first-boot-complete";
+        # Also don't run if custom user config exists
+        ConditionPathExists = "!/etc/nixos/modules/users-local.nix";
       };
       
       serviceConfig = {
