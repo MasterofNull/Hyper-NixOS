@@ -1,6 +1,5 @@
-# Hyper-NixOS Minimal Configuration
-# This demonstrates the proper minimal configuration pattern
-# Only imports what is actually used in this file
+# Hyper-NixOS Minimal Configuration - RECOVERY VERSION
+# This configuration ensures you can log in to fix the system
 
 { config, lib, pkgs, ... }:
 
@@ -96,32 +95,45 @@
   services.openssh = {
     enable = true;
     settings = {
-      PasswordAuthentication = false;
-      PermitRootLogin = "no";
+      # TEMPORARILY allow password auth for recovery
+      PasswordAuthentication = true;
+      PermitRootLogin = "yes";
     };
   };
   
   services.chrony.enable = true;
   
-  # Users
+  # Users - FIXED for recovery
   users = {
-    mutableUsers = false;
+    # Allow changing passwords
+    mutableUsers = true;
+    
+    users.root = {
+      # Set a temporary password for recovery
+      # Password is "recovery" - CHANGE THIS IMMEDIATELY
+      hashedPassword = "$6$rounds=100000$temp.recovery$7M0CpBVZJ4VxBZwGXJKXh4Nk8PFYBCmqHsBXz/qGZpD6h.LMzwKByYxBqP5vqI8wW7J/z0q2qVWkZw4Oq0EZ80";
+    };
     
     users.admin = {
       isNormalUser = true;
       description = "System Administrator";
       extraGroups = [ "wheel" "libvirtd" "kvm" ];
-      # IMPORTANT: Set one of these to avoid being locked out:
-      
-      # Option 1: Set initial password (recommended for first boot)
-      # Generate with: mkpasswd -m sha-512
-      # Default password "changeme" - MUST be changed on first login
-      hashedPassword = "$6$rounds=10000$changeme$3VfUkYX5tHSZrgqmQH5z5gkLTKCw1N0e4A7cFaHnqKwYOt8lJ5xfDJPKoGupW.8nKmZM5vnkGYz0R9XoYqJlM0";
-      
-      # Option 2: SSH public key (for remote access)
-      # openssh.authorizedKeys.keys = [
-      #   "ssh-rsa AAAAB3... your-key"
-      # ];
+      # Password is "admin" - CHANGE THIS IMMEDIATELY
+      hashedPassword = "$6$rounds=100000$temp.admin$eSptaOnhJQHXg8YpmXEW5WhfLBq0pGdaK3V.4QJ8o47kKlDh.vg7tYvyPXH2zU7Xl5nShZyWYvM5hH0LgUjH91";
+    };
+  };
+  
+  # Create a recovery service that shows on console
+  systemd.services.recovery-info = {
+    description = "Show recovery login info";
+    after = [ "multi-user.target" ];
+    wantedBy = [ "multi-user.target" ];
+    
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      StandardOutput = "journal+console";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'echo \"RECOVERY MODE: Login with user 'admin' password 'admin' or root password 'recovery'\"'";
     };
   };
   

@@ -58,9 +58,17 @@ in
       };
       
       # Run after basic system is up but before login
-      after = [ "multi-user.target" ];
-      before = [ "getty.target" ];
+      after = [ "sysinit.target" "systemd-user-sessions.service" ];
+      before = [ "getty.target" "display-manager.service" ];
+      wants = [ "systemd-user-sessions.service" ];
       wantedBy = [ "multi-user.target" ];
+      
+      # Ensure it runs on TTY1
+      conflicts = [ "getty@tty1.service" ];
+      unitConfig.ConditionPathExists = [
+        "!/var/lib/hypervisor/.first-boot-complete"
+        "/dev/tty1"
+      ];
     };
     
     # Also provide a manual way to run the wizard
