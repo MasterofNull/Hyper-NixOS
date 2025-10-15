@@ -1,7 +1,7 @@
 # Hyper-NixOS System Configuration Tiers
 # Defines different system configuration levels from minimal to full-featured
 
-{ lib, ... }:
+{ config, lib, ... }:
 
 let
   inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
