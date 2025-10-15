@@ -193,8 +193,8 @@ After installation, the system boots to an interactive menu:
 
 - `/etc/nixos/flake.nix` - Symlink to main flake
 - `/etc/hypervisor/src/flake.nix` - Main configuration
-- `/etc/hypervisor/configuration/users-local.nix` - Your users
-- `/etc/hypervisor/configuration/system-local.nix` - System settings
+- `/var/lib/hypervisor/configuration/users-local.nix` - Your users
+- `/var/lib/hypervisor/configuration/system-local.nix` - System settings
 
 ---
 
@@ -240,7 +240,7 @@ sudo passwd username
 
 ```bash
 # Edit users-local.nix
-sudo nano /etc/hypervisor/configuration/users-local.nix
+sudo nano /var/lib/hypervisor/configuration/users-local.nix
 
 # Add user definition:
 users.users.newuser = {
@@ -365,7 +365,7 @@ sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
 sudo /etc/hypervisor/scripts/create_vm.sh my-vm
 
 # Edit configuration
-sudo nano /etc/hypervisor/configuration/vms/my-vm.json
+sudo nano /var/lib/hypervisor/vms/my-vm.json
 
 # Define and start
 sudo virsh define /var/lib/libvirt/configs/my-vm.xml
@@ -570,10 +570,10 @@ cat /var/log/nixos/nixos-rebuild.log
 sudo nano /etc/hypervisor/src/configuration.nix
 
 # User configuration
-sudo nano /etc/hypervisor/configuration/users-local.nix
+sudo nano /var/lib/hypervisor/configuration/users-local.nix
 
 # System settings
-sudo nano /etc/hypervisor/configuration/system-local.nix
+sudo nano /var/lib/hypervisor/configuration/system-local.nix
 
 # Apply changes
 sudo nixos-rebuild switch --flake /etc/hypervisor#$(hostname -s)
@@ -666,7 +666,7 @@ sudo /etc/hypervisor/scripts/validate_hypervisor_install.sh
 
 ```
 /etc/hypervisor/src/                     - Source repository
-/etc/hypervisor/configuration/           - Local configuration
+/var/lib/hypervisor/configuration/       - Local configuration
   ├── users-local.nix                    - User accounts
   └── system-local.nix                   - System settings
 /etc/nixos/flake.nix                     - Symlink to main flake
