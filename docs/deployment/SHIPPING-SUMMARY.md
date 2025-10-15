@@ -3,7 +3,7 @@
 ## 🚀 Ready to Ship!
 
 ### 📦 Public Release Package
-**File**: `security-platform-v2.0-public.tar.gz`
+**File**: `releases/security-platform-v2.0-public.tar.gz`
 - **Size**: 568K
 - **Files**: 247 files
 - **Contains**: 
@@ -50,10 +50,10 @@
 ### 1. For Public Distribution
 ```bash
 # The archive is ready to share
-security-platform-v2.0-public.tar.gz
+releases/security-platform-v2.0-public.tar.gz
 
 # Recipients can extract with:
-tar -xzf security-platform-v2.0-public.tar.gz
+tar -xzf releases/security-platform-v2.0-public.tar.gz
 cd public-release
 sudo ./security-platform-deploy.sh
 ```

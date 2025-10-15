@@ -122,16 +122,16 @@ EOF
 echo
 echo -e "${YELLOW}Creating distribution archive...${NC}"
 cd public-release
-tar -czf ../security-platform-v2.0-public.tar.gz .
+tar -czf ../releases/security-platform-v2.0-public.tar.gz .
 cd ..
 
 # Summary
 echo
 echo -e "${GREEN}${BOLD}✅ Shipping Preparation Complete!${NC}"
 echo
-echo "📦 Public Release Archive: security-platform-v2.0-public.tar.gz"
-echo "   Size: $(du -h security-platform-v2.0-public.tar.gz | cut -f1)"
-echo "   Files: $(tar -tzf security-platform-v2.0-public.tar.gz | wc -l)"
+echo "📦 Public Release Archive: releases/security-platform-v2.0-public.tar.gz"
+echo "   Size: $(du -h releases/security-platform-v2.0-public.tar.gz | cut -f1)"
+echo "   Files: $(tar -tzf releases/security-platform-v2.0-public.tar.gz | wc -l)"
 echo
 echo "🔒 Private IP Content: private-ip/"
 echo "   - AI context documentation"
