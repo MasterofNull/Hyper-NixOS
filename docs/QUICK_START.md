@@ -9,13 +9,20 @@ Get up and running with Hyper-NixOS in minutes!
 
 ## 🚀 Quick Install (Recommended)
 
-Get Hyper-NixOS running with a single command:
+Get Hyper-NixOS running with our one-line installer:
 
 ```bash
 bash -lc 'set -euo pipefail; command -v git >/dev/null || nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#git; tmp="$(mktemp -d)"; git clone https://github.com/MasterofNull/Hyper-NixOS "$tmp/hyper"; cd "$tmp/hyper"; sudo env NIX_CONFIG="experimental-features = nix-command flakes" bash ./scripts/system_installer.sh --fast --hostname "$(hostname -s)" --action switch --source "$tmp/hyper" --reboot'
 ```
 
-This one-liner installs the minimal system with only core virtualization components.
+This is the **recommended installation method** that automatically:
+- ✅ Installs git if not present
+- ✅ Clones the latest Hyper-NixOS repository
+- ✅ Runs the installer with optimal settings
+- ✅ Configures your system and switches to Hyper-NixOS
+- ✅ Reboots into your new hypervisor platform
+
+The installer sets up the minimal system with only core virtualization components, allowing you to choose additional features during first boot.
 
 ### 2. First Boot Configuration
 After installation and reboot, a configuration wizard will automatically start to help you select the appropriate system tier based on your hardware and use case.

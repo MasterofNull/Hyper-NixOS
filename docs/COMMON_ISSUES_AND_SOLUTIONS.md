@@ -1768,7 +1768,7 @@ error: The option `services.auditd' does not exist. Definition values:
 **Root Cause**: 
 This error can have two causes:
 1. The security modules are trying to enable the audit daemon service (`services.auditd`), but this service might not be available in minimal NixOS configurations or when the audit module isn't imported.
-2. Incorrect module structure where conditional blocks are nested inside `lib.mkMerge` array elements instead of being separate elements.
+2. **Incorrect module structure** where audit configuration is inside the main `lib.mkIf` block instead of being separate array elements in `lib.mkMerge`. This causes NixOS to evaluate the audit options even when they don't exist.
 
 **Impact**: 
 Build failure when using security modules on minimal NixOS installations.
@@ -1776,7 +1776,7 @@ Build failure when using security modules on minimal NixOS installations.
 **Solutions**:
 
 #### ✅ **Option 1: Use the fixed modules (Recommended)**
-The security modules have been updated to conditionally enable audit services only when they're available:
+The security modules have been updated with proper structure to conditionally enable audit services only when they're available:
 
 ```nix
 # Security monitoring - only if audit is available

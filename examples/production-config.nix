@@ -5,7 +5,7 @@
 
 {
   imports = [
-    ./hardware-configuration.nix
+    ../hardware-configuration.nix
     ../modules/virtualization/vm-config.nix
     ../modules/storage-management/storage-tiers.nix
     ../modules/clustering/mesh-cluster.nix

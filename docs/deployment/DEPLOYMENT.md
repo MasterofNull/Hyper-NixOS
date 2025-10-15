@@ -557,6 +557,6 @@ hv-import-cloud --provider aws --instance i-1234567890
 ## Next Steps
 
 1. Explore the [Example Configurations](examples/)
-2. Read the [Architecture Guide](docs/INNOVATIVE_ARCHITECTURE.md)
+2. Read the [Architecture Guide](../reference/architecture-overview.md)
 3. Join our community discussions
 4. Contribute to the project!

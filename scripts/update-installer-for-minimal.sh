@@ -12,15 +12,15 @@ update_installer() {
     
     echo "Updating system installer to use minimal configuration..."
     
-    # Update the flake.nix generation to use configuration-minimal.nix
-    sed -i 's|(hypervisor + "/configuration.nix")|(hypervisor + "/configuration-minimal.nix")|' "$installer"
+    # Update the flake.nix generation to use profiles/configuration-minimal.nix
+    sed -i 's|(hypervisor + "/configuration.nix")|(hypervisor + "/profiles/configuration-minimal.nix")|' "$installer"
     
     echo "✓ Updated installer to use minimal configuration"
 }
 
-# Update configuration-minimal.nix to import first-boot module
+# Update profiles/configuration-minimal.nix to import first-boot module
 update_minimal_config() {
-    local minimal_config="configuration-minimal.nix"
+    local minimal_config="profiles/configuration-minimal.nix"
     
     echo "Updating minimal configuration to include first-boot wizard..."
     

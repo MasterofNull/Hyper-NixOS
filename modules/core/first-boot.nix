@@ -299,9 +299,9 @@ EOF
 {
   imports = [
     # Import the base configuration
-    ./configuration-minimal.nix
+    /etc/nixos/profiles/configuration-minimal.nix
     # Import the selected tier
-    ./modules/system-tiers.nix
+    /etc/nixos/modules/system-tiers.nix
   ];
   
   # Set the selected tier

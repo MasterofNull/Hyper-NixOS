@@ -178,7 +178,7 @@ curl -L https://raw.githubusercontent.com/yourusername/hyper-nixos/main/install.
 ## 📚 Documentation
 
 - [Deployment Guide](DEPLOYMENT.md)
-- [Architecture Overview](docs/INNOVATIVE_ARCHITECTURE.md) 
+- [Architecture Overview](reference/architecture-overview.md) 
 - [API Reference](api/graphql/schema.graphql)
 - [Migration Guide](docs/MIGRATION.md)
 
