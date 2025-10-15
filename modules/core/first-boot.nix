@@ -45,6 +45,73 @@ let
         exit 1
     fi
     
+    # Security check: Verify this is truly a first boot scenario
+    echo -e "''${GREEN}Performing security checks...''${NC}"
+    
+    # Check if first boot flag already exists
+    if [[ -f "$FIRST_BOOT_FLAG" ]]; then
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo -e "''${RED}          SECURITY: First boot already completed!               ''${NC}"
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo
+        echo "This system has already been configured. The first-boot wizard"
+        echo "cannot be run again for security reasons."
+        echo
+        echo "If you need to reconfigure the system tier, use:"
+        echo "  sudo /etc/hypervisor/bin/reconfigure-tier"
+        echo
+        exit 1
+    fi
+    
+    # Check if any wheel users have passwords set
+    WHEEL_USERS=$(getent group wheel | cut -d: -f4 | tr ',' ' ')
+    USERS_WITH_PASSWORDS=0
+    
+    for user in $WHEEL_USERS; do
+        if [[ "$user" == "root" ]]; then continue; fi
+        # Check if user has a valid password hash
+        HASH=$(getent shadow "$user" | cut -d: -f2)
+        if [[ "$HASH" != "!" && "$HASH" != "*" && -n "$HASH" ]]; then
+            USERS_WITH_PASSWORDS=$((USERS_WITH_PASSWORDS + 1))
+        fi
+    done
+    
+    # Check if custom user configuration exists
+    if [[ -f "/etc/nixos/modules/users-local.nix" ]]; then
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo -e "''${RED}        SECURITY: Custom user configuration detected!           ''${NC}"
+        echo -e "''${RED}═══════════════════════════════════════════════════════════════''${NC}"
+        echo
+        echo "This system has custom user configuration from the installer."
+        echo "First-boot wizard is not needed and has been disabled."
+        echo
+        # Create the flag to prevent future runs
+        mkdir -p "$(dirname "$FIRST_BOOT_FLAG")"
+        touch "$FIRST_BOOT_FLAG"
+        exit 0
+    fi
+    
+    # If passwords exist, this might not be a true first boot
+    if [[ $USERS_WITH_PASSWORDS -gt 0 ]]; then
+        echo -e "''${YELLOW}WARNING: Some wheel users already have passwords set.''${NC}"
+        echo "This may indicate the system has been partially configured."
+        echo
+        echo "Users with passwords:"
+        for user in $WHEEL_USERS; do
+            if [[ "$user" == "root" ]]; then continue; fi
+            HASH=$(getent shadow "$user" | cut -d: -f2)
+            if [[ "$HASH" != "!" && "$HASH" != "*" && -n "$HASH" ]]; then
+                echo "  - $user"
+            fi
+        done
+        echo
+        read -p "Continue anyway? This will reset the configuration (y/N): " confirm
+        if [[ ! $confirm =~ ^[Yy]$ ]]; then
+            echo "Cancelled by user."
+            exit 0
+        fi
+    fi
+    
     # Check which users exist and need passwords
     echo -e "''${GREEN}Checking user accounts...''${NC}"
     echo
@@ -203,6 +270,8 @@ in
       # Only run on first boot
       unitConfig = {
         ConditionPathExists = "!/var/lib/hypervisor/.first-boot-complete";
+        # Also don't run if custom user config exists
+        ConditionPathExists = "!/etc/nixos/modules/users-local.nix";
       };
       
       serviceConfig = {

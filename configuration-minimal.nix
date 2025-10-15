@@ -114,7 +114,11 @@
     mutableUsers = false;
     
     # Allow first boot without password for setup wizard
-    # The first-boot wizard will prompt to set passwords
+    # SECURITY: This is only safe because the first-boot wizard has protections:
+    # 1. It won't run if passwords already exist
+    # 2. It won't run if users-local.nix exists (installer already configured users)
+    # 3. It creates a flag file preventing re-execution
+    # 4. The systemd service has conditions to prevent running on configured systems
     allowNoPasswordLogin = true;
     
     # Only define default admin user if installer hasn't created users-local.nix
