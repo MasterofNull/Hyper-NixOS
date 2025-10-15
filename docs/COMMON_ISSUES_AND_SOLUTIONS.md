@@ -13,6 +13,72 @@ This document catalogs common issues encountered in Hyper-NixOS, their root caus
 
 ## 🚨 **Critical Issues**
 
+### Issue: "The option `services.auditd' does not exist"
+**Symptoms**:
+```
+error: The option `services.auditd' does not exist. Definition values:
+       - In `/nix/store/.../modules/security/credential-chain.nix':
+           {
+             _type = "if";
+             condition = true;
+             content = {
+               enable = true;
+```
+
+**Root Cause**: The audit service module is not available in minimal NixOS configurations or when the audit module isn't imported. Security modules try to enable audit services unconditionally.
+
+**Solutions**:
+
+#### ✅ **Option 1: Import the audit module** (Recommended)
+Add to your configuration imports:
+```nix
+{
+  imports = [
+    # ... other imports
+    <nixpkgs/nixos/modules/security/audit.nix>
+  ];
+}
+```
+
+#### ✅ **Option 2: Disable audit-dependent modules**
+If you don't need audit functionality:
+```nix
+{
+  hypervisor.security.credentialChain.enable = false;
+  hypervisor.security.sudoProtection.enable = false;
+  # ... disable other security modules that require audit
+}
+```
+
+**Prevention**:
+- Security modules now check for audit service availability before enabling
+- Use `lib.mkIf (config.services ? auditd)` for conditional configuration
+- Wrap audit configurations in `lib.mkMerge` for proper conditional evaluation
+
+**Technical Details**:
+The fix involves restructuring module configurations to use proper conditional checks:
+```nix
+config = lib.mkIf cfg.enable (lib.mkMerge [
+  {
+    # Main configuration
+  }
+  
+  # Conditional audit configuration
+  (lib.mkIf (config.services ? auditd) {
+    services.auditd.enable = true;
+  })
+  
+  (lib.mkIf (config.security ? audit) {
+    security.audit = {
+      enable = true;
+      rules = [ /* audit rules */ ];
+    };
+  })
+]);
+```
+
+## 🚨 **Critical Issues**
+
 ### Issue: "Neither the root account nor any wheel user has a password"
 **Symptoms**:
 ```

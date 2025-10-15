@@ -27,7 +27,8 @@ in
     };
   };
   
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    {
     # Immutable sudo configuration
     systemd.services.sudo-lockdown = lib.mkIf cfg.lockdownAfterBoot {
       description = "Lock down sudo configuration after first boot";
@@ -172,29 +173,34 @@ in
       '';
     };
     
+    }
+    
     # Security monitoring for sudo usage - only enable if audit is available
-    services.auditd = lib.mkIf (config.services ? auditd) {
-      enable = true;
-    };
+    (lib.mkIf (config.services ? auditd) {
+      services.auditd.enable = true;
+    })
     
-    security.audit = lib.mkIf (config.security ? audit) {
-      enable = true;
-      rules = [
-        # Monitor all sudo executions
-        "-a always,exit -F path=/usr/bin/sudo -F perm=x -k sudo_exec"
+    (lib.mkIf (config.security ? audit) {
+      security.audit = {
+        enable = true;
+        rules = [
+          # Monitor all sudo executions
+          "-a always,exit -F path=/usr/bin/sudo -F perm=x -k sudo_exec"
+          
+          # Monitor sudoers file changes
+          "-w /etc/sudoers -p wa -k sudoers_changes"
+          "-w /etc/sudoers.d/ -p wa -k sudoers_changes"
         
-        # Monitor sudoers file changes
-        "-w /etc/sudoers -p wa -k sudoers_changes"
-        "-w /etc/sudoers.d/ -p wa -k sudoers_changes"
-      
-        # Monitor password changes
-        "-w /usr/bin/passwd -p x -k passwd_changes"
-        
-        # Monitor our security scripts
-        "-w /etc/hypervisor/bin/ -p x -k hypervisor_security"
-      ];
-    };
+          # Monitor password changes
+          "-w /usr/bin/passwd -p x -k passwd_changes"
+          
+          # Monitor our security scripts
+          "-w /etc/hypervisor/bin/ -p x -k hypervisor_security"
+        ];
+      };
+    })
     
+    {
     # Additional PAM security
     security.pam.services.sudo = {
       # Require additional authentication for sudo
@@ -236,5 +242,6 @@ in
         exit 0
       '';
     };
-  };
+    }
+  ]);
 }
