@@ -1746,7 +1746,9 @@ error: The option `services.auditd' does not exist. Definition values:
 ```
 
 **Root Cause**: 
-The security modules are trying to enable the audit daemon service (`services.auditd`), but this service might not be available in minimal NixOS configurations or when the audit module isn't imported.
+This error can have two causes:
+1. The security modules are trying to enable the audit daemon service (`services.auditd`), but this service might not be available in minimal NixOS configurations or when the audit module isn't imported.
+2. Incorrect module structure where conditional blocks are nested inside `lib.mkMerge` array elements instead of being separate elements.
 
 **Impact**: 
 Build failure when using security modules on minimal NixOS installations.
@@ -1792,11 +1794,38 @@ If you want audit logging, ensure the audit module is available:
 - `modules/security/strict.nix`
 - `modules/security/base.nix`
 
+#### ✅ **Option 3: Fix module structure issues**
+If the conditionals are already present but the error persists, check the module structure:
+
+```nix
+# WRONG - conditionals nested inside array element:
+config = lib.mkIf cfg.enable (lib.mkMerge [
+  {
+    # main config...
+    }
+    (lib.mkIf (config.services ? auditd) {  # This is inside the first element!
+      services.auditd.enable = true;
+    })
+  ]);
+
+# CORRECT - separate array elements:
+config = lib.mkIf cfg.enable (lib.mkMerge [
+  {
+    # main config...
+  }
+  (lib.mkIf (config.services ? auditd) {  # This is a separate element
+    services.auditd.enable = true;
+  })
+]);
+```
+
 **Prevention**:
 - Always check if optional services exist before enabling them
 - Use conditional expressions: `lib.mkIf (config.services ? serviceName)`
+- Ensure each conditional block in `lib.mkMerge` is a separate array element
 - Test modules with minimal NixOS configurations
 - Document service dependencies in module descriptions
 
 **Key Learning**:
-Not all NixOS services are available in every configuration. Security modules should gracefully handle missing optional services to maintain compatibility with minimal installations.
+1. Not all NixOS services are available in every configuration. Security modules should gracefully handle missing optional services to maintain compatibility with minimal installations.
+2. Module structure matters - conditional blocks must be properly positioned in `lib.mkMerge` arrays to be evaluated correctly.

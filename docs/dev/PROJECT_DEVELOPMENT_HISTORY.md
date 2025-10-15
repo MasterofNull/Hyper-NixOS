@@ -10,6 +10,49 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-15 (Update 3): Fixed Structural Issue in credential-chain.nix Audit Configuration
+**Agent**: Claude
+**Task**: Fix "The option `services.auditd' does not exist" error in credential-chain.nix
+
+**Error**: Same audit service error, but this time due to incorrect module structure
+
+**Root Cause**: The `credential-chain.nix` module had the conditional audit service blocks inside the first element of the `lib.mkMerge` array instead of being separate array elements. This caused the conditionals to not be evaluated properly.
+
+**Fix Applied**: Restructured the config section to have proper `lib.mkMerge` array elements:
+```nix
+# Before (WRONG - conditionals inside first array element):
+config = lib.mkIf cfg.enable (lib.mkMerge [
+  {
+    # main config...
+    }
+    
+    (lib.mkIf (config.services ? auditd) {
+      # This was inside the first element!
+    })
+  ]);
+
+# After (CORRECT - separate array elements):
+config = lib.mkIf cfg.enable (lib.mkMerge [
+  {
+    # main config...
+  }
+  
+  (lib.mkIf (config.services ? auditd) {
+    # Now a proper separate element
+  })
+]);
+```
+
+**Files Modified**:
+- `modules/security/credential-chain.nix` - Fixed module structure for proper conditional evaluation
+
+**Key Learning**: 
+1. In `lib.mkMerge`, each conditional block must be a separate array element, not nested inside another element.
+2. The error message about option not existing can sometimes indicate structural issues in the module, not just missing conditionals.
+3. Pay attention to proper nesting and array structure in NixOS modules.
+
+---
+
 #### 2025-10-15 (Update 2): Fixed Recurring Audit Service Configuration Issue in credential-chain.nix
 **Agent**: Claude
 **Task**: Fix "The option `services.auditd' does not exist" error in credential-chain.nix
