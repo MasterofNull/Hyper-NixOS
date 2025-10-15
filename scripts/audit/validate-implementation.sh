@@ -15,39 +15,39 @@ echo "=========================================="
 echo
 
 # Check main deployment script
-echo -e "${BOLD}Checking security-platform-deploy.sh implementations...${NC}"
+echo -e "${BOLD}Checking scripts/deployment/security-platform-deploy.sh implementations...${NC}"
 echo
 
-if [[ -f security-platform-deploy.sh ]]; then
-    echo "File size: $(wc -c < security-platform-deploy.sh) bytes"
-    echo "Line count: $(wc -l < security-platform-deploy.sh) lines"
+if [[ -f scripts/deployment/scripts/deployment/security-platform-deploy.sh ]]; then
+    echo "File size: $(wc -c < scripts/deployment/scripts/deployment/security-platform-deploy.sh) bytes"
+    echo "Line count: $(wc -l < scripts/deployment/scripts/deployment/security-platform-deploy.sh) lines"
     echo
     
     # Count implementations
     echo "Feature implementations found:"
-    echo -e "${GREEN}✓${NC} Zero-Trust: $(grep -c "ZeroTrust" security-platform-deploy.sh) references"
-    echo -e "${GREEN}✓${NC} AI Detection: $(grep -c "AI\|Anomaly\|Detector" security-platform-deploy.sh) references"
-    echo -e "${GREEN}✓${NC} API Security: $(grep -c "API\|Gateway\|RateLimit" security-platform-deploy.sh) references"
-    echo -e "${GREEN}✓${NC} Mobile Security: $(grep -c "Mobile\|mobile" security-platform-deploy.sh) references"
-    echo -e "${GREEN}✓${NC} Supply Chain: $(grep -c "SBOM\|supply" security-platform-deploy.sh) references"
-    echo -e "${GREEN}✓${NC} Forensics: $(grep -c "Forensic\|forensic" security-platform-deploy.sh) references"
-    echo -e "${GREEN}✓${NC} Multi-Cloud: $(grep -c "cloud\|aws\|azure\|gcp" security-platform-deploy.sh) references"
-    echo -e "${GREEN}✓${NC} Patch Management: $(grep -c "Patch\|patch" security-platform-deploy.sh) references"
-    echo -e "${GREEN}✓${NC} Threat Hunting: $(grep -c "hunt\|Hunt\|MITRE" security-platform-deploy.sh) references"
-    echo -e "${GREEN}✓${NC} Secrets Management: $(grep -c "Secret\|Vault\|vault" security-platform-deploy.sh) references"
+    echo -e "${GREEN}✓${NC} Zero-Trust: $(grep -c "ZeroTrust" scripts/deployment/security-platform-deploy.sh) references"
+    echo -e "${GREEN}✓${NC} AI Detection: $(grep -c "AI\|Anomaly\|Detector" scripts/deployment/security-platform-deploy.sh) references"
+    echo -e "${GREEN}✓${NC} API Security: $(grep -c "API\|Gateway\|RateLimit" scripts/deployment/security-platform-deploy.sh) references"
+    echo -e "${GREEN}✓${NC} Mobile Security: $(grep -c "Mobile\|mobile" scripts/deployment/security-platform-deploy.sh) references"
+    echo -e "${GREEN}✓${NC} Supply Chain: $(grep -c "SBOM\|supply" scripts/deployment/security-platform-deploy.sh) references"
+    echo -e "${GREEN}✓${NC} Forensics: $(grep -c "Forensic\|forensic" scripts/deployment/security-platform-deploy.sh) references"
+    echo -e "${GREEN}✓${NC} Multi-Cloud: $(grep -c "cloud\|aws\|azure\|gcp" scripts/deployment/security-platform-deploy.sh) references"
+    echo -e "${GREEN}✓${NC} Patch Management: $(grep -c "Patch\|patch" scripts/deployment/security-platform-deploy.sh) references"
+    echo -e "${GREEN}✓${NC} Threat Hunting: $(grep -c "hunt\|Hunt\|MITRE" scripts/deployment/security-platform-deploy.sh) references"
+    echo -e "${GREEN}✓${NC} Secrets Management: $(grep -c "Secret\|Vault\|vault" scripts/deployment/security-platform-deploy.sh) references"
 fi
 
 echo
 echo -e "${BOLD}Module Structure:${NC}"
-grep -E "create.*module\(\)" security-platform-deploy.sh | sed 's/^/  /'
+grep -E "create.*module\(\)" scripts/deployment/security-platform-deploy.sh | sed 's/^/  /'
 
 echo
 echo -e "${BOLD}Python Classes Implemented:${NC}"
-grep -E "^class " security-platform-deploy.sh | sed 's/^/  /' | sort -u
+grep -E "^class " scripts/deployment/security-platform-deploy.sh | sed 's/^/  /' | sort -u
 
 echo
 echo -e "${BOLD}Key Security Functions:${NC}"
-grep -E "async def (scan|check|monitor|detect|analyze|validate)" security-platform-deploy.sh | sed 's/^/  /' | head -10
+grep -E "async def (scan|check|monitor|detect|analyze|validate)" scripts/deployment/security-platform-deploy.sh | sed 's/^/  /' | head -10
 
 echo
 echo -e "${BOLD}Console Enhancements:${NC}"
@@ -144,7 +144,7 @@ and enhancements. The platform is ready for:
 
 \`\`\`bash
 # Deploy the platform
-sudo ./security-platform-deploy.sh
+sudo ./scripts/deployment/security-platform-deploy.sh
 
 # Select profile based on system
 ./profile-selector.sh --auto

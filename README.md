@@ -100,7 +100,7 @@ hypervisor.composition.blueprints.web-app = {
 
 ## 📚 Documentation
 
-- [Deployment Guide](DEPLOYMENT.md) - Complete installation and setup
+- [Deployment Guide](docs/deployment/DEPLOYMENT.md) - Complete installation and setup
 - [Architecture Overview](docs/INNOVATIVE_ARCHITECTURE.md) - Deep dive into our innovations
 - [API Reference](api/graphql/schema.graphql) - GraphQL schema documentation
 - [Examples](examples/) - Production-ready configurations
@@ -216,4 +216,4 @@ Built with ❤️ using:
 
 ---
 
-**Ready to revolutionize your infrastructure? [Get started now!](DEPLOYMENT.md)**
+**Ready to revolutionize your infrastructure? [Get started now!](docs/deployment/DEPLOYMENT.md)**
