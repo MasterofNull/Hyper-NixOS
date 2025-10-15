@@ -4,9 +4,25 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Beta-yellow.svg)](https://github.com/yourusername/hyper-nixos)
 
-Next-generation virtualization platform built on NixOS with revolutionary features that redefine infrastructure management.
+Next-generation virtualization platform built on NixOS with revolutionary features that redefine infrastructure management. Install in seconds with our one-line installer!
 
-## 🚀 Features
+## 🚀 Quick Install
+
+Get started with Hyper-NixOS in seconds using our one-line installer:
+
+```bash
+curl -L https://raw.githubusercontent.com/yourusername/hyper-nixos/main/install.sh | sudo bash
+```
+
+This is the **recommended installation method** that automatically:
+- ✅ Detects your system configuration
+- ✅ Installs all required dependencies  
+- ✅ Sets up the hypervisor with optimal defaults
+- ✅ Configures the first-boot wizard for easy setup
+
+For manual installation or advanced options, see our [Deployment Guide](DEPLOYMENT.md).
+
+## 🌟 Features
 
 ### Revolutionary Concepts
 
@@ -19,18 +35,6 @@ Next-generation virtualization platform built on NixOS with revolutionary featur
 - **📊 GraphQL Event-Driven API** - Real-time reactive API with WebSocket subscriptions
 - **🔄 Streaming Migration** - Live VM transformation during zero-downtime migration
 - **🤖 AI-Driven Monitoring** - Predictive anomaly detection and auto-remediation
-
-## 🎯 Quick Start
-
-```bash
-# One-line installation
-curl -L https://raw.githubusercontent.com/yourusername/hyper-nixos/main/install.sh | sudo bash
-
-# Or clone and install manually
-git clone https://github.com/yourusername/hyper-nixos.git
-cd hyper-nixos
-sudo ./install.sh
-```
 
 ## 📋 Requirements
 
