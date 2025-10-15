@@ -1,63 +1,40 @@
-# Hyper-NixOS Documentation
+# Administrator Guides
 
-Welcome to the Hyper-NixOS documentation. This guide will help you find the information you need quickly.
+System administration guides for Hyper-NixOS.
 
-## 📚 Documentation Structure
+## Core Guides
 
-### Getting Started
-- **[Quick Start Guide](QUICK_START.md)** - Get up and running in 5 minutes
-- **[Installation Guide](INSTALLATION_GUIDE.md)** - Complete installation instructions
-- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
+1. **[System Administration](system-administration.md)**
+   - Service management
+   - User management
+   - Storage pools
+   - Backup and recovery
 
-### User Documentation
-- **[User Guides](user-guides/)** - Day-to-day usage guides
-  - [Basic VM Management](user-guides/basic-vm-management.md)
-  - [Advanced Features](user-guides/advanced-features.md)
-  - [Automation Recipes](user-guides/automation-cookbook.md)
+2. **[Security Configuration](security-configuration.md)**
+   - Security hardening
+   - Access control
+   - Audit logging
+   - Threat detection
 
-### Administrator Documentation
-- **[Admin Guides](admin-guides/)** - System administration
-  - [System Administration](admin-guides/system-administration.md)
-  - [Security Configuration](admin-guides/security-configuration.md)
-  - [Network Configuration](admin-guides/NETWORK_CONFIGURATION.md)
-  - [Monitoring Setup](admin-guides/MONITORING_SETUP.md)
-  - [Enterprise Features](admin-guides/ENTERPRISE_FEATURES.md)
-  - [Enterprise Quick Start](guides/ENTERPRISE_QUICK_START.md)
+3. **[Network Configuration](network-configuration.md)**
+   - Bridge setup
+   - VLAN configuration
+   - Firewall rules
+   - Network isolation
 
-### Reference Documentation
-- **[Reference](reference/)** - Technical reference
-  - [Configuration Options](reference/configuration-reference.md)
-  - [CLI Reference](reference/cli-reference.md)
-  - [Architecture Overview](reference/architecture-overview.md)
-  - [API Documentation](reference/api-reference.md)
+4. **[Monitoring Setup](monitoring-setup.md)**
+   - Prometheus configuration
+   - Grafana dashboards
+   - Alert rules
+   - Performance metrics
 
-### Deployment & Operations
-- **[Deployment](deployment/)** - Production deployment
-  - [Deployment Guide](deployment/DEPLOYMENT.md)
-  - [Release Notes v2.0.0](RELEASE_NOTES_v2.0.0.md)
+## Quick Reference
 
-### Development Documentation
-- **[Developer Resources](dev/)** - For contributors (protected/IP documentation)
+- **Add user to libvirt**: `sudo usermod -aG libvirtd,kvm username`
+- **Check services**: `systemctl status hypervisor-*`
+- **View logs**: `journalctl -u libvirtd -f`
 
-### Community & Support
-- **[Community and Support](COMMUNITY_AND_SUPPORT.md)** - Getting help, contributing, and staying connected
+## Advanced Topics
 
-## 🔍 Quick Links
-
-### By Task
-- **Installing**: [Installation Guide](INSTALLATION_GUIDE.md)
-- **First VM**: [Quick Start](QUICK_START.md#create-your-first-vm)
-- **Troubleshooting**: [Common Issues](TROUBLESHOOTING.md)
-- **Security Setup**: [Security Configuration](admin-guides/security-configuration.md)
-- **Network Setup**: [Network Configuration](admin-guides/network-configuration.md)
-
-### By User Type
-- **New Users**: Start with [Quick Start](QUICK_START.md)
-- **System Admins**: See [Admin Guides](admin-guides/)
-- **Developers**: See [Developer Resources](dev/)
-
-## 📖 Documentation Versions
-
-- **Version**: 1.0.0
-- **Last Updated**: $(date +%Y-%m-%d)
-- **License**: See [LICENSE](/LICENSE) in project root
+- **[Enterprise Features](ENTERPRISE_FEATURES.md)** - For Professional/Enterprise tiers
+- **[Automation Guide](AUTOMATION_GUIDE.md)** - Automation and orchestration
