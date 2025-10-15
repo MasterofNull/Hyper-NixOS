@@ -1068,3 +1068,35 @@ You must set one to prevent being locked out of your system.
 **Update**: Added `allowNoPasswordLogin = true` option for first boot setup, allowing the system to boot without passwords so the first boot wizard can configure them interactively. This is the recommended approach for Hyper-NixOS minimal installations.
 
 ---
+
+#### 2025-10-14: Enhanced User Migration from Host System
+**Agent**: Claude
+**Task**: Enable automatic migration of host users and passwords during installation
+
+**Context**: The system installer already migrates users from the host system, but configuration-minimal.nix wasn't importing the generated files.
+
+**Changes Made**:
+1. **Updated `configuration-minimal.nix`**:
+   - Added conditional imports for `users-local.nix` and `system-local.nix`
+   - Only defines default admin user if installer hasn't created users
+   - Uses `lib.optionalAttrs` to conditionally define users
+
+2. **How it works**:
+   - Installer reads existing users from `/etc/passwd`
+   - Extracts password hashes from `/etc/shadow`
+   - Adds required groups (wheel, kvm, libvirtd)
+   - Generates `modules/users-local.nix` with all users
+   - Configuration imports this file if it exists
+
+3. **Enhanced first-boot wizard**:
+   - Detects which wheel users need passwords
+   - Only prompts for users without valid passwords
+   - Shows all wheel group users at completion
+
+**Files Modified**:
+- `configuration-minimal.nix` - Added conditional imports and user definition
+- `modules/core/first-boot.nix` - Enhanced to handle existing users properly
+
+**Key Learning**: The installer automation was already in place - we just needed to connect it to the minimal configuration properly.
+
+---
