@@ -393,6 +393,27 @@ escape_nix_string() {
   printf '%s' "$s"
 }
 
+# Validate username for NixOS compatibility
+validate_username() {
+  local user="$1"
+  # Check if username contains only valid characters
+  # Unix usernames should match: ^[a-z_][a-z0-9_-]*$
+  # But Linux actually allows more, and NixOS can handle quoted attribute names
+  
+  # Reject completely invalid usernames
+  if [[ -z "$user" ]] || [[ "$user" =~ ^[0-9] ]] || [[ "$user" =~ [[:space:]] ]]; then
+    return 1
+  fi
+  
+  # Warn about non-standard but technically valid usernames
+  if ! [[ "$user" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
+    msg "WARNING: Username '$user' contains non-standard characters (capitals, dots, etc.)" >&2
+    msg "This is supported but may cause issues with some tools" >&2
+  fi
+  
+  return 0
+}
+
 detect_primary_users() {
   # Print login-capable non-system users, skip builders and nologin shells
   # Criteria: uid >= 1000, < 65534, shell not nologin/false, exclude nobody and nixbld*
@@ -469,6 +490,12 @@ write_users_local_nix() {
       [[ -z "$user" ]] && continue
       # Skip known system/builder accounts defensively
       if [[ "$user" =~ ^nixbld[0-9]+$ ]] || [[ "$user" == "root" ]] || [[ "$user" == "nobody" ]] || [[ "$user" == "hypervisor" ]]; then
+        continue
+      fi
+      
+      # Validate username
+      if ! validate_username "$user"; then
+        msg "ERROR: Invalid username '$user' - skipping" >&2
         continue
       fi
       # Gather user details

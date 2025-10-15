@@ -1484,6 +1484,62 @@ grep -B2 -A5 'users\.(users|groups) = mkMerge' modules/**/*.nix
 - [CI GitHub Actions Guide](./dev/CI_GITHUB_ACTIONS_GUIDE.md)
 - [CI Test Fixes 2025-10-13](./dev/CI_TEST_FIXES_2025-10-13.md)
 
+## 👤 **User and Authentication Issues**
+
+### Issue: Username contains capital letters or special characters
+**Symptoms**:
+- Warning during installation about non-standard username
+- User works but some tools may have issues
+- Username like "John.Doe" or "User123" 
+
+**Root Cause**: 
+While Linux and NixOS can handle various username formats, traditional Unix usernames should only contain lowercase letters, numbers, hyphens, and underscores, and must start with a letter or underscore.
+
+**What Works**:
+- ✅ Capital letters (e.g., "JohnDoe")
+- ✅ Dots (e.g., "john.doe")
+- ✅ Numbers (e.g., "user123" - but not as first character)
+- ✅ Hyphens and underscores (e.g., "john-doe", "john_doe")
+
+**What Doesn't Work**:
+- ❌ Spaces (e.g., "John Doe")
+- ❌ Starting with numbers (e.g., "123user")
+- ❌ Special characters like @, #, $, etc.
+
+**Solutions**:
+
+#### ✅ **Option 1: Keep the username (Recommended for existing systems)**
+The installer will preserve your existing username and it will work in NixOS. You may see warnings but the system will function correctly.
+
+#### ✅ **Option 2: Create a standard Unix username**
+For new installations, consider using a standard format:
+- All lowercase
+- No dots or special characters
+- Example: "johndoe" instead of "John.Doe"
+
+**How the Installer Handles It**:
+1. Preserves usernames exactly as they exist on the host system
+2. Properly escapes and quotes them in Nix configuration
+3. Shows warnings for non-standard usernames but continues
+4. The generated config uses quoted attribute names like `"John.Doe" = { ... }`
+
+**Example Generated Configuration**:
+```nix
+users.users = {
+  "John.Doe" = {
+    isNormalUser = true;
+    name = "John.Doe";  # Actual username preserved
+    extraGroups = [ "wheel" "libvirtd" "kvm" ];
+    hashedPassword = "...";
+  };
+};
+```
+
+**Prevention**:
+- For new users, stick to traditional Unix naming: `[a-z_][a-z0-9_-]*`
+- For existing users, the system handles it automatically
+- Some older Unix tools may have issues with non-standard names
+
 ## 🔧 **Hardware and Kernel Issues**
 
 ### Issue: "kvm: already loaded vendor module 'kvm_amd'" or 'kvm_intel'
