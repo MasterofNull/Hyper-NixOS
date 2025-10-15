@@ -35,6 +35,36 @@ After installation, the first-boot wizard will help you select the appropriate s
 
 For manual installation or advanced options, see our [Installation Guide](docs/INSTALLATION_GUIDE.md).
 
+---
+
+## 🎯 Quick Start with Intelligent Defaults
+
+After installation, use the unified `hv` command:
+
+```bash
+# Install CLI (if not already available)
+sudo ./scripts/install-hv-cli.sh
+
+# See what your system has
+hv discover
+
+# Interactive demo of intelligent defaults
+hv defaults-demo
+
+# Create your first VM with intelligent defaults
+hv vm-create
+
+# Configure security based on detected risks
+hv security-config
+
+# Set up backups optimized for your storage
+hv backup-config
+```
+
+**All wizards use intelligent defaults** based on detected hardware. Just press Enter to accept recommendations, or customize as needed.
+
+See the complete [Wizard Guide](docs/WIZARD_GUIDE.md) for all configuration wizards.
+
 ## 🌟 Features
 
 ### Revolutionary Concepts
