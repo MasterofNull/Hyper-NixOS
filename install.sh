@@ -133,16 +133,21 @@ install_dependencies() {
 
 # Clone repository
 clone_repository() {
-    log_info "Cloning Hyper-NixOS repository..."
+    log_info "Copying Hyper-NixOS files..."
     
     if [[ -d "$INSTALL_PATH" ]]; then
         log_warn "Installation directory already exists. Backing up..."
         mv "$INSTALL_PATH" "${INSTALL_PATH}.bak.$(date +%Y%m%d%H%M%S)"
     fi
     
-    git clone --branch "$BRANCH" "$REPO_URL" "$INSTALL_PATH"
+    # Get the directory where this script is located
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     
-    log_success "Repository cloned to $INSTALL_PATH"
+    # Copy the local files instead of cloning
+    log_info "Copying from local directory: $SCRIPT_DIR"
+    cp -r "$SCRIPT_DIR" "$INSTALL_PATH"
+    
+    log_success "Files copied to $INSTALL_PATH"
 }
 
 # Generate hardware configuration if missing
