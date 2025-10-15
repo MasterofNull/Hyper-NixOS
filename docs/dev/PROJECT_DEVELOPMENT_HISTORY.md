@@ -10,6 +10,35 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-15: Fixed Bash Variable Escaping in credential-chain.nix
+**Agent**: Claude
+**Task**: Fix "undefined variable 'shadow_hash'" error in credential-chain.nix
+
+**Error**:
+```
+error: undefined variable 'shadow_hash'
+       at /nix/store/.../modules/security/credential-chain.nix:24:20:
+           23|
+           24|         echo -n "${shadow_hash}:${passwd_hash}:${machine_id}" | sha512sum | cut -d' ' -f1
+              |                    ^
+           25|     }
+```
+
+**Root Cause**: Bash variables inside Nix multiline strings (`''...''`) were not properly escaped. Nix was trying to interpolate `${shadow_hash}` during evaluation instead of leaving it as a bash variable.
+
+**Fix Applied**: Escaped all bash variables in the multiline strings by prefixing with `''`:
+- Changed `${var}` to `''${var}` for all bash variables
+- Changed `$VAR` to `''$VAR` for environment variables
+- Kept Nix interpolations like `${pkgs.bash}` unchanged
+
+**Files Modified**:
+- `modules/security/credential-chain.nix` - Escaped all bash variables in embedded scripts
+- `docs/COMMON_ISSUES_AND_SOLUTIONS.md` - Added comprehensive troubleshooting section
+
+**Key Learning**: In Nix multiline strings, bash variables must be escaped with `''$` to prevent Nix from trying to interpolate them. Only Nix expressions should use plain `${}` syntax.
+
+---
+
 #### 2025-10-14: Fixed Missing 'enable' Attribute in feature-categories.nix
 **Agent**: Claude
 **Task**: Fix "attribute 'enable' missing" error in feature-categories.nix

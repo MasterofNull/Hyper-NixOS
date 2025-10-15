@@ -482,6 +482,81 @@ ExecStart = "${pkgs.python3}/bin/python3 ${pkgs.writeText "script.py" ''
 **Recent Fixes**:
 - **(2025-10-14)**: Fixed Python single quotes in `modules/security/threat-response.nix` and `modules/security/behavioral-analysis.nix`. Applied systematic escaping to all `.get()` calls and dictionary keys.
 
+### Issue: Bash Variables in Nix Multiline Strings
+**Symptoms**:
+```
+error: undefined variable 'shadow_hash'
+       at /nix/store/.../modules/security/credential-chain.nix:24:20:
+           23|
+           24|         echo -n "${shadow_hash}:${passwd_hash}:${machine_id}" | sha512sum | cut -d' ' -f1
+              |                    ^
+           25|     }
+```
+
+**Root Cause**: When using Nix multiline strings (`''...''`), Nix tries to interpolate `${...}` expressions during evaluation. Bash variables inside these strings must be escaped to prevent Nix from interpreting them.
+
+**Solutions**:
+
+#### ✅ **Fix: Escape bash variables by doubling the dollar sign**
+```nix
+# ❌ WRONG - Unescaped bash variables in Nix multiline string
+credentialVerifier = pkgs.writeScriptBin "verify-credentials" ''
+  #!${pkgs.bash}/bin/bash
+  compute_system_hash() {
+    local shadow_hash=$(sha512sum /etc/shadow | cut -d' ' -f1)
+    echo -n "${shadow_hash}:${passwd_hash}" | sha512sum  # ERROR: Nix tries to interpolate
+  }
+'';
+
+# ✅ CORRECT - Bash variables escaped with ''$
+credentialVerifier = pkgs.writeScriptBin "verify-credentials" ''
+  #!${pkgs.bash}/bin/bash
+  compute_system_hash() {
+    local shadow_hash=$(sha512sum /etc/shadow | cut -d' ' -f1)
+    echo -n "''${shadow_hash}:''${passwd_hash}" | sha512sum  # Correctly escaped
+  }
+'';
+```
+
+#### ✅ **Common bash variables that need escaping**:
+```nix
+# Local variables
+local var="value"
+echo "''${var}"                    # Not echo "${var}"
+
+# Environment variables
+if [[ ''$EUID -ne 0 ]]; then      # Not if [[ $EUID -ne 0 ]]; then
+
+# Script arguments
+case "''${1:-default}" in          # Not case "${1:-default}" in
+
+# Command substitution
+echo "Result: ''$(command)"        # Not echo "Result: $(command)"
+
+# Arrays and special variables
+echo "''${array[@]}"               # Not echo "${array[@]}"
+echo "''$@"                        # Not echo "$@"
+```
+
+#### ✅ **Variables that should NOT be escaped**:
+```nix
+# Nix package paths - these SHOULD be interpolated by Nix
+ExecStart = "${pkgs.bash}/bin/bash"              # Correct - Nix interpolation
+source "${pkgs.common}/lib/common.sh"            # Correct - Nix interpolation
+
+# Nix variables
+echo "${cfg.someOption}"                         # Correct - Nix config value
+```
+
+**Prevention**:
+1. Remember: `''$` for bash variables, `$` for Nix variables
+2. Test scripts by building the derivation
+3. Use shellcheck on the generated scripts
+4. Consider using separate script files for complex bash scripts
+
+**History**:
+- **(2025-10-15)**: Fixed bash variable escaping in `modules/security/credential-chain.nix`. All bash variables in multiline strings now properly escaped with `''$`.
+
 ### Issue: Module Not Loading/Working
 **Symptoms**:
 - Module configuration not applied
