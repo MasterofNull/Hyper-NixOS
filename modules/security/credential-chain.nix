@@ -198,8 +198,7 @@ in
   };
   
   config = lib.mkMerge [
-    (lib.mkIf cfg.enable
-    {
+    (lib.mkIf cfg.enable {
       # Install verification scripts
       environment.systemPackages = [ 
         credentialVerifier 

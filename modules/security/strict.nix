@@ -20,64 +20,72 @@
 # - Kernel hardening parameters
 
 {
-  # Disable ALL autologin
-  services.getty.autologinUser = lib.mkForce null;
-  
-  # Remove polkit rules - EVERYTHING requires sudo with password
-  # EXCEPTION: Keep polkit enabled if libvirtd is enabled (it's required)
-  security.polkit.enable = lib.mkForce config.virtualisation.libvirtd.enable;
-  
-  # Stricter sudo timeout (must re-authenticate frequently)
-  security.sudo.extraConfig = lib.mkAfter ''
-    # Require password every time (no caching)
-    Defaults timestamp_timeout=0
+  config = lib.mkMerge [
+    {
+      # Disable ALL autologin
+      services.getty.autologinUser = lib.mkForce null;
+      
+      # Remove polkit rules - EVERYTHING requires sudo with password
+      # EXCEPTION: Keep polkit enabled if libvirtd is enabled (it's required)
+      security.polkit.enable = lib.mkForce config.virtualisation.libvirtd.enable;
+      
+      # Stricter sudo timeout (must re-authenticate frequently)
+      security.sudo.extraConfig = lib.mkAfter ''
+        # Require password every time (no caching)
+        Defaults timestamp_timeout=0
+        
+        # Log all sudo commands
+        Defaults log_input
+        Defaults log_output
+        Defaults iolog_dir=/var/log/sudo-io
+        
+        # Require password even for trivial commands
+        Defaults !authenticate = false
+      '';
+    }
     
-    # Log all sudo commands
-    Defaults log_input
-    Defaults log_output
-    Defaults iolog_dir=/var/log/sudo-io
+    # Enhanced audit rules - only if audit is available
+    (lib.mkIf (config.services ? auditd) {
+      services.auditd = {
+        enable = true;
+      };
+    })
     
-    # Require password even for trivial commands
-    Defaults !authenticate = false
-  '';
-  
-  # Enhanced audit rules - only if audit is available
-  services.auditd = lib.mkIf (config.services ? auditd) {
-    enable = true;
-  };
-  
-  security.audit = lib.mkIf (config.security ? audit) {
-    rules = [
-      # Log all sudo usage
-      "-a always,exit -F arch=b64 -S execve -F euid=0 -F auid>=1000 -F auid!=-1 -k admin_commands"
-      
-      # Log all file access in sensitive directories
-      "-w /etc/nixos/ -p wa -k nixos_config"
-      "-w /etc/hypervisor/ -p wa -k hypervisor_config"
-      "-w /var/lib/hypervisor/ -p wa -k hypervisor_data"
-      
-      # Log all VM operations
-      "-w /var/lib/libvirt/ -p wa -k libvirt_ops"
-      "-w /etc/libvirt/ -p wa -k libvirt_config"
-      
-      # Log user/group changes
-      "-w /etc/passwd -p wa -k user_modification"
-      "-w /etc/group -p wa -k group_modification"
-      "-w /etc/shadow -p wa -k shadow_modification"
-      
-      # Log network configuration changes
-      "-w /etc/systemd/network/ -p wa -k network_config"
-      
-      # Log service changes
-      "-w /etc/systemd/system/ -p wa -k systemd_config"
-      
-      # Immutable rules (prevent disabling audit)
-      "-e 2"
-    ];
-  };
-  
-  # Stricter file permissions
-  systemd.tmpfiles.rules = [
+    (lib.mkIf (config.security ? audit) {
+      security.audit = {
+        rules = [
+          # Log all sudo usage
+          "-a always,exit -F arch=b64 -S execve -F euid=0 -F auid>=1000 -F auid!=-1 -k admin_commands"
+          
+          # Log all file access in sensitive directories
+          "-w /etc/nixos/ -p wa -k nixos_config"
+          "-w /etc/hypervisor/ -p wa -k hypervisor_config"
+          "-w /var/lib/hypervisor/ -p wa -k hypervisor_data"
+          
+          # Log all VM operations
+          "-w /var/lib/libvirt/ -p wa -k libvirt_ops"
+          "-w /etc/libvirt/ -p wa -k libvirt_config"
+          
+          # Log user/group changes
+          "-w /etc/passwd -p wa -k user_modification"
+          "-w /etc/group -p wa -k group_modification"
+          "-w /etc/shadow -p wa -k shadow_modification"
+          
+          # Log network configuration changes
+          "-w /etc/systemd/network/ -p wa -k network_config"
+          
+          # Log service changes
+          "-w /etc/systemd/system/ -p wa -k systemd_config"
+          
+          # Immutable rules (prevent disabling audit)
+          "-e 2"
+        ];
+      };
+    })
+    
+    {
+      # Stricter file permissions
+      systemd.tmpfiles.rules = [
     "z /var/lib/hypervisor 0750 root root -"
     "z /var/lib/hypervisor/vm_profiles 0750 root root -"
     "z /var/lib/hypervisor/isos 0750 root root -"
@@ -183,30 +191,32 @@
     SystemCallFilter = [ "@system-service" "~@privileged" "~@resources" ];
     SystemCallArchitectures = "native";
     SystemCallErrorNumber = "EPERM";
-  };
-  
-  # Warning message
-  warnings = [
-    ''
-      STRICT SECURITY MODE ENABLED
+      };
       
-      This is the maximum security configuration for Hyper-NixOS.
-      
-      RESTRICTIONS:
-      - No autologin (manual login required)
-      - No polkit (sudo required for all operations)*
-      - Password required for every sudo command
-      - Enhanced audit logging
-      - Stricter kernel parameters
-      - Reduced attack surface (disabled services)
-      
-      *Polkit is kept enabled when libvirtd is active (required dependency)
-      
-      If this is too restrictive, remove:
-      /var/lib/hypervisor/configuration/security-strict.nix
-      
-      And rebuild:
-      sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
-    ''
+      # Warning message
+      warnings = [
+        ''
+          STRICT SECURITY MODE ENABLED
+          
+          This is the maximum security configuration for Hyper-NixOS.
+          
+          RESTRICTIONS:
+          - No autologin (manual login required)
+          - No polkit (sudo required for all operations)*
+          - Password required for every sudo command
+          - Enhanced audit logging
+          - Stricter kernel parameters
+          - Reduced attack surface (disabled services)
+          
+          *Polkit is kept enabled when libvirtd is active (required dependency)
+          
+          If this is too restrictive, remove:
+          /var/lib/hypervisor/configuration/security-strict.nix
+          
+          And rebuild:
+          sudo nixos-rebuild switch --flake "/etc/hypervisor#$(hostname -s)"
+        ''
+      ];
+    }
   ];
 }
