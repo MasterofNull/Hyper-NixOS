@@ -587,7 +587,7 @@ This is the exact process you'll use for production VMs:
 1. Create → 2. Start → 3. Use → 4. Stop → 5. Backup → 6. Delete
 
 You now understand VM management at a deep level.
-These skills work with KVM, QEMU, oVirt, Proxmox, and more!
+These skills work with KVM, QEMU, oVirt, enterprise platforms, and more!
 
 Press OK to see the final results..." 28 78
 }
