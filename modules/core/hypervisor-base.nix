@@ -59,11 +59,19 @@
     ];
     
     # Enable KVM kernel modules
-    boot.kernelModules = [ "kvm-intel" "kvm-amd" ];
+    # Note: Both modules are loaded by default. The kernel will only use the one
+    # that matches your CPU. You may see a harmless warning about the other module
+    # already being loaded. To suppress this, you can set:
+    # boot.kernelModules = [ "kvm-amd" ];  # For AMD CPUs
+    # boot.kernelModules = [ "kvm-intel" ]; # For Intel CPUs
+    boot.kernelModules = lib.mkDefault [ "kvm-intel" "kvm-amd" ];
     
     # Enable IOMMU for PCI passthrough (if supported)
+    # Note: Both Intel and AMD IOMMU parameters are included.
+    # The kernel ignores parameters for hardware it doesn't have.
     boot.kernelParams = lib.mkDefault [
       "intel_iommu=on"
+      "amd_iommu=on"
       "iommu=pt"
     ];
     

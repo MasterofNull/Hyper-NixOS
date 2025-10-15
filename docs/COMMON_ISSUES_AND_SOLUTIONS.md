@@ -8,6 +8,7 @@ This document catalogs common issues encountered in Hyper-NixOS, their root caus
 - [Permission and Privilege Issues](#permission-and-privilege-issues)
 - [Module and Configuration Issues](#module-and-configuration-issues)
 - [CI/CD and Testing Issues](#cicd-and-testing-issues)
+- [Hardware and Kernel Issues](#hardware-and-kernel-issues)
 
 ## 🚨 **Critical Issues**
 
@@ -1482,3 +1483,43 @@ grep -B2 -A5 'users\.(users|groups) = mkMerge' modules/**/*.nix
 **Related Documentation**:
 - [CI GitHub Actions Guide](./dev/CI_GITHUB_ACTIONS_GUIDE.md)
 - [CI Test Fixes 2025-10-13](./dev/CI_TEST_FIXES_2025-10-13.md)
+
+## 🔧 **Hardware and Kernel Issues**
+
+### Issue: "kvm: already loaded vendor module 'kvm_amd'" or 'kvm_intel'
+**Symptoms**:
+- Warning message during `nixos-rebuild switch`
+- System tries to load both Intel and AMD KVM modules
+- One module reports it's already loaded
+
+**Root Cause**: 
+The hypervisor-base module loads both `kvm-intel` and `kvm-amd` kernel modules by default. The kernel will use the appropriate one for your CPU and report that the other vendor's module is already loaded when it tries to load both.
+
+**Impact**: 
+This is a **harmless warning**. The system works correctly - only the appropriate KVM module for your CPU is actually used.
+
+**Solutions**:
+
+#### ✅ **Option 1: Ignore the warning (Recommended)**
+The warning is harmless and doesn't affect functionality. Both modules are loaded for compatibility across different hardware.
+
+#### ✅ **Option 2: Override kernel modules for your specific CPU**
+In your configuration:
+
+```nix
+# For AMD CPUs:
+boot.kernelModules = lib.mkForce [ "kvm-amd" ];
+
+# For Intel CPUs:
+boot.kernelModules = lib.mkForce [ "kvm-intel" ];
+```
+
+**Prevention**:
+- The default configuration loads both modules for maximum compatibility
+- Using `lib.mkDefault` allows easy overriding in your local configuration
+- The kernel automatically uses the correct module for your hardware
+
+**Related Notes**:
+- IOMMU parameters (`intel_iommu=on` and `amd_iommu=on`) are also included for both vendors
+- The kernel ignores parameters for hardware it doesn't have
+- This approach ensures the system works on any x86_64 hardware without modification
