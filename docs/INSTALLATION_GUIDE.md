@@ -35,9 +35,149 @@ After installation, the first-boot wizard will help you select the appropriate s
 
 The `install.sh` script performs these steps:
 1. **Detects mode** (remote curl or local clone)
-2. **Ensures git is available** (installs via Nix if needed)
-3. **Clones repository** (if running from curl)
-4. **Runs system_installer.sh** with optimal flags for your hardware
+2. **Prompts for download method** (git HTTPS, SSH, token, or tarball)
+3. **Handles authentication** (SSH keys or GitHub tokens if needed)
+4. **Downloads repository** using your chosen method
+5. **Runs system_installer.sh** with optimal flags for your hardware
+
+## 📦 Download Options
+
+> **New in 2025-10-15**: Multiple download methods with authentication support
+
+When using the remote installation method (curl), you'll be prompted to choose:
+
+### Option 1: Git Clone (HTTPS) - Public Access
+```
+✓ No authentication required
+✓ Works for public repositories
+✓ Standard git clone speed
+✗ Cannot access private forks
+```
+
+**Best for**: Most users installing from the official repository
+
+### Option 2: Git Clone (SSH) - Authenticated
+```
+✓ Secure authentication via SSH keys
+✓ Works with private repositories
+✓ No password prompts after setup
+✓ Auto-generates SSH key if needed
+```
+
+**Best for**: Users with SSH keys configured, private forks
+
+**Setup Process**:
+1. Installer checks for existing SSH keys
+2. If not found, offers to generate new key
+3. Displays public key to add to GitHub
+4. Tests connection before proceeding
+5. Falls back to HTTPS if SSH fails
+
+**Example**:
+```bash
+$ curl -sSL https://raw.githubusercontent.com/.../install.sh | sudo bash
+
+Select method [1-4]: 2
+Checking SSH key for GitHub...
+No SSH key found.
+Generate new SSH key? [y/N]: y
+✓ SSH key generated: ~/.ssh/id_ed25519.pub
+
+Add this key to GitHub:
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... hyper-nixos-installer
+
+Press Enter after adding the key to GitHub...
+✓ GitHub SSH authentication successful
+```
+
+### Option 3: Git Clone (Token) - Personal Access Token
+```
+✓ Works with private repositories
+✓ Alternative to SSH keys
+✓ Supports fine-grained permissions
+✓ Secure token input (hidden)
+```
+
+**Best for**: CI/CD pipelines, automated installations, temporary access
+
+**Setup Process**:
+1. Generate token at https://github.com/settings/tokens
+2. Required scope: `repo` (full control of private repositories)
+3. Enter token when prompted (input hidden)
+4. Token stored securely in git credential helper
+
+**Example**:
+```bash
+Select method [1-4]: 3
+
+GitHub Personal Access Token required
+Generate at: https://github.com/settings/tokens
+Required scopes: repo
+
+Enter GitHub token (input hidden): **********************
+✓ Git credentials configured
+✓ Repository cloned successfully
+```
+
+### Option 4: Download Tarball - No Git Required
+```
+✓ Fastest download (no git history)
+✓ Smaller download size
+✓ No git dependency
+✓ Works in restricted environments
+✗ No git features (history, branches)
+```
+
+**Best for**: Quick one-time installations, minimal environments
+
+**Example**:
+```bash
+Select method [1-4]: 4
+✓ Tarball downloaded
+✓ Tarball extracted
+→ Launching installer...
+```
+
+## 🔐 Authentication Setup
+
+### For SSH Access
+
+**Generate SSH Key**:
+```bash
+ssh-keygen -t ed25519 -C "your_email@example.com"
+```
+
+**Add to GitHub**:
+1. Copy public key: `cat ~/.ssh/id_ed25519.pub`
+2. Go to https://github.com/settings/keys
+3. Click "New SSH key"
+4. Paste key and save
+
+**Test Connection**:
+```bash
+ssh -T git@github.com
+```
+
+### For Token Access
+
+**Generate Personal Access Token**:
+1. Go to https://github.com/settings/tokens
+2. Click "Generate new token (classic)"
+3. Select scopes: `repo` (full control)
+4. Copy token immediately (won't be shown again)
+
+**Use Token**:
+```bash
+# During installation, select option 3
+# Paste token when prompted
+```
+
+**Store Token for Future Use**:
+```bash
+# Token is automatically stored in git credential helper
+# Located at: ~/.git-credentials/github
+# Permissions: 600 (owner read/write only)
+```
 
 ### Advanced: Previous One-Liner (Legacy)
 

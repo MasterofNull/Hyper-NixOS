@@ -2,7 +2,8 @@
 
 [![NixOS](https://img.shields.io/badge/NixOS-24.05-blue.svg)](https://nixos.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Beta-yellow.svg)](https://github.com/yourusername/hyper-nixos)
+[![Status](https://img.shields.io/badge/Status-Beta-yellow.svg)](https://github.com/MasterofNull/Hyper-NixOS)
+[![Third-Party Licenses](https://img.shields.io/badge/Dependencies-Properly%20Licensed-success)](THIRD_PARTY_LICENSES.md)
 
 Next-generation virtualization platform built on NixOS with revolutionary features that redefine infrastructure management. Install in seconds with our one-line installer!
 
@@ -28,6 +29,14 @@ sudo ./install.sh
 - ✅ Detect your hardware and configure appropriately
 - ✅ Run the installer with optimal settings
 - ✅ Switch to Hyper-NixOS configuration
+
+> **New in 2025-10-15**: Remote installation now offers multiple download options:
+> - **Git Clone (HTTPS)** - Public access, no authentication
+> - **Git Clone (SSH)** - Authenticated with SSH key (auto-generates if needed)
+> - **Git Clone (Token)** - Authenticated with GitHub personal access token
+> - **Tarball Download** - Fastest option, no git required
+>
+> The installer will prompt you to choose your preferred method.
 
 After installation, the first-boot wizard will help you select the appropriate system tier based on your hardware.
 
@@ -264,3 +273,100 @@ Built with ❤️ using:
 ---
 
 **Ready to revolutionize your infrastructure? [Get started now!](DEPLOYMENT.md)**
+---
+
+## 📄 License and Attribution
+
+### Hyper-NixOS License
+
+**Hyper-NixOS** is licensed under the **MIT License**.
+
+```
+Copyright (c) 2024-2025 MasterofNull
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+```
+
+See [LICENSE](LICENSE) for the complete MIT License text.
+
+### Third-Party Components
+
+Hyper-NixOS integrates many excellent open source projects:
+
+**Core Stack**:
+- **NixOS** (MIT) - Operating system foundation
+- **QEMU/KVM** (GPL-2.0) - Virtualization engine
+- **Libvirt** (LGPL-2.1+) - Virtualization management
+- **SystemD** (LGPL-2.1+) - Service management
+
+**Monitoring**:
+- **Prometheus** (Apache 2.0) - Metrics collection
+- **Grafana** (AGPL-3.0) - Visualization
+- **Node Exporter** (Apache 2.0) - System metrics
+
+**Security**:
+- **AppArmor** (GPL-2.0) - Mandatory access control
+- **PolicyKit** (LGPL-2.1+) - Authorization framework
+
+And many more! See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for the complete list.
+
+### Documentation
+
+For comprehensive licensing information:
+- **[LICENSE](LICENSE)** - Hyper-NixOS MIT License
+- **[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)** - All dependency licenses
+- **[CREDITS.md](CREDITS.md)** - Project attributions
+- **[docs/LICENSING_ATTRIBUTION_GUIDE.md](docs/LICENSING_ATTRIBUTION_GUIDE.md)** - Developer guide
+
+### Compliance
+
+All components are used in compliance with their respective licenses:
+- GPL/LGPL components: Used as system programs/libraries without modification
+- Apache 2.0 components: Properly attributed
+- AGPL components: Used unmodified from nixpkgs
+- Source code available through nixpkgs
+
+**We respect and acknowledge all upstream open source contributions.**
+
+---
+
+## 🙏 Acknowledgments
+
+Hyper-NixOS would not be possible without the incredible work of:
+
+- **NixOS Community** - For the amazing distribution
+- **QEMU/KVM Developers** - For virtualization technology
+- **Libvirt Team** - For the management layer
+- **Prometheus & Grafana Teams** - For monitoring tools
+- **Linux Kernel Developers** - For KVM and security modules
+- **All open source contributors** - For making this possible
+
+See [CREDITS.md](CREDITS.md) for complete acknowledgments.
+
+**Thank you to the open source community! 🎉**
+
+---
+
+## 📞 Contact
+
+- **Project**: Hyper-NixOS
+- **Lead**: MasterofNull
+- **Repository**: https://github.com/MasterofNull/Hyper-NixOS
+- **License**: MIT License
+
+For licensing questions, see our [documentation](docs/LICENSING_ATTRIBUTION_GUIDE.md).
+
+---
+
+**© 2024-2025 MasterofNull and Contributors**  
+**Licensed under the MIT License**
+
+*Built with ❤️ and open source*

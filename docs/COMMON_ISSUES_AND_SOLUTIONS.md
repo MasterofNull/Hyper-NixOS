@@ -1942,3 +1942,277 @@ config = lib.mkIf cfg.enable (lib.mkMerge [
 **Key Learning**:
 1. Not all NixOS services are available in every configuration. Security modules should gracefully handle missing optional services to maintain compatibility with minimal installations.
 2. Module structure matters - conditional blocks must be properly positioned in `lib.mkMerge` arrays to be evaluated correctly.
+---
+
+## 🔐 Installer Download and Authentication Issues
+
+### Issue: SSH Authentication Fails During Installation
+
+**Symptoms**:
+```
+Permission denied (publickey).
+fatal: Could not read from remote repository.
+✗ GitHub SSH authentication failed
+```
+
+**Root Cause**: No SSH key configured or key not added to GitHub account.
+
+**Solutions**:
+
+#### ✅ **Option 1: Let installer generate SSH key**
+```bash
+# During installation, select option 2 (SSH)
+# When prompted: "Generate new SSH key? [y/N]"
+# Answer: y
+# Follow prompts to add key to GitHub
+```
+
+#### ✅ **Option 2: Manually generate and configure SSH key**
+```bash
+# Generate new SSH key
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+# Display public key
+cat ~/.ssh/id_ed25519.pub
+
+# Add to GitHub at: https://github.com/settings/keys
+
+# Test connection
+ssh -T git@github.com
+```
+
+#### ✅ **Option 3: Use HTTPS instead**
+```bash
+# During installation, select option 1 (HTTPS) instead of option 2 (SSH)
+```
+
+**Prevention**:
+- Set up SSH keys before installation if you plan to use SSH method
+- Test SSH connection with `ssh -T git@github.com` before installing
+- Use HTTPS method (option 1) if SSH is not configured
+
+---
+
+### Issue: GitHub Token Authentication Fails
+
+**Symptoms**:
+```
+remote: Invalid credentials
+fatal: Authentication failed
+✗ Failed to clone repository
+```
+
+**Root Cause**: Invalid token, expired token, or insufficient token permissions.
+
+**Solutions**:
+
+#### ✅ **Option 1: Generate new token with correct permissions**
+1. Go to https://github.com/settings/tokens
+2. Click "Generate new token (classic)"
+3. Select scopes:
+   - `repo` (full control) - for private repositories
+   - OR `public_repo` - for public repositories only
+4. Set expiration date
+5. Copy token immediately (won't be shown again)
+6. Run installer again and paste token when prompted
+
+#### ✅ **Option 2: Check token hasn't expired**
+```bash
+# Go to: https://github.com/settings/tokens
+# Check expiration date
+# Generate new token if expired
+```
+
+#### ✅ **Option 3: Clear cached credentials and retry**
+```bash
+# Remove stored credentials
+rm -f ~/.git-credentials/github
+
+# Clear git credential helper
+git config --global --unset credential.helper
+
+# Run installer again
+```
+
+**Prevention**:
+- Generate tokens with appropriate expiration dates
+- Document token location and expiration
+- Use tokens with minimum required permissions
+- Store tokens securely (password manager recommended)
+
+---
+
+### Issue: Tarball Download Fails or is Corrupted
+
+**Symptoms**:
+```
+✗ Failed to download tarball
+# OR
+✗ Failed to extract tarball
+tar: Unexpected EOF
+```
+
+**Root Cause**: Network issues, insufficient disk space, or GitHub API rate limiting.
+
+**Solutions**:
+
+#### ✅ **Option 1: Check network connectivity**
+```bash
+# Test GitHub connection
+curl -I https://github.com
+
+# Test raw.githubusercontent.com
+curl -I https://raw.githubusercontent.com
+
+# Check for proxy or firewall issues
+```
+
+#### ✅ **Option 2: Verify disk space**
+```bash
+# Check available space in /tmp
+df -h /tmp
+
+# Clean up if needed
+sudo rm -rf /tmp/hyper-nixos-*
+
+# Check available space again
+df -h /tmp
+```
+
+#### ✅ **Option 3: Switch to git clone method**
+```bash
+# Run installer again
+curl -sSL https://raw.githubusercontent.com/.../install.sh | sudo bash
+
+# Select option 1 (HTTPS Clone) instead of option 4 (Tarball)
+```
+
+**Prevention**:
+- Ensure stable network connection before installation
+- Keep sufficient free space (at least 2GB in /tmp)
+- Use git clone for more reliable downloads
+- Check GitHub status page if issues persist: https://www.githubstatus.com
+
+---
+
+### Issue: Download Method Selection Unclear
+
+**Symptoms**:
+User unsure which download method to choose.
+
+**Solution Matrix**:
+
+| Scenario | Recommended Method | Why |
+|----------|-------------------|-----|
+| **First-time installation** | Option 1: HTTPS | Simplest, no setup required |
+| **Have SSH key configured** | Option 2: SSH | Faster, more secure, no password prompts |
+| **Private repository/fork** | Option 3: Token or Option 2: SSH | Required for authentication |
+| **CI/CD pipeline** | Option 3: Token | Scriptable, secure for automation |
+| **Restricted environment** | Option 4: Tarball | No git required, minimal dependencies |
+| **Quick test installation** | Option 4: Tarball | Fastest download, smallest size |
+| **Development work** | Option 2: SSH | Best for frequent updates and commits |
+| **Temporary/throwaway VM** | Option 1: HTTPS or Option 4: Tarball | Quick setup, no credential management |
+
+**Quick Decision Guide**:
+```
+Do you have SSH keys configured? 
+  └─ Yes → Use Option 2 (SSH)
+  └─ No → Is this a private repo?
+         └─ Yes → Use Option 3 (Token) or setup SSH
+         └─ No → Want fastest download?
+                └─ Yes → Use Option 4 (Tarball)
+                └─ No → Use Option 1 (HTTPS)
+```
+
+---
+
+### Issue: Git Not Installed
+
+**Symptoms**:
+```
+git: command not found
+✗ Git installation failed
+```
+
+**Root Cause**: Git not available in current environment, or Nix not configured properly.
+
+**Solutions**:
+
+#### ✅ **Option 1: Use tarball download (no git needed)**
+```bash
+# Run installer and select option 4 (Tarball)
+# This method doesn't require git
+```
+
+#### ✅ **Option 2: Install git manually**
+```bash
+# On NixOS
+nix-env -iA nixos.git
+
+# Or temporarily
+nix-shell -p git
+
+# Then run installer again
+```
+
+#### ✅ **Option 3: Check Nix configuration**
+```bash
+# Ensure flakes are enabled
+echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+
+# Try again
+```
+
+**Prevention**:
+- Use tarball method on minimal systems
+- Ensure Nix is properly configured
+- Installer automatically installs git, but may require proper Nix setup
+
+---
+
+### Issue: Rate Limiting from GitHub
+
+**Symptoms**:
+```
+API rate limit exceeded
+✗ Failed to download
+```
+
+**Root Cause**: Too many requests to GitHub API (60/hour for unauthenticated, 5000/hour for authenticated).
+
+**Solutions**:
+
+#### ✅ **Option 1: Use authenticated method**
+```bash
+# Run installer and select:
+# - Option 2 (SSH) if you have SSH keys
+# - Option 3 (Token) with GitHub personal access token
+# Authentication increases rate limit to 5000/hour
+```
+
+#### ✅ **Option 2: Wait and retry**
+```bash
+# Check when rate limit resets
+curl -I https://api.github.com/rate_limit
+
+# Wait for reset time
+# Run installer again
+```
+
+#### ✅ **Option 3: Use tarball method**
+```bash
+# Tarball download uses different API endpoint
+# Run installer and select option 4 (Tarball)
+```
+
+**Prevention**:
+- Use authenticated methods (SSH or Token) for regular use
+- Avoid running installer multiple times in quick succession
+- Use tarball method for testing/development iterations
+
+---
+
+**Related Documentation**:
+- [Installation Guide](INSTALLATION_GUIDE.md) - Complete installation instructions
+- [Troubleshooting Guide](TROUBLESHOOTING.md) - General troubleshooting
+- [Development Documentation](dev/INSTALLER_DOWNLOAD_OPTIONS_2025-10-15.md) - Technical details

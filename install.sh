@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 # Hyper-NixOS Universal Installer
-# Copyright (C) 2024-2025 MasterofNull
+# Copyright (c) 2024-2025 MasterofNull
+# Licensed under the MIT License - see LICENSE file
+#
+# This installer uses:
+# - Bash (GPL-3.0+, Free Software Foundation)
+# - Git for repository operations (GPL-2.0)
+# - curl/wget for downloads (MIT-like/GPL-3.0+)
+# - tar for archive extraction
+#
+# For complete license information, see:
+# - LICENSE - Hyper-NixOS license  
+# - THIRD_PARTY_LICENSES.md - All dependencies
+# - CREDITS.md - Attributions
 # 
 # This script works in two modes:
 # 1. Local mode: Run from cloned repository
@@ -33,14 +45,67 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+BOLD='\033[1m'
 NC='\033[0m' # No Color
 
-# Progress indicators
-print_status() { echo -e "${BLUE}==>${NC} $*"; }
-print_success() { echo -e "${GREEN}✓${NC} $*"; }
-print_error() { echo -e "${RED}✗${NC} $*" >&2; }
-print_warning() { echo -e "${YELLOW}⚠${NC} $*" >&2; }
-print_info() { echo -e "${CYAN}ℹ${NC} $*"; }
+# Log directory and files
+LOG_DIR="/var/log/hyper-nixos-installer"
+ERROR_LOG="${LOG_DIR}/error.log"
+INSTALL_LOG="${LOG_DIR}/install.log"
+DEBUG_LOG="${LOG_DIR}/debug.log"
+
+# Initialize logging
+init_logging() {
+    # Create log directory if it doesn't exist
+    mkdir -p "$LOG_DIR" 2>/dev/null || {
+        # Fallback to temp directory if no permission
+        LOG_DIR="/tmp/hyper-nixos-installer-$USER"
+        ERROR_LOG="${LOG_DIR}/error.log"
+        INSTALL_LOG="${LOG_DIR}/install.log"
+        DEBUG_LOG="${LOG_DIR}/debug.log"
+        mkdir -p "$LOG_DIR"
+    }
+    
+    # Clear old logs
+    > "$ERROR_LOG"
+    > "$INSTALL_LOG"
+    > "$DEBUG_LOG"
+    
+    # Log session start
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Installation started" >> "$INSTALL_LOG"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] User: $(whoami)" >> "$INSTALL_LOG"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] System: $(uname -a)" >> "$INSTALL_LOG"
+}
+
+# Progress indicators with logging
+print_status() { 
+    echo -e "${BLUE}==>${NC} $*"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] STATUS: $*" >> "$INSTALL_LOG" 2>/dev/null || true
+}
+print_success() { 
+    echo -e "${GREEN}✓${NC} $*"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: $*" >> "$INSTALL_LOG" 2>/dev/null || true
+}
+print_error() { 
+    echo -e "${RED}✗${NC} $*" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" >> "$ERROR_LOG" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" >> "$INSTALL_LOG" 2>/dev/null || true
+}
+print_warning() { 
+    echo -e "${YELLOW}⚠${NC} $*" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $*" >> "$INSTALL_LOG" 2>/dev/null || true
+}
+print_info() { 
+    echo -e "${CYAN}ℹ${NC} $*"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] INFO: $*" >> "$INSTALL_LOG" 2>/dev/null || true
+}
+print_debug() {
+    if [[ "${DEBUG:-0}" == "1" ]]; then
+        echo -e "${MAGENTA}[DEBUG]${NC} $*" >&2
+    fi
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] DEBUG: $*" >> "$DEBUG_LOG" 2>/dev/null || true
+}
 
 # Detect if we're running from a cloned repo or piped from curl
 detect_mode() {
@@ -119,11 +184,96 @@ center_text() {
     printf '%*s%s\n' $padding '' "$text"
 }
 
-# Error reporting with context
+# Enhanced progress bar for downloads
+show_progress_bar() {
+    local current="$1"
+    local total="$2"
+    local prefix="${3:-Progress}"
+    local width=50
+    
+    if [[ "$total" -eq 0 ]]; then
+        total=1
+    fi
+    
+    local percent=$((current * 100 / total))
+    local filled=$((width * current / total))
+    local empty=$((width - filled))
+    
+    # Build progress bar
+    local bar=""
+    for ((i=0; i<filled; i++)); do bar+="█"; done
+    for ((i=0; i<empty; i++)); do bar+="░"; done
+    
+    # Color based on progress
+    local color="$CYAN"
+    if [[ $percent -ge 100 ]]; then
+        color="$GREEN"
+    elif [[ $percent -ge 75 ]]; then
+        color="$BLUE"
+    fi
+    
+    printf "\r${color}${prefix}:${NC} [%s] %3d%% " "$bar" "$percent"
+}
+
+# Progress indicator for multi-step operations
+step_progress() {
+    local current="$1"
+    local total="$2"
+    local description="$3"
+    
+    echo
+    echo -e "${BOLD}Step $current/$total:${NC} $description"
+    show_progress_bar "$current" "$total" "Overall Progress"
+    echo
+}
+
+# Show error with context from log file
+show_error_context() {
+    local error_file="$1"
+    local search_pattern="${2:-error}"
+    local context_before="${3:-3}"
+    local context_after="${4:-3}"
+    
+    if [[ ! -f "$error_file" ]]; then
+        return
+    fi
+    
+    echo >&2
+    echo -e "${BOLD}${RED}Error Context from: ${error_file}${NC}" >&2
+    echo -e "${BLUE}═══════════════════════════════════════════════════${NC}" >&2
+    
+    # Find error lines and show context
+    grep -i -n -B"$context_before" -A"$context_after" "$search_pattern" "$error_file" 2>/dev/null | \
+        head -n 20 | \
+        while IFS= read -r line; do
+            if [[ "$line" == "--" ]]; then
+                echo -e "${BLUE}---${NC}" >&2
+            elif [[ "$line" =~ ^([0-9]+):(.*)$ ]]; then
+                local line_num="${BASH_REMATCH[1]}"
+                local content="${BASH_REMATCH[2]}"
+                if echo "$content" | grep -qi "$search_pattern"; then
+                    echo -e "${RED}${line_num}:${NC}${BOLD} ${content}${NC}" >&2
+                else
+                    echo -e "${YELLOW}${line_num}:${NC} ${content}" >&2
+                fi
+            else
+                echo -e "${YELLOW}${line}${NC}" >&2
+            fi
+        done
+    
+    echo -e "${BLUE}═══════════════════════════════════════════════════${NC}" >&2
+    echo >&2
+}
+
+# Enhanced error reporting with context and log information
 report_error() {
     local message="$1"
     local suggestion="${2:-}"
-    local error_log="${3:-}"
+    local error_context_file="${3:-}"
+    local context_lines="${4:-5}"
+    
+    # Log the error
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] FATAL ERROR: $message" >> "$ERROR_LOG" 2>/dev/null || true
     
     echo >&2
     printf '%b╔══════════════════════════════════════════════════════════════╗%b\n' "$RED" "$NC" >&2
@@ -136,13 +286,29 @@ report_error() {
         printf '%b║%b %bSuggestion:%b %-48s %b║%b\n' "$RED" "$NC" "$YELLOW" "$NC" "$suggestion" "$RED" "$NC" >&2
     fi
     
-    if [[ -n "$error_log" && -f "$error_log" ]]; then
+    # Show error context if file provided
+    if [[ -n "$error_context_file" && -f "$error_context_file" ]]; then
         printf '%b║%b                                                             %b║%b\n' "$RED" "$NC" "$RED" "$NC" >&2
-        printf '%b║%b Recent error output:                                       %b║%b\n' "$RED" "$NC" "$RED" "$NC" >&2
+        printf '%b║%b %bError output (last %d lines):%b                            %b║%b\n' "$RED" "$NC" "$YELLOW" "$context_lines" "$NC" "$RED" "$NC" >&2
+        printf '%b║%b                                                             %b║%b\n' "$RED" "$NC" "$RED" "$NC" >&2
+        
         while IFS= read -r line; do
-            printf '%b║%b %-60s %b║%b\n' "$RED" "$NC" "${line:0:60}" "$RED" "$NC" >&2
-        done < <(tail -n 5 "$error_log")
+            # Truncate long lines and display
+            local display_line="${line:0:58}"
+            printf '%b║%b  %s%b ║%b\n' "$RED" "$NC" "$display_line" "$RED" "$NC" >&2
+        done < <(tail -n "$context_lines" "$error_context_file")
     fi
+    
+    # Show log file locations
+    printf '%b║%b                                                             %b║%b\n' "$RED" "$NC" "$RED" "$NC" >&2
+    printf '%b║%b %bLog files:%b                                               %b║%b\n' "$RED" "$NC" "$CYAN" "$NC" "$RED" "$NC" >&2
+    printf '%b║%b  Error log: %-47s %b║%b\n' "$RED" "$NC" "${ERROR_LOG:0:47}" "$RED" "$NC" >&2
+    printf '%b║%b  Install log: %-45s %b║%b\n' "$RED" "$NC" "${INSTALL_LOG:0:45}" "$RED" "$NC" >&2
+    printf '%b║%b  Debug log: %-47s %b║%b\n' "$RED" "$NC" "${DEBUG_LOG:0:47}" "$RED" "$NC" >&2
+    
+    printf '%b║%b                                                             %b║%b\n' "$RED" "$NC" "$RED" "$NC" >&2
+    printf '%b║%b View full logs with:                                       %b║%b\n' "$RED" "$NC" "$RED" "$NC" >&2
+    printf '%b║%b  cat %-52s %b║%b\n' "$RED" "$NC" "${ERROR_LOG:0:52}" "$RED" "$NC" >&2
     
     printf '%b╚══════════════════════════════════════════════════════════════╝%b\n' "$RED" "$NC" >&2
     echo >&2
@@ -183,7 +349,204 @@ ensure_git() {
     stop_spinner success "Git installed successfully"
 }
 
-# Remote mode: Clone repo and run installer
+# Prompt for download method
+prompt_download_method() {
+    echo
+    print_line "═" 70
+    center_text "Download Method Selection"
+    print_line "═" 70
+    echo
+    print_info "Choose how to download Hyper-NixOS:"
+    echo
+    echo "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication"
+    echo "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup"
+    echo "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token"
+    echo "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install"
+    echo
+    
+    local choice
+    while true; do
+        read -p "$(echo -e "${CYAN}Select method [1-4]:${NC} ")" choice
+        case "$choice" in
+            1|2|3|4)
+                echo "$choice"
+                return 0
+                ;;
+            *)
+                print_error "Invalid choice. Please enter 1, 2, 3, or 4."
+                ;;
+        esac
+    done
+}
+
+# Configure git credentials for HTTPS
+configure_git_https() {
+    local token="$1"
+    
+    if [[ -n "$token" ]]; then
+        print_status "Configuring git with personal access token..."
+        
+        # Store token in git credential helper
+        git config --global credential.helper store
+        
+        # Create credential file
+        mkdir -p ~/.git-credentials
+        echo "https://${token}@github.com" > ~/.git-credentials/github
+        chmod 600 ~/.git-credentials/github
+        
+        print_success "Git credentials configured"
+    fi
+}
+
+# Setup SSH for git if needed
+setup_git_ssh() {
+    print_info "Checking SSH key for GitHub..."
+    
+    # Check if SSH key exists
+    if [[ ! -f ~/.ssh/id_rsa && ! -f ~/.ssh/id_ed25519 ]]; then
+        print_warning "No SSH key found."
+        echo
+        read -p "$(echo -e "${CYAN}Generate new SSH key? [y/N]:${NC} ")" generate_key
+        
+        if [[ "${generate_key,,}" == "y" ]]; then
+            print_status "Generating SSH key..."
+            ssh-keygen -t ed25519 -C "hyper-nixos-installer" -f ~/.ssh/id_ed25519 -N ""
+            print_success "SSH key generated: ~/.ssh/id_ed25519.pub"
+            echo
+            print_warning "You need to add this key to your GitHub account:"
+            echo
+            cat ~/.ssh/id_ed25519.pub
+            echo
+            read -p "$(echo -e "${YELLOW}Press Enter after adding the key to GitHub...${NC}")" 
+        else
+            print_error "SSH key required for SSH clone method"
+            return 1
+        fi
+    fi
+    
+    # Test SSH connection
+    print_status "Testing GitHub SSH connection..."
+    if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+        print_success "GitHub SSH authentication successful"
+        return 0
+    else
+        print_error "GitHub SSH authentication failed"
+        print_info "Please add your SSH key to GitHub: https://github.com/settings/keys"
+        return 1
+    fi
+}
+
+# Get GitHub personal access token
+get_github_token() {
+    echo
+    print_info "GitHub Personal Access Token is required for HTTPS authentication."
+    print_info "Generate one at: https://github.com/settings/tokens"
+    print_info "Required scopes: repo (full control of private repositories)"
+    echo
+    
+    local token
+    read -sp "$(echo -e "${CYAN}Enter GitHub token (input hidden):${NC} ")" token
+    echo
+    
+    if [[ -z "$token" ]]; then
+        print_error "No token provided"
+        return 1
+    fi
+    
+    echo "$token"
+    return 0
+}
+
+# Download via tarball with progress tracking
+download_tarball() {
+    local dest="$1"
+    local branch="${2:-main}"
+    
+    print_status "Downloading tarball from GitHub..."
+    print_debug "Tarball destination: $dest"
+    print_debug "Branch: $branch"
+    
+    local tarball_url="https://github.com/MasterofNull/Hyper-NixOS/archive/refs/heads/${branch}.tar.gz"
+    local tarball_file="${dest}/hyper-nixos.tar.gz"
+    local error_output=$(mktemp)
+    
+    # Download with progress bar
+    if command -v curl >/dev/null 2>&1; then
+        print_debug "Using curl for download"
+        
+        if curl -L --progress-bar -o "$tarball_file" "$tarball_url" 2>&1 | \
+           tee -a "$INSTALL_LOG" | \
+           grep -oP '\d+\.\d' | \
+           while read -r percent; do
+               local pct=$(echo "$percent" | cut -d. -f1)
+               show_progress_bar "$pct" 100 "Downloading"
+           done
+        then
+            printf "\r\033[K"  # Clear line
+            print_success "Tarball downloaded ($(du -h "$tarball_file" | cut -f1))"
+        else
+            printf "\r\033[K"
+            print_error "Failed to download tarball"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Download failed from: $tarball_url" >> "$ERROR_LOG"
+            report_error "Tarball download failed" \
+                        "Check network connection or try git clone method" \
+                        "$error_output"
+            rm -f "$error_output"
+            return 1
+        fi
+    elif command -v wget >/dev/null 2>&1; then
+        print_debug "Using wget for download"
+        
+        if wget --progress=bar:force -O "$tarball_file" "$tarball_url" 2>&1 | \
+           tee -a "$INSTALL_LOG" | \
+           grep -oP '\d+%' | tr -d '%' | \
+           while read -r percent; do
+               show_progress_bar "$percent" 100 "Downloading"
+           done
+        then
+            printf "\r\033[K"
+            print_success "Tarball downloaded ($(du -h "$tarball_file" | cut -f1))"
+        else
+            printf "\r\033[K"
+            print_error "Failed to download tarball"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Download failed from: $tarball_url" >> "$ERROR_LOG"
+            report_error "Tarball download failed" \
+                        "Check network connection or try git clone method" \
+                        "$error_output"
+            rm -f "$error_output"
+            return 1
+        fi
+    else
+        print_error "Neither curl nor wget available"
+        report_error "No download tool available" \
+                    "Install curl or wget: nix-env -iA nixos.curl" \
+                    "$ERROR_LOG"
+        return 1
+    fi
+    
+    rm -f "$error_output"
+    
+    print_status "Extracting tarball..."
+    mkdir -p "${dest}/hyper-nixos"
+    
+    local extract_output=$(mktemp)
+    if tar -xzf "$tarball_file" -C "${dest}/hyper-nixos" --strip-components=1 2>"$extract_output"; then
+        print_success "Tarball extracted"
+        rm -f "$tarball_file" "$extract_output"
+        return 0
+    else
+        print_error "Failed to extract tarball"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Extraction failed" >> "$ERROR_LOG"
+        cat "$extract_output" >> "$ERROR_LOG"
+        report_error "Tarball extraction failed" \
+                    "File may be corrupted, try download again" \
+                    "$extract_output"
+        rm -f "$extract_output"
+        return 1
+    fi
+}
+
+# Remote mode: Download repo and run installer
 remote_install() {
     echo
     print_line "=" 70
@@ -193,57 +556,143 @@ remote_install() {
     
     print_status "Starting remote installation..."
     
-    # Ensure git is available
-    ensure_git
-    
     # Create temporary directory
     local tmpdir
     tmpdir=$(mktemp -d -t hyper-nixos-install.XXXXXX)
     trap 'rm -rf "$tmpdir"' EXIT
     
-    print_status "Cloning Hyper-NixOS repository..."
+    # Prompt for download method
+    local download_method
+    download_method=$(prompt_download_method)
     
-    # Clone the repository with progress
-    local repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+    local repo_url
     local clone_output
     clone_output=$(mktemp)
     
-    if [[ -t 1 ]]; then
-        # Terminal: show progress
-        if git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
-           tee "$clone_output" | \
-           grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
-           while read -r percent; do
-               printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
-           done
-        then
-            printf "\r\033[K"  # Clear line
-            print_success "Repository cloned successfully"
-        else
-            printf "\r\033[K"
-            print_error "Failed to clone repository from $repo_url"
-            echo
-            echo "Error details:"
-            tail -n 10 "$clone_output"
-            rm -f "$clone_output"
+    case "$download_method" in
+        1)
+            # HTTPS clone (public)
+            print_status "Using HTTPS clone (public access)..."
+            ensure_git
+            repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+            
+            if [[ -t 1 ]]; then
+                # Terminal: show progress
+                if git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
+                   tee "$clone_output" | \
+                   grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
+                   while read -r percent; do
+                       printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
+                   done
+                then
+                    printf "\r\033[K"  # Clear line
+                    print_success "Repository cloned successfully"
+                else
+                    printf "\r\033[K"
+                    print_error "Failed to clone repository from $repo_url"
+                    echo
+                    echo "Error details:"
+                    tail -n 10 "$clone_output"
+                    rm -f "$clone_output"
+                    exit 1
+                fi
+            else
+                # Non-terminal: quiet clone
+                if ! git clone -q "$repo_url" "$tmpdir/hyper-nixos" 2>"$clone_output"; then
+                    print_error "Failed to clone repository from $repo_url"
+                    echo "Error details:"
+                    cat "$clone_output"
+                    rm -f "$clone_output"
+                    exit 1
+                fi
+                print_success "Repository cloned successfully"
+            fi
+            ;;
+            
+        2)
+            # SSH clone
+            print_status "Using SSH clone (authenticated)..."
+            ensure_git
+            
+            if ! setup_git_ssh; then
+                print_error "SSH setup failed. Falling back to HTTPS..."
+                repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+            else
+                repo_url="git@github.com:MasterofNull/Hyper-NixOS.git"
+            fi
+            
+            print_status "Cloning repository via SSH..."
+            if git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
+               tee "$clone_output" | \
+               grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
+               while read -r percent; do
+                   printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
+               done
+            then
+                printf "\r\033[K"
+                print_success "Repository cloned successfully"
+            else
+                printf "\r\033[K"
+                print_error "Failed to clone repository"
+                tail -n 10 "$clone_output"
+                rm -f "$clone_output"
+                exit 1
+            fi
+            ;;
+            
+        3)
+            # HTTPS with token
+            print_status "Using HTTPS clone with personal access token..."
+            ensure_git
+            
+            local github_token
+            if ! github_token=$(get_github_token); then
+                print_error "Failed to get GitHub token"
+                exit 1
+            fi
+            
+            configure_git_https "$github_token"
+            repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+            
+            print_status "Cloning repository with token authentication..."
+            if GIT_TERMINAL_PROMPT=0 git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
+               tee "$clone_output" | \
+               grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
+               while read -r percent; do
+                   printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
+               done
+            then
+                printf "\r\033[K"
+                print_success "Repository cloned successfully"
+            else
+                printf "\r\033[K"
+                print_error "Failed to clone repository. Check your token permissions."
+                tail -n 10 "$clone_output"
+                rm -f "$clone_output"
+                exit 1
+            fi
+            ;;
+            
+        4)
+            # Tarball download
+            print_status "Using tarball download (no git required)..."
+            
+            if ! download_tarball "$tmpdir"; then
+                print_error "Tarball download failed"
+                exit 1
+            fi
+            ;;
+            
+        *)
+            print_error "Invalid download method"
             exit 1
-        fi
-    else
-        # Non-terminal: quiet clone with error handling
-        if ! git clone -q "$repo_url" "$tmpdir/hyper-nixos" 2>"$clone_output"; then
-            print_error "Failed to clone repository from $repo_url"
-            echo "Error details:"
-            cat "$clone_output"
-            rm -f "$clone_output"
-            exit 1
-        fi
-        print_success "Repository cloned successfully"
-    fi
+            ;;
+    esac
     
     rm -f "$clone_output"
     
     cd "$tmpdir/hyper-nixos" || {
-        print_error "Failed to enter cloned repository directory"
+        print_error "Failed to enter repository directory"
         exit 1
     }
     
@@ -323,12 +772,20 @@ local_install() {
 
 # Main execution
 main() {
+    # Initialize logging system
+    init_logging
+    
+    print_debug "Starting main execution"
+    print_debug "Arguments: $*"
+    
     # Check for root privileges
     check_root "$@"
     
     # Detect mode and run appropriate installer
     local mode
     mode=$(detect_mode)
+    
+    print_debug "Detected mode: $mode"
     
     case "$mode" in
         local)
@@ -339,6 +796,9 @@ main() {
             ;;
         *)
             print_error "Could not determine installation mode"
+            report_error "Installation mode detection failed" \
+                        "Ensure script is run correctly" \
+                        "$ERROR_LOG"
             exit 1
             ;;
     esac
