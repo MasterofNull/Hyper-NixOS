@@ -258,24 +258,21 @@ in
       };
     })
     
-    # Security monitoring - conditionally enable if audit services are available
-    (lib.mkIf (cfg.enable && (config.services ? auditd)) {
-      services.auditd = {
-        enable = true;
-      };
+    # Security monitoring - conditionally enable audit service if available
+    (lib.mkIf (cfg.enable && config.services ? auditd && config.services.auditd ? enable) {
+      services.auditd.enable = true;
     })
     
-    (lib.mkIf (cfg.enable && (config.security ? audit)) {
-      security.audit = {
-        enable = true;
-        rules = lib.mkAfter [
-          # Monitor credential files
-          "-w /etc/shadow -p wa -k credential_changes"
-          "-w /etc/passwd -p wa -k credential_changes"
-          "-w /var/lib/hypervisor/.credential-hash -p wa -k credential_integrity"
-          "-w /var/lib/hypervisor/.tamper-detected -p wa -k security_alert"
-        ];
-      };
+    # Security audit rules - conditionally add if audit subsystem is available
+    (lib.mkIf (cfg.enable && config.security ? audit && config.security.audit ? rules) {
+      security.audit.enable = true;
+      security.audit.rules = lib.mkAfter [
+        # Monitor credential files
+        "-w /etc/shadow -p wa -k credential_changes"
+        "-w /etc/passwd -p wa -k credential_changes"
+        "-w /var/lib/hypervisor/.credential-hash -p wa -k credential_integrity"
+        "-w /var/lib/hypervisor/.tamper-detected -p wa -k security_alert"
+      ];
     })
   ];
 }

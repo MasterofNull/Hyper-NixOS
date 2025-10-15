@@ -10,6 +10,39 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-12-16 (Update 9): Fixed Audit Service Configuration in credential-chain.nix (Again)
+**Agent**: Claude
+**Task**: Fix "The option `services.auditd' does not exist" error in credential-chain.nix
+
+**Error**: The same audit service error occurred again in credential-chain.nix
+
+**Root Cause**: The previous fix wasn't complete. The conditional checks for `config.services ? auditd` needed additional checks for nested attributes to prevent evaluation errors.
+
+**Fix Applied**: Enhanced the conditional structure:
+```nix
+# Before:
+(lib.mkIf (cfg.enable && (config.services ? auditd)) {
+  services.auditd = {
+    enable = true;
+  };
+})
+
+# After:
+(lib.mkIf (cfg.enable && config.services ? auditd && config.services.auditd ? enable) {
+  services.auditd.enable = true;
+})
+```
+
+**Files Modified**:
+- `modules/security/credential-chain.nix` - Enhanced conditional checks for audit services
+
+**Key Learning**: 
+- When checking for optional services, also check for nested attributes before accessing them
+- Use more granular conditionals to prevent evaluation errors
+- The pattern `config.services ? auditd && config.services.auditd ? enable` is more robust
+
+---
+
 #### 2025-10-15 (Update 8): Fixed Audit Service Configuration in credential-chain.nix
 **Agent**: Claude
 **Task**: Fix "The option `services.auditd' does not exist" error
