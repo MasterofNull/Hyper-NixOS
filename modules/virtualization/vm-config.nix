@@ -2,31 +2,31 @@
 # Uses a unique tag-based system for VM configuration with policy templates
 { config, lib, pkgs, ... }:
 
-with lib;
+# Removed: with lib; - Using explicit lib. prefix for clarity
 let
   cfg = config.hypervisor.compute;
   
   # Tag definitions for flexible VM configuration
   tagDefinition = {
     options = {
-      name = mkOption {
-        type = types.str;
+      name = lib.mkOption {
+        type = lib.types.str;
         description = "Tag name";
       };
       
-      category = mkOption {
-        type = types.enum [ "performance" "security" "network" "storage" "lifecycle" "compliance" ];
+      category = lib.mkOption {
+        type = lib.types.enum [ "performance" "security" "network" "storage" "lifecycle" "compliance" ];
         description = "Tag category for organization";
       };
       
-      values = mkOption {
-        type = types.attrsOf types.anything;
+      values = lib.mkOption {
+        type = lib.types.attrsOf lib.types.anything;
         default = {};
         description = "Tag-specific configuration values";
       };
       
-      priority = mkOption {
-        type = types.int;
+      priority = lib.mkOption {
+        type = lib.types.int;
         default = 50;
         description = "Priority for conflict resolution (higher wins)";
       };
@@ -36,31 +36,31 @@ let
   # Policy templates that can be inherited
   policyTemplate = {
     options = {
-      name = mkOption {
-        type = types.str;
+      name = lib.mkOption {
+        type = lib.types.str;
         description = "Policy template name";
       };
       
-      description = mkOption {
-        type = types.str;
+      description = lib.mkOption {
+        type = lib.types.str;
         default = "";
         description = "Policy description";
       };
       
-      tags = mkOption {
-        type = types.listOf types.str;
+      tags = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "Tags to apply when this policy is used";
       };
       
-      constraints = mkOption {
-        type = types.attrsOf types.anything;
+      constraints = lib.mkOption {
+        type = lib.types.attrsOf lib.types.anything;
         default = {};
         description = "Constraints that must be satisfied";
       };
       
-      defaults = mkOption {
-        type = types.attrsOf types.anything;
+      defaults = lib.mkOption {
+        type = lib.types.attrsOf lib.types.anything;
         default = {};
         description = "Default values provided by this policy";
       };
@@ -71,31 +71,31 @@ let
   computeUnit = {
     options = {
       # Unique identification
-      uuid = mkOption {
-        type = types.str;
+      uuid = lib.mkOption {
+        type = lib.types.str;
         default = "";
         description = "Auto-generated UUID for the compute unit";
       };
       
       # Human-friendly naming
-      labels = mkOption {
-        type = types.attrsOf types.str;
+      labels = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
         default = {};
         description = "Key-value labels for identification";
         example = { app = "web"; env = "prod"; tier = "frontend"; };
       };
       
       # Tag-based configuration
-      tags = mkOption {
-        type = types.listOf types.str;
+      tags = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "Tags to apply for configuration";
         example = [ "high-performance" "secure-boot" "gpu-enabled" ];
       };
       
       # Policy inheritance
-      policies = mkOption {
-        type = types.listOf types.str;
+      policies = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "Policy templates to inherit";
         example = [ "web-server" "production" ];
@@ -103,29 +103,29 @@ let
       
       # Resource requirements (abstract units)
       resources = {
-        compute = mkOption {
-          type = types.submodule {
+        compute = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              units = mkOption {
-                type = types.int;
+              units = lib.mkOption {
+                type = lib.types.int;
                 default = 100;
                 description = "Abstract compute units (100 = 1 vCPU equivalent)";
               };
               
-              burst = mkOption {
-                type = types.nullOr types.int;
+              burst = lib.mkOption {
+                type = lib.types.nullOr lib.types.int;
                 default = null;
                 description = "Burst compute units available";
               };
               
-              architecture = mkOption {
-                type = types.enum [ "x86_64" "aarch64" "riscv64" "wasm" ];
+              architecture = lib.mkOption {
+                type = lib.types.enum [ "x86_64" "aarch64" "riscv64" "wasm" ];
                 default = "x86_64";
                 description = "Instruction set architecture";
               };
               
-              features = mkOption {
-                type = types.listOf types.str;
+              features = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
                 default = [];
                 description = "Required CPU features";
                 example = [ "avx512" "aes" "vmx" ];
@@ -136,23 +136,23 @@ let
           description = "Compute resource requirements";
         };
         
-        memory = mkOption {
-          type = types.submodule {
+        memory = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              size = mkOption {
-                type = types.str;
+              size = lib.mkOption {
+                type = lib.types.str;
                 default = "1Gi";
                 description = "Memory size (Ki, Mi, Gi, Ti notation)";
               };
               
-              hugepages = mkOption {
-                type = types.nullOr types.str;
+              hugepages = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
                 default = null;
                 description = "Hugepage size if required";
               };
               
-              bandwidth = mkOption {
-                type = types.nullOr types.int;
+              bandwidth = lib.mkOption {
+                type = lib.types.nullOr lib.types.int;
                 default = null;
                 description = "Memory bandwidth requirement in GB/s";
               };
@@ -162,28 +162,28 @@ let
           description = "Memory resource requirements";
         };
         
-        accelerators = mkOption {
-          type = types.listOf (types.submodule {
+        accelerators = lib.mkOption {
+          type = lib.types.listOf (lib.types.submodule {
             options = {
-              type = mkOption {
-                type = types.enum [ "gpu" "fpga" "tpu" "dpu" ];
+              type = lib.mkOption {
+                type = lib.types.enum [ "gpu" "fpga" "tpu" "dpu" ];
                 description = "Accelerator type";
               };
               
-              model = mkOption {
-                type = types.nullOr types.str;
+              model = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
                 default = null;
                 description = "Specific model requirement";
               };
               
-              count = mkOption {
-                type = types.int;
+              count = lib.mkOption {
+                type = lib.types.int;
                 default = 1;
                 description = "Number of accelerators";
               };
               
-              capabilities = mkOption {
-                type = types.listOf types.str;
+              capabilities = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
                 default = [];
                 description = "Required capabilities";
               };
@@ -196,36 +196,36 @@ let
       
       # Workload definition
       workload = {
-        type = mkOption {
-          type = types.enum [ "persistent" "ephemeral" "batch" "interactive" ];
+        type = lib.mkOption {
+          type = lib.types.enum [ "persistent" "ephemeral" "batch" "interactive" ];
           default = "persistent";
           description = "Workload type affecting scheduling";
         };
         
-        profile = mkOption {
-          type = types.nullOr (types.enum [ "cpu-intensive" "memory-intensive" "io-intensive" "gpu-compute" "realtime" ]);
+        profile = lib.mkOption {
+          type = lib.types.nullOr (lib.types.enum [ "cpu-intensive" "memory-intensive" "io-intensive" "gpu-compute" "realtime" ]);
           default = null;
           description = "Workload profile for optimization";
         };
         
-        sla = mkOption {
-          type = types.submodule {
+        sla = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              availability = mkOption {
-                type = types.nullOr types.float;
+              availability = lib.mkOption {
+                type = lib.types.nullOr lib.types.float;
                 default = null;
                 description = "Required availability (0.99 = 99%)";
               };
               
-              latency = mkOption {
-                type = types.nullOr types.str;
+              latency = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
                 default = null;
                 description = "Maximum latency tolerance";
                 example = "10ms";
               };
               
-              iops = mkOption {
-                type = types.nullOr types.int;
+              iops = lib.mkOption {
+                type = lib.types.nullOr lib.types.int;
                 default = null;
                 description = "Required IOPS";
               };
@@ -237,39 +237,39 @@ let
       };
       
       # Storage attachments (referenced by capability)
-      storage = mkOption {
-        type = types.listOf (types.submodule {
+      storage = lib.mkOption {
+        type = lib.types.listOf (lib.types.submodule {
           options = {
-            name = mkOption {
-              type = types.str;
+            name = lib.mkOption {
+              type = lib.types.str;
               description = "Storage attachment name";
             };
             
-            capability = mkOption {
-              type = types.str;
+            capability = lib.mkOption {
+              type = lib.types.str;
               description = "Required storage capability";
               example = "fast-nvme";
             };
             
-            size = mkOption {
-              type = types.str;
+            size = lib.mkOption {
+              type = lib.types.str;
               description = "Size requirement";
               example = "100Gi";
             };
             
-            performance = mkOption {
-              type = types.nullOr (types.submodule {
+            performance = lib.mkOption {
+              type = lib.types.nullOr (lib.types.submodule {
                 options = {
-                  iops = mkOption { type = types.nullOr types.int; default = null; };
-                  throughput = mkOption { type = types.nullOr types.str; default = null; };
+                  iops = lib.mkOption { type = lib.types.nullOr lib.types.int; default = null; };
+                  throughput = lib.mkOption { type = lib.types.nullOr lib.types.str; default = null; };
                 };
               });
               default = null;
               description = "Performance requirements";
             };
             
-            features = mkOption {
-              type = types.listOf types.str;
+            features = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
               default = [];
               description = "Required features";
               example = [ "encryption" "snapshots" "replication" ];
@@ -281,36 +281,36 @@ let
       };
       
       # Network attachments (capability-based)
-      network = mkOption {
-        type = types.listOf (types.submodule {
+      network = lib.mkOption {
+        type = lib.types.listOf (lib.types.submodule {
           options = {
-            name = mkOption {
-              type = types.str;
+            name = lib.mkOption {
+              type = lib.types.str;
               description = "Network attachment name";
             };
             
-            capability = mkOption {
-              type = types.str;
+            capability = lib.mkOption {
+              type = lib.types.str;
               description = "Network capability required";
               example = "public-internet";
             };
             
-            bandwidth = mkOption {
-              type = types.nullOr types.str;
+            bandwidth = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
               default = null;
               description = "Bandwidth requirement";
               example = "10Gbps";
             };
             
-            latency = mkOption {
-              type = types.nullOr types.str;
+            latency = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
               default = null;
               description = "Latency requirement";
               example = "< 1ms";
             };
             
-            features = mkOption {
-              type = types.listOf types.str;
+            features = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
               default = [];
               description = "Required network features";
               example = [ "ipv6" "jumbo-frames" "sr-iov" ];
@@ -323,26 +323,26 @@ let
       
       # Placement constraints
       placement = {
-        affinity = mkOption {
-          type = types.listOf (types.submodule {
+        affinity = lib.mkOption {
+          type = lib.types.listOf (lib.types.submodule {
             options = {
-              type = mkOption {
-                type = types.enum [ "required" "preferred" "anti" ];
+              type = lib.mkOption {
+                type = lib.types.enum [ "required" "preferred" "anti" ];
                 description = "Affinity type";
               };
               
-              scope = mkOption {
-                type = types.enum [ "host" "rack" "zone" "region" ];
+              scope = lib.mkOption {
+                type = lib.types.enum [ "host" "rack" "zone" "region" ];
                 description = "Affinity scope";
               };
               
-              labelSelector = mkOption {
-                type = types.attrsOf types.str;
+              labelSelector = lib.mkOption {
+                type = lib.types.attrsOf lib.types.str;
                 description = "Label selector for affinity";
               };
               
-              weight = mkOption {
-                type = types.int;
+              weight = lib.mkOption {
+                type = lib.types.int;
                 default = 100;
                 description = "Weight for preferred affinity";
               };
@@ -352,17 +352,17 @@ let
           description = "Affinity rules";
         };
         
-        spread = mkOption {
-          type = types.nullOr (types.submodule {
+        spread = lib.mkOption {
+          type = lib.types.nullOr (lib.types.submodule {
             options = {
-              topology = mkOption {
-                type = types.str;
+              topology = lib.mkOption {
+                type = lib.types.str;
                 description = "Topology key for spreading";
                 example = "kubernetes.io/hostname";
               };
               
-              maximum = mkOption {
-                type = types.int;
+              maximum = lib.mkOption {
+                type = lib.types.int;
                 default = 1;
                 description = "Maximum units per topology domain";
               };
@@ -375,51 +375,51 @@ let
       
       # Lifecycle hooks
       lifecycle = {
-        preStart = mkOption {
-          type = types.lines;
+        preStart = lib.mkOption {
+          type = lib.types.lines;
           default = "";
           description = "Commands to run before starting";
         };
         
-        postStart = mkOption {
-          type = types.lines;
+        postStart = lib.mkOption {
+          type = lib.types.lines;
           default = "";
           description = "Commands to run after starting";
         };
         
-        preStop = mkOption {
-          type = types.lines;
+        preStop = lib.mkOption {
+          type = lib.types.lines;
           default = "";
           description = "Commands to run before stopping";
         };
         
-        postStop = mkOption {
-          type = types.lines;
+        postStop = lib.mkOption {
+          type = lib.types.lines;
           default = "";
           description = "Commands to run after stopping";
         };
         
-        healthCheck = mkOption {
-          type = types.nullOr (types.submodule {
+        healthCheck = lib.mkOption {
+          type = lib.types.nullOr (lib.types.submodule {
             options = {
-              type = mkOption {
-                type = types.enum [ "http" "tcp" "script" ];
+              type = lib.mkOption {
+                type = lib.types.enum [ "http" "tcp" "script" ];
                 description = "Health check type";
               };
               
-              config = mkOption {
-                type = types.attrsOf types.anything;
+              config = lib.mkOption {
+                type = lib.types.attrsOf lib.types.anything;
                 description = "Health check configuration";
               };
               
-              interval = mkOption {
-                type = types.str;
+              interval = lib.mkOption {
+                type = lib.types.str;
                 default = "30s";
                 description = "Check interval";
               };
               
-              timeout = mkOption {
-                type = types.str;
+              timeout = lib.mkOption {
+                type = lib.types.str;
                 default = "5s";
                 description = "Check timeout";
               };
@@ -432,23 +432,23 @@ let
       
       # Advanced features
       features = {
-        isolation = mkOption {
-          type = types.submodule {
+        isolation = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              type = mkOption {
-                type = types.enum [ "vm" "container" "firecracker" "kata" "wasm" ];
+              type = lib.mkOption {
+                type = lib.types.enum [ "vm" "container" "firecracker" "kata" "wasm" ];
                 default = "vm";
                 description = "Isolation technology";
               };
               
-              securityLevel = mkOption {
-                type = types.enum [ "standard" "hardened" "confidential" ];
+              securityLevel = lib.mkOption {
+                type = lib.types.enum [ "standard" "hardened" "confidential" ];
                 default = "standard";
                 description = "Security isolation level";
               };
               
-              selinux = mkOption {
-                type = types.bool;
+              selinux = lib.mkOption {
+                type = lib.types.bool;
                 default = true;
                 description = "Enable SELinux isolation";
               };
@@ -458,23 +458,23 @@ let
           description = "Isolation configuration";
         };
         
-        persistence = mkOption {
-          type = types.submodule {
+        persistence = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              stateful = mkOption {
-                type = types.bool;
+              stateful = lib.mkOption {
+                type = lib.types.bool;
                 default = true;
                 description = "Whether the compute unit is stateful";
               };
               
-              checkpoints = mkOption {
-                type = types.bool;
+              checkpoints = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Enable checkpoint/restore";
               };
               
-              migration = mkOption {
-                type = types.enum [ "none" "cold" "live" ];
+              migration = lib.mkOption {
+                type = lib.types.enum [ "none" "cold" "live" ];
                 default = "cold";
                 description = "Migration capability";
               };
@@ -504,8 +504,8 @@ in
 {
   options.hypervisor.compute = {
     # Global tags available for use
-    tags = mkOption {
-      type = types.attrsOf (types.submodule tagDefinition);
+    tags = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule tagDefinition);
       default = {};
       description = "Available tags for compute units";
       example = literalExample ''
@@ -530,8 +530,8 @@ in
     };
     
     # Policy templates
-    policies = mkOption {
-      type = types.attrsOf (types.submodule policyTemplate);
+    policies = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule policyTemplate);
       default = {};
       description = "Policy templates for compute units";
       example = literalExample ''
@@ -552,35 +552,35 @@ in
     };
     
     # Compute unit definitions
-    units = mkOption {
-      type = types.attrsOf (types.submodule computeUnit);
+    units = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule computeUnit);
       default = {};
       description = "Compute unit definitions";
     };
     
     # Global defaults
     defaults = {
-      resourceMultiplier = mkOption {
-        type = types.float;
+      resourceMultiplier = lib.mkOption {
+        type = lib.types.float;
         default = 1.0;
         description = "Global resource multiplier for all units";
       };
       
-      defaultTags = mkOption {
-        type = types.listOf types.str;
+      defaultTags = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "Tags applied to all units by default";
       };
       
       scheduling = {
-        algorithm = mkOption {
-          type = types.enum [ "binpack" "spread" "random" "custom" ];
+        algorithm = lib.mkOption {
+          type = lib.types.enum [ "binpack" "spread" "random" "custom" ];
           default = "binpack";
           description = "Default scheduling algorithm";
         };
         
-        preemption = mkOption {
-          type = types.bool;
+        preemption = lib.mkOption {
+          type = lib.types.bool;
           default = false;
           description = "Allow preemption of lower priority workloads";
         };
@@ -588,9 +588,9 @@ in
     };
   };
   
-  config = {
+  config = lib.mkIf cfg.enable {
     # Generate libvirt XML or other backend configurations
-    system.activationScripts.generateComputeUnits = mkIf (cfg.units != {}) ''
+    system.activationScripts.generateComputeUnits = lib.mkIf (cfg.units != {}) ''
       echo "Generating compute unit configurations..."
       mkdir -p /var/lib/hypervisor/compute
       

@@ -2,37 +2,37 @@
 # Implements a decentralized mesh topology with pluggable consensus
 { config, lib, pkgs, ... }:
 
-with lib;
+# Removed: with lib; - Using explicit lib. prefix for clarity
 let
   cfg = config.hypervisor.mesh;
   
   # Node identity and capabilities
   nodeDefinition = {
     options = {
-      id = mkOption {
-        type = types.str;
+      id = lib.mkOption {
+        type = lib.types.str;
         description = "Unique node identifier (auto-generated if empty)";
         default = "";
       };
       
       capabilities = {
-        compute = mkOption {
-          type = types.submodule {
+        compute = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              available = mkOption {
-                type = types.bool;
+              available = lib.mkOption {
+                type = lib.types.bool;
                 default = true;
                 description = "Can host compute workloads";
               };
               
-              capacity = mkOption {
-                type = types.int;
+              capacity = lib.mkOption {
+                type = lib.types.int;
                 default = 1000;
                 description = "Compute capacity units";
               };
               
-              specializations = mkOption {
-                type = types.listOf types.str;
+              specializations = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
                 default = [];
                 description = "Specialized compute capabilities";
                 example = [ "gpu" "fpga" "quantum" ];
@@ -43,23 +43,23 @@ let
           description = "Compute capabilities";
         };
         
-        storage = mkOption {
-          type = types.submodule {
+        storage = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              available = mkOption {
-                type = types.bool;
+              available = lib.mkOption {
+                type = lib.types.bool;
                 default = true;
                 description = "Can provide storage";
               };
               
-              tiers = mkOption {
-                type = types.listOf types.int;
+              tiers = lib.mkOption {
+                type = lib.types.listOf lib.types.int;
                 default = [ 1 ];
                 description = "Available storage tiers";
               };
               
-              capacity = mkOption {
-                type = types.str;
+              capacity = lib.mkOption {
+                type = lib.types.str;
                 default = "1Ti";
                 description = "Total storage capacity";
               };
@@ -69,23 +69,23 @@ let
           description = "Storage capabilities";
         };
         
-        network = mkOption {
-          type = types.submodule {
+        network = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              gateway = mkOption {
-                type = types.bool;
+              gateway = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can act as network gateway";
               };
               
-              bandwidth = mkOption {
-                type = types.str;
+              bandwidth = lib.mkOption {
+                type = lib.types.str;
                 default = "1Gbps";
                 description = "Network bandwidth capacity";
               };
               
-              features = mkOption {
-                type = types.listOf types.str;
+              features = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
                 default = [];
                 description = "Network features";
                 example = [ "sr-iov" "dpdk" "rdma" ];
@@ -98,24 +98,24 @@ let
       };
       
       location = {
-        zone = mkOption {
-          type = types.str;
+        zone = lib.mkOption {
+          type = lib.types.str;
           default = "default";
           description = "Availability zone";
         };
         
-        rack = mkOption {
-          type = types.nullOr types.str;
+        rack = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
           default = null;
           description = "Rack identifier";
         };
         
-        geo = mkOption {
-          type = types.nullOr (types.submodule {
+        geo = lib.mkOption {
+          type = lib.types.nullOr (lib.types.submodule {
             options = {
-              latitude = mkOption { type = types.float; };
-              longitude = mkOption { type = types.float; };
-              region = mkOption { type = types.str; };
+              latitude = lib.mkOption { type = lib.types.float; };
+              longitude = lib.mkOption { type = lib.types.float; };
+              region = lib.mkOption { type = lib.types.str; };
             };
           });
           default = null;
@@ -123,8 +123,8 @@ let
         };
       };
       
-      roles = mkOption {
-        type = types.listOf (types.enum [
+      roles = lib.mkOption {
+        type = lib.types.listOf (lib.types.enum [
           "controller"    # Participates in control plane
           "worker"        # Runs workloads
           "storage"       # Provides storage
@@ -139,36 +139,36 @@ let
   
   # Consensus configuration
   consensusDefinition = {
-    algorithm = mkOption {
-      type = types.enum [ "raft" "pbft" "tendermint" "avalanche" "hotstuff" ];
+    algorithm = lib.mkOption {
+      type = lib.types.enum [ "raft" "pbft" "tendermint" "avalanche" "hotstuff" ];
       default = "raft";
       description = "Consensus algorithm to use";
     };
     
     parameters = {
-      raft = mkOption {
-        type = types.submodule {
+      raft = lib.mkOption {
+        type = lib.types.submodule {
           options = {
-            electionTimeout = mkOption {
-              type = types.int;
+            electionTimeout = lib.mkOption {
+              type = lib.types.int;
               default = 150;
               description = "Election timeout in milliseconds";
             };
             
-            heartbeatInterval = mkOption {
-              type = types.int;
+            heartbeatInterval = lib.mkOption {
+              type = lib.types.int;
               default = 50;
               description = "Heartbeat interval in milliseconds";
             };
             
-            snapshotInterval = mkOption {
-              type = types.int;
+            snapshotInterval = lib.mkOption {
+              type = lib.types.int;
               default = 10000;
               description = "Snapshot interval (log entries)";
             };
             
-            maxInflightMsgs = mkOption {
-              type = types.int;
+            maxInflightMsgs = lib.mkOption {
+              type = lib.types.int;
               default = 256;
               description = "Maximum inflight messages";
             };
@@ -178,23 +178,23 @@ let
         description = "Raft consensus parameters";
       };
       
-      pbft = mkOption {
-        type = types.submodule {
+      pbft = lib.mkOption {
+        type = lib.types.submodule {
           options = {
-            faultTolerance = mkOption {
-              type = types.int;
+            faultTolerance = lib.mkOption {
+              type = lib.types.int;
               default = 1;
               description = "Number of faulty nodes to tolerate";
             };
             
-            batchSize = mkOption {
-              type = types.int;
+            batchSize = lib.mkOption {
+              type = lib.types.int;
               default = 100;
               description = "Transaction batch size";
             };
             
-            checkpointPeriod = mkOption {
-              type = types.int;
+            checkpointPeriod = lib.mkOption {
+              type = lib.types.int;
               default = 100;
               description = "Checkpoint period";
             };
@@ -204,17 +204,17 @@ let
         description = "PBFT consensus parameters";
       };
       
-      tendermint = mkOption {
-        type = types.submodule {
+      tendermint = lib.mkOption {
+        type = lib.types.submodule {
           options = {
-            blockTime = mkOption {
-              type = types.int;
+            blockTime = lib.mkOption {
+              type = lib.types.int;
               default = 1000;
               description = "Target block time in ms";
             };
             
-            validatorSetSize = mkOption {
-              type = types.int;
+            validatorSetSize = lib.mkOption {
+              type = lib.types.int;
               default = 100;
               description = "Maximum validator set size";
             };
@@ -226,20 +226,20 @@ let
     };
     
     quorum = {
-      size = mkOption {
-        type = types.nullOr types.int;
+      size = lib.mkOption {
+        type = lib.types.nullOr lib.types.int;
         default = null;
         description = "Quorum size (auto-calculated if null)";
       };
       
-      voters = mkOption {
-        type = types.listOf types.str;
+      voters = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "Explicit list of voting nodes";
       };
       
-      observers = mkOption {
-        type = types.listOf types.str;
+      observers = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "Non-voting observer nodes";
       };
@@ -248,73 +248,73 @@ let
   
   # Mesh topology configuration
   topologyDefinition = {
-    mode = mkOption {
-      type = types.enum [ "full-mesh" "partial-mesh" "hierarchical" "dynamic" ];
+    mode = lib.mkOption {
+      type = lib.types.enum [ "full-mesh" "partial-mesh" "hierarchical" "dynamic" ];
       default = "partial-mesh";
       description = "Mesh topology mode";
     };
     
     connections = {
-      strategy = mkOption {
-        type = types.enum [ "nearest" "random" "capacity-weighted" "latency-optimized" ];
+      strategy = lib.mkOption {
+        type = lib.types.enum [ "nearest" "random" "capacity-weighted" "latency-optimized" ];
         default = "nearest";
         description = "Connection strategy";
       };
       
-      minPeers = mkOption {
-        type = types.int;
+      minPeers = lib.mkOption {
+        type = lib.types.int;
         default = 3;
         description = "Minimum peer connections";
       };
       
-      maxPeers = mkOption {
-        type = types.int;
+      maxPeers = lib.mkOption {
+        type = lib.types.int;
         default = 10;
         description = "Maximum peer connections";
       };
       
-      gossipFanout = mkOption {
-        type = types.int;
+      gossipFanout = lib.mkOption {
+        type = lib.types.int;
         default = 3;
         description = "Gossip protocol fanout";
       };
     };
     
     discovery = {
-      method = mkOption {
-        type = types.enum [ "static" "dns" "mdns" "consul" "etcd" "kubernetes" ];
+      method = lib.mkOption {
+        type = lib.types.enum [ "static" "dns" "mdns" "consul" "etcd" "kubernetes" ];
         default = "mdns";
         description = "Node discovery method";
       };
       
-      interval = mkOption {
-        type = types.str;
+      interval = lib.mkOption {
+        type = lib.types.str;
         default = "30s";
         description = "Discovery interval";
       };
       
-      staticPeers = mkOption {
-        type = types.listOf types.str;
+      staticPeers = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "Static peer addresses";
       };
     };
     
     routing = {
-      algorithm = mkOption {
-        type = types.enum [ "shortest-path" "load-balanced" "geo-aware" "cost-optimized" ];
+      algorithm = lib.mkOption {
+        type = lib.types.enum [ "shortest-path" "load-balanced" "geo-aware" "cost-optimized" ];
         default = "shortest-path";
         description = "Routing algorithm";
       };
       
-      metrics = mkOption {
-        type = types.listOf (types.enum [ "latency" "bandwidth" "reliability" "cost" ]);
+      metrics = lib.mkOption {
+        type = lib.types.listOf (lib.types.enum [ "latency" "bandwidth" "reliability" "cost" ]);
         default = [ "latency" ];
         description = "Metrics to consider for routing";
       };
       
-      updateInterval = mkOption {
-        type = types.str;
+      updateInterval = lib.mkOption {
+        type = lib.types.str;
         default = "10s";
         description = "Routing table update interval";
       };
@@ -324,8 +324,8 @@ let
   # Distributed coordination
   coordinationDefinition = {
     scheduler = {
-      algorithm = mkOption {
-        type = types.enum [ 
+      algorithm = lib.mkOption {
+        type = lib.types.enum [ 
           "random"           # Random placement
           "round-robin"      # Round-robin across nodes
           "least-loaded"     # Place on least loaded node
@@ -340,40 +340,40 @@ let
       };
       
       constraints = {
-        enableAffinity = mkOption {
-          type = types.bool;
+        enableAffinity = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Enable affinity constraints";
         };
         
-        enableAntiAffinity = mkOption {
-          type = types.bool;
+        enableAntiAffinity = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Enable anti-affinity constraints";
         };
         
-        maxSchedulingTime = mkOption {
-          type = types.str;
+        maxSchedulingTime = lib.mkOption {
+          type = lib.types.str;
           default = "100ms";
           description = "Maximum time for scheduling decision";
         };
       };
       
       rebalancing = {
-        enable = mkOption {
-          type = types.bool;
+        enable = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Enable automatic rebalancing";
         };
         
-        threshold = mkOption {
-          type = types.float;
+        threshold = lib.mkOption {
+          type = lib.types.float;
           default = 0.2;
           description = "Imbalance threshold (0-1)";
         };
         
-        interval = mkOption {
-          type = types.str;
+        interval = lib.mkOption {
+          type = lib.types.str;
           default = "5m";
           description = "Rebalancing check interval";
         };
@@ -381,40 +381,40 @@ let
     };
     
     stateStore = {
-      backend = mkOption {
-        type = types.enum [ "embedded" "etcd" "consul" "tikv" ];
+      backend = lib.mkOption {
+        type = lib.types.enum [ "embedded" "etcd" "consul" "tikv" ];
         default = "embedded";
         description = "Distributed state store backend";
       };
       
-      replication = mkOption {
-        type = types.int;
+      replication = lib.mkOption {
+        type = lib.types.int;
         default = 3;
         description = "State replication factor";
       };
       
-      consistency = mkOption {
-        type = types.enum [ "eventual" "strong" "linearizable" ];
+      consistency = lib.mkOption {
+        type = lib.types.enum [ "eventual" "strong" "linearizable" ];
         default = "strong";
         description = "Consistency model";
       };
     };
     
     locks = {
-      implementation = mkOption {
-        type = types.enum [ "local" "redlock" "chubby" "zab" ];
+      implementation = lib.mkOption {
+        type = lib.types.enum [ "local" "redlock" "chubby" "zab" ];
         default = "redlock";
         description = "Distributed lock implementation";
       };
       
-      defaultTimeout = mkOption {
-        type = types.str;
+      defaultTimeout = lib.mkOption {
+        type = lib.types.str;
         default = "30s";
         description = "Default lock timeout";
       };
       
-      enableFencing = mkOption {
-        type = types.bool;
+      enableFencing = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable lock fencing tokens";
       };
@@ -424,43 +424,43 @@ let
 in
 {
   options.hypervisor.mesh = {
-    enable = mkOption {
-      type = types.bool;
+    enable = lib.mkOption {
+      type = lib.types.bool;
       default = false;
       description = "Enable mesh clustering";
     };
     
     # This node's configuration
-    node = mkOption {
-      type = types.submodule nodeDefinition;
+    node = lib.mkOption {
+      type = lib.types.submodule nodeDefinition;
       default = {};
       description = "This node's configuration";
     };
     
     # Cluster name
-    clusterName = mkOption {
-      type = types.str;
+    clusterName = lib.mkOption {
+      type = lib.types.str;
       default = "hypervisor-mesh";
       description = "Mesh cluster name";
     };
     
     # Consensus configuration
-    consensus = mkOption {
-      type = types.submodule consensusDefinition;
+    consensus = lib.mkOption {
+      type = lib.types.submodule consensusDefinition;
       default = {};
       description = "Consensus algorithm configuration";
     };
     
     # Topology configuration
-    topology = mkOption {
-      type = types.submodule topologyDefinition;
+    topology = lib.mkOption {
+      type = lib.types.submodule topologyDefinition;
       default = {};
       description = "Mesh topology configuration";
     };
     
     # Coordination configuration
-    coordination = mkOption {
-      type = types.submodule coordinationDefinition;
+    coordination = lib.mkOption {
+      type = lib.types.submodule coordinationDefinition;
       default = {};
       description = "Distributed coordination configuration";
     };
@@ -468,34 +468,34 @@ in
     # Security
     security = {
       encryption = {
-        enable = mkOption {
-          type = types.bool;
+        enable = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Enable mesh encryption";
         };
         
-        algorithm = mkOption {
-          type = types.enum [ "aes-gcm" "chacha20-poly1305" "aes-cbc" ];
+        algorithm = lib.mkOption {
+          type = lib.types.enum [ "aes-gcm" "chacha20-poly1305" "aes-cbc" ];
           default = "chacha20-poly1305";
           description = "Encryption algorithm";
         };
         
-        keyRotation = mkOption {
-          type = types.str;
+        keyRotation = lib.mkOption {
+          type = lib.types.str;
           default = "24h";
           description = "Key rotation interval";
         };
       };
       
       authentication = {
-        method = mkOption {
-          type = types.enum [ "psk" "pki" "mutual-tls" "spiffe" ];
+        method = lib.mkOption {
+          type = lib.types.enum [ "psk" "pki" "mutual-tls" "spiffe" ];
           default = "mutual-tls";
           description = "Authentication method";
         };
         
-        ca = mkOption {
-          type = types.nullOr types.path;
+        ca = lib.mkOption {
+          type = lib.types.nullOr lib.types.path;
           default = null;
           description = "CA certificate path";
         };
@@ -505,28 +505,28 @@ in
     # Observability
     observability = {
       tracing = {
-        enable = mkOption {
-          type = types.bool;
+        enable = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Enable distributed tracing";
         };
         
-        backend = mkOption {
-          type = types.enum [ "jaeger" "zipkin" "otlp" ];
+        backend = lib.mkOption {
+          type = lib.types.enum [ "jaeger" "zipkin" "otlp" ];
           default = "otlp";
           description = "Tracing backend";
         };
       };
       
       metrics = {
-        enable = mkOption {
-          type = types.bool;
+        enable = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Enable mesh metrics";
         };
         
-        exportInterval = mkOption {
-          type = types.str;
+        exportInterval = lib.mkOption {
+          type = lib.types.str;
           default = "10s";
           description = "Metrics export interval";
         };
@@ -534,7 +534,7 @@ in
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Generate node ID if not provided
     system.activationScripts.generateNodeId = ''
       if [ ! -f /var/lib/hypervisor/mesh/node-id ]; then
@@ -588,7 +588,7 @@ in
     };
     
     # Consensus engine
-    systemd.services.hypervisor-consensus = mkIf (elem "controller" cfg.node.roles) {
+    systemd.services.hypervisor-consensus = lib.mkIf (elem "controller" cfg.node.roles) {
       description = "Hypervisor Consensus Engine";
       wantedBy = [ "multi-user.target" ];
       after = [ "hypervisor-mesh-node.service" ];
@@ -666,7 +666,7 @@ in
     ];
     
     # Network configuration for mesh
-    networking.firewall = mkIf cfg.enable {
+    networking.firewall = lib.mkIf cfg.enable {
       allowedTCPPorts = [ 7946 7947 ];  # Mesh communication ports
       allowedUDPPorts = [ 7946 7947 ];
     };

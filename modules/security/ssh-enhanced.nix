@@ -111,7 +111,7 @@ in
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Install required packages
     environment.systemPackages =  [
     pkgs.sshfs

@@ -161,7 +161,7 @@ in
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Portable packages
     environment.systemPackages = portablePackages;
     

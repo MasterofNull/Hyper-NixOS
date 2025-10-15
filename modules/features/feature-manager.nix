@@ -132,7 +132,7 @@ in {
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Define feature sets for each profile
     hypervisor.featureManager.enabledFeatures = mkDefault (
       if cfg.profile == "minimal" then [

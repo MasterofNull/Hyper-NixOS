@@ -2,67 +2,67 @@
 # Implements a unique backup architecture with continuous incremental snapshots
 { config, lib, pkgs, ... }:
 
-with lib;
+# Removed: with lib; - Using explicit lib. prefix for clarity
 let
   cfg = config.hypervisor.backup;
   
   # Backup repository definition
   repositoryDefinition = {
     options = {
-      name = mkOption {
-        type = types.str;
+      name = lib.mkOption {
+        type = lib.types.str;
         description = "Repository name";
       };
       
-      type = mkOption {
-        type = types.enum [ "local" "remote" "cloud" "distributed" ];
+      type = lib.mkOption {
+        type = lib.types.enum [ "local" "remote" "cloud" "distributed" ];
         default = "local";
         description = "Repository type";
       };
       
       # Storage backend
       backend = {
-        location = mkOption {
-          type = types.str;
+        location = lib.mkOption {
+          type = lib.types.str;
           description = "Backend location";
           example = "/var/backup/repo1";
         };
         
         encryption = {
-          enabled = mkOption {
-            type = types.bool;
+          enabled = lib.mkOption {
+            type = lib.types.bool;
             default = true;
             description = "Enable encryption at rest";
           };
           
-          algorithm = mkOption {
-            type = types.enum [ "aes-256-gcm" "chacha20-poly1305" "aes-256-ctr-hmac" ];
+          algorithm = lib.mkOption {
+            type = lib.types.enum [ "aes-256-gcm" "chacha20-poly1305" "aes-256-ctr-hmac" ];
             default = "chacha20-poly1305";
             description = "Encryption algorithm";
           };
           
-          keyDerivation = mkOption {
-            type = types.enum [ "argon2id" "scrypt" "pbkdf2" ];
+          keyDerivation = lib.mkOption {
+            type = lib.types.enum [ "argon2id" "scrypt" "pbkdf2" ];
             default = "argon2id";
             description = "Key derivation function";
           };
         };
         
         compression = {
-          algorithm = mkOption {
-            type = types.enum [ "zstd" "lz4" "brotli" "none" ];
+          algorithm = lib.mkOption {
+            type = lib.types.enum [ "zstd" "lz4" "brotli" "none" ];
             default = "zstd";
             description = "Compression algorithm";
           };
           
-          level = mkOption {
-            type = types.int;
+          level = lib.mkOption {
+            type = lib.types.int;
             default = 3;
             description = "Compression level";
           };
           
-          adaptive = mkOption {
-            type = types.bool;
+          adaptive = lib.mkOption {
+            type = lib.types.bool;
             default = true;
             description = "Adaptive compression based on content type";
           };
@@ -71,73 +71,73 @@ let
       
       # Deduplication settings
       deduplication = {
-        enabled = mkOption {
-          type = types.bool;
+        enabled = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Enable deduplication";
         };
         
-        algorithm = mkOption {
-          type = types.enum [ "content-defined" "fixed-block" "variable-block" "rolling-hash" ];
+        algorithm = lib.mkOption {
+          type = lib.types.enum [ "content-defined" "fixed-block" "variable-block" "rolling-hash" ];
           default = "content-defined";
           description = "Deduplication algorithm";
         };
         
         chunkSize = {
-          min = mkOption {
-            type = types.int;
+          min = lib.mkOption {
+            type = lib.types.int;
             default = 512; # 512 KB
             description = "Minimum chunk size in KB";
           };
           
-          avg = mkOption {
-            type = types.int;
+          avg = lib.mkOption {
+            type = lib.types.int;
             default = 1024; # 1 MB
             description = "Average chunk size in KB";
           };
           
-          max = mkOption {
-            type = types.int;
+          max = lib.mkOption {
+            type = lib.types.int;
             default = 8192; # 8 MB
             description = "Maximum chunk size in KB";
           };
         };
         
         indexing = {
-          type = mkOption {
-            type = types.enum [ "bloom-filter" "hash-table" "b-tree" "lsm-tree" ];
+          type = lib.mkOption {
+            type = lib.types.enum [ "bloom-filter" "hash-table" "b-tree" "lsm-tree" ];
             default = "lsm-tree";
             description = "Deduplication index type";
           };
           
-          cache = mkOption {
-            type = types.str;
+          cache = lib.mkOption {
+            type = lib.types.str;
             default = "512Mi";
             description = "Index cache size";
           };
           
-          persistent = mkOption {
-            type = types.bool;
+          persistent = lib.mkOption {
+            type = lib.types.bool;
             default = true;
             description = "Persist index to disk";
           };
         };
         
         similarity = {
-          enabled = mkOption {
-            type = types.bool;
+          enabled = lib.mkOption {
+            type = lib.types.bool;
             default = true;
             description = "Enable similarity detection";
           };
           
-          threshold = mkOption {
-            type = types.float;
+          threshold = lib.mkOption {
+            type = lib.types.float;
             default = 0.7;
             description = "Similarity threshold (0-1)";
           };
           
-          algorithm = mkOption {
-            type = types.enum [ "minhash" "simhash" "fuzzy-hash" ];
+          algorithm = lib.mkOption {
+            type = lib.types.enum [ "minhash" "simhash" "fuzzy-hash" ];
             default = "minhash";
             description = "Similarity detection algorithm";
           };
@@ -146,31 +146,31 @@ let
       
       # Retention and lifecycle
       retention = {
-        mode = mkOption {
-          type = types.enum [ "grandfather-father-son" "progressive" "custom" ];
+        mode = lib.mkOption {
+          type = lib.types.enum [ "grandfather-father-son" "progressive" "custom" ];
           default = "progressive";
           description = "Retention mode";
         };
         
         progressive = {
           # Keep all backups for N days, then progressively thin
-          keepAll = mkOption {
-            type = types.int;
+          keepAll = lib.mkOption {
+            type = lib.types.int;
             default = 7;
             description = "Days to keep all backups";
           };
           
-          rules = mkOption {
-            type = types.listOf (types.submodule {
+          rules = lib.mkOption {
+            type = lib.types.listOf (lib.types.submodule {
               options = {
-                age = mkOption {
-                  type = types.str;
+                age = lib.mkOption {
+                  type = lib.types.str;
                   description = "Age threshold";
                   example = "30d";
                 };
                 
-                interval = mkOption {
-                  type = types.str;
+                interval = lib.mkOption {
+                  type = lib.types.str;
                   description = "Keep interval";
                   example = "1d";
                 };
@@ -187,14 +187,14 @@ let
         };
         
         immutable = {
-          enabled = mkOption {
-            type = types.bool;
+          enabled = lib.mkOption {
+            type = lib.types.bool;
             default = false;
             description = "Enable immutable backups";
           };
           
-          period = mkOption {
-            type = types.str;
+          period = lib.mkOption {
+            type = lib.types.str;
             default = "30d";
             description = "Immutability period";
           };
@@ -204,43 +204,43 @@ let
       # Performance settings
       performance = {
         parallel = {
-          streams = mkOption {
-            type = types.int;
+          streams = lib.mkOption {
+            type = lib.types.int;
             default = 4;
             description = "Parallel backup streams";
           };
           
-          chunkers = mkOption {
-            type = types.int;
+          chunkers = lib.mkOption {
+            type = lib.types.int;
             default = 2;
             description = "Parallel chunking threads";
           };
         };
         
         bandwidth = {
-          limit = mkOption {
-            type = types.nullOr types.str;
+          limit = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
             default = null;
             description = "Bandwidth limit";
             example = "100MB/s";
           };
           
-          burst = mkOption {
-            type = types.nullOr types.str;
+          burst = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
             default = null;
             description = "Burst bandwidth allowance";
           };
         };
         
         caching = {
-          metadata = mkOption {
-            type = types.str;
+          metadata = lib.mkOption {
+            type = lib.types.str;
             default = "256Mi";
             description = "Metadata cache size";
           };
           
-          chunks = mkOption {
-            type = types.str;
+          chunks = lib.mkOption {
+            type = lib.types.str;
             default = "1Gi";
             description = "Chunk cache size";
           };
@@ -252,33 +252,33 @@ let
   # Backup source definition
   backupSourceDefinition = {
     options = {
-      name = mkOption {
-        type = types.str;
+      name = lib.mkOption {
+        type = lib.types.str;
         description = "Source name";
       };
       
-      type = mkOption {
-        type = types.enum [ "compute-unit" "volume" "database" "application" ];
+      type = lib.mkOption {
+        type = lib.types.enum [ "compute-unit" "volume" "database" "application" ];
         description = "Source type";
       };
       
       # Selection criteria
       selection = {
-        labels = mkOption {
-          type = types.attrsOf types.str;
+        labels = lib.mkOption {
+          type = lib.types.attrsOf lib.types.str;
           default = {};
           description = "Label selector";
           example = { tier = "production"; };
         };
         
-        ids = mkOption {
-          type = types.listOf types.str;
+        ids = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [];
           description = "Specific resource IDs";
         };
         
-        patterns = mkOption {
-          type = types.listOf types.str;
+        patterns = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [];
           description = "Name patterns";
           example = [ "prod-*" "*-db" ];
@@ -287,32 +287,32 @@ let
       
       # Backup strategy
       strategy = {
-        mode = mkOption {
-          type = types.enum [ "incremental-forever" "synthetic-full" "reverse-incremental" ];
+        mode = lib.mkOption {
+          type = lib.types.enum [ "incremental-forever" "synthetic-full" "reverse-incremental" ];
           default = "incremental-forever";
           description = "Backup strategy";
         };
         
-        consistency = mkOption {
-          type = types.enum [ "crash-consistent" "application-consistent" "database-consistent" ];
+        consistency = lib.mkOption {
+          type = lib.types.enum [ "crash-consistent" "application-consistent" "database-consistent" ];
           default = "crash-consistent";
           description = "Consistency level";
         };
         
-        changeDetection = mkOption {
-          type = types.enum [ "timestamp" "checksum" "journal" "cbt" ];
+        changeDetection = lib.mkOption {
+          type = lib.types.enum [ "timestamp" "checksum" "journal" "cbt" ];
           default = "journal";
           description = "Change detection method";
         };
         
-        preScript = mkOption {
-          type = types.lines;
+        preScript = lib.mkOption {
+          type = lib.types.lines;
           default = "";
           description = "Pre-backup script";
         };
         
-        postScript = mkOption {
-          type = types.lines;
+        postScript = lib.mkOption {
+          type = lib.types.lines;
           default = "";
           description = "Post-backup script";
         };
@@ -320,29 +320,29 @@ let
       
       # Schedule
       schedule = {
-        continuous = mkOption {
-          type = types.bool;
+        continuous = lib.mkOption {
+          type = lib.types.bool;
           default = false;
           description = "Enable continuous data protection";
         };
         
-        interval = mkOption {
-          type = types.nullOr types.str;
+        interval = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
           default = "1h";
           description = "Backup interval (if not continuous)";
         };
         
-        window = mkOption {
-          type = types.nullOr (types.submodule {
+        window = lib.mkOption {
+          type = lib.types.nullOr (lib.types.submodule {
             options = {
-              start = mkOption {
-                type = types.str;
+              start = lib.mkOption {
+                type = lib.types.str;
                 description = "Window start time";
                 example = "22:00";
               };
               
-              end = mkOption {
-                type = types.str;
+              end = lib.mkOption {
+                type = lib.types.str;
                 description = "Window end time";
                 example = "06:00";
               };
@@ -355,21 +355,21 @@ let
       
       # Data classification
       dataHandling = {
-        sensitivity = mkOption {
-          type = types.enum [ "public" "internal" "confidential" "secret" ];
+        sensitivity = lib.mkOption {
+          type = lib.types.enum [ "public" "internal" "confidential" "secret" ];
           default = "internal";
           description = "Data sensitivity level";
         };
         
-        compliance = mkOption {
-          type = types.listOf types.str;
+        compliance = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [];
           description = "Compliance requirements";
           example = [ "gdpr" "hipaa" "pci-dss" ];
         };
         
-        geoRestrictions = mkOption {
-          type = types.listOf types.str;
+        geoRestrictions = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [];
           description = "Geographic restrictions";
           example = [ "eu" "us" ];
@@ -382,20 +382,20 @@ let
   backupFabric = {
     # Continuous Data Protection (CDP) engine
     cdp = {
-      enabled = mkOption {
-        type = types.bool;
+      enabled = lib.mkOption {
+        type = lib.types.bool;
         default = false;
         description = "Enable CDP globally";
       };
       
-      journalSize = mkOption {
-        type = types.str;
+      journalSize = lib.mkOption {
+        type = lib.types.str;
         default = "10Gi";
         description = "CDP journal size";
       };
       
-      granularity = mkOption {
-        type = types.str;
+      granularity = lib.mkOption {
+        type = lib.types.str;
         default = "1s";
         description = "CDP granularity";
       };
@@ -403,20 +403,20 @@ let
     
     # Global deduplication pool
     globalDedup = {
-      enabled = mkOption {
-        type = types.bool;
+      enabled = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable global deduplication";
       };
       
-      scope = mkOption {
-        type = types.enum [ "repository" "global" "federated" ];
+      scope = lib.mkOption {
+        type = lib.types.enum [ "repository" "global" "federated" ];
         default = "repository";
         description = "Deduplication scope";
       };
       
-      federation = mkOption {
-        type = types.listOf types.str;
+      federation = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "Federated dedup peers";
       };
@@ -424,27 +424,27 @@ let
     
     # Verification and integrity
     verification = {
-      automatic = mkOption {
-        type = types.bool;
+      automatic = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Automatic verification";
       };
       
-      schedule = mkOption {
-        type = types.str;
+      schedule = lib.mkOption {
+        type = lib.types.str;
         default = "weekly";
         description = "Verification schedule";
       };
       
       sampling = {
-        rate = mkOption {
-          type = types.float;
+        rate = lib.mkOption {
+          type = lib.types.float;
           default = 0.1;
           description = "Sampling rate (0-1)";
         };
         
-        full = mkOption {
-          type = types.str;
+        full = lib.mkOption {
+          type = lib.types.str;
           default = "monthly";
           description = "Full verification schedule";
         };
@@ -453,27 +453,27 @@ let
     
     # Catalog and indexing
     catalog = {
-      type = mkOption {
-        type = types.enum [ "sqlite" "postgresql" "distributed" ];
+      type = lib.mkOption {
+        type = lib.types.enum [ "sqlite" "postgresql" "distributed" ];
         default = "sqlite";
         description = "Catalog backend";
       };
       
       indexing = {
-        content = mkOption {
-          type = types.bool;
+        content = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Index file contents";
         };
         
-        metadata = mkOption {
-          type = types.bool;
+        metadata = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Index metadata";
         };
         
-        search = mkOption {
-          type = types.bool;
+        search = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Enable search capabilities";
         };
@@ -485,35 +485,35 @@ in
 {
   options.hypervisor.backup = {
     # Backup repositories
-    repositories = mkOption {
-      type = types.attrsOf (types.submodule repositoryDefinition);
+    repositories = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule repositoryDefinition);
       default = {};
       description = "Backup repository definitions";
     };
     
     # Backup sources
-    sources = mkOption {
-      type = types.attrsOf (types.submodule backupSourceDefinition);
+    sources = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule backupSourceDefinition);
       default = {};
       description = "Backup source definitions";
     };
     
     # Global fabric settings
-    fabric = mkOption {
-      type = types.submodule backupFabric;
+    fabric = lib.mkOption {
+      type = lib.types.submodule backupFabric;
       default = {};
       description = "Global backup fabric settings";
     };
     
     # Default repository
-    defaultRepository = mkOption {
-      type = types.str;
+    defaultRepository = lib.mkOption {
+      type = lib.types.str;
       default = "default";
       description = "Default backup repository";
     };
   };
   
-  config = {
+  config = lib.mkIf cfg.enable {
     # Backup daemon
     systemd.services.hypervisor-backup-daemon = {
       description = "Hypervisor Backup Daemon";
@@ -550,7 +550,7 @@ in
     };
     
     # Deduplication service
-    systemd.services.hypervisor-dedup = mkIf cfg.fabric.globalDedup.enabled {
+    systemd.services.hypervisor-dedup = lib.mkIf cfg.fabric.globalDedup.enabled {
       description = "Global Deduplication Service";
       wantedBy = [ "multi-user.target" ];
       

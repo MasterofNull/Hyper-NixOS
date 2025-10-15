@@ -18,31 +18,31 @@
   # Default configuration
   config = lib.mkIf config.hypervisor.enable {
     # Ensure required packages are installed
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
       # Core utilities
-      qemu
-      libvirt
-      virt-manager
+      pkgs.qemu
+      pkgs.libvirt
+      pkgs.virt-manager
       
       # Storage tools
-      zfs
-      btrfs-progs
-      lvm2
-      ceph
-      glusterfs
+      pkgs.zfs
+      pkgs.btrfs-progs
+      pkgs.lvm2
+      pkgs.ceph
+      pkgs.glusterfs
       
       # Clustering tools
-      corosync
-      pacemaker
+      pkgs.corosync
+      pkgs.pacemaker
       
       # Monitoring
-      prometheus
-      grafana
+      pkgs.prometheus
+      pkgs.grafana
       
       # Development
-      git
-      go
-      python3
+      pkgs.git
+      pkgs.go
+      pkgs.python3
       
       # Our custom scripts
       (pkgs.writeScriptBin "hv-init" ''

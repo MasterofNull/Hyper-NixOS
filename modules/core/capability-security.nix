@@ -2,70 +2,70 @@
 # Implements fine-grained capabilities with time-bound permissions
 { config, lib, pkgs, ... }:
 
-with lib;
+# Removed: with lib; - Using explicit lib. prefix for clarity
 let
   cfg = config.hypervisor.security.capabilities;
   
   # Capability definition
   capabilityDefinition = {
     options = {
-      name = mkOption {
-        type = types.str;
+      name = lib.mkOption {
+        type = lib.types.str;
         description = "Capability name";
       };
       
-      description = mkOption {
-        type = types.str;
+      description = lib.mkOption {
+        type = lib.types.str;
         default = "";
         description = "Capability description";
       };
       
       # Resource-based permissions
       resources = {
-        compute = mkOption {
-          type = types.submodule {
+        compute = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              create = mkOption {
-                type = types.bool;
+              create = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can create compute units";
               };
               
-              modify = mkOption {
-                type = types.bool;
+              modify = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can modify compute units";
               };
               
-              delete = mkOption {
-                type = types.bool;
+              delete = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can delete compute units";
               };
               
-              control = mkOption {
-                type = types.bool;
+              control = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can control (start/stop) compute units";
               };
               
-              console = mkOption {
-                type = types.bool;
+              console = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can access compute unit console";
               };
               
-              limits = mkOption {
-                type = types.nullOr (types.submodule {
+              limits = lib.mkOption {
+                type = lib.types.nullOr (lib.types.submodule {
                   options = {
-                    maxUnits = mkOption {
-                      type = types.nullOr types.int;
+                    maxUnits = lib.mkOption {
+                      type = lib.types.nullOr lib.types.int;
                       default = null;
                       description = "Maximum compute units";
                     };
                     
-                    maxResources = mkOption {
-                      type = types.nullOr types.int;
+                    maxResources = lib.mkOption {
+                      type = lib.types.nullOr lib.types.int;
                       default = null;
                       description = "Maximum resource units";
                     };
@@ -80,41 +80,41 @@ let
           description = "Compute resource permissions";
         };
         
-        storage = mkOption {
-          type = types.submodule {
+        storage = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              read = mkOption {
-                type = types.bool;
+              read = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can read storage";
               };
               
-              write = mkOption {
-                type = types.bool;
+              write = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can write to storage";
               };
               
-              allocate = mkOption {
-                type = types.bool;
+              allocate = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can allocate new storage";
               };
               
-              snapshot = mkOption {
-                type = types.bool;
+              snapshot = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can create snapshots";
               };
               
-              tiers = mkOption {
-                type = types.listOf types.int;
+              tiers = lib.mkOption {
+                type = lib.types.listOf lib.types.int;
                 default = [];
                 description = "Allowed storage tiers";
               };
               
-              quota = mkOption {
-                type = types.nullOr types.str;
+              quota = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
                 default = null;
                 description = "Storage quota";
                 example = "100Gi";
@@ -125,29 +125,29 @@ let
           description = "Storage permissions";
         };
         
-        network = mkOption {
-          type = types.submodule {
+        network = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              configure = mkOption {
-                type = types.bool;
+              configure = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can configure network";
               };
               
-              attach = mkOption {
-                type = types.bool;
+              attach = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can attach to networks";
               };
               
-              create = mkOption {
-                type = types.bool;
+              create = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can create networks";
               };
               
-              capabilities = mkOption {
-                type = types.listOf types.str;
+              capabilities = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
                 default = [];
                 description = "Allowed network capabilities";
                 example = [ "public-internet" "internal-only" ];
@@ -158,23 +158,23 @@ let
           description = "Network permissions";
         };
         
-        cluster = mkOption {
-          type = types.submodule {
+        cluster = lib.mkOption {
+          type = lib.types.submodule {
             options = {
-              join = mkOption {
-                type = types.bool;
+              join = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can join nodes to cluster";
               };
               
-              configure = mkOption {
-                type = types.bool;
+              configure = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can configure cluster";
               };
               
-              schedule = mkOption {
-                type = types.bool;
+              schedule = lib.mkOption {
+                type = lib.types.bool;
                 default = false;
                 description = "Can influence scheduling";
               };
@@ -186,8 +186,8 @@ let
       };
       
       # Operations allowed
-      operations = mkOption {
-        type = types.listOf types.str;
+      operations = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "Allowed operations";
         example = [ "backup" "restore" "migrate" "monitor" ];
@@ -195,36 +195,36 @@ let
       
       # Delegation rights
       delegation = {
-        allowed = mkOption {
-          type = types.bool;
+        allowed = lib.mkOption {
+          type = lib.types.bool;
           default = false;
           description = "Can delegate this capability";
         };
         
-        maxDepth = mkOption {
-          type = types.int;
+        maxDepth = lib.mkOption {
+          type = lib.types.int;
           default = 0;
           description = "Maximum delegation depth";
         };
         
-        restrictions = mkOption {
-          type = types.listOf types.str;
+        restrictions = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [];
           description = "Restrictions when delegating";
         };
       };
       
       # Conditions
-      conditions = mkOption {
-        type = types.listOf (types.submodule {
+      conditions = lib.mkOption {
+        type = lib.types.listOf (lib.types.submodule {
           options = {
-            type = mkOption {
-              type = types.enum [ "label" "time" "location" "rate" "context" ];
+            type = lib.mkOption {
+              type = lib.types.enum [ "label" "time" "location" "rate" "context" ];
               description = "Condition type";
             };
             
-            config = mkOption {
-              type = types.attrsOf types.anything;
+            config = lib.mkOption {
+              type = lib.types.attrsOf lib.types.anything;
               description = "Condition configuration";
             };
           };
@@ -240,22 +240,22 @@ let
     options = {
       # Time-based access
       validity = {
-        start = mkOption {
-          type = types.nullOr types.str;
+        start = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
           default = null;
           description = "Access start time (RFC3339)";
           example = "2023-01-01T00:00:00Z";
         };
         
-        end = mkOption {
-          type = types.nullOr types.str;
+        end = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
           default = null;
           description = "Access end time (RFC3339)";
           example = "2023-12-31T23:59:59Z";
         };
         
-        duration = mkOption {
-          type = types.nullOr types.str;
+        duration = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
           default = null;
           description = "Access duration from grant time";
           example = "24h";
@@ -263,34 +263,34 @@ let
       };
       
       # Recurring access windows
-      schedule = mkOption {
-        type = types.nullOr (types.submodule {
+      schedule = lib.mkOption {
+        type = lib.types.nullOr (lib.types.submodule {
           options = {
-            timezone = mkOption {
-              type = types.str;
+            timezone = lib.mkOption {
+              type = lib.types.str;
               default = "UTC";
               description = "Schedule timezone";
             };
             
-            windows = mkOption {
-              type = types.listOf (types.submodule {
+            windows = lib.mkOption {
+              type = lib.types.listOf (lib.types.submodule {
                 options = {
-                  days = mkOption {
-                    type = types.listOf (types.enum [
+                  days = lib.mkOption {
+                    type = lib.types.listOf (lib.types.enum [
                       "monday" "tuesday" "wednesday" "thursday"
                       "friday" "saturday" "sunday"
                     ]);
                     description = "Days of week";
                   };
                   
-                  startTime = mkOption {
-                    type = types.str;
+                  startTime = lib.mkOption {
+                    type = lib.types.str;
                     description = "Start time (HH:MM)";
                     example = "09:00";
                   };
                   
-                  endTime = mkOption {
-                    type = types.str;
+                  endTime = lib.mkOption {
+                    type = lib.types.str;
                     description = "End time (HH:MM)";
                     example = "17:00";
                   };
@@ -307,22 +307,22 @@ let
       
       # Usage limits
       usage = {
-        maxUses = mkOption {
-          type = types.nullOr types.int;
+        maxUses = lib.mkOption {
+          type = lib.types.nullOr lib.types.int;
           default = null;
           description = "Maximum number of uses";
         };
         
-        rateLimit = mkOption {
-          type = types.nullOr (types.submodule {
+        rateLimit = lib.mkOption {
+          type = lib.types.nullOr (lib.types.submodule {
             options = {
-              requests = mkOption {
-                type = types.int;
+              requests = lib.mkOption {
+                type = lib.types.int;
                 description = "Number of requests";
               };
               
-              window = mkOption {
-                type = types.str;
+              window = lib.mkOption {
+                type = lib.types.str;
                 description = "Time window";
                 example = "1h";
               };
@@ -335,20 +335,20 @@ let
       
       # Emergency access
       emergency = {
-        breakGlass = mkOption {
-          type = types.bool;
+        breakGlass = lib.mkOption {
+          type = lib.types.bool;
           default = false;
           description = "Allow emergency access override";
         };
         
-        auditRequired = mkOption {
-          type = types.bool;
+        auditRequired = lib.mkOption {
+          type = lib.types.bool;
           default = true;
           description = "Require audit for emergency access";
         };
         
-        notificationList = mkOption {
-          type = types.listOf types.str;
+        notificationList = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [];
           description = "Notify on emergency access";
         };
@@ -359,44 +359,44 @@ let
   # Principal (user/service/group)
   principalDefinition = {
     options = {
-      type = mkOption {
-        type = types.enum [ "user" "service" "group" "token" ];
+      type = lib.mkOption {
+        type = lib.types.enum [ "user" "service" "group" "token" ];
         description = "Principal type";
       };
       
       identity = {
-        id = mkOption {
-          type = types.str;
+        id = lib.mkOption {
+          type = lib.types.str;
           description = "Principal identifier";
         };
         
-        attributes = mkOption {
-          type = types.attrsOf types.str;
+        attributes = lib.mkOption {
+          type = lib.types.attrsOf lib.types.str;
           default = {};
           description = "Principal attributes";
           example = { department = "engineering"; clearance = "secret"; };
         };
         
         authentication = {
-          methods = mkOption {
-            type = types.listOf (types.enum [
+          methods = lib.mkOption {
+            type = lib.types.listOf (lib.types.enum [
               "password" "publickey" "certificate" "oidc" "saml" "webauthn"
             ]);
             default = [ "password" ];
             description = "Allowed authentication methods";
           };
           
-          mfa = mkOption {
-            type = types.submodule {
+          mfa = lib.mkOption {
+            type = lib.types.submodule {
               options = {
-                required = mkOption {
-                  type = types.bool;
+                required = lib.mkOption {
+                  type = lib.types.bool;
                   default = false;
                   description = "Require MFA";
                 };
                 
-                methods = mkOption {
-                  type = types.listOf types.str;
+                methods = lib.mkOption {
+                  type = lib.types.listOf lib.types.str;
                   default = [ "totp" ];
                   description = "Allowed MFA methods";
                 };
@@ -409,31 +409,31 @@ let
       };
       
       # Capability grants
-      grants = mkOption {
-        type = types.listOf (types.submodule {
+      grants = lib.mkOption {
+        type = lib.types.listOf (lib.types.submodule {
           options = {
-            capability = mkOption {
-              type = types.str;
+            capability = lib.mkOption {
+              type = lib.types.str;
               description = "Capability name";
             };
             
-            temporal = mkOption {
-              type = types.submodule temporalAccessDefinition;
+            temporal = lib.mkOption {
+              type = lib.types.submodule temporalAccessDefinition;
               default = {};
               description = "Temporal access constraints";
             };
             
-            scope = mkOption {
-              type = types.nullOr (types.submodule {
+            scope = lib.mkOption {
+              type = lib.types.nullOr (lib.types.submodule {
                 options = {
-                  labels = mkOption {
-                    type = types.attrsOf types.str;
+                  labels = lib.mkOption {
+                    type = lib.types.attrsOf lib.types.str;
                     default = {};
                     description = "Label selector for scope";
                   };
                   
-                  resources = mkOption {
-                    type = types.listOf types.str;
+                  resources = lib.mkOption {
+                    type = lib.types.listOf lib.types.str;
                     default = [];
                     description = "Specific resource IDs";
                   };
@@ -443,8 +443,8 @@ let
               description = "Grant scope";
             };
             
-            delegatedFrom = mkOption {
-              type = types.nullOr types.str;
+            delegatedFrom = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
               default = null;
               description = "Principal who delegated this grant";
             };
@@ -456,22 +456,22 @@ let
       
       # Audit settings
       audit = {
-        logLevel = mkOption {
-          type = types.enum [ "none" "basic" "detailed" "full" ];
+        logLevel = lib.mkOption {
+          type = lib.types.enum [ "none" "basic" "detailed" "full" ];
           default = "basic";
           description = "Audit log level";
         };
         
-        alerts = mkOption {
-          type = types.listOf (types.submodule {
+        alerts = lib.mkOption {
+          type = lib.types.listOf (lib.types.submodule {
             options = {
-              event = mkOption {
-                type = types.str;
+              event = lib.mkOption {
+                type = lib.types.str;
                 description = "Event to alert on";
               };
               
-              notify = mkOption {
-                type = types.listOf types.str;
+              notify = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
                 description = "Notification targets";
               };
             };
@@ -486,20 +486,20 @@ let
   # Zero-trust policies
   zeroTrustPolicy = {
     continuous = {
-      verification = mkOption {
-        type = types.bool;
+      verification = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable continuous verification";
       };
       
-      interval = mkOption {
-        type = types.str;
+      interval = lib.mkOption {
+        type = lib.types.str;
         default = "5m";
         description = "Verification interval";
       };
       
-      factors = mkOption {
-        type = types.listOf (types.enum [
+      factors = lib.mkOption {
+        type = lib.types.listOf (lib.types.enum [
           "device-trust" "location" "behavior" "risk-score"
         ]);
         default = [ "device-trust" ];
@@ -508,23 +508,23 @@ let
     };
     
     contextual = {
-      ipRestrictions = mkOption {
-        type = types.listOf types.str;
+      ipRestrictions = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
         default = [];
         description = "Allowed IP ranges";
       };
       
-      devicePolicy = mkOption {
-        type = types.nullOr (types.submodule {
+      devicePolicy = lib.mkOption {
+        type = lib.types.nullOr (lib.types.submodule {
           options = {
-            managed = mkOption {
-              type = types.bool;
+            managed = lib.mkOption {
+              type = lib.types.bool;
               default = false;
               description = "Require managed device";
             };
             
-            compliance = mkOption {
-              type = types.listOf types.str;
+            compliance = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
               default = [];
               description = "Required compliance policies";
             };
@@ -539,15 +539,15 @@ let
 in
 {
   options.hypervisor.security.capabilities = {
-    enable = mkOption {
-      type = types.bool;
+    enable = lib.mkOption {
+      type = lib.types.bool;
       default = true;
       description = "Enable capability-based security";
     };
     
     # Capability definitions
-    capabilities = mkOption {
-      type = types.attrsOf (types.submodule capabilityDefinition);
+    capabilities = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule capabilityDefinition);
       default = {};
       description = "Available capabilities";
       example = literalExample ''
@@ -565,42 +565,42 @@ in
     };
     
     # Principal definitions
-    principals = mkOption {
-      type = types.attrsOf (types.submodule principalDefinition);
+    principals = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule principalDefinition);
       default = {};
       description = "Principal definitions with grants";
     };
     
     # Zero-trust policies
-    zeroTrust = mkOption {
-      type = types.submodule zeroTrustPolicy;
+    zeroTrust = lib.mkOption {
+      type = lib.types.submodule zeroTrustPolicy;
       default = {};
       description = "Zero-trust security policies";
     };
     
     # Default policies
     defaults = {
-      sessionTimeout = mkOption {
-        type = types.str;
+      sessionTimeout = lib.mkOption {
+        type = lib.types.str;
         default = "8h";
         description = "Default session timeout";
       };
       
-      requireMFA = mkOption {
-        type = types.bool;
+      requireMFA = lib.mkOption {
+        type = lib.types.bool;
         default = false;
         description = "Require MFA by default";
       };
       
-      auditLevel = mkOption {
-        type = types.enum [ "none" "basic" "detailed" "full" ];
+      auditLevel = lib.mkOption {
+        type = lib.types.enum [ "none" "basic" "detailed" "full" ];
         default = "basic";
         description = "Default audit level";
       };
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Capability enforcement service
     systemd.services.capability-enforcer = {
       description = "Capability-Based Security Enforcer";

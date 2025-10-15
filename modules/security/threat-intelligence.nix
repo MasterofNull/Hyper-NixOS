@@ -455,7 +455,7 @@ in {
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Threat intelligence services
     systemd.services."hypervisor-threat-intel" = {
       description = "Threat Intelligence Correlation Engine";

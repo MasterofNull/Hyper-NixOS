@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034,SC2154,SC1091
-# Source common library for standardized functions
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null || true
-
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077

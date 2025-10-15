@@ -456,7 +456,7 @@ in {
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Behavioral analysis service
     systemd.services."hypervisor-behavioral-analysis" = {
       description = "Behavioral Analysis Engine";

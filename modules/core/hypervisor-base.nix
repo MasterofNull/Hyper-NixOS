@@ -46,16 +46,16 @@
     ];
     
     # Basic packages for hypervisor functionality
-    environment.systemPackages = with pkgs; [
-      libvirt
-      qemu
-      bridge-utils
-      dnsmasq
-      ebtables
-      iptables
-      dmidecode
-      pciutils
-      usbutils
+    environment.systemPackages = [
+      pkgs.libvirt
+      pkgs.qemu
+      pkgs.bridge-utils
+      pkgs.dnsmasq
+      pkgs.ebtables
+      pkgs.iptables
+      pkgs.dmidecode
+      pkgs.pciutils
+      pkgs.usbutils
     ];
     
     # Enable KVM kernel modules

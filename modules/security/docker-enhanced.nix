@@ -137,7 +137,7 @@ in
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Install Docker and security tools
     virtualisation.docker = {
       enable = true;

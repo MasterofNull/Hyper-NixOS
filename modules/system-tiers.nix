@@ -96,7 +96,7 @@ in
     description = "Definition of system configuration tiers";
   };
 
-  config = {
+  config = lib.mkIf config.hypervisor.enable {
     # Define feature sets for each tier
     hypervisor.tiers = {
       minimal = {

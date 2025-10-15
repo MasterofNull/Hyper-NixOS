@@ -328,7 +328,7 @@ in {
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Response engine service
     systemd.services."hypervisor-response-engine" = {
       description = "Automated Threat Response Engine";

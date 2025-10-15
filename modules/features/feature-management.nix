@@ -400,7 +400,7 @@ in {
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Install management tools
     environment.systemPackages =  [
     pkgs.featureManagerScript

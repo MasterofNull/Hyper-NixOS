@@ -34,7 +34,7 @@ in
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Install the headless VM menu script
     environment.systemPackages = [ headlessVmMenuScript ];
     

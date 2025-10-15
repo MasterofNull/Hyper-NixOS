@@ -28,7 +28,7 @@ in
     };
   };
   
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Install comprehensive setup wizard
     environment.systemPackages = [ 
       comprehensiveSetupWizardScript
