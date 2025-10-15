@@ -1,0 +1,31 @@
+{
+  "name": "intelligent-linux-server",
+  "description": "Intelligent defaults for Linux server VM - auto-detects hardware",
+  "_comment": "Optimized for headless server workloads with intelligent resource allocation",
+  "_detection_notes": {
+    "vcpus": "Auto-calculated as 25-50% of host cores based on workload",
+    "memory_mb": "Auto-calculated as 2-4GB per vCPU for server workloads",
+    "disk_gb": "60GB for server applications and logs",
+    "disk_format": "qcow2 for flexibility and snapshots",
+    "network_mode": "Bridge for direct network access (can use NAT)"
+  },
+  "os": "linux",
+  "cpus": "AUTO_DETECT",
+  "memory_mb": "AUTO_DETECT",
+  "disk_gb": 60,
+  "disk_format": "qcow2",
+  "network": {
+    "mode": "bridge",
+    "bridge": "AUTO_DETECT"
+  },
+  "features": {
+    "hugepages": false,
+    "vhost_net": true,
+    "memballoon": true,
+    "autostart": true
+  },
+  "display": {
+    "type": "none",
+    "headless": true
+  }
+}
