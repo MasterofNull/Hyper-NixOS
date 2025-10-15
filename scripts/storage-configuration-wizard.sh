@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/system_discovery.sh" 2>/dev/null || true
 
@@ -133,6 +133,6 @@ EOF
     echo -e "${CYAN}Apply settings in: /etc/nixos/storage-config.nix${NC}"
 }
 
-if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
     main "$@"
 fi

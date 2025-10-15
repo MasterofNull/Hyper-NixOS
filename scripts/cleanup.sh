@@ -6,7 +6,7 @@ set -euo pipefail
 
 echo "Cleaning up temporary artifacts..."
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")"/.. && pwd)"
 TMP_DIR="$ROOT_DIR/tmp"
 
 if [[ -d "$TMP_DIR" ]]; then

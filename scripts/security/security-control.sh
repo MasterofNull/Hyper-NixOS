@@ -13,7 +13,7 @@ readonly BLUE='\033[0;34m'
 readonly NC='\033[0m'
 
 # Script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 # Load functions
 source "$SCRIPT_DIR/scripts/automation/parallel-framework.sh" 2>/dev/null || true

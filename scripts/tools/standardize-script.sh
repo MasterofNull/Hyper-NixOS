@@ -41,7 +41,7 @@ cat > "${TEMP_FILE}" << 'HEADER'
 # Version: 1.0.0
 
 # Source standard header
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/standard_header.sh" 2>/dev/null || {
     echo "Warning: Could not source standard header"
@@ -75,7 +75,7 @@ awk '
 if ! grep -q "^main()" "${TEMP_FILE}"; then
     echo "" >> "${TEMP_FILE}"
     echo "# Call main if script is executed directly" >> "${TEMP_FILE}"
-    echo 'if [ "${BASH_SOURCE[0]}" = "${0}" ]; then' >> "${TEMP_FILE}"
+    echo 'if [ "${BASH_SOURCE[0]:-$0}" = "${0}" ]; then' >> "${TEMP_FILE}"
     echo '    display_header' >> "${TEMP_FILE}"
     echo '    # Original script content runs here' >> "${TEMP_FILE}"
     echo 'fi' >> "${TEMP_FILE}"
