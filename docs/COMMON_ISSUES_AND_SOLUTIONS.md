@@ -5,6 +5,7 @@ This document catalogs common issues encountered in Hyper-NixOS, their root caus
 
 ## Table of Contents
 - [Critical Issues](#critical-issues)
+- [Installer Issues](#installer-issues)
 - [Permission and Privilege Issues](#permission-and-privilege-issues)
 - [Module and Configuration Issues](#module-and-configuration-issues)
 - [CI/CD and Testing Issues](#cicd-and-testing-issues)
@@ -247,6 +248,82 @@ hypervisor.enable = true;
 - Always import core option modules before using their options
 - The modular architecture requires explicit imports
 - Check that all required base modules are imported
+
+## 📦 **Installer Issues**
+
+### Issue: "BASH_SOURCE[0]: unbound variable" in install.sh
+**Symptoms**:
+```bash
+curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
+bash: line 158: BASH_SOURCE[0]: unbound variable
+```
+
+**Root Cause**: When a bash script is piped from `curl` (stdin), `BASH_SOURCE[0]` is undefined. The script uses `set -u` (treat undefined variables as errors), causing the script to fail when trying to access `${BASH_SOURCE[0]}`.
+
+**Technical Details**:
+- When executed directly: `BASH_SOURCE[0]` contains the script path
+- When piped from curl: `BASH_SOURCE[0]` is empty/undefined
+- When sourced: `BASH_SOURCE[0]` != `$0`
+
+**Solution**:
+The script needs to handle all three cases:
+
+```bash
+# WRONG - Fails when piped from curl
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
+
+# CORRECT - Handles piped, executed, and sourced cases
+if [[ -z "${BASH_SOURCE[0]:-}" ]] || [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
+```
+
+**Pattern for Piped Scripts**:
+When writing bash scripts meant to be piped from curl, always:
+
+1. **Check for undefined variables with defaults**:
+```bash
+local script_dir="${BASH_SOURCE[0]:-}"
+if [[ -n "$script_dir" ]]; then
+    script_dir="$(cd "$(dirname "$script_dir")" && pwd)"
+else
+    script_dir="$(pwd)"
+fi
+```
+
+2. **Use detection functions that work when piped**:
+```bash
+detect_mode() {
+    # Can't use dirname "$0" when piped
+    local script_dir="${BASH_SOURCE[0]:-}"
+    if [[ -n "$script_dir" ]] && [[ -f "$(dirname "$script_dir")/scripts/installer.sh" ]]; then
+        echo "local"
+    else
+        echo "remote"
+    fi
+}
+```
+
+3. **Run main conditionally**:
+```bash
+# Run if piped OR executed (but not if sourced)
+if [[ -z "${BASH_SOURCE[0]:-}" ]] || [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
+```
+
+**Prevention**:
+- Always use `${BASH_SOURCE[0]:-}` with default empty string when `set -u` is enabled
+- Test scripts both ways: `./script.sh` AND `cat script.sh | bash`
+- Consider whether `set -u` is necessary for installer scripts
+- Document that the script supports piped execution
+
+**Related Issues**:
+- Any script using `dirname "$0"` will fail when piped
+- Functions like `readlink -f "$0"` also fail when piped
+- Use `BASH_SOURCE` with proper defaults instead
 
 ### Issue: Duplicate Option Definitions
 **Symptoms**:

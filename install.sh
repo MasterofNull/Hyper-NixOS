@@ -26,7 +26,9 @@ print_warning() { echo -e "${YELLOW}⚠${NC} $*"; }
 
 # Detect if we're running from a cloned repo or piped from curl
 detect_mode() {
-    if [[ -f "$(dirname "$0")/scripts/system_installer.sh" ]]; then
+    # When piped from curl, $0 is "bash", so dirname won't work
+    local script_dir="${BASH_SOURCE[0]:-}"
+    if [[ -n "$script_dir" ]] && [[ -f "$(dirname "$script_dir")/scripts/system_installer.sh" ]]; then
         echo "local"
     else
         echo "remote"
@@ -111,7 +113,12 @@ remote_install() {
 # Local mode: Run installer from current directory
 local_install() {
     local script_dir
-    script_dir="$(cd "$(dirname "$0")" && pwd)"
+    # Use BASH_SOURCE if available, fallback to current directory
+    if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
+        script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    else
+        script_dir="$(pwd)"
+    fi
     
     print_status "Starting Hyper-NixOS local installation..."
     print_status "Installation directory: $script_dir"
@@ -154,7 +161,9 @@ main() {
     esac
 }
 
-# Handle being piped from curl
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+# Handle being piped from curl or executed directly
+# When piped: BASH_SOURCE is empty; when executed: BASH_SOURCE[0] == $0
+# Only skip main if being sourced (BASH_SOURCE[0] != $0)
+if [[ -z "${BASH_SOURCE[0]:-}" ]] || [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi
