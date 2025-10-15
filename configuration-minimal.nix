@@ -18,6 +18,12 @@
     ./modules/features/feature-manager.nix  # We use hypervisor.featureManager
     ./modules/core/first-boot.nix  # First boot configuration wizard
     ./modules/system-tiers.nix  # System tier definitions
+  ] ++ lib.optionals (builtins.pathExists ./modules/users-local.nix) [
+    # Import local user configuration if it exists (created by installer)
+    ./modules/users-local.nix
+  ] ++ lib.optionals (builtins.pathExists ./modules/system-local.nix) [
+    # Import local system configuration if it exists (created by installer)
+    ./modules/system-local.nix
   ];
 
   # System identification
@@ -107,21 +113,24 @@
   users = {
     mutableUsers = false;
     
-    users.admin = {
-      isNormalUser = true;
-      description = "System Administrator";
-      extraGroups = [ "wheel" "libvirtd" "kvm" ];
-      # IMPORTANT: Set one of these to avoid being locked out:
-      
-      # Option 1: Set initial password (recommended for first boot)
-      # Generate with: mkpasswd -m sha-512
-      # Default password "changeme" - MUST be changed on first login
-      hashedPassword = "$6$rounds=10000$changeme$3VfUkYX5tHSZrgqmQH5z5gkLTKCw1N0e4A7cFaHnqKwYOt8lJ5xfDJPKoGupW.8nKmZM5vnkGYz0R9XoYqJlM0";
-      
-      # Option 2: SSH public key (for remote access)
-      # openssh.authorizedKeys.keys = [
-      #   "ssh-rsa AAAAB3... your-key"
-      # ];
+    # Only define default admin user if installer hasn't created users-local.nix
+    users = lib.optionalAttrs (!(builtins.pathExists ./modules/users-local.nix)) {
+      admin = {
+        isNormalUser = true;
+        description = "System Administrator";
+        extraGroups = [ "wheel" "libvirtd" "kvm" ];
+        # IMPORTANT: Set one of these to avoid being locked out:
+        
+        # Option 1: Set initial password (recommended for first boot)
+        # Generate with: mkpasswd -m sha-512
+        # Default password "changeme" - MUST be changed on first login
+        hashedPassword = "$6$rounds=10000$changeme$3VfUkYX5tHSZrgqmQH5z5gkLTKCw1N0e4A7cFaHnqKwYOt8lJ5xfDJPKoGupW.8nKmZM5vnkGYz0R9XoYqJlM0";
+        
+        # Option 2: SSH public key (for remote access)
+        # openssh.authorizedKeys.keys = [
+        #   "ssh-rsa AAAAB3... your-key"
+        # ];
+      };
     };
   };
   

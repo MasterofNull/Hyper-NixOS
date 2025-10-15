@@ -45,16 +45,42 @@ let
         exit 1
     fi
     
-    echo -e "''${GREEN}First, let's set up the admin user password.''${NC}"
-    echo -e "''${YELLOW}The current admin user has a default password that must be changed.''${NC}"
+    # Check which users exist and need passwords
+    echo -e "''${GREEN}Checking user accounts...''${NC}"
     echo
     
-    # Change admin password
-    echo "Setting password for 'admin' user:"
-    passwd admin || {
-        echo -e "''${RED}Failed to set admin password!''${NC}"
-        exit 1
-    }
+    # Find wheel group users without passwords
+    WHEEL_USERS=$(getent group wheel | cut -d: -f4 | tr ',' ' ')
+    USERS_NEEDING_PASSWORD=""
+    
+    for user in $WHEEL_USERS; do
+        if [[ "$user" == "root" ]]; then continue; fi
+        # Check if user has a valid password hash
+        HASH=$(getent shadow "$user" | cut -d: -f2)
+        if [[ "$HASH" == "!" || "$HASH" == "*" || -z "$HASH" ]]; then
+            USERS_NEEDING_PASSWORD="$USERS_NEEDING_PASSWORD $user"
+        fi
+    done
+    
+    if [[ -n "$USERS_NEEDING_PASSWORD" ]]; then
+        echo -e "''${YELLOW}The following admin users need passwords set:''${NC}"
+        for user in $USERS_NEEDING_PASSWORD; do
+            echo "  - $user"
+        done
+        echo
+        
+        for user in $USERS_NEEDING_PASSWORD; do
+            echo -e "''${GREEN}Setting password for '$user':''${NC}"
+            passwd "$user" || {
+                echo -e "''${RED}Failed to set password for $user!''${NC}"
+                # Continue with other users
+            }
+            echo
+        done
+    else
+        echo -e "''${GREEN}All admin users have passwords set.''${NC}"
+        echo
+    fi
     
     echo
     echo -e "''${GREEN}✓ Admin password updated successfully!''${NC}"
@@ -134,9 +160,13 @@ EOF
     echo -e "''${GREEN}        First boot configuration complete!                      ''${NC}"
     echo -e "''${GREEN}═══════════════════════════════════════════════════════════════''${NC}"
     echo
-    echo "You can now log in with:"
-    echo "  Username: admin"
-    echo "  Password: (the password you just set)"
+    echo "You can now log in with your wheel group users:"
+    for user in $(getent group wheel | cut -d: -f4 | tr ',' ' '); do
+        if [[ "$user" != "root" ]]; then
+            echo "  Username: $user"
+        fi
+    done
+    echo "  Password: (the password you set)"
     echo
     echo "Press Enter to continue..."
     read -r
