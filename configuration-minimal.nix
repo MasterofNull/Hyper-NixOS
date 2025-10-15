@@ -113,21 +113,24 @@
   users = {
     mutableUsers = false;
     
-    # Allow first boot without password for setup wizard
-    # SECURITY: This is only safe because the first-boot wizard has protections:
-    # 1. It won't run if passwords already exist
-    # 2. It won't run if users-local.nix exists (installer already configured users)
-    # 3. It creates a flag file preventing re-execution
-    # 4. The systemd service has conditions to prevent running on configured systems
-    allowNoPasswordLogin = true;
-    
     # Only define default admin user if installer hasn't created users-local.nix
     users = lib.optionalAttrs (!(builtins.pathExists ./modules/users-local.nix)) {
       admin = {
         isNormalUser = true;
         description = "System Administrator";
         extraGroups = [ "wheel" "libvirtd" "kvm" ];
-        # Password will be set by first-boot wizard
+        # Initial login password: "hyper-nixos" (MUST be changed)
+        # This is only for initial login - sudo password set separately during first boot
+        hashedPassword = "$6$rounds=100000$initialsalt$YLZlz9DVQlUWroSMpOY6JXp1zAZUxqSSjJ.36BkY.4Swl5XKJ7Z.0KYwL4HRdKqUZt4HZjAQPUGvBD8A2CY0g0";
+      };
+      
+      # Create a separate operator user for VM management without sudo
+      operator = {
+        isNormalUser = true;
+        description = "VM Operator (no sudo)";
+        extraGroups = [ "libvirtd" "kvm" ];
+        # Initial password: "operator" (MUST be changed)
+        hashedPassword = "$6$rounds=100000$operatorsalt$g3dS1M9HM8H2WLRmUw1ZSF1LHnZdvUvKZrJq9N5QC.9rY2AdnXPFMTZJXpN0lYbAWS9nQBfXAuKkLkvYBRl.a.";
       };
     };
   };
