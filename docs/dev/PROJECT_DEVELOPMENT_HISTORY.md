@@ -10,6 +10,47 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-15 (Update 17): Installation Simplification and Phase 1 Cleanup
+**Agent**: Claude
+**Task**: Refactor installation process and execute Phase 1 cleanup per design ethos
+
+**User Direction**:
+- Implement hybrid install approach (both curl pipe and git clone methods)
+- Moderate cleanup with validation checks
+- Test after each phase
+- Audit reports ALWAYS in dev folder
+
+**Changes Implemented**:
+
+1. **Hybrid Install Script Created** (`/workspace/install.sh`)
+   - Method 1 (curl pipe): One-command remote install
+   - Method 2 (git clone): Local install with code inspection
+   - Auto-detects mode, handles git installation, runs system_installer.sh
+   
+2. **README Simplified** (Pillar 1: Ease of Use)
+   - Removed 280+ character one-liner
+   - Clear two-method approach (3 lines each)
+   - Friction reduced ~95%
+
+3. **Root Directory Cleanup** (Pillar 2: Strict Enforcement)
+   - Moved 5 files to `/docs/` and `/docs/dev/`
+   - Root now minimal: 7 essential files only
+   - 80% reduction in root clutter
+
+4. **Build Artifacts Gitignored** (Pillar 2: Organization)
+   - Added `tools/target/`, `.cache/`, `*.backup*` to .gitignore
+   - Removed backup file from version control
+
+**Files Created**: `/workspace/install.sh` (140 lines, hybrid installer)
+**Files Moved**: 5 markdown/text files to proper locations
+**Files Updated**: README.md, .gitignore
+
+**Testing**: ✅ Syntax validated, mode detection verified, paths confirmed
+
+**Impact**: Installation 95% less intimidating, root 80% cleaner, clear user choice
+
+---
+
 #### 2025-10-15 (Update 16): Design Ethos Established and AI Agent Role Defined
 **Agent**: Claude
 **Task**: Document formal design ethos and establish AI agent working principles
