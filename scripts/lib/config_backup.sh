@@ -10,7 +10,7 @@ readonly _CONFIG_BACKUP_LOADED=1
 set -euo pipefail
 
 # Source logging if available
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 source "${SCRIPT_DIR}/logging.sh" 2>/dev/null || {
     log_info() { echo "[INFO] $*"; }
     log_warn() { echo "[WARN] $*" >&2; }

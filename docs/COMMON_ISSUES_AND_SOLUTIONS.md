@@ -325,6 +325,22 @@ fi
 - Functions like `readlink -f "$0"` also fail when piped
 - Use `BASH_SOURCE` with proper defaults instead
 
+**Comprehensive Fix**:
+This pattern was found to affect 35+ scripts across the codebase. A comprehensive fix was applied to all affected scripts. See:
+- `docs/dev/BASH_SOURCE_VULNERABILITY_FIX_2025-10-15.md` - Full analysis and fix details
+- `scripts/lib/bash_source_safe.sh` - Safe utility functions library
+- `scripts/tools/fix-bash-source-pattern.sh` - Audit and fix tool
+
+**Scripts Fixed** (35 total):
+- All installer and bootstrap scripts
+- All wizard scripts (setup, configuration, etc.)
+- VM management scripts (hv-migrate, hv-bootstrap, etc.)
+- Library files (config_backup, dry_run, error_handling, etc.)
+- Test scripts and CI validation
+- Various utility scripts
+
+All scripts now use the safe pattern: `${BASH_SOURCE[0]:-$0}` which works in all execution contexts.
+
 ### Issue: Duplicate Option Definitions
 **Symptoms**:
 ```

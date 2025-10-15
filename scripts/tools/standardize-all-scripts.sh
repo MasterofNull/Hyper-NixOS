@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 echo "====================================================="
@@ -70,7 +70,7 @@ for script_path in "${SCRIPTS_TO_FIX[@]}"; do
     /^#!/ { print; found_shebang=1; next; }
     found_shebang && !inserted && /^[^#]/ && NF > 0 {
         print "# Source common library for standardized functions";
-        print "SCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"";
+        print "SCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]:-$0}\")\" && pwd)\"";
         print "source \"${SCRIPT_DIR}/lib/common.sh\" 2>/dev/null || true";
         print "";
         inserted=1;

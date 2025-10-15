@@ -12,7 +12,7 @@ readonly BLUE='\033[0;34m'
 readonly NC='\033[0m'
 
 # Configuration
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 readonly CRED_FILE="/tmp/hyper-nixos-creds.enc"
 readonly HASH_FILE="/var/lib/hypervisor/.credential-hash"
 readonly TAMPER_FLAG="/var/lib/hypervisor/.tamper-detected"

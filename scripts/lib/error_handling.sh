@@ -10,7 +10,7 @@ readonly _ERROR_HANDLING_LOADED=1
 set -euo pipefail
 
 # Source logging if available
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 source "${SCRIPT_DIR}/logging.sh" 2>/dev/null || true
 
 ################################################################################

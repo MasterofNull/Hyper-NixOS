@@ -15,7 +15,7 @@ readonly RED='\033[0;31m'
 readonly NC='\033[0m'
 
 # Paths
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly WIZARD_SCRIPT="$SCRIPT_DIR/feature-manager-wizard.sh"
 readonly FIRST_BOOT_SCRIPT="$SCRIPT_DIR/first-boot-wizard.sh"

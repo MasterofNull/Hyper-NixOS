@@ -10,7 +10,7 @@ readonly RED='\033[0;31m'
 readonly BOLD='\033[1m'
 readonly NC='\033[0m'
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 INSTALL_DIR="${1:-/usr/local/bin}"
 
 echo -e "${BOLD}Installing Hyper-NixOS Unified CLI...${NC}\n"

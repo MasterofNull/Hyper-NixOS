@@ -167,7 +167,14 @@ check_local_files() {
 # Clone or copy repository
 clone_repository() {
     # Get the directory where this script is located
-    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # Safe for piped execution: use default if BASH_SOURCE is undefined
+    local source="${BASH_SOURCE[0]:-}"
+    local script_dir
+    if [[ -n "$source" ]]; then
+        script_dir="$(cd "$(dirname "$source")" && pwd)"
+    else
+        script_dir="$(pwd)"
+    fi
     
     # Check if we're running from a complete local installation
     if check_local_files "$script_dir"; then

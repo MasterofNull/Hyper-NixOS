@@ -282,7 +282,7 @@ git_smart_update() {
 }
 
 # Main execution
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ "${BASH_SOURCE[0]:-$0}" == "${0}" ]]; then
     case "${1:-help}" in
         scan)
             example_scan_targets

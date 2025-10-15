@@ -6,7 +6,7 @@
 set -uo pipefail
 # Note: NOT using -e because arithmetic operations can return non-zero
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Colors
