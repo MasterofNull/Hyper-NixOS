@@ -29,7 +29,22 @@ cleanup_on_error() {
     local exit_code=$?
     if [[ $exit_code -ne 0 ]]; then
         echo
-        print_error "Installation failed with exit code: $exit_code"
+        echo -e "${RED}✗ Installation failed${NC}"
+        echo
+        case $exit_code in
+            1)   echo -e "${YELLOW}Reason:${NC} General error - check error messages above" ;;
+            2)   echo -e "${YELLOW}Reason:${NC} Invalid arguments or configuration" ;;
+            126) echo -e "${YELLOW}Reason:${NC} Permission denied - ensure you're running with sudo" ;;
+            127) echo -e "${YELLOW}Reason:${NC} Command not found - this may indicate a script loading issue" ;;
+            130) echo -e "${YELLOW}Reason:${NC} Script interrupted by user (Ctrl+C)" ;;
+            *)   echo -e "${YELLOW}Reason:${NC} Unknown error (exit code: $exit_code)" ;;
+        esac
+        echo
+        if [[ -n "${ERROR_LOG:-}" && -f "${ERROR_LOG:-}" ]]; then
+            echo -e "${CYAN}For detailed error information, check:${NC}"
+            echo -e "  ${ERROR_LOG}"
+            echo
+        fi
         if [[ -n "${tmpdir:-}" && -d "${tmpdir:-}" ]]; then
             echo "Cleaning up temporary files..."
             rm -rf "$tmpdir"
@@ -121,9 +136,14 @@ detect_mode() {
 # Check if running as root
 check_root() {
     if [[ $EUID -ne 0 ]]; then
-        report_error "This installer must be run as root" \
-                     "Run: sudo $0 $*"
-        exit 1
+        echo -e "${RED}✗ This installer must be run as root${NC}" >&2
+        echo >&2
+        echo -e "${CYAN}Please run with sudo:${NC}" >&2
+        echo -e "  sudo bash <(curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh)" >&2
+        echo -e "${YELLOW}Or for local installation:${NC}" >&2
+        echo -e "  sudo ./install.sh" >&2
+        echo >&2
+        exit 126
     fi
 }
 
@@ -337,12 +357,18 @@ ensure_git() {
     if ! command -v git >/dev/null 2>&1; then
         stop_spinner error "Git installation failed"
         print_error "Git is required but could not be installed automatically"
-        echo "Please install git manually: nix-env -iA nixos.git"
+        echo
+        echo -e "${CYAN}To install git manually:${NC}"
+        echo "  nix-env -iA nixos.git"
+        echo "  # or"
+        echo "  nix profile install nixpkgs#git"
         if [[ -n "${install_output:-}" ]]; then
             echo
             echo "Error output:"
             echo "$install_output" | tail -n 10
         fi
+        echo
+        echo -e "${YELLOW}After installing git, run this script again.${NC}"
         exit 1
     fi
     
@@ -452,14 +478,23 @@ setup_git_ssh() {
                 echo
                 print_warning "You need to add this key to your GitHub account:"
                 echo
+                echo -e "${CYAN}=== Copy this key ===${NC}"
                 cat ~/.ssh/id_ed25519.pub
+                echo -e "${CYAN}=====================${NC}"
+                echo
+                echo -e "${YELLOW}Steps:${NC}"
+                echo "  1. Go to: https://github.com/settings/ssh/new"
+                echo "  2. Paste the key above"
+                echo "  3. Click 'Add SSH key'"
                 echo
                 read -t 60 -p "$(echo -e "${YELLOW}Press Enter after adding the key to GitHub...${NC}")" || {
                     print_error "Timeout waiting for confirmation"
+                    echo -e "${CYAN}Tip:${NC} Re-run installer and select option 1 (HTTPS) for simpler setup"
                     return 1
                 }
             else
                 print_error "SSH key required for SSH clone method"
+                echo -e "${CYAN}Tip:${NC} Use option 1 (HTTPS) instead - no SSH key needed"
                 return 1
             fi
         else
@@ -644,19 +679,37 @@ remote_install() {
                     print_success "Repository cloned successfully"
                 else
                     printf "\r\033[K"
-                    print_error "Failed to clone repository from $repo_url"
+                    print_error "Failed to clone repository from GitHub"
                     echo
-                    echo "Error details:"
+                    echo -e "${YELLOW}Attempted URL:${NC} $repo_url"
+                    echo
+                    echo -e "${CYAN}Error details:${NC}"
                     cat "$clone_output"
+                    echo
+                    echo -e "${CYAN}Possible solutions:${NC}"
+                    echo "  1. Check your internet connection"
+                    echo "  2. Verify GitHub is accessible: ping github.com"
+                    echo "  3. Try a different download method (tarball is most reliable)"
+                    echo "  4. Check if a firewall is blocking git:// or https:// protocols"
+                    echo
                     rm -f "$clone_output"
                     exit 1
                 fi
             else
                 # Non-terminal: quiet clone
                 if ! git clone -q "$repo_url" "$tmpdir/hyper-nixos" 2>"$clone_output"; then
-                    print_error "Failed to clone repository from $repo_url"
-                    echo "Error details:"
+                    print_error "Failed to clone repository from GitHub"
+                    echo
+                    echo -e "${YELLOW}Attempted URL:${NC} $repo_url"
+                    echo
+                    echo -e "${CYAN}Error details:${NC}"
                     cat "$clone_output"
+                    echo
+                    echo -e "${CYAN}Possible solutions:${NC}"
+                    echo "  1. Check your internet connection"
+                    echo "  2. Verify GitHub is accessible: ping github.com"
+                    echo "  3. Try a different download method (tarball is most reliable)"
+                    echo
                     rm -f "$clone_output"
                     exit 1
                 fi
@@ -670,7 +723,11 @@ remote_install() {
             ensure_git
             
             if ! setup_git_ssh; then
-                print_error "SSH setup failed. Falling back to HTTPS..."
+                print_error "SSH setup failed"
+                echo
+                echo -e "${YELLOW}Automatically falling back to HTTPS (public access)...${NC}"
+                echo -e "${CYAN}Note:${NC} HTTPS doesn't require SSH keys"
+                echo
                 repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
             else
                 repo_url="git@github.com:MasterofNull/Hyper-NixOS.git"
@@ -703,6 +760,10 @@ remote_install() {
             local github_token
             if ! github_token=$(get_github_token); then
                 print_error "Failed to get GitHub token"
+                echo
+                echo -e "${CYAN}Token is required for private repository access${NC}"
+                echo -e "${CYAN}For public repositories, use option 1 (HTTPS) instead${NC}"
+                echo
                 exit 1
             fi
             
@@ -721,8 +782,21 @@ remote_install() {
                 print_success "Repository cloned successfully"
             else
                 printf "\r\033[K"
-                print_error "Failed to clone repository. Check your token permissions."
+                print_error "Failed to clone repository with token authentication"
+                echo
+                echo -e "${CYAN}Error details:${NC}"
                 cat "$clone_output"
+                echo
+                echo -e "${YELLOW}Common causes:${NC}"
+                echo "  1. Invalid or expired GitHub personal access token"
+                echo "  2. Token doesn't have 'repo' scope permissions"
+                echo "  3. Repository is private and token doesn't have access"
+                echo
+                echo -e "${CYAN}To fix:${NC}"
+                echo "  1. Generate a new token at: https://github.com/settings/tokens"
+                echo "  2. Ensure 'repo' scope is selected"
+                echo "  3. Or use option 1 (HTTPS without token) for public access"
+                echo
                 rm -f "$clone_output"
                 exit 1
             fi
@@ -734,12 +808,28 @@ remote_install() {
             
             if ! download_tarball "$tmpdir"; then
                 print_error "Tarball download failed"
+                echo
+                echo -e "${CYAN}Alternative methods:${NC}"
+                echo "  1. Try git clone: choose option 1 when re-running installer"
+                echo "  2. Manual download:"
+                echo "     wget https://github.com/MasterofNull/Hyper-NixOS/archive/refs/heads/main.tar.gz"
+                echo "     tar xzf main.tar.gz"
+                echo "     cd Hyper-NixOS-main"
+                echo "     sudo ./install.sh"
+                echo
                 exit 1
             fi
             ;;
             
         *)
-            print_error "Invalid download method"
+            print_error "Invalid download method selected"
+            echo
+            echo -e "${YELLOW}Expected: 1, 2, 3, or 4${NC}"
+            echo -e "${YELLOW}Received: $download_method${NC}"
+            echo
+            echo "This is likely a bug in the installer script."
+            echo "Please report this at: https://github.com/MasterofNull/Hyper-NixOS/issues"
+            echo
             exit 1
             ;;
     esac
@@ -748,6 +838,19 @@ remote_install() {
     
     cd "$tmpdir/hyper-nixos" || {
         print_error "Failed to enter repository directory"
+        echo
+        echo -e "${YELLOW}Expected directory:${NC} $tmpdir/hyper-nixos"
+        echo
+        echo "This could mean:"
+        echo "  1. Download/extraction failed silently"
+        echo "  2. Disk space issue prevented directory creation"
+        echo "  3. Permission issue with temporary directory"
+        echo
+        echo -e "${CYAN}Try:${NC}"
+        echo "  1. Check available disk space: df -h"
+        echo "  2. Check /tmp permissions: ls -ld /tmp"
+        echo "  3. Set alternative temp dir: export TMPDIR=/var/tmp"
+        echo
         exit 1
     }
     
@@ -802,12 +905,26 @@ local_install() {
     done
     
     if [[ ${#missing_files[@]} -gt 0 ]]; then
-        report_error "Missing required files" \
-                     "Ensure you're in the Hyper-NixOS repository root"
-        echo "Missing files:" >&2
+        print_error "Missing required files for local installation"
+        echo
+        echo -e "${YELLOW}Missing files:${NC}"
         for file in "${missing_files[@]}"; do
-            echo "  - $file" >&2
+            echo "  ✗ $file"
         done
+        echo
+        echo -e "${CYAN}This means:${NC}"
+        echo "  You're not in the Hyper-NixOS repository root directory"
+        echo
+        echo -e "${CYAN}To fix:${NC}"
+        echo "  1. Clone the repository first:"
+        echo "     git clone https://github.com/MasterofNull/Hyper-NixOS.git"
+        echo "  2. Enter the directory:"
+        echo "     cd Hyper-NixOS"
+        echo "  3. Run the installer:"
+        echo "     sudo ./install.sh"
+        echo
+        echo -e "${CYAN}Current directory:${NC} $(pwd)"
+        echo
         exit 1
     fi
     
@@ -851,17 +968,79 @@ main() {
             ;;
         *)
             print_error "Could not determine installation mode"
-            report_error "Installation mode detection failed" \
-                        "Ensure script is run correctly" \
-                        "$ERROR_LOG"
+            echo
+            echo -e "${YELLOW}Mode detection returned:${NC} $mode"
+            echo
+            echo "This is an internal error in the installer."
+            echo
+            echo -e "${CYAN}Expected modes:${NC}"
+            echo "  • local  - Running from cloned repository"
+            echo "  • remote - Piped from curl/wget"
+            echo
+            echo -e "${CYAN}Workaround:${NC}"
+            echo "  Download and run locally:"
+            echo "    git clone https://github.com/MasterofNull/Hyper-NixOS.git"
+            echo "    cd Hyper-NixOS"
+            echo "    sudo ./install.sh"
+            echo
+            echo "Please report this at: https://github.com/MasterofNull/Hyper-NixOS/issues"
+            echo
             exit 1
             ;;
     esac
+}
+
+# Verify all critical functions are defined before executing
+verify_functions() {
+    local required_functions=(
+        "print_error"
+        "print_status" 
+        "print_success"
+        "detect_mode"
+        "remote_install"
+        "local_install"
+    )
+    
+    local missing=()
+    for func in "${required_functions[@]}"; do
+        if ! declare -F "$func" >/dev/null 2>&1; then
+            missing+=("$func")
+        fi
+    done
+    
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        echo -e "${RED}✗ CRITICAL ERROR: Script loading failed${NC}" >&2
+        echo >&2
+        echo "Missing functions: ${missing[*]}" >&2
+        echo >&2
+        echo -e "${YELLOW}This can happen when:${NC}" >&2
+        echo "  1. The script is downloaded incompletely" >&2
+        echo "  2. There's a syntax error preventing function definitions" >&2
+        echo "  3. Network issues interrupted the download" >&2
+        echo >&2
+        echo -e "${CYAN}Try these solutions:${NC}" >&2
+        echo "  1. Download and run locally:" >&2
+        echo "     git clone https://github.com/MasterofNull/Hyper-NixOS.git" >&2
+        echo "     cd Hyper-NixOS" >&2
+        echo "     sudo ./install.sh" >&2
+        echo >&2
+        echo "  2. Or use tarball download (more reliable):" >&2
+        echo "     wget https://github.com/MasterofNull/Hyper-NixOS/archive/refs/heads/main.tar.gz" >&2
+        echo "     tar xzf main.tar.gz" >&2
+        echo "     cd Hyper-NixOS-main" >&2
+        echo "     sudo ./install.sh" >&2
+        echo >&2
+        exit 127
+    fi
 }
 
 # Handle being piped from curl or executed directly
 # When piped: BASH_SOURCE is empty; when executed: BASH_SOURCE[0] == $0
 # Only skip main if being sourced (BASH_SOURCE[0] != $0)
 if [[ -z "${BASH_SOURCE[0]:-}" ]] || [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    # Verify script loaded completely
+    verify_functions
+    
+    # Run main installer
     main "$@"
 fi
