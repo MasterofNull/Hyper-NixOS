@@ -343,7 +343,7 @@ confirm_installation() {
     
     # Only prompt if interactive
     if [[ -t 0 ]]; then
-        read -t 60 -p "$(echo -e "${CYAN}Continue with installation? [Y/n]:${NC} ")" -r choice
+        read -t 60 -r -p "$(echo -e "${CYAN}Continue with installation? [Y/n]:${NC} ")" choice
         echo >&2
         if [[ -z "$choice" ]] || [[ "$choice" =~ ^[Yy]$ ]]; then
             return 0
@@ -626,19 +626,21 @@ prompt_download_method() {
     fi
     
     # Check if we can prompt user (try /dev/tty for piped scenarios)
-    local input_source="/dev/stdin"
-    if [[ ! -t 0 ]] && [[ -e /dev/tty ]]; then
-        # stdin not available but /dev/tty exists - use it for piped scenarios
-        input_source="/dev/tty"
-        print_info "Running in piped mode, but interactive input available via terminal" >&2
-    elif [[ ! -t 0 ]]; then
-        # No terminal available at all - use default
-        print_warning "Running in non-interactive mode (no terminal), using default: Download Tarball" >&2
-        echo -e "${CYAN}ℹ${NC} To choose a different method:" >&2
-        echo -e "${CYAN}ℹ${NC}   Set environment: HYPER_INSTALL_METHOD=https curl ... | sudo -E bash" >&2
-        echo -e "${CYAN}ℹ${NC}   Or download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
-        echo "1"  # Default to tarball (fastest, no git required)
-        return 0
+    local input_source="stdin"
+    if [[ ! -t 0 ]]; then
+        # stdin not available, try /dev/tty
+        if [[ -r /dev/tty ]] && [[ -w /dev/tty ]]; then
+            input_source="tty"
+            print_info "Running in piped mode, using terminal for input" >&2
+        else
+            # No interactive terminal available - use default
+            print_warning "Running in non-interactive mode (no terminal), using default: Download Tarball" >&2
+            echo -e "${CYAN}ℹ${NC} To choose a different method:" >&2
+            echo -e "${CYAN}ℹ${NC}   Set environment: HYPER_INSTALL_METHOD=https curl ... | sudo -E bash" >&2
+            echo -e "${CYAN}ℹ${NC}   Or download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
+            echo "1"  # Default to tarball (fastest, no git required)
+            return 0
+        fi
     fi
     
     echo >&2
@@ -660,29 +662,47 @@ prompt_download_method() {
     
     while [[ $attempts -lt $max_attempts ]]; do
         # Use read with timeout to prevent hangs, reading from appropriate source
-        if read -t 50 -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice <"$input_source"; then
-            # Handle empty input (Enter pressed) - use default
-            if [[ -z "$choice" ]]; then
-                choice="1"
-                echo -e "${CYAN}ℹ${NC} Using default option: Download Tarball" >&2
+        local choice_input=""
+        local read_result=1
+        
+        if [[ "$input_source" == "tty" ]]; then
+            # For /dev/tty, read directly
+            if read -t 50 -r -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice_input </dev/tty 2>/dev/null; then
+                read_result=0
             fi
-            
-            case "$choice" in
-                1|2|3|4)
-                    echo "$choice"
-                    return 0
-                    ;;
-                *)
-                    attempts=$((attempts + 1))
-                    print_error "Invalid choice. Please enter 1, 2, 3, or 4. (Attempt $attempts/$max_attempts)" >&2
-                    ;;
-            esac
         else
+            # For stdin, read with timeout
+            if read -t 50 -r -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice_input 2>/dev/null; then
+                read_result=0
+            fi
+        fi
+        
+        # Check if read was successful
+        if [[ $read_result -ne 0 ]]; then
             # Timeout or EOF reached
             print_warning "No input received (timeout or EOF). Using default: Download Tarball" >&2
             echo "1"
             return 0
         fi
+        
+        # Handle empty input (Enter pressed) - use default
+        if [[ -z "$choice_input" ]]; then
+            echo -e "${CYAN}ℹ${NC} Using default option: Download Tarball" >&2
+            echo "1"
+            return 0
+        fi
+        
+        choice="$choice_input"
+        case "$choice" in
+            1|2|3|4)
+                echo "$choice"
+                return 0
+                ;;
+            *)
+                attempts=$((attempts + 1))
+                print_error "Invalid choice. Please enter 1, 2, 3, or 4. (Attempt $attempts/$max_attempts)" >&2
+                ;;
+        esac
     done
     
     # Max attempts reached, use default
@@ -726,7 +746,7 @@ setup_git_ssh() {
         echo
         
         local generate_key
-        if read -t 30 -p "$(echo -e "${CYAN}Generate new SSH key? [y/N]:${NC} ")" generate_key; then
+        if read -t 30 -r -p "$(echo -e "${CYAN}Generate new SSH key? [y/N]:${NC} ")" generate_key; then
             if [[ "${generate_key,,}" == "y" ]]; then
                 print_status "Generating SSH key..."
                 ssh-keygen -t ed25519 -C "hyper-nixos-installer" -f ~/.ssh/id_ed25519 -N ""
@@ -831,28 +851,57 @@ download_with_retry() {
         fi
         
         local success=false
+        local download_exit=0
+        
         if [[ "$download_tool" == "curl" ]]; then
-            if curl -L --fail --progress-bar -o "$output" "$url" 2>&1 | \
-               tee -a "$INSTALL_LOG" | \
-               grep -oP '\d+\.\d' | \
-               while read -r percent; do
-                   local pct=$(echo "$percent" | cut -d. -f1)
-                   show_progress_bar "$pct" 100 "Downloading"
-               done
-            then
-                printf "\r\033[K"
+            # Download with curl - use simple progress output to avoid pipeline issues
+            print_debug "Starting curl download: $url -> $output"
+            
+            if [[ -t 1 ]]; then
+                # Terminal available: show progress
+                curl -L --fail --progress-bar -o "$output" "$url" 2>&1 | tee -a "$INSTALL_LOG" >&2
+                download_exit=${PIPESTATUS[0]}
+            else
+                # No terminal: quiet mode
+                curl -L --fail -s -S -o "$output" "$url" 2>&1 | tee -a "$INSTALL_LOG" >&2
+                download_exit=$?
+            fi
+            
+            printf "\r\033[K"  # Clear line
+            
+            if [[ $download_exit -eq 0 ]] && [[ -f "$output" ]] && [[ -s "$output" ]]; then
                 success=true
+                print_debug "curl download successful (exit: $download_exit, size: $(du -h "$output" | cut -f1))"
+            else
+                print_debug "curl failed (exit: $download_exit)"
+                if [[ -f "$output" ]]; then
+                    print_debug "Output file exists but may be incomplete (size: $(du -h "$output" | cut -f1))"
+                fi
             fi
         else
-            if wget --progress=bar:force -O "$output" "$url" 2>&1 | \
-               tee -a "$INSTALL_LOG" | \
-               grep -oP '\d+%' | tr -d '%' | \
-               while read -r percent; do
-                   show_progress_bar "$percent" 100 "Downloading"
-               done
-            then
-                printf "\r\033[K"
+            # Download with wget
+            print_debug "Starting wget download: $url -> $output"
+            
+            if [[ -t 1 ]]; then
+                # Terminal available: show progress
+                wget --progress=bar:force -O "$output" "$url" 2>&1 | tee -a "$INSTALL_LOG" >&2
+                download_exit=${PIPESTATUS[0]}
+            else
+                # No terminal: quiet mode with progress dots
+                wget -q --show-progress -O "$output" "$url" 2>&1 | tee -a "$INSTALL_LOG" >&2
+                download_exit=$?
+            fi
+            
+            printf "\r\033[K"  # Clear line
+            
+            if [[ $download_exit -eq 0 ]] && [[ -f "$output" ]] && [[ -s "$output" ]]; then
                 success=true
+                print_debug "wget download successful (exit: $download_exit, size: $(du -h "$output" | cut -f1))"
+            else
+                print_debug "wget failed (exit: $download_exit)"
+                if [[ -f "$output" ]]; then
+                    print_debug "Output file exists but may be incomplete (size: $(du -h "$output" | cut -f1))"
+                fi
             fi
         fi
         

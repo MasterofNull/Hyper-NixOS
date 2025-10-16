@@ -142,8 +142,14 @@ full_scan() {
     echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
     echo
     
-    # Comprehensive discovery
-    local result=$(discover_network "$interface" 2>&1 | tee /dev/tty)
+    # Comprehensive discovery with output to terminal if available
+    local result
+    if [[ -w /dev/tty ]]; then
+        result=$(discover_network "$interface" 2>&1 | tee /dev/tty)
+    else
+        # Fallback: show on stderr
+        result=$(discover_network "$interface" 2>&1 | tee >(cat >&2))
+    fi
     
     echo
     echo -e "${GREEN}✓ Full scan complete${NC}"
