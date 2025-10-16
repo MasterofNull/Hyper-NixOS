@@ -693,7 +693,9 @@ prompt_download_method() {
             exec 3<&-  # Close fd 3
         else
             # For stdin, read with timeout
-            if read -t 50 -r -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice_input 2>/dev/null; then
+            # Print prompt separately so it's not suppressed by 2>/dev/null
+            echo -ne "${CYAN}Select method [1-4] (default: 1):${NC} " >&2
+            if read -t 50 -r choice_input 2>/dev/null; then
                 read_result=0
             fi
         fi
