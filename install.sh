@@ -359,18 +359,18 @@ prompt_download_method() {
         return 0
     fi
     
-    echo
-    print_line "═" 70
-    center_text "Download Method Selection"
-    print_line "═" 70
-    echo
+    echo >&2
+    print_line "═" 70 >&2
+    center_text "Download Method Selection" >&2
+    print_line "═" 70 >&2
+    echo >&2
     print_info "Choose how to download Hyper-NixOS:"
-    echo
-    echo "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication"
-    echo "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup"
-    echo "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token"
-    echo "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install"
-    echo
+    echo >&2
+    echo "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication" >&2
+    echo "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup" >&2
+    echo "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token" >&2
+    echo "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install" >&2
+    echo >&2
     
     local choice
     local attempts=0

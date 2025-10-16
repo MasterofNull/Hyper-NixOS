@@ -56,6 +56,52 @@ When bash functions return values via command substitution `$(function)`:
 
 ---
 
+#### 2025-10-16 (Update 28b): Installer Menu Missing Context Fix
+**Agent**: Claude (Background Agent)
+**Task**: Fix installer menu not displaying options to user
+
+**Issue**: 
+- Installer prompted "Select method [1-4] (default: 1):" with no context
+- Users couldn't see what options 1-4 were
+- Menu options were completely invisible
+
+**Root Cause**:
+- Command substitution `download_method=$(prompt_download_method)` captures ALL stdout
+- Menu display lines (369-372) were going to stdout
+- Text was captured into variable instead of displayed to user
+- Previous fix (Update 28) only addressed contamination, not visibility
+
+**Fix Applied**:
+- Redirected ALL display output to stderr in `prompt_download_method()`
+- Lines 362-373: Added `>&2` to every `echo` and function call
+- Menu options, headers, and decorations now go to stderr
+- Only the user's choice number goes to stdout for capture
+
+**Files Changed**:
+- ✅ `install.sh` - Redirected menu display output to stderr (lines 362-373)
+- ✅ `docs/dev/INSTALLER_MENU_FIX_2025-10-16.md` - Complete fix documentation
+- ✅ `docs/dev/PROJECT_DEVELOPMENT_HISTORY.md` - Updated (this file)
+
+**Impact**:
+- **Critical usability fix** - Users can now see all menu options
+- Completes the stdout/stderr separation pattern from Update 28
+- No breaking changes
+- Works in both local and remote execution modes
+
+**Pattern Learned**:
+When bash functions return values via command substitution:
+- ✅ **EVERY** user-facing output line must go to stderr (`>&2`)
+- ✅ This includes: headers, borders, prompts, options, blank lines
+- ✅ Only the final return value goes to stdout
+- ⚠️ Previous fix was incomplete - addressed contamination but not visibility
+
+**Testing**:
+- ✅ Interactive local: Menu displays correctly ✓
+- ✅ Remote piped: Menu displays correctly ✓
+- ✅ All 4 options visible and selectable ✓
+
+---
+
 #### 2025-10-15 (Update 27): Pulse Integration + Optional Enhancements Complete
 **Agent**: Claude
 **Task**: Add Pulse reference, implement optional enhancements, integrate high-value features
