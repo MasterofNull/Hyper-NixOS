@@ -1,0 +1,524 @@
+#!/usr/bin/env bash
+#
+# NixOS Updater - Standalone System Update/Upgrade Tool
+# Copyright (c) 2024-2025 MasterofNull
+# Licensed under MIT License
+#
+# Universal NixOS update tool that works on ANY NixOS distribution
+# Handles both updates (same channel) and upgrades (channel changes)
+#
+# Usage:
+#   nixos-updater update              # Update current channel
+#   nixos-updater upgrade [channel]   # Upgrade to new channel
+#   nixos-updater check               # Check for updates
+#   nixos-updater wizard              # Interactive wizard
+#   nixos-updater rollback            # Rollback to previous generation
+#
+# Can be used as:
+#   - Standalone CLI tool
+#   - Interactive wizard
+#   - Library sourced by other scripts
+#   - Integration point for system tools
+
+set -euo pipefail
+
+# Version and metadata
+readonly VERSION="2.0.0"
+readonly TOOL_NAME="NixOS Updater"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source library functions if available
+if [[ -f "$SCRIPT_DIR/lib/nixos-updater-lib.sh" ]]; then
+    source "$SCRIPT_DIR/lib/nixos-updater-lib.sh"
+fi
+
+# Colors for output
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly BOLD='\033[1m'
+readonly NC='\033[0m' # No Color
+
+# Logging
+readonly LOG_DIR="${NIXOS_UPDATER_LOG_DIR:-/var/log/nixos-updater}"
+readonly LOG_FILE="$LOG_DIR/updater-$(date +%Y%m%d-%H%M%S).log"
+
+# Hooks directory for integrations
+readonly HOOKS_DIR="${NIXOS_UPDATER_HOOKS_DIR:-/etc/nixos-updater/hooks}"
+
+# Configuration
+readonly CONFIG_FILE="${NIXOS_UPDATER_CONFIG:-/etc/nixos-updater/config}"
+
+#############################################################################
+# Utility Functions
+#############################################################################
+
+print_header() {
+    echo -e "${BOLD}${BLUE}╔═══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}${BLUE}║${NC}  ${BOLD}$TOOL_NAME v$VERSION${NC}"
+    echo -e "${BOLD}${BLUE}╚═══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+}
+
+log() {
+    local level=$1
+    shift
+    local message="$*"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    # Create log directory if needed
+    mkdir -p "$LOG_DIR" 2>/dev/null || true
+    
+    # Log to file
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE" 2>/dev/null || true
+    
+    # Also print to console
+    case "$level" in
+        INFO)  echo -e "${BLUE}ℹ${NC} $message" ;;
+        SUCCESS) echo -e "${GREEN}✓${NC} $message" ;;
+        WARN)  echo -e "${YELLOW}⚠${NC} $message" ;;
+        ERROR) echo -e "${RED}✗${NC} $message" >&2 ;;
+    esac
+}
+
+#############################################################################
+# Hook System
+#############################################################################
+
+run_hooks() {
+    local hook_type=$1
+    local hook_dir="$HOOKS_DIR/$hook_type"
+    
+    if [[ ! -d "$hook_dir" ]]; then
+        return 0
+    fi
+    
+    log INFO "Running $hook_type hooks..."
+    
+    for hook in "$hook_dir"/*.sh; do
+        if [[ -f "$hook" && -x "$hook" ]]; then
+            log INFO "Executing hook: $(basename "$hook")"
+            if "$hook" "$@" >> "$LOG_FILE" 2>&1; then
+                log SUCCESS "Hook completed: $(basename "$hook")"
+            else
+                log WARN "Hook failed (non-fatal): $(basename "$hook")"
+            fi
+        fi
+    done
+}
+
+#############################################################################
+# System Detection
+#############################################################################
+
+detect_nixos_config() {
+    local config_type=""
+    local config_path=""
+    
+    # Check for flake
+    if [[ -f "/etc/nixos/flake.nix" ]]; then
+        config_type="flake"
+        config_path="/etc/nixos"
+    elif [[ -f "$HOME/.config/nixos/flake.nix" ]]; then
+        config_type="flake"
+        config_path="$HOME/.config/nixos"
+    # Check for standard configuration
+    elif [[ -f "/etc/nixos/configuration.nix" ]]; then
+        config_type="standard"
+        config_path="/etc/nixos/configuration.nix"
+    else
+        config_type="unknown"
+    fi
+    
+    echo "$config_type:$config_path"
+}
+
+get_current_channel() {
+    if [[ -f /etc/os-release ]]; then
+        source /etc/os-release
+        echo "${VERSION_ID:-unknown}"
+    else
+        nix-channel --list | grep nixos | awk '{print $2}' | sed 's|.*nixos-||'
+    fi
+}
+
+get_current_generation() {
+    readlink /run/current-system | sed 's|/nix/store/||' | cut -d- -f1
+}
+
+#############################################################################
+# Update Functions
+#############################################################################
+
+check_for_updates() {
+    log INFO "Checking for updates..."
+    
+    local config_info=$(detect_nixos_config)
+    local config_type="${config_info%%:*}"
+    local config_path="${config_info##*:}"
+    
+    log INFO "Configuration type: $config_type"
+    log INFO "Configuration path: $config_path"
+    
+    # Run pre-check hooks
+    run_hooks "pre-check"
+    
+    case "$config_type" in
+        flake)
+            log INFO "Checking flake inputs for updates..."
+            cd "$config_path"
+            nix flake update --dry-run 2>&1 | tee -a "$LOG_FILE"
+            ;;
+        standard)
+            log INFO "Checking channel for updates..."
+            nix-channel --update --dry-run 2>&1 | tee -a "$LOG_FILE"
+            ;;
+        *)
+            log ERROR "Unable to detect NixOS configuration type"
+            return 1
+            ;;
+    esac
+    
+    # Run post-check hooks
+    run_hooks "post-check"
+    
+    log SUCCESS "Update check complete"
+}
+
+perform_update() {
+    log INFO "Performing system update..."
+    
+    local config_info=$(detect_nixos_config)
+    local config_type="${config_info%%:*}"
+    local config_path="${config_info##*:}"
+    
+    # Run pre-update hooks
+    run_hooks "pre-update"
+    
+    # Create backup generation marker
+    local backup_gen=$(get_current_generation)
+    log INFO "Current generation: $backup_gen"
+    
+    case "$config_type" in
+        flake)
+            log INFO "Updating flake inputs..."
+            cd "$config_path"
+            nix flake update | tee -a "$LOG_FILE"
+            
+            log INFO "Rebuilding system from flake..."
+            nixos-rebuild switch --flake ".#$(hostname -s)" | tee -a "$LOG_FILE"
+            ;;
+        standard)
+            log INFO "Updating channel..."
+            nix-channel --update | tee -a "$LOG_FILE"
+            
+            log INFO "Rebuilding system..."
+            nixos-rebuild switch | tee -a "$LOG_FILE"
+            ;;
+        *)
+            log ERROR "Unable to detect NixOS configuration type"
+            return 1
+            ;;
+    esac
+    
+    # Run post-update hooks
+    run_hooks "post-update" "$backup_gen"
+    
+    local new_gen=$(get_current_generation)
+    log SUCCESS "System updated successfully!"
+    log INFO "Previous generation: $backup_gen"
+    log INFO "New generation: $new_gen"
+    log INFO "To rollback: nixos-updater rollback"
+}
+
+perform_upgrade() {
+    local target_channel=${1:-}
+    
+    if [[ -z "$target_channel" ]]; then
+        log ERROR "Target channel required for upgrade"
+        log INFO "Usage: nixos-updater upgrade <channel>"
+        log INFO "Example: nixos-updater upgrade 24.11"
+        return 1
+    fi
+    
+    log INFO "Upgrading to NixOS $target_channel..."
+    
+    local current_channel=$(get_current_channel)
+    log INFO "Current channel: $current_channel"
+    log INFO "Target channel: $target_channel"
+    
+    # Confirmation prompt
+    echo
+    echo -e "${YELLOW}⚠ WARNING: System upgrade in progress${NC}"
+    echo "This will upgrade your system from $current_channel to $target_channel"
+    echo
+    read -p "Continue? (yes/no): " confirm
+    
+    if [[ "$confirm" != "yes" ]]; then
+        log INFO "Upgrade cancelled by user"
+        return 0
+    fi
+    
+    # Run pre-upgrade hooks
+    run_hooks "pre-upgrade" "$current_channel" "$target_channel"
+    
+    local backup_gen=$(get_current_generation)
+    log INFO "Current generation: $backup_gen (backup point)"
+    
+    local config_info=$(detect_nixos_config)
+    local config_type="${config_info%%:*}"
+    local config_path="${config_info##*:}"
+    
+    case "$config_type" in
+        flake)
+            log INFO "Updating flake to use NixOS $target_channel..."
+            cd "$config_path"
+            
+            # Update flake.nix to use new channel
+            if grep -q "nixpkgs.url.*nixos-" flake.nix; then
+                sed -i "s|nixpkgs.url.*nixos-.*|nixpkgs.url = \"github:NixOS/nixpkgs/nixos-$target_channel\";|" flake.nix
+                log SUCCESS "Flake updated to nixos-$target_channel"
+            fi
+            
+            nix flake update | tee -a "$LOG_FILE"
+            nixos-rebuild switch --flake ".#$(hostname -s)" --upgrade | tee -a "$LOG_FILE"
+            ;;
+        standard)
+            log INFO "Switching to NixOS $target_channel channel..."
+            nix-channel --add "https://nixos.org/channels/nixos-$target_channel" nixos | tee -a "$LOG_FILE"
+            nix-channel --update | tee -a "$LOG_FILE"
+            nixos-rebuild switch --upgrade | tee -a "$LOG_FILE"
+            ;;
+        *)
+            log ERROR "Unable to detect NixOS configuration type"
+            return 1
+            ;;
+    esac
+    
+    # Run post-upgrade hooks
+    run_hooks "post-upgrade" "$backup_gen" "$current_channel" "$target_channel"
+    
+    local new_gen=$(get_current_generation)
+    log SUCCESS "System upgraded successfully!"
+    log INFO "Upgraded from $current_channel to $target_channel"
+    log INFO "Backup generation: $backup_gen"
+    log INFO "New generation: $new_gen"
+    log INFO "To rollback: nixos-updater rollback"
+}
+
+perform_rollback() {
+    local target_generation=${1:-}
+    
+    log INFO "Rolling back system..."
+    
+    if [[ -n "$target_generation" ]]; then
+        log INFO "Rolling back to generation: $target_generation"
+        nixos-rebuild switch --rollback --target-generation "$target_generation" | tee -a "$LOG_FILE"
+    else
+        log INFO "Rolling back to previous generation"
+        nixos-rebuild switch --rollback | tee -a "$LOG_FILE"
+    fi
+    
+    # Run post-rollback hooks
+    run_hooks "post-rollback" "$target_generation"
+    
+    log SUCCESS "Rollback complete"
+    log INFO "Current generation: $(get_current_generation)"
+}
+
+#############################################################################
+# Interactive Wizard
+#############################################################################
+
+show_wizard() {
+    print_header
+    
+    log INFO "Starting interactive wizard..."
+    
+    # System information
+    echo -e "${BOLD}System Information:${NC}"
+    echo "  Current Channel: $(get_current_channel)"
+    echo "  Current Generation: $(get_current_generation)"
+    echo "  Configuration: $(detect_nixos_config | sed 's/:/ - /')"
+    echo
+    
+    # Menu
+    echo -e "${BOLD}What would you like to do?${NC}"
+    echo
+    echo "  1) Check for updates"
+    echo "  2) Update system (same channel)"
+    echo "  3) Upgrade system (change channel)"
+    echo "  4) Rollback to previous generation"
+    echo "  5) View update history"
+    echo "  6) Exit"
+    echo
+    read -p "Select option [1-6]: " choice
+    
+    case "$choice" in
+        1)
+            check_for_updates
+            ;;
+        2)
+            echo
+            echo -e "${YELLOW}This will update your system to the latest packages.${NC}"
+            read -p "Continue? (yes/no): " confirm
+            if [[ "$confirm" == "yes" ]]; then
+                perform_update
+            fi
+            ;;
+        3)
+            echo
+            echo "Available channels:"
+            echo "  - 24.05 (current stable)"
+            echo "  - 24.11 (next release)"
+            echo "  - unstable (rolling)"
+            echo
+            read -p "Enter target channel: " channel
+            perform_upgrade "$channel"
+            ;;
+        4)
+            echo
+            nixos-rebuild list-generations | head -10
+            echo
+            read -p "Enter generation number (or press Enter for previous): " gen
+            perform_rollback "$gen"
+            ;;
+        5)
+            echo
+            nixos-rebuild list-generations
+            ;;
+        6)
+            log INFO "Exiting..."
+            exit 0
+            ;;
+        *)
+            log ERROR "Invalid option"
+            ;;
+    esac
+    
+    echo
+    read -p "Press Enter to continue..."
+    show_wizard
+}
+
+#############################################################################
+# Main Entry Point
+#############################################################################
+
+show_usage() {
+    cat << EOF
+$TOOL_NAME v$VERSION
+
+Universal NixOS system update and upgrade tool.
+
+USAGE:
+    $(basename "$0") <command> [options]
+
+COMMANDS:
+    check                Check for available updates
+    update               Update system (same channel)
+    upgrade <channel>    Upgrade to new channel (e.g., 24.11)
+    rollback [gen]       Rollback to previous/specific generation
+    wizard               Interactive wizard mode
+    history              Show update history
+    version              Show version information
+    help                 Show this help message
+
+EXAMPLES:
+    # Check for updates
+    $(basename "$0") check
+
+    # Update current system
+    $(basename "$0") update
+
+    # Upgrade to NixOS 24.11
+    $(basename "$0") upgrade 24.11
+
+    # Rollback to previous generation
+    $(basename "$0") rollback
+
+    # Interactive wizard
+    $(basename "$0") wizard
+
+CONFIGURATION:
+    Config file: $CONFIG_FILE
+    Log directory: $LOG_DIR
+    Hooks directory: $HOOKS_DIR
+
+ENVIRONMENT VARIABLES:
+    NIXOS_UPDATER_LOG_DIR      Custom log directory
+    NIXOS_UPDATER_HOOKS_DIR    Custom hooks directory
+    NIXOS_UPDATER_CONFIG       Custom config file
+
+HOOKS:
+    Place executable scripts in hooks directories:
+      $HOOKS_DIR/pre-check/      Before checking updates
+      $HOOKS_DIR/post-check/     After checking updates
+      $HOOKS_DIR/pre-update/     Before system update
+      $HOOKS_DIR/post-update/    After system update
+      $HOOKS_DIR/pre-upgrade/    Before system upgrade
+      $HOOKS_DIR/post-upgrade/   After system upgrade
+      $HOOKS_DIR/post-rollback/  After rollback
+
+INTEGRATION:
+    Source as library:
+      source /path/to/nixos-updater
+      perform_update  # Call functions directly
+
+    Call from other scripts:
+      nixos-updater update --log-to /custom/log
+
+FOR MORE INFORMATION:
+    GitHub: https://github.com/MasterofNull/Hyper-NixOS
+    Docs: /usr/share/doc/nixos-updater/
+
+EOF
+}
+
+main() {
+    local command=${1:-help}
+    shift || true
+    
+    case "$command" in
+        check)
+            print_header
+            check_for_updates
+            ;;
+        update)
+            print_header
+            perform_update "$@"
+            ;;
+        upgrade)
+            print_header
+            perform_upgrade "$@"
+            ;;
+        rollback)
+            print_header
+            perform_rollback "$@"
+            ;;
+        wizard)
+            show_wizard
+            ;;
+        history)
+            print_header
+            nixos-rebuild list-generations
+            ;;
+        version)
+            echo "$TOOL_NAME v$VERSION"
+            ;;
+        help|--help|-h)
+            show_usage
+            ;;
+        *)
+            echo "Unknown command: $command"
+            echo "Run '$(basename "$0") help' for usage information"
+            exit 1
+            ;;
+    esac
+}
+
+# Allow sourcing as library
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
