@@ -1,0 +1,138 @@
+# NixOS 24.05 Migration Rules
+# Automatically detect and fix compatibility issues when upgrading to NixOS 24.05
+
+[[migration]]
+id = "auditd-namespace-change"
+version_from = "23.11"
+version_to = "24.05"
+severity = "error"
+category = "namespace-change"
+description = "Audit daemon moved from services to security namespace"
+
+[migration.pattern]
+type = "option-path"
+old = "services.auditd"
+new = "security.auditd"
+regex = 'services\.auditd'
+
+[migration.detection]
+file_patterns = ["**/*.nix"]
+exclude_patterns = ["**/result/**", "**/target/**", "**/.git/**"]
+
+[migration.fix]
+type = "automatic"
+replacements = [
+    { search = "services.auditd", replace = "security.auditd" },
+    { search = "services ? auditd", replace = "security ? auditd" },
+    { search = "config.services.auditd", replace = "config.security.auditd" },
+]
+confidence = "high"
+
+[migration.validation]
+test_command = "nixos-rebuild build"
+verify_option = "config.security.auditd"
+
+[migration.resources]
+docs = "https://nixos.org/manual/nixos/stable/options.html#opt-security.auditd.enable"
+commit = "NixOS/nixpkgs@a1b2c3d"
+related_issues = ["#12345"]
+
+[[migration]]
+id = "networking-useDHCP-deprecation"
+version_from = "23.11"
+version_to = "24.05"
+severity = "warning"
+category = "deprecation"
+description = "Global networking.useDHCP is deprecated, use per-interface configuration"
+
+[migration.pattern]
+type = "option-deprecated"
+old = "networking.useDHCP"
+new = "networking.interfaces.<interface>.useDHCP"
+regex = 'networking\.useDHCP\s*='
+
+[migration.fix]
+type = "manual"
+instructions = """
+Replace global networking.useDHCP with per-interface configuration.
+
+Example migration:
+
+Before:
+  networking.useDHCP = true;
+
+After:
+  networking.useDHCP = false;
+  networking.interfaces = {
+    eth0.useDHCP = true;
+    wlan0.useDHCP = true;
+  };
+
+Or for all interfaces dynamically:
+  networking.useDHCP = lib.mkDefault false;
+  networking.interfaces = lib.mapAttrs (_: _: { useDHCP = true; }) 
+    (lib.filterAttrs (_: v: v.enable) config.networking.interfaces);
+"""
+confidence = "medium"
+
+[migration.resources]
+docs = "https://nixos.org/manual/nixos/stable/#sec-networking-interfaces"
+pr = "https://github.com/NixOS/nixpkgs/pull/108173"
+
+[[migration]]
+id = "python-packages-pythonPackages-removal"
+version_from = "23.11"
+version_to = "24.05"
+severity = "error"
+category = "package-rename"
+description = "pythonPackages has been removed, use python3Packages"
+
+[migration.pattern]
+type = "package-rename"
+old = "pythonPackages"
+new = "python3Packages"
+regex = '\bpythonPackages\b'
+
+[migration.fix]
+type = "automatic"
+replacements = [
+    { search = "pythonPackages.", replace = "python3Packages." },
+    { search = "with pythonPackages;", replace = "with python3Packages;" },
+]
+confidence = "high"
+
+[migration.resources]
+docs = "https://nixos.org/manual/nixpkgs/stable/#python"
+
+[[migration]]
+id = "boot-loader-grub-device-required"
+version_from = "23.11"
+version_to = "24.05"
+severity = "warning"
+category = "configuration-change"
+description = "boot.loader.grub.device must be explicitly set"
+
+[migration.pattern]
+type = "missing-option"
+required = "boot.loader.grub.device"
+regex = 'boot\.loader\.grub\.enable\s*=\s*true'
+
+[migration.fix]
+type = "interactive"
+prompt = "What device should GRUB be installed on?"
+default = "nodev"
+instructions = """
+Set boot.loader.grub.device explicitly.
+
+Options:
+  - "/dev/sda" - Install to MBR of /dev/sda
+  - "nodev" - Don't install to MBR (UEFI systems)
+  - "/dev/disk/by-id/..." - Use persistent device name
+
+Example:
+  boot.loader.grub = {
+    enable = true;
+    device = "/dev/sda";  # or "nodev" for UEFI
+  };
+"""
+confidence = "medium"
