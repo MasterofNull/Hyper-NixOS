@@ -12,6 +12,8 @@ Next-generation virtualization platform built on NixOS with revolutionary featur
 Get started with Hyper-NixOS in seconds:
 
 ### Method 1: One-Command Install (Fastest)
+
+**Download and run installer directly:**
 ```bash
 # Default: Prompts for method selection if terminal is available
 curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
@@ -20,7 +22,7 @@ curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/instal
 HYPER_INSTALL_METHOD=https curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo -E bash
 ```
 
-**Available methods:**
+**Available download methods** (installer will prompt):
 - `https` - Git clone via HTTPS (default, most reliable)
 - `ssh` - Git clone via SSH (requires GitHub key)
 - `token` - Git clone with token authentication
@@ -28,10 +30,35 @@ HYPER_INSTALL_METHOD=https curl -sSL https://raw.githubusercontent.com/MasterofN
 
 ✅ **Now includes**: Interactive prompts via `/dev/tty`, timeout protection, and reliable defaults
 
+<details>
+<summary>📋 Alternative: Two-Step Process (Click to expand)</summary>
+
+**Step 1: Download installer script**
+```bash
+curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh -o /tmp/hyper-install.sh
+```
+
+**Step 2: Run installer**
+```bash
+sudo bash /tmp/hyper-install.sh
+```
+
+</details>
+
 ### Method 2: Git Clone (Recommended for Inspection)
+
+**Step 1: Clone repository**
 ```bash
 git clone https://github.com/MasterofNull/Hyper-NixOS.git
+```
+
+**Step 2: Enter directory**
+```bash
 cd Hyper-NixOS
+```
+
+**Step 3: Run installer**
+```bash
 sudo ./install.sh
 ```
 
