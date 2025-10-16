@@ -1,0 +1,19 @@
+# NixOS 24.11 Deprecations and Breaking Changes
+# Format: old_option→new_option
+
+# Service namespace changes
+services.auditd→security.auditd
+services.audit→security.auditd
+
+# Removed options (comment out)
+programs.chromium.enablePepperFlash→# Removed in 24.11: Flash support
+
+# Renamed options
+security.pam.enableSSHAgentAuth→security.pam.sshAgentAuth.enable
+services.xserver.videoDrivers→hardware.opengl.driSupport
+
+# Module path changes
+programs.java.enable→programs.java.package
+
+# Network changes
+networking.useDHCP→networking.useDHCP  # Default changed to false

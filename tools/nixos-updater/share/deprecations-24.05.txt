@@ -1,0 +1,12 @@
+# NixOS 24.05 Deprecations and Breaking Changes
+# Format: old_option→new_option
+
+# Service changes
+services.postgresql.enableTCPIP→services.postgresql.settings.listen_addresses
+services.mysql.port→services.mysql.settings.port
+
+# Security changes
+security.hideProcessInformation→security.protectKernelImage
+
+# Removed packages
+pkgs.pythonPackages→pkgs.python3Packages

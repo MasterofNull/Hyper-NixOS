@@ -32,6 +32,16 @@ if [[ -f "$SCRIPT_DIR/lib/nixos-updater-lib.sh" ]]; then
     source "$SCRIPT_DIR/lib/nixos-updater-lib.sh"
 fi
 
+# Source advanced detection library
+if [[ -f "$SCRIPT_DIR/lib/nixos-config-detection.sh" ]]; then
+    source "$SCRIPT_DIR/lib/nixos-config-detection.sh"
+fi
+
+# Source migration library
+if [[ -f "$SCRIPT_DIR/lib/nixos-config-migrator.sh" ]]; then
+    source "$SCRIPT_DIR/lib/nixos-config-migrator.sh"
+fi
+
 # Colors for output
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -422,6 +432,13 @@ COMMANDS:
     rollback [gen]       Rollback to previous/specific generation
     wizard               Interactive wizard mode
     history              Show update history
+    
+    migrate <source> <target> [rules...]  Migrate configuration with rules
+    migrate-wizard       Interactive migration wizard
+    compare <config1> <config2>           Compare two configurations
+    validate <config>    Validate configuration
+    profiles             List all available profiles/configs
+    
     version              Show version information
     help                 Show this help message
 
@@ -435,11 +452,17 @@ EXAMPLES:
     # Upgrade to NixOS 24.11
     $(basename "$0") upgrade 24.11
 
+    # Migrate configuration for upgrade
+    $(basename "$0") migrate /etc/nixos /tmp/nixos-24.11 upgrade-nixos-version:24.11
+
+    # Switch to migrated config
+    $(basename "$0") switch-config /tmp/nixos-24.11
+
     # Rollback to previous generation
     $(basename "$0") rollback
 
-    # Interactive wizard
-    $(basename "$0") wizard
+    # Interactive migration wizard
+    $(basename "$0") migrate-wizard
 
 CONFIGURATION:
     Config file: $CONFIG_FILE
@@ -504,6 +527,55 @@ main() {
             print_header
             nixos-rebuild list-generations
             ;;
+        
+        # Migration commands
+        migrate)
+            print_header
+            local source=$1
+            local target=$2
+            shift 2 || true
+            if [[ -z "$source" || -z "$target" ]]; then
+                echo "Usage: nixos-updater migrate <source> <target> [rules...]"
+                exit 1
+            fi
+            migrate_config_incremental "$source" "$target" "$@"
+            ;;
+        migrate-wizard)
+            migrate_wizard
+            ;;
+        compare)
+            print_header
+            local cfg1=$1
+            local cfg2=$2
+            if [[ -z "$cfg1" || -z "$cfg2" ]]; then
+                echo "Usage: nixos-updater compare <config1> <config2>"
+                exit 1
+            fi
+            nixos_compare_configs "$cfg1" "$cfg2"
+            ;;
+        validate)
+            print_header
+            local cfg=$1
+            if [[ -z "$cfg" ]]; then
+                echo "Usage: nixos-updater validate <config>"
+                exit 1
+            fi
+            nixos_validate_config "$cfg"
+            ;;
+        profiles)
+            print_header
+            nixos_list_profiles
+            ;;
+        switch-config)
+            print_header
+            local cfg=$1
+            if [[ -z "$cfg" ]]; then
+                echo "Usage: nixos-updater switch-config <config-path>"
+                exit 1
+            fi
+            switch_to_migrated_config "$cfg" "${2:-true}"
+            ;;
+        
         version)
             echo "$TOOL_NAME v$VERSION"
             ;;
