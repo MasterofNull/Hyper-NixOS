@@ -451,12 +451,12 @@ update_main_config() {
     firewall.enable = true;
   };
   
-  # Basic user
-  users.users.admin = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" "libvirtd" "kvm" ];
-    initialPassword = "changeme";
-  };
+  # User management (mutable by default for easy first-time setup)
+  users.mutableUsers = true;
+  
+  # Note: Users should be defined in configuration.nix or users-local.nix
+  # The first-boot wizard does NOT set passwords to avoid conflicts
+  # After first boot, set passwords with: passwd <username>
   
   # Enable sudo
   security.sudo.wheelNeedsPassword = true;

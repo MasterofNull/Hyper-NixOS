@@ -368,8 +368,17 @@
   
   # User configuration
   users = {
-    # Don't allow mutable users
-    mutableUsers = false;
+    # IMPORTANT: Choose ONE of the following patterns:
+    
+    # Option A: Mutable users (recommended for initial setup)
+    # - Allows using 'passwd' command to set/change passwords
+    # - Passwords persist across reboots
+    # - Changes are NOT tracked in version control
+    mutableUsers = true;
+    
+    # Option B: Immutable users (recommended for production)
+    # Uncomment this and set proper hashedPassword below:
+    # mutableUsers = false;
     
     # Define your users here
     users = {
@@ -378,10 +387,15 @@
         isNormalUser = true;
         description = "System Administrator";
         extraGroups = [ "wheel" "libvirtd" "kvm" ];
-        # Set password hash with: mkpasswd -m sha-512
-        hashedPassword = "$6$rounds=100000$...";  # CHANGE THIS!
+        
+        # For mutableUsers = true: Set initial password after first boot with: passwd admin
+        # For mutableUsers = false: Generate hash with: mkpasswd -m sha-512
+        #   Then set: hashedPassword = "$6$rounds=100000$YOUR_HASH_HERE";
+        
+        # SSH key authentication (optional but recommended)
         openssh.authorizedKeys.keys = [
           # Add your SSH public key here
+          # Example: "ssh-rsa AAAAB3NzaC1yc2E... user@hostname"
         ];
       };
     };
