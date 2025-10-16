@@ -124,7 +124,7 @@ update_manager.sh
 | File | Used By | Purpose |
 |------|---------|---------|
 | `/etc/hypervisor/config.json` | Most scripts | Global configuration |
-| `/var/lib/hypervisor/vm_profiles/*.json` | VM scripts | VM definitions |
+| `/var/lib/hypervisor/vm-profiles/*.json` | VM scripts | VM definitions |
 | `/etc/nixos/configuration.nix` | System scripts | NixOS config |
 | `/etc/hypervisor/src/flake.nix` | Update scripts | Flake definition |
 

@@ -1,0 +1,42 @@
+{
+  "name": "database-server",
+  "description": "Database server (PostgreSQL, MySQL, MongoDB, Redis, etc.)",
+  "_comment": "Optimized for database workloads with I/O performance and memory",
+  "_use_case": "Relational or NoSQL databases, caching servers",
+  "_recommended_for": ["PostgreSQL", "MySQL", "MongoDB", "Redis", "Cassandra", "Elasticsearch"],
+  "_detection_notes": {
+    "vcpus": "50% of host cores for query processing (min 4)",
+    "memory_mb": "8GB per vCPU for database cache and operations",
+    "disk_gb": "100GB base + estimated data size",
+    "disk_format": "raw for maximum I/O performance",
+    "network_mode": "bridge for direct network access"
+  },
+  "os": "linux",
+  "cpus": "AUTO_DETECT",
+  "memory_mb": "AUTO_DETECT_MIN_8192",
+  "disk_gb": 100,
+  "disk_format": "raw",
+  "network": {
+    "mode": "bridge",
+    "bridge": "AUTO_DETECT"
+  },
+  "features": {
+    "hugepages": true,
+    "vhost_net": true,
+    "memballoon": false,
+    "autostart": true,
+    "cpu_pinning": true
+  },
+  "display": {
+    "type": "none",
+    "headless": true
+  },
+  "storage": {
+    "cache": "none",
+    "io": "native"
+  },
+  "limits": {
+    "cpu_quota_percent": 600,
+    "memory_max_mb": 32768
+  }
+}

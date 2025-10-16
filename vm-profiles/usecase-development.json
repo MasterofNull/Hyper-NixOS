@@ -1,0 +1,42 @@
+{
+  "name": "development-environment",
+  "description": "Development workstation with IDE, compilers, and tools",
+  "_comment": "Optimized for software development with good performance and snapshot support",
+  "_use_case": "Software development, code compilation, testing",
+  "_recommended_for": ["Python", "Node.js", "Java", "Go", "Rust", "C/C++", "Web development"],
+  "_detection_notes": {
+    "vcpus": "50% of host cores for responsive development (min 4)",
+    "memory_mb": "4GB per vCPU for IDEs and containers",
+    "disk_gb": "80GB for tools, dependencies, and project files",
+    "disk_format": "qcow2 for snapshots (save working states)",
+    "network_mode": "NAT for security, bridge if accessing from other machines"
+  },
+  "os": "linux",
+  "cpus": "AUTO_DETECT",
+  "memory_mb": "AUTO_DETECT",
+  "disk_gb": 80,
+  "disk_format": "qcow2",
+  "network": {
+    "mode": "nat",
+    "bridge": "AUTO_DETECT"
+  },
+  "features": {
+    "hugepages": false,
+    "vhost_net": true,
+    "memballoon": true,
+    "autostart": false,
+    "cpu_pinning": false
+  },
+  "display": {
+    "type": "spice",
+    "heads": 2
+  },
+  "storage": {
+    "cache": "writeback",
+    "io": "threads"
+  },
+  "limits": {
+    "cpu_quota_percent": 400,
+    "memory_max_mb": 16384
+  }
+}

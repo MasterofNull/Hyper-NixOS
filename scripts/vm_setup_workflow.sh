@@ -9,7 +9,7 @@ trap 'exit $?' EXIT HUP INT TERM
 ROOT="/etc/hypervisor"
 CONFIG_JSON="$ROOT/config.json"
 STATE_DIR="/var/lib/hypervisor"
-PROFILES_DIR="$STATE_DIR/vm_profiles"
+PROFILES_DIR="$STATE_DIR/vm-profiles"
 ISOS_DIR="$STATE_DIR/isos"
 SCRIPTS_DIR="$ROOT/scripts"
 : "${DIALOG:=whiptail}"

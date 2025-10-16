@@ -23,7 +23,7 @@ init_logging "menu"
 
 # Script-specific configuration
 readonly ROOT="/etc/hypervisor"
-readonly TEMPLATE_PROFILES_DIR="$ROOT/vm_profiles"
+readonly TEMPLATE_PROFILES_DIR="$ROOT/vm-profiles"
 readonly USER_PROFILES_DIR="$HYPERVISOR_PROFILES"
 readonly ISOS_DIR="$HYPERVISOR_ISOS"
 readonly SCRIPTS_DIR="$HYPERVISOR_SCRIPTS"

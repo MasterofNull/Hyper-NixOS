@@ -28,7 +28,7 @@ echo "Running integration tests..."
 test_feature "SSH monitoring script" "test -f scripts/security/ssh-monitor.sh"
 
 # Test Docker security
-test_feature "Docker security policy" "test -f configs/docker/security-policy.json"
+test_feature "Docker security policy" "test -f config/services/docker/security-policy.json"
 test_feature "Docker safe wrapper" "command -v docker-safe"
 
 # Test parallel framework

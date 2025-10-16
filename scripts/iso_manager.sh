@@ -9,7 +9,7 @@ IFS=$'\n\t'
 umask 077
 
 ISOS_DIR="${1:-/var/lib/hypervisor/isos}"
-USER_PROFILES_DIR="${2:-/var/lib/hypervisor/vm_profiles}"
+USER_PROFILES_DIR="${2:-/var/lib/hypervisor/vm-profiles}"
 CONFIG_JSON="/etc/hypervisor/config.json"
 : "${DIALOG:=whiptail}"
 export DIALOG

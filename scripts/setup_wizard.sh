@@ -224,7 +224,7 @@ fi
 
 if $DIALOG --yesno "Step 3/4: VM Creation\n\nCreate your first VM with secure defaults (recommended)?\n\nVirtio devices, Secure Boot (OVMF), and non-root QEMU will be used.\n\n$(if ! $NETWORK_READY; then echo 'WARNING: Network not ready - VMs will have no network access!'; fi)" 18 80 ; then
   log "User chose to create first VM"
-  if /etc/hypervisor/scripts/create_vm_wizard.sh /var/lib/hypervisor/vm_profiles /var/lib/hypervisor/isos; then
+  if /etc/hypervisor/scripts/create_vm_wizard.sh /var/lib/hypervisor/vm-profiles /var/lib/hypervisor/isos; then
     log "SUCCESS: First VM created"
     CONFIGURED_ITEMS+=("✓ First VM profile created")
   else

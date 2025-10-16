@@ -197,7 +197,7 @@ if [[ -d /etc/hypervisor/tests ]]; then
   
   # Check tests don't modify production data
   echo -n "Checking production data protection... "
-  if grep -r "/var/lib/hypervisor/vm_profiles/\|rm -rf /etc/hypervisor" tests/ 2>/dev/null; then
+  if grep -r "/var/lib/hypervisor/vm-profiles/\|rm -rf /etc/hypervisor" tests/ 2>/dev/null; then
     check_fail "Tests may modify production data!"
   else
     check_pass "Tests use temporary locations"

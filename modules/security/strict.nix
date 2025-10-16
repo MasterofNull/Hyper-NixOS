@@ -87,7 +87,7 @@
       # Stricter file permissions
       systemd.tmpfiles.rules = [
     "z /var/lib/hypervisor 0750 root root -"
-    "z /var/lib/hypervisor/vm_profiles 0750 root root -"
+    "z /var/lib/hypervisor/vm-profiles 0750 root root -"
     "z /var/lib/hypervisor/isos 0750 root root -"
     "z /etc/hypervisor 0750 root root -"
   ];

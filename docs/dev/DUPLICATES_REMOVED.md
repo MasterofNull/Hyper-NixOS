@@ -154,7 +154,7 @@ This document details all the duplicate settings that were found and consolidate
 - `/var/lib/hypervisor/isos` (2 occurrences)
 - `/var/lib/hypervisor/disks` (2 occurrences)
 - `/var/lib/hypervisor/xml` (2 occurrences)
-- `/var/lib/hypervisor/vm_profiles` (2 occurrences)
+- `/var/lib/hypervisor/vm-profiles` (2 occurrences)
 - `/var/lib/hypervisor/gnupg` (2 occurrences)
 - `/var/lib/hypervisor/templates` (2 occurrences)
 - `/var/lib/hypervisor/reports` (2 occurrences)

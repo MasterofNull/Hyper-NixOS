@@ -25,7 +25,7 @@ export DIALOG
 LOGFILE="/var/lib/hypervisor/logs/install_vm.log"
 mkdir -p "$(dirname "$LOGFILE")"
 
-PROFILES_DIR="/var/lib/hypervisor/vm_profiles"
+PROFILES_DIR="/var/lib/hypervisor/vm-profiles"
 ISOS_DIR="/var/lib/hypervisor/isos"
 STATE_DIR="/var/lib/hypervisor"
 WORKFLOW_STATE="$STATE_DIR/workflows/install_vm_state.json"

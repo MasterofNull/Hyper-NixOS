@@ -16,7 +16,7 @@ umask 077
 # Intelligent Defaults Framework - Design Ethos Third Pillar
 # Detect system capabilities and pre-fill with best practices
 
-PROFILES_DIR="${1:-/var/lib/hypervisor/vm_profiles}"
+PROFILES_DIR="${1:-/var/lib/hypervisor/vm-profiles}"
 ISOS_DIR="${2:-/var/lib/hypervisor/isos}"
 # Optional: preselect ISO path and output file for created profile path
 PRESELECT_ISO="${PRESELECT_ISO:-${3:-}}"

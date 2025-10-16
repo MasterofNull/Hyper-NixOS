@@ -1,0 +1,51 @@
+{
+  "name": "gaming-vm",
+  "description": "Gaming VM with GPU passthrough and performance optimization",
+  "_comment": "Requires GPU passthrough setup (IOMMU, VFIO). High resource allocation.",
+  "_use_case": "Gaming, GPU-accelerated applications, graphics work",
+  "_recommended_for": ["Windows gaming", "Steam", "GPU rendering", "Video editing"],
+  "_requirements": ["IOMMU enabled in BIOS", "GPU in separate IOMMU group", "VFIO configured"],
+  "_detection_notes": {
+    "vcpus": "75-90% of host cores for game performance (min 6)",
+    "memory_mb": "16-32GB for modern games",
+    "disk_gb": "200GB+ for games and saves",
+    "disk_format": "raw for maximum disk performance",
+    "network_mode": "bridge for online gaming"
+  },
+  "os": "windows",
+  "cpus": "AUTO_DETECT_MIN_6",
+  "memory_mb": 16384,
+  "disk_gb": 250,
+  "disk_format": "raw",
+  "network": {
+    "mode": "bridge",
+    "bridge": "AUTO_DETECT"
+  },
+  "features": {
+    "hugepages": true,
+    "vhost_net": true,
+    "memballoon": false,
+    "autostart": false,
+    "cpu_pinning": true,
+    "cpu_mode": "host-passthrough",
+    "gpu_passthrough": true
+  },
+  "display": {
+    "type": "none",
+    "headless": true,
+    "_comment": "Display via passed-through GPU"
+  },
+  "storage": {
+    "cache": "none",
+    "io": "native"
+  },
+  "limits": {
+    "cpu_quota_percent": 1200,
+    "memory_max_mb": 32768
+  },
+  "_advanced_features": {
+    "cpu_topology": "match_host",
+    "numa": true,
+    "vfio_devices": ["GPU", "Audio controller"]
+  }
+}

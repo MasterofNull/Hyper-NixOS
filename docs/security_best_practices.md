@@ -31,7 +31,7 @@ This guide provides comprehensive security recommendations for operating your Ni
   cat > /etc/audit/rules.d/hypervisor.rules << EOF
   # VM lifecycle events
   -w /var/lib/libvirt/qemu/ -p wa -k vm_changes
-  -w /etc/hypervisor/vm_profiles/ -p wa -k vm_config
+  -w /etc/hypervisor/vm-profiles/ -p wa -k vm_config
   
   # Authentication
   -w /var/log/auth.log -p wa -k auth_log
@@ -219,7 +219,7 @@ This guide provides comprehensive security recommendations for operating your Ni
   ```bash
   cd /var/lib/hypervisor
   git init
-  git add vm_profiles/ configuration/
+  git add vm-profiles/ configuration/
   git commit -m "Initial hypervisor configuration"
   ```
 

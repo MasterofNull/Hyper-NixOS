@@ -12,7 +12,6 @@
 ├── hardware-configuration.nix  # Hardware-specific config (auto-generated)
 ├── flake.nix                   # Nix flake entry point
 ├── install.sh                  # Universal installer (NixOS + remote)
-├── install-legacy.sh           # Legacy installer (preserved)
 ├── README.md                   # Project overview
 ├── CREDITS.md                  # Attribution and credits
 ├── LICENSE                     # Project license
@@ -116,40 +115,31 @@ Contains:
 
 ## 🛠️ Configuration Directories
 
-### `/config/` - System Configuration Files
-Global hypervisor system settings
+### `/config/` - Configuration Files
+Global hypervisor system settings and service configurations
 
 ```
 config/
-├── hypervisor.toml          # Main system config (TOML)
-└── module-config-schema.yaml # Module schema
+├── hypervisor.toml           # Main system config (TOML)
+├── module-config-schema.yaml # Module schema
+└── services/                 # Service-specific configs
+    └── docker/               # Docker/container configs
+        ├── daemon.json
+        └── security-policy.json
 ```
 
-**Purpose**: System-wide configuration  
+**Purpose**: System-wide and service configuration  
 **See**: `/config/README.md`
-
-### `/configs/` - Service Configurations
-Service-specific configuration files
-
-```
-configs/
-└── docker/                  # Docker/container configs
-    ├── daemon.json
-    └── security-policy.json
-```
-
-**Purpose**: Per-service settings  
-**See**: `/configs/README.md`
 
 ---
 
 ## 🖥️ Infrastructure Directories
 
-### `/vm_profiles/` - VM Templates
+### `/vm-profiles/` - VM Templates
 JSON-based VM profile templates
 
 ```
-vm_profiles/
+vm-profiles/
 ├── debian-desktop.json
 ├── ubuntu-server.json
 ├── windows-10.json
@@ -217,11 +207,6 @@ api/
 
 ### `/web/` - Web Interfaces
 HTML/JS web components
-
-### `/hypervisor_manager/` - Legacy Python Manager
-**Status**: Deprecated (preserved for reference)
-
-**See**: `/hypervisor_manager/README.md`
 
 ---
 
@@ -302,7 +287,7 @@ Following **Design Ethos - Pillar 2: Security & Organization**
 - **Scripts?** → `/scripts/` (check `/scripts/menu.sh` for main menu)
 - **Documentation?** → `/docs/` (start with `/docs/README-DOCS.md`)
 - **Modules?** → `/modules/` (see `/modules/default.nix`)
-- **VM Templates?** → `/vm_profiles/`
+- **VM Templates?** → `/vm-profiles/`
 - **Tests?** → `/tests/`
 - **Development?** → `/docs/dev/` (protected)
 

@@ -102,9 +102,9 @@ process_intelligent_template() {
 generate_vm_profile() {
     local template_name=$1
     local vm_name=$2
-    local output_file=${3:-/var/lib/hypervisor/vm_profiles/${vm_name}.json}
+    local output_file=${3:-/var/lib/hypervisor/vm-profiles/${vm_name}.json}
     
-    local template_dir="/workspace/vm_profiles"
+    local template_dir="/workspace/vm-profiles"
     local template_file="${template_dir}/${template_name}.json"
     
     if [ ! -f "$template_file" ]; then
@@ -130,7 +130,7 @@ generate_vm_profile() {
 
 # List available intelligent templates
 list_intelligent_templates() {
-    local template_dir="/workspace/vm_profiles"
+    local template_dir="/workspace/vm-profiles"
     
     echo "Available Intelligent Templates:"
     echo "================================="

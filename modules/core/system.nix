@@ -13,7 +13,7 @@
   sound.enable = false;
   
   # Hypervisor data directories
-  environment.etc."hypervisor/vm_profiles".source = ../../vm_profiles;
+  environment.etc."hypervisor/vm-profiles".source = ../../vm-profiles;
   environment.etc."hypervisor/isos".source = ../../isos;
   environment.etc."hypervisor/scripts".source = ../../scripts;
   environment.etc."hypervisor/config.json".source = ../config.json;

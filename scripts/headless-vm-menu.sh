@@ -17,7 +17,7 @@ readonly BOLD='\033[1m'
 readonly NC='\033[0m' # No Color
 
 # Configuration
-readonly VM_PROFILES_DIR="/var/lib/hypervisor/vm_profiles"
+readonly VM_PROFILES_DIR="/var/lib/hypervisor/vm-profiles"
 readonly LAST_VM_FILE="/var/lib/hypervisor/.last_vm"
 readonly AUTO_SELECT_TIMEOUT=10  # seconds
 readonly CONFIG_FILE="/etc/nixos/configuration.nix"

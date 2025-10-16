@@ -175,7 +175,7 @@ If you break something:
 - **Ctrl+]**: Exit VM console
 
 ### Important Paths
-- VM Profiles: `/var/lib/hypervisor/vm_profiles/`
+- VM Profiles: `/var/lib/hypervisor/vm-profiles/`
 - ISOs: `/var/lib/hypervisor/isos/`
 - Logs: `/var/lib/hypervisor/logs/`
 
