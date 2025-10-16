@@ -145,36 +145,36 @@ print_error_with_help() {
     
     case $error_code in
         $ERROR_NO_NETWORK)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • Check network connection: ping github.com" >&2
             echo "    • Check firewall/proxy settings" >&2
             echo "    • Try using mobile hotspot temporarily" >&2
             ;;
         $ERROR_DISK_SPACE)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • Free up space: nix-collect-garbage -d" >&2
             echo "    • Or specify different temp dir: TMPDIR=/other/path" >&2
             echo "    • Check disk usage: df -h /tmp" >&2
             ;;
         $ERROR_DOWNLOAD_FAILED)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • Try alternative download method from menu" >&2
             echo "    • Check GitHub status: https://www.githubstatus.com" >&2
             echo "    • Retry the installation (automatic retry enabled)" >&2
             ;;
         $ERROR_EXTRACTION_FAILED)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • File may be corrupted, will retry download" >&2
             echo "    • Check disk space: df -h /tmp" >&2
             ;;
         $ERROR_VERIFICATION_FAILED)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • Download may be corrupted or tampered" >&2
             echo "    • Will retry download automatically" >&2
             echo "    • Check network stability" >&2
             ;;
         $ERROR_MISSING_DEPS)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • Install missing tools via: nix-env -iA nixos.<tool>" >&2
             echo "    • Or use NixOS live environment" >&2
             ;;

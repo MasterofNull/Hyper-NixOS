@@ -674,8 +674,8 @@ echo "  • Security aliases and functions"
 echo "  • Key bindings"
 echo "  • Notifications"
 echo ""
-echo "Try: ${CYAN}fsec${NC} for log search, ${CYAN}fkill${NC} for process management"
-echo "     ${CYAN}Ctrl+S${NC} for quick status, ${CYAN}Ctrl+X,Ctrl+S${NC} for scanning"
+echo -e "Try: ${CYAN}fsec${NC} for log search, ${CYAN}fkill${NC} for process management"
+echo -e "     ${CYAN}Ctrl+S${NC} for quick status, ${CYAN}Ctrl+X,Ctrl+S${NC} for scanning"
 EOF
     chmod +x "$CONSOLE_DIR/activate.sh"
     

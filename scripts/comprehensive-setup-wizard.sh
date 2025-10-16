@@ -200,10 +200,10 @@ select_features() {
     
     echo
     echo -e "${BOLD}Options:${NC}"
-    echo "  ${GREEN}[number]${NC} - Toggle feature on/off"
-    echo "  ${GREEN}a${NC} - Select all available features"
-    echo "  ${GREEN}r${NC} - Select recommended features (auto-detect)"
-    echo "  ${GREEN}n${NC} - Continue to next step"
+    echo -e "  ${GREEN}[number]${NC} - Toggle feature on/off"
+    echo -e "  ${GREEN}a${NC} - Select all available features"
+    echo -e "  ${GREEN}r${NC} - Select recommended features (auto-detect)"
+    echo -e "  ${GREEN}n${NC} - Continue to next step"
     echo
     read -p "Enter choice: " choice
     
@@ -651,7 +651,7 @@ main() {
     else
         echo
         echo -e "${RED}Setup failed. Please check errors above.${NC}"
-        echo "You can run this wizard again: ${BOLD}sudo comprehensive-setup-wizard${NC}"
+        echo -e "You can run this wizard again: ${BOLD}sudo comprehensive-setup-wizard${NC}"
         echo
         read -p "Press Enter to exit..."
         exit 1

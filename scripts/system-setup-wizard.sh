@@ -488,13 +488,13 @@ EOF
     
     echo
     echo -e "${BOLD}Next Steps:${NC}"
-    echo "  1. Create your first VM: ${BOLD}virt-manager${NC} or ${BOLD}hypervisor-menu${NC}"
-    echo "  2. Review documentation: ${BOLD}less /etc/hypervisor/docs/QUICK_START.md${NC}"
-    echo "  3. Configure networking: ${BOLD}hypervisor-menu${NC} → Network Setup"
+    echo -e "  1. Create your first VM: ${BOLD}virt-manager${NC} or ${BOLD}hypervisor-menu${NC}"
+    echo -e "  2. Review documentation: ${BOLD}less /etc/hypervisor/docs/QUICK_START.md${NC}"
+    echo -e "  3. Configure networking: ${BOLD}hypervisor-menu${NC} → Network Setup"
     echo
     echo -e "${CYAN}To reconfigure your tier later, run: ${BOLD}sudo system-setup-wizard${NC}"
     echo
-    echo "Press ${BOLD}Enter${NC} to continue..."
+    echo -e "Press ${BOLD}Enter${NC} to continue..."
     read -r
 }
 

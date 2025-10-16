@@ -121,13 +121,13 @@ lesson1_understand_system() {
   
   if [[ -c /dev/kvm ]]; then
     echo -e "  ${GREEN}✓${NC} You have KVM available"
-    echo "  ${BLUE}→ This means:${NC} Your CPU supports hardware virtualization"
-    echo "  ${BLUE}→ Benefit:${NC} VMs run at ~95% native speed (very fast!)"
+    echo -e "  ${BLUE}→ This means:${NC} Your CPU supports hardware virtualization"
+    echo -e "  ${BLUE}→ Benefit:${NC} VMs run at ~95% native speed (very fast!)"
   else
     echo -e "  ${YELLOW}⚠${NC} KVM not available"
-    echo "  ${BLUE}→ This means:${NC} Virtualization disabled in BIOS or not supported"
-    echo "  ${BLUE}→ Impact:${NC} VMs will be slow (software emulation)"
-    echo "  ${BLUE}→ To fix:${NC} Enable VT-x or AMD-V in BIOS/UEFI"
+    echo -e "  ${BLUE}→ This means:${NC} Virtualization disabled in BIOS or not supported"
+    echo -e "  ${BLUE}→ Impact:${NC} VMs will be slow (software emulation)"
+    echo -e "  ${BLUE}→ To fix:${NC} Enable VT-x or AMD-V in BIOS/UEFI"
   fi
   echo ""
   
@@ -135,12 +135,12 @@ lesson1_understand_system() {
   local total_cpus=$(nproc)
   local total_ram=$(free -h | awk '/^Mem:/{print $2}')
   echo "  CPUs: $total_cpus cores"
-  echo "  ${BLUE}→ For VMs:${NC} Recommended to use $(( total_cpus - 2 )) or fewer"
-  echo "  ${BLUE}→ Why:${NC} Leave some for host system"
+  echo -e "  ${BLUE}→ For VMs:${NC} Recommended to use $(( total_cpus - 2 )) or fewer"
+  echo -e "  ${BLUE}→ Why:${NC} Leave some for host system"
   echo ""
   echo "  RAM: $total_ram total"
-  echo "  ${BLUE}→ For VMs:${NC} Safe to allocate 50-70% to VMs"
-  echo "  ${BLUE}→ Why:${NC} Host needs memory too"
+  echo -e "  ${BLUE}→ For VMs:${NC} Safe to allocate 50-70% to VMs"
+  echo -e "  ${BLUE}→ Why:${NC} Host needs memory too"
   echo ""
   
   read -p "Press Enter to continue..."

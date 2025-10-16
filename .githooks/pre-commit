@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook for Hyper-NixOS
+# Validates shell scripts before committing
+#
+# To install: ln -sf ../../.githooks/pre-commit .git/hooks/pre-commit
+
+set -e
+
+echo "Running pre-commit validation..."
+
+# Get list of staged shell scripts
+STAGED_SH_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(sh|bash)$' || true)
+
+if [ -z "$STAGED_SH_FILES" ]; then
+    echo "✓ No shell scripts to validate"
+    exit 0
+fi
+
+# Check if validation script exists
+if [ ! -f "scripts/validate-echo-colors.sh" ]; then
+    echo "⚠ Warning: validate-echo-colors.sh not found, skipping validation"
+    exit 0
+fi
+
+# Run validation on staged files only
+echo "Validating echo commands with color codes..."
+
+ISSUES_FOUND=false
+
+for file in $STAGED_SH_FILES; do
+    if [ -f "$file" ]; then
+        # Check for echo without -e that contains color variables
+        if grep -qE 'echo[[:space:]]+"[^"]*\$\{[A-Z_]*\}' "$file" 2>/dev/null; then
+            if ! grep -qE 'echo[[:space:]]*-e[[:space:]]+"[^"]*\$\{[A-Z_]*\}' "$file" 2>/dev/null; then
+                # Check if this file actually has issues (not just correct usage)
+                PROBLEMATIC_LINES=$(grep -E 'echo[[:space:]]+"[^"]*\$\{[A-Z_]*\}' "$file" | grep -v 'echo[[:space:]]*-e' | wc -l)
+                if [ "$PROBLEMATIC_LINES" -gt 0 ]; then
+                    echo "✗ $file has echo commands with colors missing -e flag"
+                    ISSUES_FOUND=true
+                fi
+            fi
+        fi
+    fi
+done
+
+if [ "$ISSUES_FOUND" = true ]; then
+    echo
+    echo "❌ Commit blocked: Shell script validation failed"
+    echo
+    echo "Some echo commands with color codes are missing the -e flag."
+    echo "This causes escape sequences to display as literal text."
+    echo
+    echo "To fix automatically:"
+    echo "  ./scripts/validate-echo-colors.sh --fix"
+    echo
+    echo "Or manually add -e to echo commands with color variables:"
+    echo "  ❌ echo \"  \${GREEN}Success\${NC}\""
+    echo "  ✓  echo -e \"  \${GREEN}Success\${NC}\""
+    echo
+    echo "To skip this check (not recommended):"
+    echo "  git commit --no-verify"
+    echo
+    exit 1
+fi
+
+echo "✓ All shell scripts validated successfully"
+exit 0

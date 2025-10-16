@@ -123,7 +123,7 @@ fi
 # Overall summary
 echo -e "\n${BLUE}=================================="
 echo "Overall Test Summary"
-echo "==================================${NC}"
+echo -e "==================================${NC}"
 
 # Calculate totals from all test runs
 test_summary

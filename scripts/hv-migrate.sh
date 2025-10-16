@@ -582,9 +582,9 @@ migrate_disks() {
             # For platforms with SSH access
             log_info "Disk migration requires SSH access to source host"
             log_info "Please use one of these methods:"
-            echo "1. SCP: scp root@${SOURCE_HOST}:/path/to/disk.img $target_dir/"
-            echo "2. rsync: rsync -avz --progress root@${SOURCE_HOST}:/path/to/disk.img $target_dir/"
-            echo "3. dd over SSH: ssh root@${SOURCE_HOST} 'dd if=/path/to/disk.img' | dd of=$target_dir/disk.img"
+            echo -e "1. SCP: scp root@${SOURCE_HOST}:/path/to/disk.img $target_dir/"
+            echo -e "2. rsync: rsync -avz --progress root@${SOURCE_HOST}:/path/to/disk.img $target_dir/"
+            echo -e "3. dd over SSH: ssh root@${SOURCE_HOST} 'dd if=/path/to/disk.img' | dd of=$target_dir/disk.img"
             ;;
             
         vmware)

@@ -1,0 +1,59 @@
+name: Validate Shell Scripts
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**.sh'
+      - 'scripts/**'
+      - 'install.sh'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**.sh'
+      - 'scripts/**'
+      - 'install.sh'
+
+jobs:
+  validate-echo-colors:
+    name: Check echo -e usage
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Validate echo commands with colors
+        run: |
+          chmod +x scripts/validate-echo-colors.sh
+          ./scripts/validate-echo-colors.sh --ci
+        
+      - name: Comment on PR if issues found
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Shell Script Validation Failed**\n\nSome `echo` commands with color codes are missing the `-e` flag.\n\n**To fix:**\n```bash\n./scripts/validate-echo-colors.sh --fix\n```\n\nOr manually add `-e` to echo commands that use color variables like `${GREEN}`, `${NC}`, etc.'
+            })
+  
+  shellcheck:
+    name: ShellCheck linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './scripts'
+          severity: warning
+          ignore_paths: |
+            node_modules
+            .git
+        continue-on-error: true
