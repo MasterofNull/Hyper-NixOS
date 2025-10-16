@@ -1,0 +1,47 @@
+{
+  "name": "testing-environment",
+  "description": "Testing and CI/CD environment for automated testing",
+  "_comment": "Optimized for quick snapshot restore and ephemeral workloads",
+  "_use_case": "Automated testing, CI/CD pipelines, integration tests",
+  "_recommended_for": ["Jenkins", "GitLab CI", "GitHub Actions runners", "Test automation"],
+  "_detection_notes": {
+    "vcpus": "25% of host cores (min 2) - tests often single-threaded",
+    "memory_mb": "2GB per vCPU for test execution",
+    "disk_gb": "40GB for test artifacts and dependencies",
+    "disk_format": "qcow2 for rapid snapshot/restore cycles",
+    "network_mode": "NAT for isolated testing"
+  },
+  "os": "linux",
+  "cpus": "AUTO_DETECT",
+  "memory_mb": "AUTO_DETECT",
+  "disk_gb": 40,
+  "disk_format": "qcow2",
+  "network": {
+    "mode": "nat",
+    "bridge": "AUTO_DETECT"
+  },
+  "features": {
+    "hugepages": false,
+    "vhost_net": true,
+    "memballoon": true,
+    "autostart": false,
+    "cpu_pinning": false
+  },
+  "display": {
+    "type": "none",
+    "headless": true
+  },
+  "storage": {
+    "cache": "unsafe",
+    "io": "threads"
+  },
+  "limits": {
+    "cpu_quota_percent": 200,
+    "memory_max_mb": 8192
+  },
+  "_testing_features": {
+    "snapshot_friendly": true,
+    "ephemeral": true,
+    "fast_reset": true
+  }
+}

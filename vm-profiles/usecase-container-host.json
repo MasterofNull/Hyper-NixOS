@@ -1,0 +1,43 @@
+{
+  "name": "container-host",
+  "description": "Docker/Podman container host for running containerized applications",
+  "_comment": "Optimized for container orchestration with nested virtualization",
+  "_use_case": "Docker, Podman, Kubernetes nodes, container development",
+  "_recommended_for": ["Docker", "Podman", "K3s", "MicroK8s", "Kind", "Container testing"],
+  "_detection_notes": {
+    "vcpus": "50-75% of host cores (min 4) for containers",
+    "memory_mb": "4-8GB per vCPU for container overhead",
+    "disk_gb": "120GB for images, volumes, and logs",
+    "disk_format": "qcow2 for flexibility and image management",
+    "network_mode": "bridge for container networking"
+  },
+  "os": "linux",
+  "cpus": "AUTO_DETECT_MIN_4",
+  "memory_mb": "AUTO_DETECT",
+  "disk_gb": 120,
+  "disk_format": "qcow2",
+  "network": {
+    "mode": "bridge",
+    "bridge": "AUTO_DETECT"
+  },
+  "features": {
+    "hugepages": false,
+    "vhost_net": true,
+    "memballoon": true,
+    "autostart": true,
+    "cpu_pinning": false,
+    "nested_virtualization": true
+  },
+  "display": {
+    "type": "none",
+    "headless": true
+  },
+  "storage": {
+    "cache": "writeback",
+    "io": "threads"
+  },
+  "limits": {
+    "cpu_quota_percent": 800,
+    "memory_max_mb": 24576
+  }
+}

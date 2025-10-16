@@ -1,0 +1,42 @@
+{
+  "name": "minimal-vm",
+  "description": "Minimal resource VM for lightweight services or learning",
+  "_comment": "Absolute minimum resources for basic Linux operation",
+  "_use_case": "Learning, testing, lightweight services, resource-constrained hosts",
+  "_recommended_for": ["Alpine Linux", "Lightweight services", "Learning VMs", "Many VMs on one host"],
+  "_detection_notes": {
+    "vcpus": "Fixed at 1-2 vCPUs for minimal overhead",
+    "memory_mb": "1-2GB minimal but functional",
+    "disk_gb": "10GB minimal installation",
+    "disk_format": "qcow2 for thin provisioning",
+    "network_mode": "NAT for simplicity"
+  },
+  "os": "linux",
+  "cpus": 1,
+  "memory_mb": 1024,
+  "disk_gb": 10,
+  "disk_format": "qcow2",
+  "network": {
+    "mode": "nat",
+    "bridge": "AUTO_DETECT"
+  },
+  "features": {
+    "hugepages": false,
+    "vhost_net": false,
+    "memballoon": true,
+    "autostart": false,
+    "cpu_pinning": false
+  },
+  "display": {
+    "type": "none",
+    "headless": true
+  },
+  "storage": {
+    "cache": "writeback",
+    "io": "threads"
+  },
+  "limits": {
+    "cpu_quota_percent": 100,
+    "memory_max_mb": 2048
+  }
+}
