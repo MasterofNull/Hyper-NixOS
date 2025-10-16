@@ -354,7 +354,7 @@ prompt_download_method() {
     # Check if running non-interactively (piped from curl, no TTY)
     if [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
         print_warning "Running in non-interactive mode, using default: Tarball Download (fastest)"
-        print_info "For interactive mode with more options, download and run: git clone && cd Hyper-NixOS && sudo ./install.sh"
+        echo -e "${CYAN}ℹ${NC} For interactive mode with more options, download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
         echo "4"
         return 0
     fi
@@ -382,7 +382,7 @@ prompt_download_method() {
             # Handle empty input (Enter pressed) - use default
             if [[ -z "$choice" ]]; then
                 choice="1"
-                print_info "Using default option: Git Clone (HTTPS)"
+                echo -e "${CYAN}ℹ${NC} Using default option: Git Clone (HTTPS)" >&2
             fi
             
             case "$choice" in

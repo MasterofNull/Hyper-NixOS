@@ -10,6 +10,52 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-16 (Update 28): Remote Installer Stdout Capture Bug Fix
+**Agent**: Claude
+**Task**: Fix "Invalid download method" error in one-command remote installer
+
+**Issue**: 
+- Users using `curl -sSL ... | sudo bash` encountered "Invalid download method" error
+- Remote installation via Method 1 was completely broken
+- Error occurred after "Running in non-interactive mode" message
+
+**Root Cause**:
+- `prompt_download_method()` function used `print_info()` which writes to stdout
+- When returning value "4" via `echo`, both the info message and number were captured
+- Result: `download_method` variable = "ℹ For interactive mode... 4" (invalid)
+- Case statement validation failed due to contaminated variable
+
+**Fix Applied**:
+- Changed `print_info()` calls to `echo -e "${CYAN}ℹ${NC} ..." >&2` in value-returning functions
+- Ensures only the intended return value goes to stdout
+- Fixed line 357: Non-interactive info message
+- Fixed line 385: Default option message
+- Kept `print_warning` and `print_error` calls (already use stderr)
+
+**Files Changed**:
+- ✅ `install.sh` - Fixed stdout/stderr output in `prompt_download_method()`
+- ✅ `docs/dev/INSTALLER_STDOUT_FIX_2025-10-16.md` - Complete fix documentation
+
+**Impact**:
+- **Critical fix** - Remote installation now works correctly
+- All users can use one-command install: `curl -sSL ... | sudo bash`
+- Non-interactive mode properly defaults to tarball download
+- No breaking changes
+
+**Pattern Learned**:
+When bash functions return values via command substitution `$(function)`:
+- ✅ All informational output MUST go to stderr (>&2)
+- ❌ Never use `print_info`, `print_status`, `print_success` in these functions
+- ✅ Only the return value should go to stdout
+- ✅ Test with: `value=$(function)` and verify variable content
+
+**Testing**:
+- ✅ Non-interactive remote: `curl ... | sudo bash` - Downloads tarball ✓
+- ✅ Interactive local: `sudo ./install.sh` - Shows menu ✓
+- ✅ Direct execution: Working ✓
+
+---
+
 #### 2025-10-15 (Update 27): Pulse Integration + Optional Enhancements Complete
 **Agent**: Claude
 **Task**: Add Pulse reference, implement optional enhancements, integrate high-value features
