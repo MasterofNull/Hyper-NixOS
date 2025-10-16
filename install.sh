@@ -70,6 +70,18 @@ ERROR_LOG="${LOG_DIR}/error.log"
 INSTALL_LOG="${LOG_DIR}/install.log"
 DEBUG_LOG="${LOG_DIR}/debug.log"
 
+# State file for resume capability
+STATE_FILE="/tmp/hyper-nixos-install-state"
+
+# Error codes for better debugging
+ERROR_NO_NETWORK=10
+ERROR_DISK_SPACE=11
+ERROR_DOWNLOAD_FAILED=12
+ERROR_EXTRACTION_FAILED=13
+ERROR_VERIFICATION_FAILED=14
+ERROR_MISSING_DEPS=15
+ERROR_USER_CANCELLED=16
+
 # Initialize logging
 init_logging() {
     # Create log directory if it doesn't exist
@@ -122,6 +134,53 @@ print_debug() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] DEBUG: $*" >> "$DEBUG_LOG" 2>/dev/null || true
 }
 
+# Enhanced error reporting with contextual help
+print_error_with_help() {
+    local error_code=$1
+    shift
+    local message="$*"
+    
+    print_error "$message (Error code: $error_code)"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR_CODE: $error_code" >> "$ERROR_LOG" 2>/dev/null || true
+    
+    case $error_code in
+        $ERROR_NO_NETWORK)
+            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo "    • Check network connection: ping github.com" >&2
+            echo "    • Check firewall/proxy settings" >&2
+            echo "    • Try using mobile hotspot temporarily" >&2
+            ;;
+        $ERROR_DISK_SPACE)
+            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo "    • Free up space: nix-collect-garbage -d" >&2
+            echo "    • Or specify different temp dir: TMPDIR=/other/path" >&2
+            echo "    • Check disk usage: df -h /tmp" >&2
+            ;;
+        $ERROR_DOWNLOAD_FAILED)
+            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo "    • Try alternative download method from menu" >&2
+            echo "    • Check GitHub status: https://www.githubstatus.com" >&2
+            echo "    • Retry the installation (automatic retry enabled)" >&2
+            ;;
+        $ERROR_EXTRACTION_FAILED)
+            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo "    • File may be corrupted, will retry download" >&2
+            echo "    • Check disk space: df -h /tmp" >&2
+            ;;
+        $ERROR_VERIFICATION_FAILED)
+            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo "    • Download may be corrupted or tampered" >&2
+            echo "    • Will retry download automatically" >&2
+            echo "    • Check network stability" >&2
+            ;;
+        $ERROR_MISSING_DEPS)
+            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo "    • Install missing tools via: nix-env -iA nixos.<tool>" >&2
+            echo "    • Or use NixOS live environment" >&2
+            ;;
+    esac
+}
+
 # Detect if we're running from a cloned repo or piped from curl
 detect_mode() {
     # When piped from curl, $0 is "bash", so dirname won't work
@@ -145,6 +204,181 @@ check_root() {
         echo >&2
         exit 126
     fi
+}
+
+# State management for resume capability
+save_state() {
+    local state="$1"
+    echo "$state:$(date +%s):$$" > "$STATE_FILE"
+    print_debug "State saved: $state"
+}
+
+load_state() {
+    if [[ -f "$STATE_FILE" ]]; then
+        local state=$(cut -d: -f1 "$STATE_FILE")
+        local timestamp=$(cut -d: -f2 "$STATE_FILE")
+        local age=$(( $(date +%s) - timestamp ))
+        
+        # Only resume if state is less than 1 hour old
+        if [[ $age -lt 3600 ]]; then
+            echo "$state"
+            return 0
+        else
+            print_debug "State file too old (${age}s), ignoring"
+        fi
+    fi
+    echo ""
+}
+
+clear_state() {
+    rm -f "$STATE_FILE"
+    print_debug "State file cleared"
+}
+
+# Pre-flight system checks
+preflight_checks() {
+    echo >&2
+    print_status "Running pre-flight system checks..." >&2
+    local failed=false
+    local warnings=0
+    
+    # Check disk space (need ~2GB for download + install)
+    print_debug "Checking disk space in /tmp"
+    if command -v df >/dev/null 2>&1; then
+        local available_space=$(df /tmp --output=avail 2>/dev/null | tail -1)
+        if [[ -n "$available_space" && $available_space -lt 2097152 ]]; then  # 2GB in KB
+            print_error_with_help $ERROR_DISK_SPACE \
+                "Insufficient disk space in /tmp: $(( available_space / 1024 ))MB available, 2GB required"
+            failed=true
+        else
+            local space_gb=$(( available_space / 1024 / 1024 ))
+            print_success "Disk space: ${space_gb}GB available in /tmp" >&2
+        fi
+    else
+        print_warning "Cannot check disk space (df not available)" >&2
+        warnings=$((warnings + 1))
+    fi
+    
+    # Check internet connectivity
+    print_debug "Checking internet connectivity"
+    local connectivity_ok=false
+    if ping -c 1 -W 2 github.com >/dev/null 2>&1; then
+        print_success "Internet connectivity: GitHub reachable" >&2
+        connectivity_ok=true
+    elif ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
+        print_success "Internet connectivity: OK (DNS may have issues)" >&2
+        connectivity_ok=true
+    fi
+    
+    if ! $connectivity_ok; then
+        print_error_with_help $ERROR_NO_NETWORK \
+            "No internet connectivity detected"
+        failed=true
+    fi
+    
+    # Check for required tools
+    print_debug "Checking required tools"
+    local required_tools=("tar" "bash")
+    local missing_tools=()
+    for tool in "${required_tools[@]}"; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            missing_tools+=("$tool")
+        fi
+    done
+    
+    if [[ ${#missing_tools[@]} -gt 0 ]]; then
+        print_error_with_help $ERROR_MISSING_DEPS \
+            "Required tools missing: ${missing_tools[*]}"
+        failed=true
+    else
+        print_success "Required tools: All present (tar, bash)" >&2
+    fi
+    
+    # Check for recommended tools
+    local recommended_tools=("curl" "wget" "git")
+    local missing_recommended=()
+    for tool in "${recommended_tools[@]}"; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            missing_recommended+=("$tool")
+        fi
+    done
+    
+    if [[ ${#missing_recommended[@]} -gt 0 ]]; then
+        print_warning "Some recommended tools missing: ${missing_recommended[*]}" >&2
+        warnings=$((warnings + 1))
+    else
+        print_success "Recommended tools: All present (curl, wget, git)" >&2
+    fi
+    
+    # Summary
+    echo >&2
+    if [[ "$failed" == "true" ]]; then
+        print_error "Pre-flight checks failed. Please resolve critical issues before continuing." >&2
+        return 1
+    elif [[ $warnings -gt 0 ]]; then
+        print_warning "Pre-flight checks completed with $warnings warning(s)" >&2
+        return 0
+    else
+        print_success "All pre-flight checks passed" >&2
+        return 0
+    fi
+}
+
+# Interactive confirmation before installation
+confirm_installation() {
+    local method_name="$1"
+    local install_location="${2:-/etc/nixos}"
+    
+    echo >&2
+    print_line "=" 70 >&2
+    center_text "Installation Confirmation" >&2
+    print_line "=" 70 >&2
+    echo >&2
+    echo "  ${BOLD}Download method:${NC} $method_name" >&2
+    echo "  ${BOLD}Install location:${NC} $install_location" >&2
+    echo "  ${BOLD}Estimated time:${NC} ~5-10 minutes" >&2
+    echo "  ${BOLD}Disk space needed:${NC} ~2GB" >&2
+    echo "  ${BOLD}Log directory:${NC} $LOG_DIR" >&2
+    echo >&2
+    
+    # Only prompt if interactive
+    if [[ -t 0 ]]; then
+        read -t 60 -p "$(echo -e "${CYAN}Continue with installation? [Y/n]:${NC} ")" -r choice
+        echo >&2
+        if [[ -z "$choice" ]] || [[ "$choice" =~ ^[Yy]$ ]]; then
+            return 0
+        else
+            print_info "Installation cancelled by user" >&2
+            return 1
+        fi
+    fi
+    
+    return 0
+}
+
+# Show installation summary at completion
+show_install_summary() {
+    local download_method="$1"
+    local install_location="${2:-/etc/nixos}"
+    
+    echo >&2
+    print_line "=" 70 >&2
+    center_text "Installation Complete" >&2
+    print_line "=" 70 >&2
+    echo >&2
+    echo "  ${GREEN}✓${NC} Repository source: $download_method" >&2
+    echo "  ${GREEN}✓${NC} Installed to: $install_location" >&2
+    echo "  ${GREEN}✓${NC} Configuration: ${install_location}/configuration.nix" >&2
+    echo "  ${GREEN}✓${NC} Logs saved to: $LOG_DIR" >&2
+    echo >&2
+    echo "  ${BOLD}Next steps:${NC}" >&2
+    echo "    ${CYAN}1.${NC} Review logs: less $INSTALL_LOG" >&2
+    echo "    ${CYAN}2.${NC} Reboot system: sudo reboot" >&2
+    echo "    ${CYAN}3.${NC} Access menu after reboot via SSH/console" >&2
+    echo "    ${CYAN}4.${NC} Create your first VM: hv vm-create" >&2
+    echo >&2
+    print_line "=" 70 >&2
+    echo >&2
 }
 
 # Simple spinner for operations
@@ -377,38 +611,60 @@ ensure_git() {
 
 # Prompt for download method
 prompt_download_method() {
-    # Check if running non-interactively (piped from curl, no TTY)
-    if [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
-        print_warning "Running in non-interactive mode, using default: Tarball Download (fastest)"
-        echo -e "${CYAN}ℹ${NC} For interactive mode with more options, download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
-        echo "4"
+    # Allow override via environment variable
+    if [[ -n "${HYPER_INSTALL_METHOD:-}" ]]; then
+        case "${HYPER_INSTALL_METHOD}" in
+            https|1) echo "1"; return 0 ;;
+            ssh|2) echo "2"; return 0 ;;
+            token|3) echo "3"; return 0 ;;
+            tarball|4) echo "4"; return 0 ;;
+            *)
+                print_warning "Invalid HYPER_INSTALL_METHOD: ${HYPER_INSTALL_METHOD}"
+                print_warning "Valid options: https, ssh, token, tarball"
+                ;;
+        esac
+    fi
+    
+    # Check if we can prompt user (try /dev/tty for piped scenarios)
+    local input_source="/dev/stdin"
+    if [[ ! -t 0 ]] && [[ -e /dev/tty ]]; then
+        # stdin not available but /dev/tty exists - use it for piped scenarios
+        input_source="/dev/tty"
+        print_info "Running in piped mode, but interactive input available via terminal"
+    elif [[ ! -t 0 ]]; then
+        # No terminal available at all - use default
+        print_warning "Running in non-interactive mode (no terminal), using default: Git Clone HTTPS"
+        echo -e "${CYAN}ℹ${NC} To choose a different method:" >&2
+        echo -e "${CYAN}ℹ${NC}   Set environment: HYPER_INSTALL_METHOD=tarball curl ... | sudo -E bash" >&2
+        echo -e "${CYAN}ℹ${NC}   Or download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
+        echo "1"  # Default to git HTTPS (more reliable than tarball)
         return 0
     fi
     
-    echo
-    print_line "═" 70
-    center_text "Download Method Selection"
-    print_line "═" 70
-    echo
+    echo >&2
+    print_line "═" 70 >&2
+    center_text "Download Method Selection" >&2
+    print_line "═" 70 >&2
+    echo >&2
     print_info "Choose how to download Hyper-NixOS:"
-    echo
-    echo "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication"
-    echo "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup"
-    echo "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token"
-    echo "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install"
-    echo
+    echo >&2
+    echo "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication" >&2
+    echo "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup" >&2
+    echo "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token" >&2
+    echo "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install" >&2
+    echo >&2
     
     local choice
     local attempts=0
     local max_attempts=5
     
     while [[ $attempts -lt $max_attempts ]]; do
-        # Use read with timeout to prevent hangs
-        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice; then
+        # Use read with timeout to prevent hangs, reading from appropriate source
+        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 4):${NC} ")" choice <"$input_source"; then
             # Handle empty input (Enter pressed) - use default
             if [[ -z "$choice" ]]; then
-                choice="1"
-                echo -e "${CYAN}ℹ${NC} Using default option: Git Clone (HTTPS)" >&2
+                choice="4"
+                echo -e "${CYAN}ℹ${NC} Using default option: Download Tarball" >&2
             fi
             
             case "$choice" in
@@ -423,15 +679,15 @@ prompt_download_method() {
             esac
         else
             # Timeout or EOF reached
-            print_warning "No input received (timeout or EOF). Using default: Git Clone (HTTPS)"
-            echo "1"
+            print_warning "No input received (timeout or EOF). Using default: Download Tarball"
+            echo "4"
             return 0
         fi
     done
     
     # Max attempts reached, use default
-    print_warning "Maximum attempts reached. Using default: Git Clone (HTTPS)"
-    echo "1"
+    print_warning "Maximum attempts reached. Using default: Download Tarball"
+    echo "4"
     return 0
 }
 
@@ -548,112 +804,202 @@ get_github_token() {
 }
 
 # Download via tarball with progress tracking
+# Download with retry logic and exponential backoff
+download_with_retry() {
+    local url="$1"
+    local output="$2"
+    local max_attempts=3
+    local attempt=1
+    local wait_time=5
+    local download_tool=""
+    local start_time=$(date +%s)
+    
+    # Determine which tool to use
+    if command -v curl >/dev/null 2>&1; then
+        download_tool="curl"
+    elif command -v wget >/dev/null 2>&1; then
+        download_tool="wget"
+    else
+        print_error_with_help $ERROR_MISSING_DEPS "Neither curl nor wget available"
+        return 1
+    fi
+    
+    while [[ $attempt -le $max_attempts ]]; do
+        print_debug "Download attempt $attempt/$max_attempts using $download_tool"
+        if [[ $attempt -gt 1 ]]; then
+            print_info "Retry attempt $attempt/$max_attempts..." >&2
+        fi
+        
+        local success=false
+        if [[ "$download_tool" == "curl" ]]; then
+            if curl -L --fail --progress-bar -o "$output" "$url" 2>&1 | \
+               tee -a "$INSTALL_LOG" | \
+               grep -oP '\d+\.\d' | \
+               while read -r percent; do
+                   local pct=$(echo "$percent" | cut -d. -f1)
+                   show_progress_bar "$pct" 100 "Downloading"
+               done
+            then
+                printf "\r\033[K"
+                success=true
+            fi
+        else
+            if wget --progress=bar:force -O "$output" "$url" 2>&1 | \
+               tee -a "$INSTALL_LOG" | \
+               grep -oP '\d+%' | tr -d '%' | \
+               while read -r percent; do
+                   show_progress_bar "$percent" 100 "Downloading"
+               done
+            then
+                printf "\r\033[K"
+                success=true
+            fi
+        fi
+        
+        if $success; then
+            local elapsed=$(($(date +%s) - start_time))
+            print_debug "Download successful on attempt $attempt (${elapsed}s elapsed)"
+            return 0
+        else
+            printf "\r\033[K"
+            if [[ $attempt -lt $max_attempts ]]; then
+                print_warning "Download failed, retrying in ${wait_time}s... (attempt $attempt/$max_attempts)" >&2
+                sleep $wait_time
+                wait_time=$((wait_time * 2))  # Exponential backoff
+            fi
+        fi
+        attempt=$((attempt + 1))
+    done
+    
+    print_error_with_help $ERROR_DOWNLOAD_FAILED "Download failed after $max_attempts attempts"
+    return 1
+}
+
+# Verify tarball integrity
+verify_tarball() {
+    local tarball_file="$1"
+    
+    print_status "Verifying download integrity..." >&2
+    
+    # Check if file exists and is not empty
+    if [[ ! -f "$tarball_file" ]] || [[ ! -s "$tarball_file" ]]; then
+        print_error_with_help $ERROR_VERIFICATION_FAILED "Tarball file is missing or empty"
+        return 1
+    fi
+    
+    # Verify it's a valid gzip file
+    if ! gzip -t "$tarball_file" 2>/dev/null; then
+        print_error_with_help $ERROR_VERIFICATION_FAILED "Tarball file is not a valid gzip archive"
+        return 1
+    fi
+    
+    # Compute checksum if sha256sum available
+    if command -v sha256sum >/dev/null 2>&1; then
+        local checksum=$(sha256sum "$tarball_file" | cut -d' ' -f1)
+        print_debug "Tarball SHA256: $checksum"
+        print_success "Download verified (SHA256: ${checksum:0:16}...)" >&2
+    else
+        print_success "Download verified (valid gzip archive)" >&2
+    fi
+    
+    return 0
+}
+
 download_tarball() {
     local dest="$1"
     local branch="${2:-main}"
+    local max_download_attempts=2
+    local download_attempt=1
     
-    print_status "Downloading tarball from GitHub..."
+    print_status "Downloading tarball from GitHub..." >&2
     print_debug "Tarball destination: $dest"
     print_debug "Branch: $branch"
     
     local tarball_url="https://github.com/MasterofNull/Hyper-NixOS/archive/refs/heads/${branch}.tar.gz"
     local tarball_file="${dest}/hyper-nixos.tar.gz"
-    local error_output=$(mktemp)
     
-    # Download with progress bar
-    if command -v curl >/dev/null 2>&1; then
-        print_debug "Using curl for download"
-        
-        if curl -L --progress-bar -o "$tarball_file" "$tarball_url" 2>&1 | \
-           tee -a "$INSTALL_LOG" | \
-           grep -oP '\d+\.\d' | \
-           while read -r percent; do
-               local pct=$(echo "$percent" | cut -d. -f1)
-               show_progress_bar "$pct" 100 "Downloading"
-           done
-        then
-            printf "\r\033[K"  # Clear line
-            print_success "Tarball downloaded ($(du -h "$tarball_file" | cut -f1))"
-        else
-            printf "\r\033[K"
-            print_error "Failed to download tarball"
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Download failed from: $tarball_url" >> "$ERROR_LOG"
-            report_error "Tarball download failed" \
-                        "Check network connection or try git clone method" \
-                        "$error_output"
-            rm -f "$error_output"
-            return 1
+    # Try download with verification
+    while [[ $download_attempt -le $max_download_attempts ]]; do
+        if [[ $download_attempt -gt 1 ]]; then
+            print_warning "Retrying download (attempt $download_attempt/$max_download_attempts)..." >&2
+            rm -f "$tarball_file"
         fi
-    elif command -v wget >/dev/null 2>&1; then
-        print_debug "Using wget for download"
         
-        if wget --progress=bar:force -O "$tarball_file" "$tarball_url" 2>&1 | \
-           tee -a "$INSTALL_LOG" | \
-           grep -oP '\d+%' | tr -d '%' | \
-           while read -r percent; do
-               show_progress_bar "$percent" 100 "Downloading"
-           done
-        then
-            printf "\r\033[K"
-            print_success "Tarball downloaded ($(du -h "$tarball_file" | cut -f1))"
+        # Download with built-in retry logic
+        if download_with_retry "$tarball_url" "$tarball_file"; then
+            local file_size=$(du -h "$tarball_file" | cut -f1)
+            print_success "Tarball downloaded ($file_size)" >&2
+            
+            # Verify integrity
+            if verify_tarball "$tarball_file"; then
+                break
+            else
+                # Verification failed, retry if attempts remain
+                if [[ $download_attempt -lt $max_download_attempts ]]; then
+                    print_warning "Verification failed, will retry download..." >&2
+                else
+                    print_error_with_help $ERROR_VERIFICATION_FAILED "Download verification failed after $max_download_attempts attempts"
+                    return 1
+                fi
+            fi
         else
-            printf "\r\033[K"
-            print_error "Failed to download tarball"
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Download failed from: $tarball_url" >> "$ERROR_LOG"
-            report_error "Tarball download failed" \
-                        "Check network connection or try git clone method" \
-                        "$error_output"
-            rm -f "$error_output"
-            return 1
+            # Download failed
+            if [[ $download_attempt -ge $max_download_attempts ]]; then
+                return 1
+            fi
         fi
-    else
-        print_error "Neither curl nor wget available"
-        report_error "No download tool available" \
-                    "Install curl or wget: nix-env -iA nixos.curl" \
-                    "$ERROR_LOG"
-        return 1
-    fi
+        
+        download_attempt=$((download_attempt + 1))
+    done
     
-    rm -f "$error_output"
-    
-    print_status "Extracting tarball..."
+    # Extract tarball
+    print_status "Extracting tarball..." >&2
     mkdir -p "${dest}/hyper-nixos"
     
     local extract_output=$(mktemp)
-    if tar -xzf "$tarball_file" -C "${dest}/hyper-nixos" --strip-components=1 2>"$extract_output"; then
-        print_success "Tarball extracted"
-        rm -f "$tarball_file" "$extract_output"
-        return 0
-    else
-        print_error "Failed to extract tarball"
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Extraction failed" >> "$ERROR_LOG"
-        cat "$extract_output" >> "$ERROR_LOG"
-        report_error "Tarball extraction failed" \
-                    "File may be corrupted, try download again" \
-                    "$extract_output"
-        rm -f "$extract_output"
-        return 1
-    fi
+    local max_extract_attempts=2
+    local extract_attempt=1
+    
+    while [[ $extract_attempt -le $max_extract_attempts ]]; do
+        if tar -xzf "$tarball_file" -C "${dest}/hyper-nixos" --strip-components=1 2>"$extract_output"; then
+            print_success "Tarball extracted successfully" >&2
+            rm -f "$tarball_file" "$extract_output"
+            return 0
+        else
+            if [[ $extract_attempt -lt $max_extract_attempts ]]; then
+                print_warning "Extraction failed, retrying... (attempt $extract_attempt/$max_extract_attempts)" >&2
+                rm -rf "${dest}/hyper-nixos"
+                mkdir -p "${dest}/hyper-nixos"
+            else
+                print_error_with_help $ERROR_EXTRACTION_FAILED "Failed to extract tarball after $max_extract_attempts attempts"
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] Extraction failed" >> "$ERROR_LOG"
+                cat "$extract_output" >> "$ERROR_LOG"
+                rm -f "$extract_output"
+                return 1
+            fi
+        fi
+        extract_attempt=$((extract_attempt + 1))
+    done
+    
+    return 1
 }
 
-# Remote mode: Download repo and run installer
-remote_install() {
-    echo
-    print_line "=" 70
-    center_text "Hyper-NixOS Remote Installation"
-    print_line "=" 70
-    echo
+# Try a download method with optional fallback
+try_download_method() {
+    local method="$1"
+    local tmpdir="$2"
+    local method_name=""
     
-    print_status "Starting remote installation..."
+    case "$method" in
+        1) method_name="Git Clone (HTTPS)" ;;
+        2) method_name="Git Clone (SSH)" ;;
+        3) method_name="Git Clone (Token)" ;;
+        4) method_name="Download Tarball" ;;
+        *) return 1 ;;
+    esac
     
-    # Create temporary directory
-    local tmpdir
-    tmpdir=$(mktemp -d -t hyper-nixos-install.XXXXXX)
-    trap 'rm -rf "$tmpdir"' EXIT
-    
-    # Prompt for download method
-    local download_method
-    download_method=$(prompt_download_method)
+    print_info "Trying method: $method_name" >&2
+    save_state "downloading_${method}"
     
     local repo_url
     local clone_output
