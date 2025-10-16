@@ -334,11 +334,11 @@ confirm_installation() {
     center_text "Installation Confirmation" >&2
     print_line "=" 70 >&2
     echo >&2
-    echo "  ${BOLD}Download method:${NC} $method_name" >&2
-    echo "  ${BOLD}Install location:${NC} $install_location" >&2
-    echo "  ${BOLD}Estimated time:${NC} ~5-10 minutes" >&2
-    echo "  ${BOLD}Disk space needed:${NC} ~2GB" >&2
-    echo "  ${BOLD}Log directory:${NC} $LOG_DIR" >&2
+    echo -e "  ${BOLD}Download method:${NC} $method_name" >&2
+    echo -e "  ${BOLD}Install location:${NC} $install_location" >&2
+    echo -e "  ${BOLD}Estimated time:${NC} ~5-10 minutes" >&2
+    echo -e "  ${BOLD}Disk space needed:${NC} ~2GB" >&2
+    echo -e "  ${BOLD}Log directory:${NC} $LOG_DIR" >&2
     echo >&2
     
     # Only prompt if interactive
@@ -366,16 +366,16 @@ show_install_summary() {
     center_text "Installation Complete" >&2
     print_line "=" 70 >&2
     echo >&2
-    echo "  ${GREEN}✓${NC} Repository source: $download_method" >&2
-    echo "  ${GREEN}✓${NC} Installed to: $install_location" >&2
-    echo "  ${GREEN}✓${NC} Configuration: ${install_location}/configuration.nix" >&2
-    echo "  ${GREEN}✓${NC} Logs saved to: $LOG_DIR" >&2
+    echo -e "  ${GREEN}✓${NC} Repository source: $download_method" >&2
+    echo -e "  ${GREEN}✓${NC} Installed to: $install_location" >&2
+    echo -e "  ${GREEN}✓${NC} Configuration: ${install_location}/configuration.nix" >&2
+    echo -e "  ${GREEN}✓${NC} Logs saved to: $LOG_DIR" >&2
     echo >&2
-    echo "  ${BOLD}Next steps:${NC}" >&2
-    echo "    ${CYAN}1.${NC} Review logs: less $INSTALL_LOG" >&2
-    echo "    ${CYAN}2.${NC} Reboot system: sudo reboot" >&2
-    echo "    ${CYAN}3.${NC} Access menu after reboot via SSH/console" >&2
-    echo "    ${CYAN}4.${NC} Create your first VM: hv vm-create" >&2
+    echo -e "  ${BOLD}Next steps:${NC}" >&2
+    echo -e "    ${CYAN}1.${NC} Review logs: less $INSTALL_LOG" >&2
+    echo -e "    ${CYAN}2.${NC} Reboot system: sudo reboot" >&2
+    echo -e "    ${CYAN}3.${NC} Access menu after reboot via SSH/console" >&2
+    echo -e "    ${CYAN}4.${NC} Create your first VM: hv vm-create" >&2
     echo >&2
     print_line "=" 70 >&2
     echo >&2
