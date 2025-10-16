@@ -26,10 +26,10 @@ HYPER_INSTALL_METHOD=https curl -sSL https://raw.githubusercontent.com/MasterofN
 ```
 
 **Available download methods** (installer will prompt):
-- `https` - Git clone via HTTPS (default, most reliable)
+- `tarball` - Direct tarball download (default, fastest, no git required)
+- `https` - Git clone via HTTPS (public access, no authentication)
 - `ssh` - Git clone via SSH (requires GitHub key)
 - `token` - Git clone with token authentication
-- `tarball` - Direct tarball download (fastest, no git)
 
 ✅ **Now includes**: Interactive prompts via `/dev/tty`, timeout protection, and reliable defaults
 

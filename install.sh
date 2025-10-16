@@ -614,13 +614,13 @@ prompt_download_method() {
     # Allow override via environment variable
     if [[ -n "${HYPER_INSTALL_METHOD:-}" ]]; then
         case "${HYPER_INSTALL_METHOD}" in
-            https|1) echo "1"; return 0 ;;
-            ssh|2) echo "2"; return 0 ;;
-            token|3) echo "3"; return 0 ;;
-            tarball|4) echo "4"; return 0 ;;
+            tarball|1) echo "1"; return 0 ;;
+            https|2) echo "2"; return 0 ;;
+            ssh|3) echo "3"; return 0 ;;
+            token|4) echo "4"; return 0 ;;
             *)
-                print_warning "Invalid HYPER_INSTALL_METHOD: ${HYPER_INSTALL_METHOD}"
-                print_warning "Valid options: https, ssh, token, tarball"
+                print_warning "Invalid HYPER_INSTALL_METHOD: ${HYPER_INSTALL_METHOD}" >&2
+                print_warning "Valid options: tarball, https, ssh, token" >&2
                 ;;
         esac
     fi
@@ -633,11 +633,11 @@ prompt_download_method() {
         print_info "Running in piped mode, but interactive input available via terminal"
     elif [[ ! -t 0 ]]; then
         # No terminal available at all - use default
-        print_warning "Running in non-interactive mode (no terminal), using default: Git Clone HTTPS"
+        print_warning "Running in non-interactive mode (no terminal), using default: Download Tarball" >&2
         echo -e "${CYAN}ℹ${NC} To choose a different method:" >&2
-        echo -e "${CYAN}ℹ${NC}   Set environment: HYPER_INSTALL_METHOD=tarball curl ... | sudo -E bash" >&2
+        echo -e "${CYAN}ℹ${NC}   Set environment: HYPER_INSTALL_METHOD=https curl ... | sudo -E bash" >&2
         echo -e "${CYAN}ℹ${NC}   Or download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
-        echo "1"  # Default to git HTTPS (more reliable than tarball)
+        echo "1"  # Default to tarball (fastest, no git required)
         return 0
     fi
     
@@ -646,12 +646,12 @@ prompt_download_method() {
     center_text "Download Method Selection" >&2
     print_line "═" 70 >&2
     echo >&2
-    print_info "Choose how to download Hyper-NixOS:"
+    print_info "Choose how to download Hyper-NixOS:" >&2
     echo >&2
-    echo -e "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication" >&2
-    echo -e "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup" >&2
-    echo -e "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token" >&2
-    echo -e "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install" >&2
+    echo -e "  ${GREEN}1)${NC} Download Tarball     - No git required, faster for one-time install (recommended)" >&2
+    echo -e "  ${GREEN}2)${NC} Git Clone (HTTPS)    - Public access, no authentication" >&2
+    echo -e "  ${GREEN}3)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup" >&2
+    echo -e "  ${GREEN}4)${NC} Git Clone (Token)    - Requires GitHub personal access token" >&2
     echo >&2
     
     local choice
@@ -660,10 +660,10 @@ prompt_download_method() {
     
     while [[ $attempts -lt $max_attempts ]]; do
         # Use read with timeout to prevent hangs, reading from appropriate source
-        if read -t 50 -p "$(echo -e "${CYAN}Select method [1-4] (default: 4):${NC} ")" choice <"$input_source"; then
+        if read -t 50 -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice <"$input_source"; then
             # Handle empty input (Enter pressed) - use default
             if [[ -z "$choice" ]]; then
-                choice="4"
+                choice="1"
                 echo -e "${CYAN}ℹ${NC} Using default option: Download Tarball" >&2
             fi
             
@@ -674,20 +674,20 @@ prompt_download_method() {
                     ;;
                 *)
                     attempts=$((attempts + 1))
-                    print_error "Invalid choice. Please enter 1, 2, 3, or 4. (Attempt $attempts/$max_attempts)"
+                    print_error "Invalid choice. Please enter 1, 2, 3, or 4. (Attempt $attempts/$max_attempts)" >&2
                     ;;
             esac
         else
             # Timeout or EOF reached
-            print_warning "No input received (timeout or EOF). Using default: Download Tarball"
-            echo "4"
+            print_warning "No input received (timeout or EOF). Using default: Download Tarball" >&2
+            echo "1"
             return 0
         fi
     done
     
     # Max attempts reached, use default
-    print_warning "Maximum attempts reached. Using default: Download Tarball"
-    echo "4"
+    print_warning "Maximum attempts reached. Using default: Download Tarball" >&2
+    echo "1"
     return 0
 }
 
@@ -991,10 +991,10 @@ try_download_method() {
     local method_name=""
     
     case "$method" in
-        1) method_name="Git Clone (HTTPS)" ;;
-        2) method_name="Git Clone (SSH)" ;;
-        3) method_name="Git Clone (Token)" ;;
-        4) method_name="Download Tarball" ;;
+        1) method_name="Download Tarball" ;;
+        2) method_name="Git Clone (HTTPS)" ;;
+        3) method_name="Git Clone (SSH)" ;;
+        4) method_name="Git Clone (Token)" ;;
         *) return 1 ;;
     esac
     
@@ -1007,6 +1007,25 @@ try_download_method() {
     
     case "$download_method" in
         1)
+            # Tarball download
+            print_status "Using tarball download (no git required)..."
+            
+            if ! download_tarball "$tmpdir"; then
+                print_error "Tarball download failed"
+                echo
+                echo -e "${CYAN}Alternative methods:${NC}"
+                echo "  1. Try git clone: choose option 2 when re-running installer"
+                echo "  2. Manual download:"
+                echo "     wget https://github.com/MasterofNull/Hyper-NixOS/archive/refs/heads/main.tar.gz"
+                echo "     tar xzf main.tar.gz"
+                echo "     cd Hyper-NixOS-main"
+                echo "     sudo ./install.sh"
+                echo
+                exit 1
+            fi
+            ;;
+            
+        2)
             # HTTPS clone (public)
             print_status "Using HTTPS clone (public access)..."
             ensure_git
@@ -1063,7 +1082,7 @@ try_download_method() {
             fi
             ;;
             
-        2)
+        3)
             # SSH clone
             print_status "Using SSH clone (authenticated)..."
             ensure_git
@@ -1098,7 +1117,7 @@ try_download_method() {
             fi
             ;;
             
-        3)
+        4)
             # HTTPS with token
             print_status "Using HTTPS clone with personal access token..."
             ensure_git
@@ -1108,7 +1127,7 @@ try_download_method() {
                 print_error "Failed to get GitHub token"
                 echo
                 echo -e "${CYAN}Token is required for private repository access${NC}"
-                echo -e "${CYAN}For public repositories, use option 1 (HTTPS) instead${NC}"
+                echo -e "${CYAN}For public repositories, use option 2 (HTTPS) instead${NC}"
                 echo
                 exit 1
             fi
@@ -1141,28 +1160,9 @@ try_download_method() {
                 echo -e "${CYAN}To fix:${NC}"
                 echo "  1. Generate a new token at: https://github.com/settings/tokens"
                 echo "  2. Ensure 'repo' scope is selected"
-                echo "  3. Or use option 1 (HTTPS without token) for public access"
+                echo "  3. Or use option 2 (HTTPS without token) for public access"
                 echo
                 rm -f "$clone_output"
-                exit 1
-            fi
-            ;;
-            
-        4)
-            # Tarball download
-            print_status "Using tarball download (no git required)..."
-            
-            if ! download_tarball "$tmpdir"; then
-                print_error "Tarball download failed"
-                echo
-                echo -e "${CYAN}Alternative methods:${NC}"
-                echo "  1. Try git clone: choose option 1 when re-running installer"
-                echo "  2. Manual download:"
-                echo "     wget https://github.com/MasterofNull/Hyper-NixOS/archive/refs/heads/main.tar.gz"
-                echo "     tar xzf main.tar.gz"
-                echo "     cd Hyper-NixOS-main"
-                echo "     sudo ./install.sh"
-                echo
                 exit 1
             fi
             ;;
@@ -1260,10 +1260,10 @@ remote_install() {
     # Map download method number to name
     local method_name
     case "$download_method" in
-        1) method_name="Git Clone (HTTPS)" ;;
-        2) method_name="Git Clone (SSH)" ;;
-        3) method_name="Git Clone (Token)" ;;
-        4) method_name="Download Tarball" ;;
+        1) method_name="Download Tarball" ;;
+        2) method_name="Git Clone (HTTPS)" ;;
+        3) method_name="Git Clone (SSH)" ;;
+        4) method_name="Git Clone (Token)" ;;
         *) method_name="Unknown method: $download_method" ;;
     esac
     
@@ -1279,6 +1279,17 @@ remote_install() {
     
     case "$download_method" in
         1)
+            # Tarball download
+            print_status "Using tarball download (no git required)..."
+            
+            if ! download_tarball "$tmpdir"; then
+                print_error_with_help $ERROR_DOWNLOAD_FAILED "tarball" \
+                    "Tarball download failed"
+                exit $ERROR_DOWNLOAD_FAILED
+            fi
+            ;;
+            
+        2)
             # HTTPS clone (public)
             print_status "Using HTTPS clone (public access)..."
             ensure_git
@@ -1318,7 +1329,7 @@ remote_install() {
             fi
             ;;
             
-        2)
+        3)
             # SSH clone
             print_status "Using SSH clone (authenticated)..."
             ensure_git
@@ -1341,7 +1352,7 @@ remote_install() {
             print_success "Repository cloned successfully"
             ;;
             
-        3)
+        4)
             # HTTPS with token
             print_status "Using HTTPS clone with personal access token..."
             ensure_git
@@ -1368,17 +1379,6 @@ remote_install() {
             print_success "Repository cloned successfully"
             ;;
             
-        4)
-            # Tarball download
-            print_status "Using tarball download (no git required)..."
-            
-            if ! download_tarball "$tmpdir"; then
-                print_error_with_help $ERROR_DOWNLOAD_FAILED "tarball" \
-                    "Tarball download failed"
-                exit $ERROR_DOWNLOAD_FAILED
-            fi
-            ;;
-            
         *)
             print_error "Invalid download method: $download_method"
             exit 2
@@ -1399,10 +1399,10 @@ remote_install() {
     # Map download method number to name for summary
     local method_name
     case "$download_method" in
-        1) method_name="Git Clone (HTTPS)" ;;
-        2) method_name="Git Clone (SSH)" ;;
-        3) method_name="Git Clone (Token)" ;;
-        4) method_name="Download Tarball" ;;
+        1) method_name="Download Tarball" ;;
+        2) method_name="Git Clone (HTTPS)" ;;
+        3) method_name="Git Clone (SSH)" ;;
+        4) method_name="Git Clone (Token)" ;;
         *) method_name="Unknown method: $download_method" ;;
     esac
     
