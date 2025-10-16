@@ -341,6 +341,103 @@ This pattern was found to affect 35+ scripts across the codebase. A comprehensiv
 
 All scripts now use the safe pattern: `${BASH_SOURCE[0]:-$0}` which works in all execution contexts.
 
+### Issue: "Invalid download method" in Remote Installer
+**Symptoms**:
+```bash
+curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
+
+==> Starting remote installation...
+⚠ Running in non-interactive mode, using default: Tarball Download (fastest)
+✗ Invalid download method
+```
+
+**Root Cause**: The `prompt_download_method()` function returns a value via command substitution, but informational messages were being sent to stdout instead of stderr. This contaminated the return value.
+
+**Technical Details**:
+```bash
+prompt_download_method() {
+    if [[ ! -t 0 ]]; then
+        print_info "Message..."    # Goes to stdout ❌
+        echo "4"                    # Also goes to stdout
+        return 0
+    fi
+}
+
+# This captures BOTH outputs:
+download_method=$(prompt_download_method)  
+# Result: "ℹ Message... 4" instead of just "4"
+```
+
+**Solution**:
+All informational output in value-returning functions must explicitly go to stderr:
+
+```bash
+prompt_download_method() {
+    if [[ ! -t 0 ]]; then
+        # Explicitly redirect to stderr
+        echo -e "${CYAN}ℹ${NC} Message..." >&2
+        echo "4"  # Only this goes to stdout
+        return 0
+    fi
+}
+```
+
+**Fixed in**:
+- `install.sh` lines 357, 385, 400, 407
+- Documented in `docs/dev/INSTALLER_STDOUT_FIX_2025-10-16.md`
+
+**Prevention Pattern**:
+When writing functions that return values via command substitution:
+
+✅ **CORRECT**:
+```bash
+my_function() {
+    # All messages to stderr
+    echo "Info message" >&2
+    print_error "Error" >&2  # Even though print_error already uses stderr
+    
+    # Only return value to stdout
+    echo "return_value"
+}
+
+result=$(my_function)  # Captures only "return_value"
+```
+
+❌ **WRONG**:
+```bash
+my_function() {
+    print_info "Info message"  # Goes to stdout!
+    echo "return_value"        # Also to stdout
+}
+
+result=$(my_function)  # Captures both! "ℹ Info message return_value"
+```
+
+**Best Practices**:
+1. **Avoid** using `print_info`, `print_status`, `print_success` in value-returning functions
+2. **Use** explicit `echo ... >&2` for all informational output
+3. **Test** with command substitution: `value=$(function_name)` and verify content
+4. **Document** if a function returns a value via stdout
+5. **Review** any function called with `$(...)` for stdout contamination
+
+**Helper Function Stream Reference**:
+- `print_error()` → stderr ✓
+- `print_warning()` → stderr ✓
+- `print_info()` → stdout ⚠️ (avoid in value-returning functions)
+- `print_status()` → stdout ⚠️ (avoid in value-returning functions)
+- `print_success()` → stdout ⚠️ (avoid in value-returning functions)
+
+**Impact**:
+- **Critical fix** - Remote installation now works correctly
+- All users can use one-command install
+- Non-interactive mode properly defaults to tarball download
+
+**Related Functions to Review**:
+Any function that uses command substitution should be checked:
+- `get_github_token()` - Already correct ✓
+- `detect_mode()` - Already correct ✓
+- `prompt_download_method()` - Fixed ✓
+
 ### Issue: Duplicate Option Definitions
 **Symptoms**:
 ```
