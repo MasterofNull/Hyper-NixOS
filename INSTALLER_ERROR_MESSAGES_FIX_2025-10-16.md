@@ -195,7 +195,8 @@ bash -c 'source install.sh; verify_functions'
 
 ## Related Files Modified
 
-- `/workspace/install.sh` - Main installer script
+- `/workspace/install.sh` - Main installer script (error handling improvements)
+- `/workspace/README.md` - Installation instructions (separated commands for easier copying)
 
 ## Backwards Compatibility
 
@@ -206,6 +207,58 @@ bash -c 'source install.sh; verify_functions'
 - Expected behavior
 
 Only changes are improved error messages and diagnostics.
+
+## README Improvements
+
+### Installation Instructions Reorganization
+
+**Problem**: Users found it difficult to copy individual commands from multi-line code blocks.
+
+**Solution**: Separated all installation methods into clearly labeled, individual command blocks:
+
+**Method 1 - Before**:
+```bash
+curl -sSL https://raw.githubusercontent.com/.../install.sh | sudo bash
+```
+
+**Method 1 - After**:
+```
+**Download and run installer directly:**
+[single command in its own box]
+
+Alternative: Two-Step Process (collapsible)
+  Step 1: Download installer script
+  [command in its own box]
+  
+  Step 2: Run installer
+  [command in its own box]
+```
+
+**Method 2 - Before**:
+```bash
+git clone https://github.com/MasterofNull/Hyper-NixOS.git
+cd Hyper-NixOS
+sudo ./install.sh
+```
+
+**Method 2 - After**:
+```
+Step 1: Clone repository
+[command in its own box]
+
+Step 2: Enter directory
+[command in its own box]
+
+Step 3: Run installer
+[command in its own box]
+```
+
+**Benefits**:
+- ✅ Each command is in its own copyable code block
+- ✅ Clear step labels outside code blocks
+- ✅ No accidental partial copies
+- ✅ Better mobile experience
+- ✅ Collapsible alternative methods to reduce clutter
 
 ## Future Improvements
 

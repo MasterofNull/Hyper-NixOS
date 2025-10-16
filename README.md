@@ -14,15 +14,43 @@ Next-generation virtualization platform built on NixOS with revolutionary featur
 Get started with Hyper-NixOS in seconds:
 
 ### Method 1: One-Command Install (Fastest)
+
+**Download and run installer directly:**
 ```bash
 curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
 ```
+
 ✅ **Now includes**: Non-interactive detection, timeout protection, and safe defaults
 
+<details>
+<summary>📋 Alternative: Two-Step Process (Click to expand)</summary>
+
+**Step 1: Download installer script**
+```bash
+curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh -o /tmp/hyper-install.sh
+```
+
+**Step 2: Run installer**
+```bash
+sudo bash /tmp/hyper-install.sh
+```
+
+</details>
+
 ### Method 2: Git Clone (Recommended for Inspection)
+
+**Step 1: Clone repository**
 ```bash
 git clone https://github.com/MasterofNull/Hyper-NixOS.git
+```
+
+**Step 2: Enter directory**
+```bash
 cd Hyper-NixOS
+```
+
+**Step 3: Run installer**
+```bash
 sudo ./install.sh
 ```
 
