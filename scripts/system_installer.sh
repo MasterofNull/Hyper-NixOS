@@ -40,6 +40,14 @@ umask 077
 PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export NIX_CONFIG="experimental-features = nix-command flakes"
 
+# Source encryption support library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/encryption-support.sh" ]]; then
+  source "$SCRIPT_DIR/lib/encryption-support.sh"
+elif [[ -f "/etc/hypervisor/src/scripts/lib/encryption-support.sh" ]]; then
+  source "/etc/hypervisor/src/scripts/lib/encryption-support.sh"
+fi
+
 cleanup() {
   local ec=$?
   [[ -n "${TMPDIR:-}" && -d "${TMPDIR:-}" ]] && rm -rf -- "$TMPDIR"
@@ -265,10 +273,101 @@ prompt_and_update_if_desired() {
 }
 
 ensure_hardware_config() {
-  if [[ ! -f /etc/nixos/hardware-configuration.nix ]]; then
-    msg "Generating /etc/nixos/hardware-configuration.nix"
+  local hw_config="/etc/nixos/hardware-configuration.nix"
+  local hw_backup="/etc/nixos/hardware-configuration.nix.pre-hyper-nixos"
+  
+  # If hardware config already exists, preserve it (especially important for encrypted systems)
+  if [[ -f "$hw_config" ]]; then
+    msg "Existing hardware-configuration.nix found"
+    
+    # Check if it contains encryption settings
+    local has_luks=false
+    if grep -q "boot\.initrd\.luks\.devices" "$hw_config" 2>/dev/null; then
+      has_luks=true
+      msg "  ✓ LUKS encryption detected in existing configuration"
+    fi
+    
+    # Create backup if not already backed up
+    if [[ ! -f "$hw_backup" ]]; then
+      msg "  Creating backup: $hw_backup"
+      cp -a "$hw_config" "$hw_backup"
+    fi
+    
+    # Validate existing hardware config has essential sections
+    local missing_sections=()
+    grep -q "boot\.loader" "$hw_config" 2>/dev/null || missing_sections+=("boot.loader")
+    grep -q "fileSystems" "$hw_config" 2>/dev/null || missing_sections+=("fileSystems")
+    
+    if [[ ${#missing_sections[@]} -gt 0 ]]; then
+      warn "Existing hardware-configuration.nix is incomplete (missing: ${missing_sections[*]})"
+      msg "Regenerating hardware-configuration.nix (LUKS settings will be preserved if present)"
+      
+      # Save LUKS configuration if present
+      local luks_config=""
+      if $has_luks; then
+        # Extract LUKS configuration section
+        luks_config=$(awk '/boot\.initrd\.luks\.devices/,/};/' "$hw_config" 2>/dev/null || true)
+        msg "  Extracted LUKS configuration for preservation"
+      fi
+      
+      # Regenerate hardware config
+      nixos-generate-config --root / --force
+      
+      # Restore LUKS configuration if it was present
+      if [[ -n "$luks_config" ]] && ! grep -q "boot\.initrd\.luks\.devices" "$hw_config" 2>/dev/null; then
+        msg "  Restoring LUKS encryption configuration"
+        # Insert LUKS config before the closing brace
+        local tmp_config=$(mktemp)
+        awk -v luks="$luks_config" '
+          /^}$/ && !inserted {
+            print luks
+            inserted=1
+          }
+          {print}
+        ' "$hw_config" > "$tmp_config"
+        mv "$tmp_config" "$hw_config"
+        msg "  ✓ LUKS configuration restored"
+      fi
+    else
+      msg "  Using existing hardware-configuration.nix (appears complete)"
+      if $has_luks; then
+        msg "  ✓ LUKS encryption settings will be preserved"
+      fi
+    fi
+  else
+    msg "No existing hardware-configuration.nix found, generating new one"
     nixos-generate-config --root /
+    
+    # Check if the generated config detected encryption
+    if grep -q "boot\.initrd\.luks\.devices" "$hw_config" 2>/dev/null; then
+      msg "  ✓ LUKS encryption detected and configured"
+    fi
   fi
+  
+  # Final validation: ensure hardware config is readable
+  if [[ ! -r "$hw_config" ]]; then
+    echo "ERROR: Cannot read $hw_config" >&2
+    exit 1
+  fi
+  
+  # Display encryption status summary
+  msg ""
+  msg "Hardware Configuration Summary:"
+  msg "  Location: $hw_config"
+  if grep -q "boot\.initrd\.luks\.devices" "$hw_config" 2>/dev/null; then
+    msg "  Encryption: LUKS enabled ✓"
+    # Show encrypted devices
+    local encrypted_devs
+    encrypted_devs=$(grep -A1 "boot\.initrd\.luks\.devices" "$hw_config" | grep "device =" | sed 's/.*device = "\([^"]*\)".*/\1/' || true)
+    if [[ -n "$encrypted_devs" ]]; then
+      while IFS= read -r dev; do
+        msg "    - $dev"
+      done <<< "$encrypted_devs"
+    fi
+  else
+    msg "  Encryption: Not detected"
+  fi
+  msg ""
 }
 
 copy_repo_to_etc() {
