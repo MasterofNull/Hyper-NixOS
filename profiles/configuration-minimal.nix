@@ -159,7 +159,10 @@
   
   # Users
   users = {
-    mutableUsers = false;
+    # Use mutable users for easier initial setup
+    # Users can set passwords with: passwd <username>
+    # For production with immutable users, create users-local.nix with proper hashedPassword
+    mutableUsers = true;
     
     # Only define default users if no migration or local config exists
     users = lib.optionalAttrs (
@@ -170,9 +173,8 @@
         isNormalUser = true;
         description = "System Administrator";
         extraGroups = [ "wheel" "libvirtd" "kvm" ];
-        # Initial login password: "hyper-nixos" (MUST be changed)
-        # This is only for initial login - sudo password set separately during first boot
-        hashedPassword = "$6$rounds=100000$initialsalt$YLZlz9DVQlUWroSMpOY6JXp1zAZUxqSSjJ.36BkY.4Swl5XKJ7Z.0KYwL4HRdKqUZt4HZjAQPUGvBD8A2CY0g0";
+        # Password should be set after first boot with: passwd admin
+        # Or create /etc/nixos/modules/users-local.nix with hashedPassword
       };
       
       # Create a separate operator user for VM management without sudo
@@ -180,8 +182,7 @@
         isNormalUser = true;
         description = "VM Operator (no sudo)";
         extraGroups = [ "libvirtd" "kvm" ];
-        # Initial password: "operator" (MUST be changed)
-        hashedPassword = "$6$rounds=100000$operatorsalt$g3dS1M9HM8H2WLRmUw1ZSF1LHnZdvUvKZrJq9N5QC.9rY2AdnXPFMTZJXpN0lYbAWS9nQBfXAuKkLkvYBRl.a.";
+        # Password should be set after first boot with: passwd operator
       };
     };
   };

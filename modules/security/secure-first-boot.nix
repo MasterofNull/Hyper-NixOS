@@ -347,8 +347,8 @@ in
   options.hypervisor.security.secureFirstBoot = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
-      description = "Enable enhanced security for first boot";
+      default = false;  # Disabled by default to prevent password conflicts
+      description = "Enable enhanced security for first boot (deprecated - use standard user management)";
     };
     
     adminUsername = lib.mkOption {

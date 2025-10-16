@@ -214,6 +214,130 @@ users = {
 };
 ```
 
+---
+
+## ⚠️ **Issue: Password Stopped Working After System Switch**
+
+**Symptom**: After running `nixos-rebuild switch`, your sudo password no longer works, even though it worked before.
+
+**Root Cause**: Conflicting password management settings. This happens when:
+1. Configuration has `mutableUsers = false` (immutable users)
+2. User has an invalid or placeholder password hash like `$6$rounds=100000$...`
+3. System rebuild replaces working password with invalid hash from configuration
+
+**What Happens**:
+- With `mutableUsers = false`, passwords are managed ONLY through NixOS configuration
+- The `passwd` command appears to work but changes are **lost on next reboot**
+- During rebuild, the (invalid) password hash from configuration.nix overwrites your working password
+- Result: You're locked out
+
+### ✅ **Solution 1: Switch to Mutable Users (Recommended for Most Users)**
+
+**Edit `/etc/nixos/configuration.nix`:**
+```nix
+users = {
+  mutableUsers = true;  # Changed from false
+  
+  users.admin = {
+    isNormalUser = true;
+    extraGroups = [ "wheel" "libvirtd" "kvm" ];
+    # Remove hashedPassword line or leave commented
+    # Password will be set with 'passwd' command
+  };
+};
+```
+
+**Then rebuild and set password:**
+```bash
+sudo nixos-rebuild switch
+passwd admin  # Set your password
+```
+
+**Advantages:**
+- Standard `passwd` command works as expected
+- Password changes persist across reboots
+- No risk of configuration-related lockouts
+- Easier for beginners
+
+### ✅ **Solution 2: Fix Immutable User Configuration (Advanced)**
+
+If you prefer `mutableUsers = false` for production systems:
+
+**1. Generate a proper password hash:**
+```bash
+mkpasswd -m sha-512
+# Enter your desired password when prompted
+# Copy the entire hash output
+```
+
+**2. Update configuration.nix with REAL hash:**
+```nix
+users = {
+  mutableUsers = false;  # Keep immutable
+  
+  users.admin = {
+    isNormalUser = true;
+    extraGroups = [ "wheel" "libvirtd" "kvm" ];
+    # Use the ACTUAL hash from mkpasswd, not a placeholder
+    hashedPassword = "$6$rounds=100000$realsalt$actualHashGoesHere...";
+  };
+};
+```
+
+**3. Rebuild system:**
+```bash
+sudo nixos-rebuild switch
+# Your password is now the one you used with mkpasswd
+```
+
+### 🚨 **If You're Currently Locked Out**
+
+**Boot into recovery:**
+1. At GRUB menu, select "NixOS - Previous Generation"
+2. Or select "NixOS - Minimal Recovery Configuration" if available
+
+**Or from Live USB:**
+```bash
+# 1. Mount your system partition
+sudo mount /dev/nvme0n1p2 /mnt  # Adjust device as needed
+
+# 2. Edit configuration
+sudo nano /mnt/etc/nixos/configuration.nix
+
+# 3. Change mutableUsers to true:
+users.mutableUsers = true;
+
+# 4. Remove or comment out hashedPassword line
+
+# 5. Chroot and rebuild
+sudo nixos-enter --root /mnt
+nixos-rebuild switch
+exit
+reboot
+
+# 6. After reboot, set password
+passwd admin
+```
+
+### 🛡️ **Prevention**
+
+To avoid this issue in the future:
+
+**DO:**
+- ✅ Use `mutableUsers = true` for workstations and dev environments
+- ✅ If using `mutableUsers = false`, always use a REAL password hash
+- ✅ Test with `nixos-rebuild test` before `switch`
+- ✅ Keep SSH keys as backup authentication method
+
+**DON'T:**
+- ❌ Use placeholder hashes like `$6$rounds=100000$...` with `mutableUsers = false`
+- ❌ Mix `mutableUsers = false` with `initialPassword`
+- ❌ Assume `passwd` works with immutable users
+
+### 📚 **More Information**
+
+See detailed fix documentation: `/workspace/docs/dev/USER_PASSWORD_MANAGEMENT_FIX_2025-10-16.md`
+
 **Prevention**:
 - Always set authentication for at least one wheel group user
 - Use the first boot wizard in Hyper-NixOS to set passwords interactively
