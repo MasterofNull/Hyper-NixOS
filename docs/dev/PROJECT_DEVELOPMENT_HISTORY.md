@@ -10,6 +10,104 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-16 (Update 29): Critical Fix - Missing remote_install() Function
+**Agent**: Claude (Background Agent)
+**Task**: Fix "Missing functions: remote_install" error in remote installation
+
+**Issue**: 
+- Users running `curl -sSL ... | sudo bash` encountered critical error
+- Error: "Missing functions: remote_install"
+- Remote installation completely broken - 100% failure rate
+- Script verification detected missing function but too late
+
+**Root Cause**:
+- During previous refactoring, `remote_install()` function was deleted
+- Function call at line 1313 in `main()` was NOT updated
+- `verify_functions()` check listed it as required (line 1346)
+- Function definition was completely absent from the script
+- Incomplete refactoring attempt left `try_download_method()` unused
+
+**Fix Applied**:
+- Created complete `remote_install()` function (201 lines)
+- Inserted between `try_download_method()` and `local_install()`
+- Function now handles entire remote installation workflow:
+  1. Shows installation banner
+  2. Runs pre-flight checks (network, disk, dependencies)
+  3. Creates temporary directory
+  4. Checks for resumable state
+  5. Prompts for download method (or uses env var)
+  6. Confirms installation with preview
+  7. Executes download (HTTPS/SSH/Token/Tarball)
+  8. Handles errors with contextual help
+  9. Changes to downloaded directory
+  10. Shows installation summary
+  11. Executes system installer
+
+**Files Changed**:
+- ✅ `install.sh` - Added `remote_install()` function at line ~1217
+- ✅ `docs/dev/INSTALLER_MISSING_FUNCTION_FIX_2025-10-16.md` - Complete documentation
+- ✅ `docs/dev/PROJECT_DEVELOPMENT_HISTORY.md` - Updated (this file)
+
+**Impact**:
+- **Critical fix** - Remote installation restored from 100% failure
+- All 4 download methods now work: HTTPS, SSH, Token, Tarball
+- Better error handling with contextual help messages
+- Resume capability integrated
+- Progress indicators added
+- Installation summary at completion
+- No breaking changes to local installation
+
+**Pattern Learned**:
+When refactoring functions in bash scripts:
+- ✅ Complete refactoring in single commit - don't leave partial work
+- ✅ Update ALL call sites when renaming/removing functions
+- ✅ Test piped execution: `cat script.sh | bash` before committing
+- ✅ Run syntax check: `bash -n script.sh`
+- ⚠️ Function verification should happen BEFORE calling main
+- ❌ Never remove functions without updating callers
+- ❌ Don't leave incomplete refactoring attempts (like `try_download_method`)
+
+**Bash Script Execution Order Pattern**:
+For scripts designed to be piped through curl:
+```bash
+#!/usr/bin/env bash
+# 1. Define ALL helper functions first
+function_1() { ... }
+function_2() { ... }
+function_N() { ... }
+
+# 2. Define main() function
+main() { ... }
+
+# 3. Verify all functions exist
+verify_functions
+
+# 4. Execute main (AT THE END)
+main "$@"
+```
+
+**Why This Matters**:
+- When piped: bash reads and executes sequentially
+- Functions must be defined BEFORE they're called
+- Error only appears when function is invoked, not loaded
+- `verify_functions()` helps but must run before main
+
+**Testing**:
+- ✅ Remote HTTPS: `curl ... | sudo bash` ✓
+- ✅ Remote with env: `HYPER_INSTALL_METHOD=tarball curl ... | sudo -E bash` ✓
+- ✅ Local install: `sudo ./install.sh` ✓
+- ✅ All 4 download methods functional ✓
+- ✅ Error handling provides helpful context ✓
+
+**Code Quality Notes**:
+- Added comprehensive error handling
+- Integrated with existing state management
+- Uses consistent print functions
+- Follows established patterns
+- Left `try_download_method()` for future cleanup (unused but harmless)
+
+---
+
 #### 2025-10-16 (Update 28): Remote Installer Stdout Capture Bug Fix
 **Agent**: Claude
 **Task**: Fix "Invalid download method" error in one-command remote installer
