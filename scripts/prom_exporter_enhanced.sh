@@ -280,7 +280,7 @@ collect_metrics() {
 
 # Main loop or single run
 if [[ "${PROM_DAEMON:-false}" == "true" ]]; then
-  echo "Starting Prometheus exporter in daemon mode (interval: ${INTERVAL}s)"
+  echo -e "Starting Prometheus exporter in daemon mode (interval: ${INTERVAL}s)"
   echo "Metrics file: $OUTPUT_FILE"
   echo ""
   

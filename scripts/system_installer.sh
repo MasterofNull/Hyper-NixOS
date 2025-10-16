@@ -125,7 +125,7 @@ USAGE
 detect_invoking_user() {
   # When run with sudo, SUDO_USER contains the original user
   if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
-    echo "${SUDO_USER}"
+    echo -e "${SUDO_USER}"
   # When run directly as root, try to find a real user from the environment
   elif [[ ${EUID:-$(id -u)} -eq 0 ]]; then
     # Check LOGNAME or USER environment variables

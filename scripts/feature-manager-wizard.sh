@@ -909,8 +909,8 @@ settings_menu() {
         show_header
         echo -e "${BOLD}Settings:${NC}\n"
         
-        echo "1) Auto-test before applying: $([ "$AUTO_TEST" == "true" ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")"
-        echo "2) Auto-switch after testing: $([ "$AUTO_SWITCH" == "true" ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")"
+        echo -e "1) Auto-test before applying: $([ "$AUTO_TEST" == "true" ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")"
+        echo -e "2) Auto-switch after testing: $([ "$AUTO_SWITCH" == "true" ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")"
         echo "3) View log file"
         echo "4) Clear configuration backups"
         echo "5) Reset to defaults"

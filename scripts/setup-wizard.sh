@@ -136,22 +136,22 @@ select_risk_tolerance() {
     echo
     echo "Select your security stance:"
     echo
-    echo "1) Paranoid ${RISK_MINIMAL}"
+    echo -e "1) Paranoid ${RISK_MINIMAL}"
     echo "   - Maximum security, minimal features"
     echo "   - No features above 'low' risk"
     echo "   - Suitable for high-security environments"
     echo
-    echo "2) Cautious ${RISK_LOW}"
+    echo -e "2) Cautious ${RISK_LOW}"
     echo "   - Security-focused with some flexibility"
     echo "   - No features above 'moderate' risk"
     echo "   - Good for production environments"
     echo
-    echo "3) Balanced ${RISK_MODERATE}"
+    echo -e "3) Balanced ${RISK_MODERATE}"
     echo "   - Balance between security and features"
     echo "   - No 'critical' risk features"
     echo "   - Suitable for most use cases"
     echo
-    echo "4) Accepting ${RISK_HIGH}"
+    echo -e "4) Accepting ${RISK_HIGH}"
     echo "   - Feature-rich, accept security trade-offs"
     echo "   - All features available with warnings"
     echo "   - For development/lab environments"

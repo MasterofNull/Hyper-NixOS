@@ -566,10 +566,10 @@ migrate() {
     log_info "Migration Configuration:"
     echo "  Source: $SOURCE_URI ($SOURCE_SCHEME)"
     echo "  Target: $TARGET_URI ($TARGET_SCHEME)"
-    echo "  Mode: ${STREAM_MODE}"
-    echo "  Live: ${LIVE_MODE}"
-    echo "  Compression: ${COMPRESSION}"
-    echo "  Encryption: ${ENCRYPTION}"
+    echo -e "  Mode: ${STREAM_MODE}"
+    echo -e "  Live: ${LIVE_MODE}"
+    echo -e "  Compression: ${COMPRESSION}"
+    echo -e "  Encryption: ${ENCRYPTION}"
     
     # Prepare environment
     if command -v hv-dedup-filter >/dev/null 2>&1; then

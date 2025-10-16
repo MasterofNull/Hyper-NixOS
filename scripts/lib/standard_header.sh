@@ -85,8 +85,8 @@ cleanup() {
 # Display header
 display_header() {
     echo "═══════════════════════════════════════════════════════════════"
-    echo "  ${SCRIPT_NAME} v${SCRIPT_VERSION}"
-    echo "  ${SCRIPT_DESCRIPTION}"
+    echo -e "  ${SCRIPT_NAME} v${SCRIPT_VERSION}"
+    echo -e "  ${SCRIPT_DESCRIPTION}"
     echo "═══════════════════════════════════════════════════════════════"
     echo ""
 }

@@ -18,14 +18,14 @@ if [ -z "${SCRIPT_TO_STANDARDIZE}" ]; then
 fi
 
 if [ ! -f "${SCRIPT_TO_STANDARDIZE}" ]; then
-    echo "Error: File not found: ${SCRIPT_TO_STANDARDIZE}"
+    echo -e "Error: File not found: ${SCRIPT_TO_STANDARDIZE}"
     exit 1
 fi
 
 # Create backup
 BACKUP="${SCRIPT_TO_STANDARDIZE}.pre-standardization-$(date +%s)"
 cp "${SCRIPT_TO_STANDARDIZE}" "${BACKUP}"
-echo "✓ Created backup: ${BACKUP}"
+echo -e "✓ Created backup: ${BACKUP}"
 
 # Extract script name
 SCRIPT_NAME=$(basename "${SCRIPT_TO_STANDARDIZE}" .sh)
@@ -85,7 +85,7 @@ fi
 mv "${TEMP_FILE}" "${SCRIPT_TO_STANDARDIZE}"
 chmod +x "${SCRIPT_TO_STANDARDIZE}"
 
-echo "✓ Standardized: ${SCRIPT_TO_STANDARDIZE}"
-echo "✓ Backup saved: ${BACKUP}"
+echo -e "✓ Standardized: ${SCRIPT_TO_STANDARDIZE}"
+echo -e "✓ Backup saved: ${BACKUP}"
 echo ""
 echo "Review the changes and test the script!"

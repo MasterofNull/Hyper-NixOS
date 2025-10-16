@@ -282,8 +282,8 @@ ${BOLD}System Resources:${NC}
   • CPUs: ${GREEN}${SYSTEM_CPUS} cores${NC}
   • Disk: ${GREEN}${SYSTEM_CAPABILITIES[disk_space]} GB free${NC}
   • Current Configuration: ${YELLOW}${CURRENT_TIER:-Not Set}${NC}
-  • Auto-test: ${AUTO_TEST && echo "${GREEN}Enabled${NC}" || echo "${YELLOW}Disabled${NC}"}
-  • Auto-switch: ${AUTO_SWITCH && echo "${GREEN}Enabled${NC}" || echo "${YELLOW}Disabled${NC}"}
+  • Auto-test: $([ "$AUTO_TEST" == "true" ] && echo -e "${GREEN}Enabled${NC}" || echo -e "${YELLOW}Disabled${NC}")
+  • Auto-switch: $([ "$AUTO_SWITCH" == "true" ] && echo -e "${GREEN}Enabled${NC}" || echo -e "${YELLOW}Disabled${NC}")
 
 EOF
 }
@@ -687,8 +687,8 @@ settings_menu() {
         show_header
         echo -e "${BOLD}Settings:${NC}\n"
         
-        echo "1) Auto-test before applying: $([ $AUTO_TEST == true ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")"
-        echo "2) Auto-switch after testing: $([ $AUTO_SWITCH == true ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")"
+        echo -e "1) Auto-test before applying: $([ $AUTO_TEST == true ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")"
+        echo -e "2) Auto-switch after testing: $([ $AUTO_SWITCH == true ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")"
         echo "3) View current log file"
         echo "4) Clear feature selection"
         echo "5) Reset to defaults"

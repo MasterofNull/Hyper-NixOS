@@ -145,36 +145,36 @@ print_error_with_help() {
     
     case $error_code in
         $ERROR_NO_NETWORK)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • Check network connection: ping github.com" >&2
             echo "    • Check firewall/proxy settings" >&2
             echo "    • Try using mobile hotspot temporarily" >&2
             ;;
         $ERROR_DISK_SPACE)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • Free up space: nix-collect-garbage -d" >&2
             echo "    • Or specify different temp dir: TMPDIR=/other/path" >&2
             echo "    • Check disk usage: df -h /tmp" >&2
             ;;
         $ERROR_DOWNLOAD_FAILED)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • Try alternative download method from menu" >&2
             echo "    • Check GitHub status: https://www.githubstatus.com" >&2
             echo "    • Retry the installation (automatic retry enabled)" >&2
             ;;
         $ERROR_EXTRACTION_FAILED)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • File may be corrupted, will retry download" >&2
             echo "    • Check disk space: df -h /tmp" >&2
             ;;
         $ERROR_VERIFICATION_FAILED)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • Download may be corrupted or tampered" >&2
             echo "    • Will retry download automatically" >&2
             echo "    • Check network stability" >&2
             ;;
         $ERROR_MISSING_DEPS)
-            echo "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
+            echo -e "  ${YELLOW}→${NC} Troubleshooting steps:" >&2
             echo "    • Install missing tools via: nix-env -iA nixos.<tool>" >&2
             echo "    • Or use NixOS live environment" >&2
             ;;
@@ -334,11 +334,11 @@ confirm_installation() {
     center_text "Installation Confirmation" >&2
     print_line "=" 70 >&2
     echo >&2
-    echo "  ${BOLD}Download method:${NC} $method_name" >&2
-    echo "  ${BOLD}Install location:${NC} $install_location" >&2
-    echo "  ${BOLD}Estimated time:${NC} ~5-10 minutes" >&2
-    echo "  ${BOLD}Disk space needed:${NC} ~2GB" >&2
-    echo "  ${BOLD}Log directory:${NC} $LOG_DIR" >&2
+    echo -e "  ${BOLD}Download method:${NC} $method_name" >&2
+    echo -e "  ${BOLD}Install location:${NC} $install_location" >&2
+    echo -e "  ${BOLD}Estimated time:${NC} ~5-10 minutes" >&2
+    echo -e "  ${BOLD}Disk space needed:${NC} ~2GB" >&2
+    echo -e "  ${BOLD}Log directory:${NC} $LOG_DIR" >&2
     echo >&2
     
     # Only prompt if interactive
@@ -366,16 +366,16 @@ show_install_summary() {
     center_text "Installation Complete" >&2
     print_line "=" 70 >&2
     echo >&2
-    echo "  ${GREEN}✓${NC} Repository source: $download_method" >&2
-    echo "  ${GREEN}✓${NC} Installed to: $install_location" >&2
-    echo "  ${GREEN}✓${NC} Configuration: ${install_location}/configuration.nix" >&2
-    echo "  ${GREEN}✓${NC} Logs saved to: $LOG_DIR" >&2
+    echo -e "  ${GREEN}✓${NC} Repository source: $download_method" >&2
+    echo -e "  ${GREEN}✓${NC} Installed to: $install_location" >&2
+    echo -e "  ${GREEN}✓${NC} Configuration: ${install_location}/configuration.nix" >&2
+    echo -e "  ${GREEN}✓${NC} Logs saved to: $LOG_DIR" >&2
     echo >&2
-    echo "  ${BOLD}Next steps:${NC}" >&2
-    echo "    ${CYAN}1.${NC} Review logs: less $INSTALL_LOG" >&2
-    echo "    ${CYAN}2.${NC} Reboot system: sudo reboot" >&2
-    echo "    ${CYAN}3.${NC} Access menu after reboot via SSH/console" >&2
-    echo "    ${CYAN}4.${NC} Create your first VM: hv vm-create" >&2
+    echo -e "  ${BOLD}Next steps:${NC}" >&2
+    echo -e "    ${CYAN}1.${NC} Review logs: less $INSTALL_LOG" >&2
+    echo -e "    ${CYAN}2.${NC} Reboot system: sudo reboot" >&2
+    echo -e "    ${CYAN}3.${NC} Access menu after reboot via SSH/console" >&2
+    echo -e "    ${CYAN}4.${NC} Create your first VM: hv vm-create" >&2
     echo >&2
     print_line "=" 70 >&2
     echo >&2
@@ -648,10 +648,10 @@ prompt_download_method() {
     echo >&2
     print_info "Choose how to download Hyper-NixOS:"
     echo >&2
-    echo "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication" >&2
-    echo "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup" >&2
-    echo "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token" >&2
-    echo "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install" >&2
+    echo -e "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication" >&2
+    echo -e "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup" >&2
+    echo -e "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token" >&2
+    echo -e "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install" >&2
     echo >&2
     
     local choice
@@ -660,7 +660,7 @@ prompt_download_method() {
     
     while [[ $attempts -lt $max_attempts ]]; do
         # Use read with timeout to prevent hangs, reading from appropriate source
-        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 4):${NC} ")" choice <"$input_source"; then
+        if read -t 50 -p "$(echo -e "${CYAN}Select method [1-4] (default: 4):${NC} ")" choice <"$input_source"; then
             # Handle empty input (Enter pressed) - use default
             if [[ -z "$choice" ]]; then
                 choice="4"
@@ -1257,8 +1257,18 @@ remote_install() {
     
     print_debug "Selected download method: $download_method"
     
+    # Map download method number to name
+    local method_name
+    case "$download_method" in
+        1) method_name="Git Clone (HTTPS)" ;;
+        2) method_name="Git Clone (SSH)" ;;
+        3) method_name="Git Clone (Token)" ;;
+        4) method_name="Download Tarball" ;;
+        *) method_name="Unknown method: $download_method" ;;
+    esac
+    
     # Show installation confirmation
-    confirm_installation "$download_method" "$tmpdir"
+    confirm_installation "$method_name" "$tmpdir"
     
     # Perform the download based on method
     local repo_url
@@ -1386,8 +1396,18 @@ remote_install() {
     
     save_state "ready_to_install"
     
+    # Map download method number to name for summary
+    local method_name
+    case "$download_method" in
+        1) method_name="Git Clone (HTTPS)" ;;
+        2) method_name="Git Clone (SSH)" ;;
+        3) method_name="Git Clone (Token)" ;;
+        4) method_name="Download Tarball" ;;
+        *) method_name="Unknown method: $download_method" ;;
+    esac
+    
     # Show installation summary
-    show_install_summary "$download_method" "$tmpdir/hyper-nixos"
+    show_install_summary "$method_name" "$tmpdir/hyper-nixos"
     
     # Run the system installer
     echo
