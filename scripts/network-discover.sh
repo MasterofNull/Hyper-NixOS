@@ -148,7 +148,7 @@ full_scan() {
     echo
     echo -e "${GREEN}✓ Full scan complete${NC}"
     echo
-    echo "Results saved to: ${DISCOVERY_CACHE}/${interface}_discovery.json"
+    echo -e "Results saved to: ${DISCOVERY_CACHE}/${interface}_discovery.json"
     echo
 }
 
