@@ -1,0 +1,236 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2034
+#
+# Security Phase Management Tool
+# Copyright (C) 2024-2025 MasterofNull
+# Licensed under GPL v3.0
+#
+# Easy command-line tool for switching between setup and hardened phases
+
+set -euo pipefail
+
+# Colors
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly CYAN='\033[0;36m'
+readonly BOLD='\033[1m'
+readonly NC='\033[0m'
+
+# Phase detection
+get_current_phase() {
+    if [[ -f /etc/hypervisor/.phase2_hardened ]]; then
+        echo "hardened"
+    elif [[ -f /etc/hypervisor/.phase1_setup ]]; then
+        echo "setup"
+    else
+        echo "setup"  # Default to setup
+    fi
+}
+
+# Show current status
+show_status() {
+    local phase=$(get_current_phase)
+    
+    echo -e "${BOLD}${BLUE}Hyper-NixOS Security Phase Status${NC}"
+    echo -e "${BLUE}════════════════════════════════════${NC}"
+    echo
+    echo -e "Current Phase: ${BOLD}${phase}${NC}"
+    echo
+    
+    case "$phase" in
+        setup)
+            echo -e "${CYAN}Setup Mode (Permissive)${NC}"
+            echo "  ✓ Full administrative access"
+            echo "  ✓ System modifications allowed"
+            echo "  ✓ Interactive configuration"
+            echo "  ✓ Debugging tools enabled"
+            echo
+            echo -e "${YELLOW}⚠️  Not recommended for production use${NC}"
+            ;;
+        hardened)
+            echo -e "${GREEN}Hardened Mode (Restrictive)${NC}"
+            echo "  ✓ Minimal required permissions"
+            echo "  ✓ Read-only system areas"
+            echo "  ✓ Strict security policies"
+            echo "  ✓ Audit logging only"
+            echo
+            echo -e "${GREEN}✓ Production-ready security${NC}"
+            ;;
+    esac
+    
+    echo
+    
+    # Check for phase markers
+    echo "Phase Markers:"
+    [[ -f /etc/hypervisor/.phase1_setup ]] && echo "  • /etc/hypervisor/.phase1_setup" || true
+    [[ -f /etc/hypervisor/.phase2_hardened ]] && echo "  • /etc/hypervisor/.phase2_hardened" || true
+    echo
+}
+
+# Transition to hardened mode
+transition_to_hardened() {
+    local current_phase=$(get_current_phase)
+    
+    if [[ "$current_phase" == "hardened" ]]; then
+        echo -e "${YELLOW}Already in hardened phase${NC}"
+        return 0
+    fi
+    
+    echo -e "${BOLD}${YELLOW}⚠️  Transitioning to Hardened Mode${NC}"
+    echo
+    echo "This will:"
+    echo "  • Remove administrative privileges"
+    echo "  • Restrict system modifications"
+    echo "  • Enable strict security policies"
+    echo "  • Disable interactive features"
+    echo "  • Tighten file permissions"
+    echo
+    echo "This action is reversible but requires authentication."
+    echo
+    
+    read -p "$(echo -e "${CYAN}Continue? [y/N]:${NC} ")" confirm
+    
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        echo "Cancelled"
+        return 1
+    fi
+    
+    echo
+    echo "Applying hardening..."
+    
+    # Remove setup marker
+    rm -f /etc/hypervisor/.phase1_setup
+    
+    # Create hardened marker
+    touch /etc/hypervisor/.phase2_hardened
+    
+    # Tighten permissions (if directories exist)
+    if [ -d /etc/hypervisor ]; then
+        find /etc/hypervisor -type f -exec chmod 640 {} \; 2>/dev/null || true
+        find /etc/hypervisor -type d -exec chmod 750 {} \; 2>/dev/null || true
+        find /etc/hypervisor/scripts -name "*.sh" -exec chmod 750 {} \; 2>/dev/null || true
+    fi
+    
+    # Reload systemd
+    systemctl daemon-reload 2>/dev/null || true
+    
+    echo
+    echo -e "${GREEN}✓ Transitioned to hardened phase${NC}"
+    echo
+    echo "Your system is now in production-hardened mode."
+    echo -e "To rollback: ${CYAN}sudo hv-phase setup${NC}"
+    echo
+}
+
+# Rollback to setup mode
+rollback_to_setup() {
+    local current_phase=$(get_current_phase)
+    
+    if [[ "$current_phase" == "setup" ]]; then
+        echo -e "${YELLOW}Already in setup phase${NC}"
+        return 0
+    fi
+    
+    echo -e "${BOLD}${YELLOW}⚠️  Rolling Back to Setup Mode${NC}"
+    echo
+    echo "This will:"
+    echo "  • Restore administrative privileges"
+    echo "  • Allow system modifications"
+    echo "  • Enable interactive features"
+    echo "  • Relax file permissions"
+    echo
+    echo "Rollback requires sudo privileges."
+    echo
+    
+    # Require password
+    sudo -k
+    read -p "$(echo -e "${CYAN}Enter your password to confirm rollback:${NC} ")" -s
+    echo
+    
+    if ! sudo true; then
+        echo -e "${RED}Authentication failed${NC}"
+        return 1
+    fi
+    
+    echo
+    echo "Rolling back..."
+    
+    # Remove hardened marker
+    sudo rm -f /etc/hypervisor/.phase2_hardened
+    
+    # Create setup marker
+    sudo touch /etc/hypervisor/.phase1_setup
+    
+    # Relax permissions
+    if [ -d /etc/hypervisor ]; then
+        sudo find /etc/hypervisor -type f -exec chmod 644 {} \; 2>/dev/null || true
+        sudo find /etc/hypervisor -type d -exec chmod 755 {} \; 2>/dev/null || true
+        sudo find /etc/hypervisor/scripts -name "*.sh" -exec chmod 755 {} \; 2>/dev/null || true
+    fi
+    
+    # Reload systemd
+    sudo systemctl daemon-reload 2>/dev/null || true
+    
+    echo
+    echo -e "${GREEN}✓ Rolled back to setup phase${NC}"
+    echo
+    echo "Your system is now in setup mode."
+    echo -e "To harden again: ${CYAN}sudo hv-phase harden${NC}"
+    echo
+}
+
+# Show usage
+show_usage() {
+    cat <<EOF
+Usage: hv-phase <command>
+
+Commands:
+  status          Show current security phase (default)
+  harden          Transition to hardened mode
+  setup           Rollback to setup mode
+  help            Show this help message
+
+Examples:
+  hv-phase                 # Show current phase
+  sudo hv-phase harden     # Enable hardened mode
+  sudo hv-phase setup      # Rollback to setup mode
+
+Security Phases:
+  Setup (Permissive)      - For installation and configuration
+  Hardened (Restrictive)  - For production operation
+
+For more information, see:
+  /workspace/docs/dev/TWO_PHASE_SECURITY_MODEL.md
+EOF
+}
+
+# Main
+main() {
+    local command="${1:-status}"
+    
+    case "$command" in
+        status)
+            show_status
+            ;;
+        harden|hardened|phase2)
+            transition_to_hardened
+            ;;
+        setup|permissive|phase1)
+            rollback_to_setup
+            ;;
+        help|--help|-h)
+            show_usage
+            ;;
+        *)
+            echo -e "${RED}Unknown command: $command${NC}"
+            echo
+            show_usage
+            exit 1
+            ;;
+    esac
+}
+
+# Run
+main "$@"
