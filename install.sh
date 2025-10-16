@@ -343,7 +343,7 @@ confirm_installation() {
     
     # Only prompt if interactive
     if [[ -t 0 ]]; then
-        read -t 60 -p "$(echo -e "${CYAN}Continue with installation? [Y/n]:${NC} ")" -r choice
+        read -t 60 -r -p "$(echo -e "${CYAN}Continue with installation? [Y/n]:${NC} ")" choice
         echo >&2
         if [[ -z "$choice" ]] || [[ "$choice" =~ ^[Yy]$ ]]; then
             return 0
@@ -660,29 +660,46 @@ prompt_download_method() {
     
     while [[ $attempts -lt $max_attempts ]]; do
         # Use read with timeout to prevent hangs, reading from appropriate source
-        if read -t 50 -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice <"$input_source"; then
-            # Handle empty input (Enter pressed) - use default
-            if [[ -z "$choice" ]]; then
-                choice="1"
-                echo -e "${CYAN}ℹ${NC} Using default option: Download Tarball" >&2
+        # Open the input source for reading and use it with read
+        local choice_input
+        if [[ "$input_source" == "/dev/tty" ]]; then
+            # For /dev/tty, read directly with timeout
+            if read -t 50 -r -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice_input </dev/tty; then
+                choice="$choice_input"
+            else
+                # Timeout or EOF reached
+                print_warning "No input received (timeout or EOF). Using default: Download Tarball" >&2
+                echo "1"
+                return 0
             fi
-            
-            case "$choice" in
-                1|2|3|4)
-                    echo "$choice"
-                    return 0
-                    ;;
-                *)
-                    attempts=$((attempts + 1))
-                    print_error "Invalid choice. Please enter 1, 2, 3, or 4. (Attempt $attempts/$max_attempts)" >&2
-                    ;;
-            esac
         else
-            # Timeout or EOF reached
-            print_warning "No input received (timeout or EOF). Using default: Download Tarball" >&2
-            echo "1"
-            return 0
+            # For stdin, read with timeout
+            if read -t 50 -r -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice_input; then
+                choice="$choice_input"
+            else
+                # Timeout or EOF reached
+                print_warning "No input received (timeout or EOF). Using default: Download Tarball" >&2
+                echo "1"
+                return 0
+            fi
         fi
+        
+        # Handle empty input (Enter pressed) - use default
+        if [[ -z "$choice" ]]; then
+            choice="1"
+            echo -e "${CYAN}ℹ${NC} Using default option: Download Tarball" >&2
+        fi
+        
+        case "$choice" in
+            1|2|3|4)
+                echo "$choice"
+                return 0
+                ;;
+            *)
+                attempts=$((attempts + 1))
+                print_error "Invalid choice. Please enter 1, 2, 3, or 4. (Attempt $attempts/$max_attempts)" >&2
+                ;;
+        esac
     done
     
     # Max attempts reached, use default
@@ -726,7 +743,7 @@ setup_git_ssh() {
         echo
         
         local generate_key
-        if read -t 30 -p "$(echo -e "${CYAN}Generate new SSH key? [y/N]:${NC} ")" generate_key; then
+        if read -t 30 -r -p "$(echo -e "${CYAN}Generate new SSH key? [y/N]:${NC} ")" generate_key; then
             if [[ "${generate_key,,}" == "y" ]]; then
                 print_status "Generating SSH key..."
                 ssh-keygen -t ed25519 -C "hyper-nixos-installer" -f ~/.ssh/id_ed25519 -N ""
