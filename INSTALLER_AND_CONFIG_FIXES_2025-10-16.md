@@ -58,51 +58,55 @@ fi
 ==> Launching Hyper-NixOS installer...
 ```
 
-### Issue #2: Confusing Configuration Directories ✅ CLARIFIED
+### Issue #2: Confusing Configuration Directories ✅ CONSOLIDATED (2025-10-16)
 
 **Problem Reported:**
-Two config directories in main directory:
-- `config/`
-- `configs/`
+Two config directories in main directory caused confusion:
+- `config/` (singular)
+- `configs/` (plural)
 
 **Analysis:**
 
-Both directories serve **distinct and valid purposes**:
+The naming was confusing and the artificial distinction wasn't valuable:
+- Both contained configuration files
+- Users couldn't easily determine which to use
+- Violated simplicity principles
 
-| Directory | Purpose | Contents | Used For |
-|-----------|---------|----------|----------|
-| `config/` | System-wide configuration | `hypervisor.toml`, schema files | Core system settings (NixOS) |
-| `configs/` | Service-specific configs | `docker/`, monitoring files | Individual service settings |
-
-**Decision: Keep As-Is** ✅
+**Decision: CONSOLIDATED** ✅
 
 **Reasoning:**
-1. Both serve distinct purposes
-2. Extensive references in codebase (29+ files)
-3. Follows common conventions
-4. Renaming would risk breaking deployments
+1. Eliminates naming confusion (singular vs plural)
+2. Single source of truth for all configuration
+3. Follows standard conventions (single `config/` directory)
+4. Easy to extend with subdirectories
+5. Aligns with dev folder guidance on eliminating duplicates
 
-**Solution: Enhanced Documentation**
+**Solution: Consolidated Structure**
 
-Created comprehensive documentation:
-- Updated both `config/README.md` and `configs/README.md`
-- Created `docs/dev/CONFIG_DIRECTORY_CLARIFICATION.md`
-- Clear usage guidelines for developers
-
-**Quick Reference for Users:**
+Merged into single `config/` directory with subdirectories:
 
 ```bash
-# System configuration (main settings)
+# All configuration in one place
 config/
-├── hypervisor.toml         ← Edit this for system settings
-└── module-config-schema.yaml
-
-# Service configurations (auto-generated)
-configs/
-└── docker/                 ← Service-specific files
-    ├── daemon.json
-    └── security-policy.json
+├── hypervisor.toml              # System-wide settings
+├── module-config-schema.yaml    # Module schema
+└── services/                    # Service-specific configs
+    └── docker/                  # Docker/container configs
+        ├── daemon.json
+        └── security-policy.json
 ```
+
+**Changes Made:**
+- ✅ Moved `configs/docker/*` to `config/services/docker/`
+- ✅ Updated all references in code and tests
+- ✅ Updated documentation (DIRECTORY_STRUCTURE.md, READMEs)
+- ✅ Removed old `configs/` directory
+
+**Files Updated:**
+- `tests/integration-test-security.sh` - Updated path reference
+- `docs/reference/SECURITY-QUICK-REFERENCE.md` - Updated paths
+- `DIRECTORY_STRUCTURE.md` - Merged sections
+- `config/README.md` - Comprehensive rewrite
 
 ## Testing Recommendations
 

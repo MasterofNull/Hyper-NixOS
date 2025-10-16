@@ -205,7 +205,7 @@ tail -f /var/log/security/ssh-monitor.log
 
 # Docker commands blocked
 /usr/bin/docker run ...  # Bypass wrapper
-vim configs/docker/security-policy.json  # Edit policy
+vim config/services/docker/security-policy.json  # Edit policy
 
 # Parallel jobs stuck
 pkill -f parallel_execute
@@ -243,7 +243,7 @@ free -h
 export MAX_PARALLEL_JOBS=8  # For 8+ core systems
 
 # Docker limits
-cat >> configs/docker/daemon.json << EOF
+cat >> config/services/docker/daemon.json << EOF
 {
   "default-ulimits": {
     "nofile": {

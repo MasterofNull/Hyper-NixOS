@@ -116,30 +116,21 @@ Contains:
 
 ## 🛠️ Configuration Directories
 
-### `/config/` - System Configuration Files
-Global hypervisor system settings
+### `/config/` - Configuration Files
+Global hypervisor system settings and service configurations
 
 ```
 config/
-├── hypervisor.toml          # Main system config (TOML)
-└── module-config-schema.yaml # Module schema
+├── hypervisor.toml           # Main system config (TOML)
+├── module-config-schema.yaml # Module schema
+└── services/                 # Service-specific configs
+    └── docker/               # Docker/container configs
+        ├── daemon.json
+        └── security-policy.json
 ```
 
-**Purpose**: System-wide configuration  
+**Purpose**: System-wide and service configuration  
 **See**: `/config/README.md`
-
-### `/configs/` - Service Configurations
-Service-specific configuration files
-
-```
-configs/
-└── docker/                  # Docker/container configs
-    ├── daemon.json
-    └── security-policy.json
-```
-
-**Purpose**: Per-service settings  
-**See**: `/configs/README.md`
 
 ---
 
