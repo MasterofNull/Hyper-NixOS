@@ -351,11 +351,33 @@ ensure_git() {
 
 # Prompt for download method
 prompt_download_method() {
-    # Check if running non-interactively (piped from curl, no TTY)
-    if [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
-        print_warning "Running in non-interactive mode, using default: Tarball Download (fastest)"
-        echo -e "${CYAN}ℹ${NC} For interactive mode with more options, download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
-        echo "4"
+    # Allow override via environment variable
+    if [[ -n "${HYPER_INSTALL_METHOD:-}" ]]; then
+        case "${HYPER_INSTALL_METHOD}" in
+            https|1) echo "1"; return 0 ;;
+            ssh|2) echo "2"; return 0 ;;
+            token|3) echo "3"; return 0 ;;
+            tarball|4) echo "4"; return 0 ;;
+            *)
+                print_warning "Invalid HYPER_INSTALL_METHOD: ${HYPER_INSTALL_METHOD}"
+                print_warning "Valid options: https, ssh, token, tarball"
+                ;;
+        esac
+    fi
+    
+    # Check if we can prompt user (try /dev/tty for piped scenarios)
+    local input_source="/dev/stdin"
+    if [[ ! -t 0 ]] && [[ -e /dev/tty ]]; then
+        # stdin not available but /dev/tty exists - use it for piped scenarios
+        input_source="/dev/tty"
+        print_info "Running in piped mode, but interactive input available via terminal"
+    elif [[ ! -t 0 ]]; then
+        # No terminal available at all - use default
+        print_warning "Running in non-interactive mode (no terminal), using default: Git Clone HTTPS"
+        echo -e "${CYAN}ℹ${NC} To choose a different method:" >&2
+        echo -e "${CYAN}ℹ${NC}   Set environment: HYPER_INSTALL_METHOD=tarball curl ... | sudo -E bash" >&2
+        echo -e "${CYAN}ℹ${NC}   Or download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
+        echo "1"  # Default to git HTTPS (more reliable than tarball)
         return 0
     fi
     
@@ -377,8 +399,8 @@ prompt_download_method() {
     local max_attempts=5
     
     while [[ $attempts -lt $max_attempts ]]; do
-        # Use read with timeout to prevent hangs
-        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice; then
+        # Use read with timeout to prevent hangs, reading from appropriate source
+        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice <"$input_source"; then
             # Handle empty input (Enter pressed) - use default
             if [[ -z "$choice" ]]; then
                 choice="1"
@@ -525,50 +547,81 @@ download_tarball() {
     local tarball_file="${dest}/hyper-nixos.tar.gz"
     local error_output=$(mktemp)
     
+    # Verify network connectivity first
+    print_debug "Testing network connectivity to github.com..."
+    if ! curl -s --connect-timeout 10 -I https://github.com >/dev/null 2>&1; then
+        print_error "Cannot reach github.com - check network connection"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Network connectivity test failed" >> "$ERROR_LOG"
+        report_error "Network connectivity failed" \
+                    "Check firewall settings or try git clone method" \
+                    "$ERROR_LOG"
+        return 1
+    fi
+    print_debug "Network connectivity OK"
+    
     # Download with progress bar
     if command -v curl >/dev/null 2>&1; then
-        print_debug "Using curl for download"
+        print_debug "Using curl for download from: $tarball_url"
         
-        if curl -L --progress-bar -o "$tarball_file" "$tarball_url" 2>&1 | \
-           tee -a "$INSTALL_LOG" | \
-           grep -oP '\d+\.\d' | \
-           while read -r percent; do
-               local pct=$(echo "$percent" | cut -d. -f1)
-               show_progress_bar "$pct" 100 "Downloading"
-           done
-        then
+        # Try download with better error handling
+        local curl_exit_code=0
+        if curl -L --fail --progress-bar --max-time 300 -o "$tarball_file" "$tarball_url" 2>"$error_output"; then
             printf "\r\033[K"  # Clear line
-            print_success "Tarball downloaded ($(du -h "$tarball_file" | cut -f1))"
+            if [[ -f "$tarball_file" ]] && [[ -s "$tarball_file" ]]; then
+                local file_size=$(du -h "$tarball_file" | cut -f1)
+                print_success "Tarball downloaded ($file_size)"
+            else
+                print_error "Downloaded file is empty or missing"
+                curl_exit_code=1
+            fi
         else
+            curl_exit_code=$?
             printf "\r\033[K"
-            print_error "Failed to download tarball"
+            print_error "Failed to download tarball (curl exit code: $curl_exit_code)"
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] Download failed from: $tarball_url" >> "$ERROR_LOG"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Curl exit code: $curl_exit_code" >> "$ERROR_LOG"
+            
+            # Show curl error if available
+            if [[ -s "$error_output" ]]; then
+                cat "$error_output" >> "$ERROR_LOG"
+            fi
+            
             report_error "Tarball download failed" \
                         "Check network connection or try git clone method" \
                         "$error_output"
-            rm -f "$error_output"
+            rm -f "$error_output" "$tarball_file"
             return 1
         fi
     elif command -v wget >/dev/null 2>&1; then
-        print_debug "Using wget for download"
+        print_debug "Using wget for download from: $tarball_url"
         
-        if wget --progress=bar:force -O "$tarball_file" "$tarball_url" 2>&1 | \
-           tee -a "$INSTALL_LOG" | \
-           grep -oP '\d+%' | tr -d '%' | \
-           while read -r percent; do
-               show_progress_bar "$percent" 100 "Downloading"
-           done
-        then
+        # Try download with better error handling  
+        local wget_exit_code=0
+        if wget --timeout=300 --tries=3 --progress=dot:mega -O "$tarball_file" "$tarball_url" 2>"$error_output"; then
             printf "\r\033[K"
-            print_success "Tarball downloaded ($(du -h "$tarball_file" | cut -f1))"
+            if [[ -f "$tarball_file" ]] && [[ -s "$tarball_file" ]]; then
+                local file_size=$(du -h "$tarball_file" | cut -f1)
+                print_success "Tarball downloaded ($file_size)"
+            else
+                print_error "Downloaded file is empty or missing"
+                wget_exit_code=1
+            fi
         else
+            wget_exit_code=$?
             printf "\r\033[K"
-            print_error "Failed to download tarball"
+            print_error "Failed to download tarball (wget exit code: $wget_exit_code)"
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] Download failed from: $tarball_url" >> "$ERROR_LOG"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Wget exit code: $wget_exit_code" >> "$ERROR_LOG"
+            
+            # Show wget error if available
+            if [[ -s "$error_output" ]]; then
+                cat "$error_output" >> "$ERROR_LOG"
+            fi
+            
             report_error "Tarball download failed" \
                         "Check network connection or try git clone method" \
                         "$error_output"
-            rm -f "$error_output"
+            rm -f "$error_output" "$tarball_file"
             return 1
         fi
     else
