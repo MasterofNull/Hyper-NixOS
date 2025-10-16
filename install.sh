@@ -352,9 +352,10 @@ ensure_git() {
 # Prompt for download method
 prompt_download_method() {
     # Check if running non-interactively (piped from curl, no TTY)
-    if [[ ! -t 0 ]]; then
-        print_warning "Running in non-interactive mode, using default: Git Clone (HTTPS)"
-        echo "1"
+    if [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
+        print_warning "Running in non-interactive mode, using default: Tarball Download (fastest)"
+        print_info "For interactive mode with more options, download and run: git clone && cd Hyper-NixOS && sudo ./install.sh"
+        echo "4"
         return 0
     fi
     
