@@ -634,7 +634,7 @@ remote_install() {
                 # Terminal: show progress
                 if git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
                    tee "$clone_output" | \
-                   grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
+                   grep --line-buffered -oP 'Receiving objects:\s+\K\d+(?=%)' | \
                    while read -r percent; do
                        printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
                    done
@@ -646,7 +646,7 @@ remote_install() {
                     print_error "Failed to clone repository from $repo_url"
                     echo
                     echo "Error details:"
-                    tail -n 10 "$clone_output"
+                    cat "$clone_output"
                     rm -f "$clone_output"
                     exit 1
                 fi
@@ -678,7 +678,7 @@ remote_install() {
             print_status "Cloning repository via SSH..."
             if git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
                tee "$clone_output" | \
-               grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
+               grep --line-buffered -oP 'Receiving objects:\s+\K\d+(?=%)' | \
                while read -r percent; do
                    printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
                done
@@ -688,7 +688,7 @@ remote_install() {
             else
                 printf "\r\033[K"
                 print_error "Failed to clone repository"
-                tail -n 10 "$clone_output"
+                cat "$clone_output"
                 rm -f "$clone_output"
                 exit 1
             fi
@@ -711,7 +711,7 @@ remote_install() {
             print_status "Cloning repository with token authentication..."
             if GIT_TERMINAL_PROMPT=0 git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
                tee "$clone_output" | \
-               grep --line-buffered -oP '(?<=Receiving objects:\s+)\d+(?=%)' | \
+               grep --line-buffered -oP 'Receiving objects:\s+\K\d+(?=%)' | \
                while read -r percent; do
                    printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
                done
@@ -721,7 +721,7 @@ remote_install() {
             else
                 printf "\r\033[K"
                 print_error "Failed to clone repository. Check your token permissions."
-                tail -n 10 "$clone_output"
+                cat "$clone_output"
                 rm -f "$clone_output"
                 exit 1
             fi
