@@ -648,10 +648,10 @@ prompt_download_method() {
     echo >&2
     print_info "Choose how to download Hyper-NixOS:"
     echo >&2
-    echo "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication" >&2
-    echo "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup" >&2
-    echo "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token" >&2
-    echo "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install" >&2
+    echo -e "  ${GREEN}1)${NC} Git Clone (HTTPS)    - Public access, no authentication" >&2
+    echo -e "  ${GREEN}2)${NC} Git Clone (SSH)      - Requires GitHub SSH key setup" >&2
+    echo -e "  ${GREEN}3)${NC} Git Clone (Token)    - Requires GitHub personal access token" >&2
+    echo -e "  ${GREEN}4)${NC} Download Tarball     - No git required, faster for one-time install" >&2
     echo >&2
     
     local choice
@@ -660,7 +660,7 @@ prompt_download_method() {
     
     while [[ $attempts -lt $max_attempts ]]; do
         # Use read with timeout to prevent hangs, reading from appropriate source
-        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 4):${NC} ")" choice <"$input_source"; then
+        if read -t 50 -p "$(echo -e "${CYAN}Select method [1-4] (default: 4):${NC} ")" choice <"$input_source"; then
             # Handle empty input (Enter pressed) - use default
             if [[ -z "$choice" ]]; then
                 choice="4"
@@ -1257,8 +1257,18 @@ remote_install() {
     
     print_debug "Selected download method: $download_method"
     
+    # Map download method number to name
+    local method_name
+    case "$download_method" in
+        1) method_name="Git Clone (HTTPS)" ;;
+        2) method_name="Git Clone (SSH)" ;;
+        3) method_name="Git Clone (Token)" ;;
+        4) method_name="Download Tarball" ;;
+        *) method_name="Unknown method: $download_method" ;;
+    esac
+    
     # Show installation confirmation
-    confirm_installation "$download_method" "$tmpdir"
+    confirm_installation "$method_name" "$tmpdir"
     
     # Perform the download based on method
     local repo_url
@@ -1386,8 +1396,18 @@ remote_install() {
     
     save_state "ready_to_install"
     
+    # Map download method number to name for summary
+    local method_name
+    case "$download_method" in
+        1) method_name="Git Clone (HTTPS)" ;;
+        2) method_name="Git Clone (SSH)" ;;
+        3) method_name="Git Clone (Token)" ;;
+        4) method_name="Download Tarball" ;;
+        *) method_name="Unknown method: $download_method" ;;
+    esac
+    
     # Show installation summary
-    show_install_summary "$download_method" "$tmpdir/hyper-nixos"
+    show_install_summary "$method_name" "$tmpdir/hyper-nixos"
     
     # Run the system installer
     echo
