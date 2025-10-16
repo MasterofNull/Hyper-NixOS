@@ -12,7 +12,6 @@
 ├── hardware-configuration.nix  # Hardware-specific config (auto-generated)
 ├── flake.nix                   # Nix flake entry point
 ├── install.sh                  # Universal installer (NixOS + remote)
-├── install-legacy.sh           # Legacy installer (preserved)
 ├── README.md                   # Project overview
 ├── CREDITS.md                  # Attribution and credits
 ├── LICENSE                     # Project license
@@ -208,13 +207,6 @@ api/
 
 ### `/web/` - Web Interfaces
 HTML/JS web components
-
-### `/docs/archive/legacy/hypervisor-manager/` - Legacy Python Manager
-**Status**: ⚠️ Archived - Deprecated pre-v2.0 code
-
-**Purpose**: Original Python curses-based menu system  
-**Replaced by**: Bash menu system in `/scripts/menu/`  
-**See**: `/docs/archive/legacy/hypervisor-manager/README.md`
 
 ---
 
