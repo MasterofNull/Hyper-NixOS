@@ -162,6 +162,8 @@ in
         
         serviceConfig = {
           Type = "notify";
+          # Add timeout to prevent boot hang if API server doesn't start
+          TimeoutStartSec = "60s";
           ExecStart = "${hypervisor-api}/bin/hypervisor-api";
           Restart = "always";
           RestartSec = 5;

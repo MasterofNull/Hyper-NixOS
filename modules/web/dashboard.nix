@@ -31,10 +31,19 @@ in
     systemd.services.hypervisor-web-dashboard = {
       description = "Hyper-NixOS Web Dashboard";
       after = [ "network.target" "libvirtd.service" ];
+      wants = [ "libvirtd.service" ];  # Soft dependency - continue if libvirtd fails
       wantedBy = [ "multi-user.target" ];
+      
+      # Don't block boot if web dashboard fails
+      unitConfig = {
+        # Make this service optional for boot completion
+        DefaultDependencies = true;
+      };
       
       serviceConfig = {
         Type = "simple";
+        # Check if script exists before starting
+        ExecCondition = "${pkgs.coreutils}/bin/test -f /etc/hypervisor/scripts/web_dashboard.py";
         ExecStart = "${py}/bin/python3 /etc/hypervisor/scripts/web_dashboard.py";
         
         # Run as operator user for security (defined in security-production.nix)

@@ -546,12 +546,16 @@ in
     # Mesh node service
     systemd.services.hypervisor-mesh-node = {
       description = "Hypervisor Mesh Node";
-      wantedBy = [ "multi-user.target" ];
+      # Don't auto-start mesh clustering by default
+      # Enable with: systemctl enable hypervisor-mesh-node
+      # wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       
       serviceConfig = {
         Type = "notify";
+        # Add timeout for mesh node startup
+        TimeoutStartSec = "120s";
         ExecStart = "${pkgs.writeShellScript "mesh-node" ''
           #!/usr/bin/env bash
           
