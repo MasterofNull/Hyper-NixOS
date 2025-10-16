@@ -88,6 +88,12 @@ When bash functions return values via command substitution `$(function)`:
 - No breaking changes
 - Works in both local and remote execution modes
 
+**Additional Improvement** (same session):
+- Changed default from option 1 (Git Clone HTTPS) to option 4 (Download Tarball)
+- Rationale: Tarball is fastest, no git required, ideal for one-time installs
+- Makes interactive default consistent with non-interactive default
+- Lines updated: 381, 384, 385, 400, 401, 407, 408
+
 **Pattern Learned**:
 When bash functions return values via command substitution:
 - ✅ **EVERY** user-facing output line must go to stderr (`>&2`)
@@ -99,6 +105,7 @@ When bash functions return values via command substitution:
 - ✅ Interactive local: Menu displays correctly ✓
 - ✅ Remote piped: Menu displays correctly ✓
 - ✅ All 4 options visible and selectable ✓
+- ✅ Default is now option 4 (Tarball) ✓
 
 ---
 

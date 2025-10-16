@@ -378,11 +378,11 @@ prompt_download_method() {
     
     while [[ $attempts -lt $max_attempts ]]; do
         # Use read with timeout to prevent hangs
-        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice; then
+        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 4):${NC} ")" choice; then
             # Handle empty input (Enter pressed) - use default
             if [[ -z "$choice" ]]; then
-                choice="1"
-                echo -e "${CYAN}ℹ${NC} Using default option: Git Clone (HTTPS)" >&2
+                choice="4"
+                echo -e "${CYAN}ℹ${NC} Using default option: Download Tarball" >&2
             fi
             
             case "$choice" in
@@ -397,15 +397,15 @@ prompt_download_method() {
             esac
         else
             # Timeout or EOF reached
-            print_warning "No input received (timeout or EOF). Using default: Git Clone (HTTPS)"
-            echo "1"
+            print_warning "No input received (timeout or EOF). Using default: Download Tarball"
+            echo "4"
             return 0
         fi
     done
     
     # Max attempts reached, use default
-    print_warning "Maximum attempts reached. Using default: Git Clone (HTTPS)"
-    echo "1"
+    print_warning "Maximum attempts reached. Using default: Download Tarball"
+    echo "4"
     return 0
 }
 
