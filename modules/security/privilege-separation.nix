@@ -46,6 +46,9 @@ in {
   };
   
   config = lib.mkIf cfg.enable {
+    # Ensure mutableUsers is set to true if not explicitly configured
+    users.mutableUsers = lib.mkDefault true;
+    
     # User groups for different access levels
     users.groups = {
       # Basic VM management - no sudo needed
@@ -81,12 +84,14 @@ in {
       ))
       
       # System service user
+      # This is a locked system user (no password needed)
       {
         hypervisor-vm = {
           isSystemUser = true;
           group = "hypervisor-users";
           description = "Hypervisor VM management service user";
           extraGroups = [ "libvirtd" "kvm" ];
+          # System users don't need passwords - they're locked by default
         };
       }
     ]);

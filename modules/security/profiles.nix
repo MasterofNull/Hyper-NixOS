@@ -26,7 +26,8 @@
     # ═══════════════════════════════════════════════════════════════
     (lib.mkIf (config.hypervisor.security.profile == "headless") {
       # Create dedicated operator user with NO sudo access
-      users.users.hypervisor-operator = {
+      # IMPORTANT: Only create if mutableUsers is true, otherwise password will be wiped
+      users.users.hypervisor-operator = lib.mkIf config.users.mutableUsers (lib.mkDefault {
         isSystemUser = true;
         description = "Hypervisor Operator (Zero-Trust)";
         uid = 999;
@@ -35,7 +36,9 @@
         shell = "${pkgs.bash}/bin/bash";
         createHome = true;
         home = "/var/lib/hypervisor-operator";
-      };
+        # Password must be set manually after first boot with: passwd hypervisor-operator
+        # This user is only created when mutableUsers = true to avoid password resets
+      });
 
       users.groups.hypervisor-operator = {};
 
@@ -157,13 +160,16 @@
     # ═══════════════════════════════════════════════════════════════
     (lib.mkIf (config.hypervisor.security.profile == "management") {
       # Management user with sudo privileges
-      users.users = lib.optionalAttrs (config.hypervisor.management.userName == "hypervisor") {
-        hypervisor = {
+      # IMPORTANT: Only create if mutableUsers is true to avoid password wipes
+      users.users = lib.mkIf config.users.mutableUsers (lib.optionalAttrs (config.hypervisor.management.userName == "hypervisor") {
+        hypervisor = lib.mkDefault {
           isNormalUser = true;
           extraGroups = [ "wheel" "kvm" "libvirtd" "video" "input" ];
           createHome = false;
+          # Password must be set manually with: passwd hypervisor
+          # Or set hashedPassword if using mutableUsers = false
         };
-      };
+      });
 
       # Conditional autologin for management convenience
       services.getty.autologinUser = lib.mkDefault (

@@ -26,12 +26,15 @@
     programs.virt-manager.enable = lib.mkDefault true;
     
     # Add hypervisor management user if it doesn't exist
-    users.users.${config.hypervisor.management.userName} = lib.mkDefault {
+    # CRITICAL: Only create when mutableUsers = true to prevent password wipes on rebuild
+    users.users.${config.hypervisor.management.userName} = lib.mkIf config.users.mutableUsers (lib.mkDefault {
       isNormalUser = true;
       description = "Hypervisor Management User";
       extraGroups = [ "libvirtd" "kvm" "disk" "audio" "video" ];
       shell = pkgs.bash;
-    };
+      # Password MUST be set after first boot with: passwd <username>
+      # If using mutableUsers = false, you MUST set hashedPassword in your configuration.nix
+    });
     
     # Ensure required groups exist
     users.groups.libvirtd.members = lib.mkDefault [ config.hypervisor.management.userName ];

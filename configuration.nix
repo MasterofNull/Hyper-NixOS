@@ -48,6 +48,7 @@
     ./modules/security/base.nix
     ./modules/security/profiles.nix
     ./modules/security/privilege-separation.nix
+    ./modules/security/password-protection.nix  # CRITICAL: Prevents password wipes
     ./modules/security/polkit-rules.nix
     ./modules/security/threat-detection.nix
     ./modules/security/threat-response.nix
@@ -138,6 +139,13 @@
     
     # Security configuration
     security = {
+      # Password protection (prevents password wipes on rebuild)
+      passwordProtection = {
+        enable = true;
+        warnOnMissingPasswords = true;
+        requirePasswordsOnRebuild = false;  # Set to true for strict enforcement
+      };
+      
       # Privilege separation
       privileges = {
         enable = true;
@@ -374,33 +382,46 @@
   
   # User configuration
   users = {
-    # IMPORTANT: Choose ONE of the following patterns:
-    
-    # Option A: Mutable users (recommended for initial setup)
-    # - Allows using 'passwd' command to set/change passwords
-    # - Passwords persist across reboots
-    # - Changes are NOT tracked in version control
+    # CRITICAL: Password Protection Setting
+    # ==================================================
+    # DO NOT CHANGE THIS TO FALSE without setting hashedPassword for ALL users!
+    # 
+    # mutableUsers = true means:
+    #   ✓ You can use 'passwd' to set/change passwords
+    #   ✓ Passwords persist across 'nixos-rebuild switch'
+    #   ✓ User passwords are stored in /etc/shadow (mutable)
+    #   ✗ Password changes not tracked in git
+    #
+    # mutableUsers = false means:
+    #   ✓ Passwords are declarative (in configuration)
+    #   ✗ WILL WIPE ALL PASSWORDS unless hashedPassword is set for each user!
+    #   ✗ Cannot use 'passwd' command
+    #
+    # RECOMMENDED: Keep this as true unless you understand the implications
     mutableUsers = true;
-    
-    # Option B: Immutable users (recommended for production)
-    # Uncomment this and set proper hashedPassword below:
-    # mutableUsers = false;
     
     # Define your users here
     users = {
       # Example admin user (customize or remove)
-      admin = {
+      # WARNING: This user definition will be created on first boot
+      # You MUST set the password after first boot with: sudo passwd admin
+      admin = lib.mkDefault {
         isNormalUser = true;
         description = "System Administrator";
         extraGroups = [ "wheel" "libvirtd" "kvm" ];
         
-        # For mutableUsers = true: Set initial password after first boot with: passwd admin
-        # For mutableUsers = false: Generate hash with: mkpasswd -m sha-512
-        #   Then set: hashedPassword = "$6$rounds=100000$YOUR_HASH_HERE";
+        # For mutableUsers = true (CURRENT SETTING):
+        #   Run after first boot: sudo passwd admin
+        #   Your password will persist across rebuilds
         
-        # SSH key authentication (optional but recommended)
+        # For mutableUsers = false (if you change it):
+        #   1. Generate password hash: mkpasswd -m sha-512
+        #   2. Set: hashedPassword = "$6$rounds=100000$YOUR_HASH_HERE";
+        #   3. REMOVE this comment block to avoid accidental lockout
+        
+        # SSH key authentication (optional but HIGHLY recommended)
         openssh.authorizedKeys.keys = [
-          # Add your SSH public key here
+          # Add your SSH public key here to avoid password dependency
           # Example: "ssh-rsa AAAAB3NzaC1yc2E... user@hostname"
         ];
       };
