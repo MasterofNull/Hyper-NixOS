@@ -107,11 +107,11 @@ init_logging() {
 
 # Progress indicators with logging
 print_status() { 
-    echo -e "${BLUE}==>${NC} $*"
+    echo -e "${BLUE}==>${NC} $*" >&2
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] STATUS: $*" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 print_success() { 
-    echo -e "${GREEN}✓${NC} $*"
+    echo -e "${GREEN}✓${NC} $*" >&2
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: $*" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 print_error() { 
@@ -124,7 +124,7 @@ print_warning() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $*" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 print_info() { 
-    echo -e "${CYAN}ℹ${NC} $*"
+    echo -e "${CYAN}ℹ${NC} $*" >&2
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] INFO: $*" >> "$INSTALL_LOG" 2>/dev/null || true
 }
 print_debug() {
@@ -224,7 +224,7 @@ load_state() {
             echo "$state"
             return 0
         else
-            print_debug "State file too old (${age}s), ignoring"
+            print_debug "State file too old (${age}s), ignoring" >&2
         fi
     fi
     echo ""
@@ -630,7 +630,7 @@ prompt_download_method() {
     if [[ ! -t 0 ]] && [[ -e /dev/tty ]]; then
         # stdin not available but /dev/tty exists - use it for piped scenarios
         input_source="/dev/tty"
-        print_info "Running in piped mode, but interactive input available via terminal"
+        print_info "Running in piped mode, but interactive input available via terminal" >&2
     elif [[ ! -t 0 ]]; then
         # No terminal available at all - use default
         print_warning "Running in non-interactive mode (no terminal), using default: Download Tarball" >&2
@@ -779,15 +779,15 @@ get_github_token() {
         return 1
     fi
     
-    echo
+    echo >&2
     print_info "GitHub Personal Access Token is required for HTTPS authentication."
     print_info "Generate one at: https://github.com/settings/tokens"
     print_info "Required scopes: repo (full control of private repositories)"
-    echo
+    echo >&2
     
     local token
     if read -t 60 -sp "$(echo -e "${CYAN}Enter GitHub token (input hidden):${NC} ")" token; then
-        echo
+        echo >&2
         
         if [[ -z "$token" ]]; then
             print_error "No token provided"
@@ -797,7 +797,7 @@ get_github_token() {
         echo "$token"
         return 0
     else
-        echo
+        echo >&2
         print_error "Timeout or no input received"
         return 1
     fi
