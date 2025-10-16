@@ -56,7 +56,7 @@ detect_dialog() {
 
 list_vms() {
   shopt -s nullglob
-  for f in "$STATE/vm_profiles"/*.json; do
+  for f in "$STATE/vm-profiles"/*.json; do
     name=$(jq -r '.name // empty' "$f" 2>/dev/null || basename "$f")
     [[ -z "$name" ]] && name=$(basename "$f")
     echo "$f|$name"
@@ -113,7 +113,7 @@ run_action() {
     wizard)         run_in_terminal "$SCRIPTS/setup_wizard.sh" ;;
     network_setup)  run_in_terminal "sudo $SCRIPTS/foundational_networking_setup.sh" ;;
     iso)            run_in_terminal "$SCRIPTS/iso_manager.sh" ;;
-    create)         run_in_terminal "$SCRIPTS/create_vm_wizard.sh $STATE/vm_profiles $STATE/isos" ;;
+    create)         run_in_terminal "$SCRIPTS/create_vm_wizard.sh $STATE/vm-profiles $STATE/isos" ;;
     update)         run_in_terminal "$SCRIPTS/update_hypervisor.sh" ;;
     gui_status)     run_in_terminal "sudo $SCRIPTS/toggle_gui.sh status; read -p 'Press Enter to continue...'" ;;
     gui_auto)       run_in_terminal "sudo $SCRIPTS/toggle_gui.sh auto; read -p 'Press Enter to continue...'" ;;

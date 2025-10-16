@@ -20,7 +20,7 @@ checks() {
     ip link show "$br" >/dev/null 2>&1 && ok "bridge $br exists" || warn "bridge $br missing"
   done
   # Storage dirs
-  for d in /var/lib/hypervisor/{disks,xml,vm_profiles,isos}; do
+  for d in /var/lib/hypervisor/{disks,xml,vm-profiles,isos}; do
     [[ -d "$d" ]] && ok "$d present" || warn "$d missing"
   done
 }

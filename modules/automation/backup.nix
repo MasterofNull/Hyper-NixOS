@@ -139,7 +139,7 @@
           virsh dumpxml "$domain" > "$backup_path/domain.xml"
           
           # Copy VM profile if exists
-          local profile="/var/lib/hypervisor/vm_profiles/$domain.json"
+          local profile="/var/lib/hypervisor/vm-profiles/$domain.json"
           if [[ -f "$profile" ]]; then
             cp -a "$profile" "$backup_path/"
           fi
@@ -370,7 +370,7 @@
           
           # Restore VM profile
           if [[ -f "$backup_dir/$domain.json" ]]; then
-            cp -a "$backup_dir/$domain.json" "/var/lib/hypervisor/vm_profiles/"
+            cp -a "$backup_dir/$domain.json" "/var/lib/hypervisor/vm-profiles/"
           fi
           
           echo "VM $domain restored successfully"

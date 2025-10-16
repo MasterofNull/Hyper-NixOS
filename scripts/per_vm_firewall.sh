@@ -12,7 +12,7 @@ require() { for b in "$@"; do command -v "$b" >/dev/null 2>&1 || { echo "Missing
 require "$DIALOG" jq iptables virsh awk
 
 select_profile() {
-  local dir="/var/lib/hypervisor/vm_profiles" entries=()
+  local dir="/var/lib/hypervisor/vm-profiles" entries=()
   shopt -s nullglob
   for f in "$dir"/*.json; do name=$(jq -r '.name' "$f" 2>/dev/null || basename "$f"); entries+=("$f" "$name"); done
   shopt -u nullglob

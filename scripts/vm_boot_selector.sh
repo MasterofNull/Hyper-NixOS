@@ -11,7 +11,7 @@ PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 : "${DIALOG:=whiptail}"
 STATE_DIR="/var/lib/hypervisor"
-USER_PROFILES_DIR="$STATE_DIR/vm_profiles"
+USER_PROFILES_DIR="$STATE_DIR/vm-profiles"
 LAST_VM_FILE="$STATE_DIR/last_vm"
 CONFIG_JSON="/etc/hypervisor/config.json"
 SCRIPTS_DIR="/etc/hypervisor/scripts"

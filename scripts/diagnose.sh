@@ -152,8 +152,8 @@ echo ""
 # VMs
 echo "## Virtual Machines"
 vm_profile_count=0
-if [[ -d /var/lib/hypervisor/vm_profiles ]]; then
-  vm_profile_count=$(ls -1 /var/lib/hypervisor/vm_profiles/*.json 2>/dev/null | wc -l)
+if [[ -d /var/lib/hypervisor/vm-profiles ]]; then
+  vm_profile_count=$(ls -1 /var/lib/hypervisor/vm-profiles/*.json 2>/dev/null | wc -l)
 fi
 echo "VM Profiles: $vm_profile_count"
 

@@ -445,7 +445,7 @@ TEST_PROFILE="/tmp/test-$$.json"
 
 # Bad - use production data
 TEST_VM_NAME="production-vm"  # Could conflict!
-TEST_PROFILE="/var/lib/hypervisor/vm_profiles/real.json"
+TEST_PROFILE="/var/lib/hypervisor/vm-profiles/real.json"
 ```
 
 ### Cleanup

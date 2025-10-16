@@ -390,7 +390,7 @@ for vm_name in "${!VMS[@]}"; do
   echo "Creating: $vm_name ($cpus CPU, ${memory}MB RAM, ${disk}GB disk)"
   
   # Create profile
-  cat > "/var/lib/hypervisor/vm_profiles/${vm_name}.json" <<EOF
+  cat > "/var/lib/hypervisor/vm-profiles/${vm_name}.json" <<EOF
 {
   "name": "$vm_name",
   "cpus": $cpus,
@@ -404,7 +404,7 @@ EOF
   
   # Create and start
   /etc/hypervisor/scripts/json_to_libvirt_xml_and_define.sh \
-    "/var/lib/hypervisor/vm_profiles/${vm_name}.json" || true
+    "/var/lib/hypervisor/vm-profiles/${vm_name}.json" || true
 done
 
 echo ""

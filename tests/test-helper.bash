@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 setup() {
   # Create temporary directory for test files
   export TEST_TEMP_DIR="$(mktemp -d -t hypervisor-test-XXXXXX)"
-  export TEST_PROFILE_DIR="$TEST_TEMP_DIR/vm_profiles"
+  export TEST_PROFILE_DIR="$TEST_TEMP_DIR/vm-profiles"
   export TEST_ISO_DIR="$TEST_TEMP_DIR/isos"
   export TEST_DISK_DIR="$TEST_TEMP_DIR/disks"
   

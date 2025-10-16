@@ -25,7 +25,7 @@ require "$DIALOG" jq virsh bc awk
 # Analyze VM resource usage
 analyze_vm_resources() {
     local domain="$1"
-    local profile="/var/lib/hypervisor/vm_profiles/${domain}.json"
+    local profile="/var/lib/hypervisor/vm-profiles/${domain}.json"
     
     echo "=== Resource Analysis for VM: $domain ==="
     echo
@@ -242,7 +242,7 @@ echo "Applying VM resource optimizations..."
 # done
 
 # 6. Apply systemd slice limits
-# Update /var/lib/hypervisor/vm_profiles/DOMAIN.json with:
+# Update /var/lib/hypervisor/vm-profiles/DOMAIN.json with:
 # "limits": {
 #     "cpu_quota_percent": 200,
 #     "memory_max_mb": 8192

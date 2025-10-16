@@ -504,8 +504,8 @@ create_vms() {
         echo "  RAM: ${vm_ram}MB, CPUs: ${vm_cpus}, Disk: ${vm_disk}GB"
         
         # Create VM profile (this would integrate with actual VM creation scripts)
-        mkdir -p /var/lib/hypervisor/vm_profiles
-        cat > "/var/lib/hypervisor/vm_profiles/${vm_id}.json" <<VM_EOF
+        mkdir -p /var/lib/hypervisor/vm-profiles
+        cat > "/var/lib/hypervisor/vm-profiles/${vm_id}.json" <<VM_EOF
 {
   "name": "${vm_name}",
   "id": "${vm_id}",

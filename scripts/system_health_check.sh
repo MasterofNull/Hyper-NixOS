@@ -255,7 +255,7 @@ check_storage() {
     "/var/lib/hypervisor/isos"
     "/var/lib/hypervisor/disks"
     "/var/lib/hypervisor/xml"
-    "/var/lib/hypervisor/vm_profiles"
+    "/var/lib/hypervisor/vm-profiles"
   )
   
   for dir in "${required_dirs[@]}"; do

@@ -160,7 +160,7 @@ main() {
     # Directories (with auto-create)
     check_directory "/var/lib/hypervisor" yes "Hypervisor state directory"
     check_directory "/var/lib/hypervisor/logs" yes "Log directory"
-    check_directory "/var/lib/hypervisor/vm_profiles" yes "VM profiles directory"
+    check_directory "/var/lib/hypervisor/vm-profiles" yes "VM profiles directory"
     check_directory "/etc/hypervisor" yes "Configuration directory"
     
     # Results

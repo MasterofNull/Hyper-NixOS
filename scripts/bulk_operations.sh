@@ -7,7 +7,7 @@ umask 077
 PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 : "${DIALOG:=whiptail}"
-USER_PROFILES_DIR="/var/lib/hypervisor/vm_profiles"
+USER_PROFILES_DIR="/var/lib/hypervisor/vm-profiles"
 
 log() {
   echo "[$(date -Iseconds)] $*" | tee -a /var/lib/hypervisor/logs/bulk_operations.log
@@ -304,7 +304,7 @@ bulk_delete() {
     fi
   done <<< "$vms"
   
-  $DIALOG --msgbox "Bulk Delete Complete\n\n${results}\nDeleted: $success_count | Failed: $fail_count\n\nNote: VM profiles still exist in:\n/var/lib/hypervisor/vm_profiles/" 20 70
+  $DIALOG --msgbox "Bulk Delete Complete\n\n${results}\nDeleted: $success_count | Failed: $fail_count\n\nNote: VM profiles still exist in:\n/var/lib/hypervisor/vm-profiles/" 20 70
 }
 
 # Main menu

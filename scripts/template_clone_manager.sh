@@ -9,7 +9,7 @@ trap 'exit $?' EXIT HUP INT TERM
 : "${DIALOG:=whiptail}"
 STATE_DIR="/var/lib/hypervisor"
 DISKS_DIR="$STATE_DIR/disks"
-PROFILES_DIR="$STATE_DIR/vm_profiles"
+PROFILES_DIR="$STATE_DIR/vm-profiles"
 
 require() { for b in "$@"; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done; }
 require "$DIALOG" jq qemu-img

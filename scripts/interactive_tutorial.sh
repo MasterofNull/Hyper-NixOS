@@ -385,7 +385,7 @@ lesson3_create_vm() {
   echo ""
   echo "💡 The file is just text - you can edit it anytime!"
   echo ""
-  echo "📍 Location: /var/lib/hypervisor/vm_profiles/"
+  echo "📍 Location: /var/lib/hypervisor/vm-profiles/"
   echo ""
   read -p "Press Enter to see an example profile..."
   
@@ -450,12 +450,12 @@ EOF
   echo ""
   echo "Command to run:"
   echo -e "  ${GREEN}/etc/hypervisor/scripts/create_vm_wizard.sh \\${NC}"
-  echo -e "  ${GREEN}  /var/lib/hypervisor/vm_profiles \\${NC}"
+  echo -e "  ${GREEN}  /var/lib/hypervisor/vm-profiles \\${NC}"
   echo -e "  ${GREEN}  /var/lib/hypervisor/isos${NC}"
   echo ""
   read -p "Ready? Press Enter to launch wizard..."
   
-  /etc/hypervisor/scripts/create_vm_wizard.sh /var/lib/hypervisor/vm_profiles /var/lib/hypervisor/isos || true
+  /etc/hypervisor/scripts/create_vm_wizard.sh /var/lib/hypervisor/vm-profiles /var/lib/hypervisor/isos || true
   
   clear
   echo -e "${BOLD}Verification${NC}"
@@ -463,7 +463,7 @@ EOF
   echo "Let's check that your VM profile was created."
   echo ""
   echo "Your VM profiles:"
-  ls -1 /var/lib/hypervisor/vm_profiles/*.json 2>/dev/null | while read -r profile; do
+  ls -1 /var/lib/hypervisor/vm-profiles/*.json 2>/dev/null | while read -r profile; do
     local name=$(jq -r '.name // empty' "$profile" 2>/dev/null || basename "$profile" .json)
     echo "  • $name"
   done
@@ -485,7 +485,7 @@ EOF
   echo "  • Profiles are just text files - easy to edit"
   echo "  • Start conservative with resources"
   echo "  • Can copy profiles to create similar VMs"
-  echo "  • Location: /var/lib/hypervisor/vm_profiles/"
+  echo "  • Location: /var/lib/hypervisor/vm-profiles/"
   echo ""
   echo "📚 Next lesson: Starting and Connecting to VMs"
   echo ""

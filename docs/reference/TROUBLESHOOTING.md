@@ -147,7 +147,7 @@ export HYPERVISOR_REQUIRE_ISO_VERIFICATION=0
 **Solution:**
 ```bash
 # Edit profile and fix name
-nano /var/lib/hypervisor/vm_profiles/your-vm.json
+nano /var/lib/hypervisor/vm-profiles/your-vm.json
 
 # Valid names:
 # ✓ "my-vm"
@@ -857,11 +857,11 @@ cp /var/lib/hypervisor/backups/VM-NAME-DATE.qcow2 \
 
 # 3. Restore profile
 cp /var/lib/hypervisor/backups/VM-NAME-DATE.json \
-   /var/lib/hypervisor/vm_profiles/VM-NAME.json
+   /var/lib/hypervisor/vm-profiles/VM-NAME.json
 
 # 4. Recreate VM
 /etc/hypervisor/scripts/json_to_libvirt_xml_and_define.sh \
-  /var/lib/hypervisor/vm_profiles/VM-NAME.json
+  /var/lib/hypervisor/vm-profiles/VM-NAME.json
 ```
 
 ### Reset to Clean State
@@ -879,7 +879,7 @@ done
 
 # 2. Clean directories
 rm -rf /var/lib/hypervisor/disks/*
-rm -rf /var/lib/hypervisor/vm_profiles/*.json
+rm -rf /var/lib/hypervisor/vm-profiles/*.json
 rm -rf /var/lib/hypervisor/xml/*
 
 # 3. Restart libvirtd

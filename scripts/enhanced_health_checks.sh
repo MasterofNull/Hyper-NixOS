@@ -319,7 +319,7 @@ fix_common_issues() {
     done
     
     # Create missing directories
-    for dir in /var/lib/hypervisor/{logs,disks,xml,vm_profiles,isos,backups}; do
+    for dir in /var/lib/hypervisor/{logs,disks,xml,vm-profiles,isos,backups}; do
         if [[ ! -d "$dir" ]]; then
             echo "Creating missing directory: $dir"
             sudo mkdir -p "$dir"

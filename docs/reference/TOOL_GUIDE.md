@@ -460,7 +460,7 @@ Decide to Create VM → Run Wizard → Answer Questions → VM Profile Created �
 #### 🚀 Quick Start
 ```bash
 # Launch wizard
-/etc/hypervisor/scripts/create_vm_wizard.sh /var/lib/hypervisor/vm_profiles /var/lib/hypervisor/isos
+/etc/hypervisor/scripts/create_vm_wizard.sh /var/lib/hypervisor/vm-profiles /var/lib/hypervisor/isos
 
 # Or from menu:
 # More Options → Create VM (wizard)
@@ -521,7 +521,7 @@ Decide to Create VM → Run Wizard → Answer Questions → VM Profile Created �
 **Step 7: Review & Save**
 - ⏰ WHEN: Final step
 - 🎓 WHY: Verify settings before creating
-- 💡 TIP: Profile saved to `/var/lib/hypervisor/vm_profiles/`
+- 💡 TIP: Profile saved to `/var/lib/hypervisor/vm-profiles/`
 - 📝 NOTE: Can edit manually later with nano/vim
 
 #### 💡 Pro Tips

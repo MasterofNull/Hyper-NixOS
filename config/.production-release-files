@@ -12,7 +12,7 @@ flake.lock
 ## Configuration (Required)
 configuration/
 scripts/
-vm_profiles/
+vm-profiles/
 
 ## Documentation (Required)
 docs/

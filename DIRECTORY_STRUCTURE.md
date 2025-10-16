@@ -136,11 +136,11 @@ config/
 
 ## 🖥️ Infrastructure Directories
 
-### `/vm_profiles/` - VM Templates
+### `/vm-profiles/` - VM Templates
 JSON-based VM profile templates
 
 ```
-vm_profiles/
+vm-profiles/
 ├── debian-desktop.json
 ├── ubuntu-server.json
 ├── windows-10.json
@@ -209,10 +209,12 @@ api/
 ### `/web/` - Web Interfaces
 HTML/JS web components
 
-### `/hypervisor_manager/` - Legacy Python Manager
-**Status**: Deprecated (preserved for reference)
+### `/docs/archive/legacy/hypervisor-manager/` - Legacy Python Manager
+**Status**: ⚠️ Archived - Deprecated pre-v2.0 code
 
-**See**: `/hypervisor_manager/README.md`
+**Purpose**: Original Python curses-based menu system  
+**Replaced by**: Bash menu system in `/scripts/menu/`  
+**See**: `/docs/archive/legacy/hypervisor-manager/README.md`
 
 ---
 
@@ -293,7 +295,7 @@ Following **Design Ethos - Pillar 2: Security & Organization**
 - **Scripts?** → `/scripts/` (check `/scripts/menu.sh` for main menu)
 - **Documentation?** → `/docs/` (start with `/docs/README-DOCS.md`)
 - **Modules?** → `/modules/` (see `/modules/default.nix`)
-- **VM Templates?** → `/vm_profiles/`
+- **VM Templates?** → `/vm-profiles/`
 - **Tests?** → `/tests/`
 - **Development?** → `/docs/dev/` (protected)
 
