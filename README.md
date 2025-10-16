@@ -20,7 +20,13 @@ Get started with Hyper-NixOS in seconds:
 curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
 ```
 
-✅ **Now includes**: Non-interactive detection, timeout protection, and safe defaults
+**Available download methods** (installer will prompt):
+- `https` - Git clone via HTTPS (default, most reliable)
+- `ssh` - Git clone via SSH (requires GitHub key)
+- `token` - Git clone with token authentication
+- `tarball` - Direct tarball download (fastest, no git)
+
+✅ **Now includes**: Interactive prompts via `/dev/tty`, timeout protection, and reliable defaults
 
 <details>
 <summary>📋 Alternative: Two-Step Process (Click to expand)</summary>
