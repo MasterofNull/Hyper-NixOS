@@ -311,7 +311,7 @@ ensure_hardware_config() {
       fi
       
       # Regenerate hardware config
-      nixos-generate-config --root / --force
+      nixos-generate-config --force
       
       # Restore LUKS configuration if it was present
       if [[ -n "$luks_config" ]] && ! grep -q "boot\.initrd\.luks\.devices" "$hw_config" 2>/dev/null; then
@@ -336,7 +336,7 @@ ensure_hardware_config() {
     fi
   else
     msg "No existing hardware-configuration.nix found, generating new one"
-    nixos-generate-config --root /
+    nixos-generate-config
     
     # Check if the generated config detected encryption
     if grep -q "boot\.initrd\.luks\.devices" "$hw_config" 2>/dev/null; then

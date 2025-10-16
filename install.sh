@@ -16,11 +16,14 @@
 # 
 # This script works in two modes:
 # 1. Local mode: Run from cloned repository
-# 2. Remote mode: Piped from curl for quick installation
+# 2. Remote mode: Downloaded and run for quick installation
 #
 # Usage:
 #   Local:  git clone <repo> && cd Hyper-NixOS && sudo ./install.sh
-#   Remote: curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
+#   Remote (RECOMMENDED): sudo bash <(curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh)
+#   Remote (Alternative): curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
+#
+# Note: Process substitution <(...) is more reliable for interactive prompts than piping |
 
 set -euo pipefail
 
@@ -630,14 +633,28 @@ prompt_download_method() {
     if [[ ! -t 0 ]]; then
         # stdin not available, try /dev/tty
         if [[ -r /dev/tty ]] && [[ -w /dev/tty ]]; then
-            input_source="tty"
-            print_info "Running in piped mode, using terminal for input" >&2
+            # Test if we can actually read from /dev/tty by opening a file descriptor
+            if exec 3</dev/tty 2>/dev/null; then
+                input_source="tty"
+                exec 3<&-  # Close test fd
+                print_info "Running in piped mode, using terminal for input" >&2
+            else
+                # /dev/tty exists but can't be opened (common with piped curl | sudo bash)
+                print_warning "Running in non-interactive mode (terminal unavailable), using default: Download Tarball" >&2
+                echo -e "${CYAN}ℹ${NC} To choose a different method:" >&2
+                echo -e "${CYAN}ℹ${NC}   1. Use process substitution: sudo bash <(curl -sSL ...install.sh)" >&2
+                echo -e "${CYAN}ℹ${NC}   2. Set environment: HYPER_INSTALL_METHOD=https ... | sudo -E bash" >&2
+                echo -e "${CYAN}ℹ${NC}   3. Download first: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
+                echo "1"  # Default to tarball (fastest, no git required)
+                return 0
+            fi
         else
             # No interactive terminal available - use default
             print_warning "Running in non-interactive mode (no terminal), using default: Download Tarball" >&2
             echo -e "${CYAN}ℹ${NC} To choose a different method:" >&2
-            echo -e "${CYAN}ℹ${NC}   Set environment: HYPER_INSTALL_METHOD=https curl ... | sudo -E bash" >&2
-            echo -e "${CYAN}ℹ${NC}   Or download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
+            echo -e "${CYAN}ℹ${NC}   1. Use process substitution: sudo bash <(curl -sSL ...install.sh)" >&2
+            echo -e "${CYAN}ℹ${NC}   2. Set environment: HYPER_INSTALL_METHOD=https ... | sudo -E bash" >&2
+            echo -e "${CYAN}ℹ${NC}   3. Download first: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
             echo "1"  # Default to tarball (fastest, no git required)
             return 0
         fi
@@ -666,13 +683,19 @@ prompt_download_method() {
         local read_result=1
         
         if [[ "$input_source" == "tty" ]]; then
-            # For /dev/tty, read directly
-            if read -t 50 -r -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice_input </dev/tty 2>/dev/null; then
+            # For /dev/tty, open as file descriptor and read from it
+            # This is more reliable than direct redirection, especially after sudo
+            exec 3</dev/tty
+            echo -ne "${CYAN}Select method [1-4] (default: 1):${NC} " >&2
+            if read -t 50 -r choice_input <&3 2>/dev/null; then
                 read_result=0
             fi
+            exec 3<&-  # Close fd 3
         else
             # For stdin, read with timeout
-            if read -t 50 -r -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice_input 2>/dev/null; then
+            # Print prompt separately so it's not suppressed by 2>/dev/null
+            echo -ne "${CYAN}Select method [1-4] (default: 1):${NC} " >&2
+            if read -t 50 -r choice_input 2>/dev/null; then
                 read_result=0
             fi
         fi
@@ -680,6 +703,7 @@ prompt_download_method() {
         # Check if read was successful
         if [[ $read_result -ne 0 ]]; then
             # Timeout or EOF reached
+            echo >&2  # New line after prompt
             print_warning "No input received (timeout or EOF). Using default: Download Tarball" >&2
             echo "1"
             return 0

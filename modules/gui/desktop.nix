@@ -5,6 +5,7 @@
 
 {
   # Sway window manager (pure Wayland, no X11)
+  # Uses admin/management user's GUI preferences
   programs.sway = lib.mkIf (config.hypervisor.gui.enableAtBoot or false) {
     enable = true;
     wrapperFeatures.gtk = true;
@@ -16,6 +17,8 @@
       pkgs.alacritty # terminal
       pkgs.wofi # launcher
       pkgs.waybar # status bar
+      pkgs.grim # screenshots
+      pkgs.slurp # area selection
     ];
   };
   
