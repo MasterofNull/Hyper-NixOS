@@ -714,7 +714,7 @@ display_results() {
     echo "  • NixOS Configuration: $OUTPUT_FILE"
     echo "  • Hardware Info: $HARDWARE_INFO_FILE"
     echo "  • WiFi Credentials: $WIFI_CREDS_FILE"
-    echo "  • Summary: ${MIGRATION_DIR}/MIGRATION_SUMMARY.md"
+    echo -e "  • Summary: ${MIGRATION_DIR}/MIGRATION_SUMMARY.md"
     echo "  • Log: $LOG_FILE"
     echo
     echo -e "${YELLOW}Next Steps:${NC}"
@@ -728,7 +728,7 @@ display_results() {
     echo "     sudo nixos-rebuild switch"
     echo
     echo -e "${BLUE}Documentation:${NC}"
-    echo "  • Read: ${MIGRATION_DIR}/MIGRATION_SUMMARY.md"
+    echo -e "  • Read: ${MIGRATION_DIR}/MIGRATION_SUMMARY.md"
     echo "  • Log: $LOG_FILE"
     echo
 }
