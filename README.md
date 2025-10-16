@@ -9,12 +9,15 @@ Next-generation virtualization platform built on NixOS with revolutionary featur
 
 ## 🚀 Quick Install
 
+> **⚠️ Important Notice (2025-10-15)**: A critical bug in the remote installer causing infinite loops has been **FIXED**. If you previously encountered "Invalid input" errors that crashed your system, the installer is now safe to use. See [INSTALLER_FIX_SUMMARY.md](INSTALLER_FIX_SUMMARY.md) for details.
+
 Get started with Hyper-NixOS in seconds:
 
 ### Method 1: One-Command Install (Fastest)
 ```bash
 curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
 ```
+✅ **Now includes**: Non-interactive detection, timeout protection, and safe defaults
 
 ### Method 2: Git Clone (Recommended for Inspection)
 ```bash

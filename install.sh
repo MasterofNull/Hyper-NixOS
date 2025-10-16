@@ -351,6 +351,13 @@ ensure_git() {
 
 # Prompt for download method
 prompt_download_method() {
+    # Check if running non-interactively (piped from curl, no TTY)
+    if [[ ! -t 0 ]]; then
+        print_warning "Running in non-interactive mode, using default: Git Clone (HTTPS)"
+        echo "1"
+        return 0
+    fi
+    
     echo
     print_line "═" 70
     center_text "Download Method Selection"
@@ -365,18 +372,40 @@ prompt_download_method() {
     echo
     
     local choice
-    while true; do
-        read -p "$(echo -e "${CYAN}Select method [1-4]:${NC} ")" choice
-        case "$choice" in
-            1|2|3|4)
-                echo "$choice"
-                return 0
-                ;;
-            *)
-                print_error "Invalid choice. Please enter 1, 2, 3, or 4."
-                ;;
-        esac
+    local attempts=0
+    local max_attempts=5
+    
+    while [[ $attempts -lt $max_attempts ]]; do
+        # Use read with timeout to prevent hangs
+        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 1):${NC} ")" choice; then
+            # Handle empty input (Enter pressed) - use default
+            if [[ -z "$choice" ]]; then
+                choice="1"
+                print_info "Using default option: Git Clone (HTTPS)"
+            fi
+            
+            case "$choice" in
+                1|2|3|4)
+                    echo "$choice"
+                    return 0
+                    ;;
+                *)
+                    attempts=$((attempts + 1))
+                    print_error "Invalid choice. Please enter 1, 2, 3, or 4. (Attempt $attempts/$max_attempts)"
+                    ;;
+            esac
+        else
+            # Timeout or EOF reached
+            print_warning "No input received (timeout or EOF). Using default: Git Clone (HTTPS)"
+            echo "1"
+            return 0
+        fi
     done
+    
+    # Max attempts reached, use default
+    print_warning "Maximum attempts reached. Using default: Git Clone (HTTPS)"
+    echo "1"
+    return 0
 }
 
 # Configure git credentials for HTTPS
@@ -400,26 +429,40 @@ configure_git_https() {
 
 # Setup SSH for git if needed
 setup_git_ssh() {
+    # Check if running non-interactively
+    if [[ ! -t 0 ]]; then
+        print_error "SSH setup requires interactive terminal"
+        return 1
+    fi
+    
     print_info "Checking SSH key for GitHub..."
     
     # Check if SSH key exists
     if [[ ! -f ~/.ssh/id_rsa && ! -f ~/.ssh/id_ed25519 ]]; then
         print_warning "No SSH key found."
         echo
-        read -p "$(echo -e "${CYAN}Generate new SSH key? [y/N]:${NC} ")" generate_key
         
-        if [[ "${generate_key,,}" == "y" ]]; then
-            print_status "Generating SSH key..."
-            ssh-keygen -t ed25519 -C "hyper-nixos-installer" -f ~/.ssh/id_ed25519 -N ""
-            print_success "SSH key generated: ~/.ssh/id_ed25519.pub"
-            echo
-            print_warning "You need to add this key to your GitHub account:"
-            echo
-            cat ~/.ssh/id_ed25519.pub
-            echo
-            read -p "$(echo -e "${YELLOW}Press Enter after adding the key to GitHub...${NC}")" 
+        local generate_key
+        if read -t 30 -p "$(echo -e "${CYAN}Generate new SSH key? [y/N]:${NC} ")" generate_key; then
+            if [[ "${generate_key,,}" == "y" ]]; then
+                print_status "Generating SSH key..."
+                ssh-keygen -t ed25519 -C "hyper-nixos-installer" -f ~/.ssh/id_ed25519 -N ""
+                print_success "SSH key generated: ~/.ssh/id_ed25519.pub"
+                echo
+                print_warning "You need to add this key to your GitHub account:"
+                echo
+                cat ~/.ssh/id_ed25519.pub
+                echo
+                read -t 60 -p "$(echo -e "${YELLOW}Press Enter after adding the key to GitHub...${NC}")" || {
+                    print_error "Timeout waiting for confirmation"
+                    return 1
+                }
+            else
+                print_error "SSH key required for SSH clone method"
+                return 1
+            fi
         else
-            print_error "SSH key required for SSH clone method"
+            print_error "Timeout or no input. SSH key required for SSH clone method"
             return 1
         fi
     fi
@@ -438,6 +481,12 @@ setup_git_ssh() {
 
 # Get GitHub personal access token
 get_github_token() {
+    # Check if running non-interactively
+    if [[ ! -t 0 ]]; then
+        print_error "Token input requires interactive terminal"
+        return 1
+    fi
+    
     echo
     print_info "GitHub Personal Access Token is required for HTTPS authentication."
     print_info "Generate one at: https://github.com/settings/tokens"
@@ -445,16 +494,21 @@ get_github_token() {
     echo
     
     local token
-    read -sp "$(echo -e "${CYAN}Enter GitHub token (input hidden):${NC} ")" token
-    echo
-    
-    if [[ -z "$token" ]]; then
-        print_error "No token provided"
+    if read -t 60 -sp "$(echo -e "${CYAN}Enter GitHub token (input hidden):${NC} ")" token; then
+        echo
+        
+        if [[ -z "$token" ]]; then
+            print_error "No token provided"
+            return 1
+        fi
+        
+        echo "$token"
+        return 0
+    else
+        echo
+        print_error "Timeout or no input received"
         return 1
     fi
-    
-    echo "$token"
-    return 0
 }
 
 # Download via tarball with progress tracking
