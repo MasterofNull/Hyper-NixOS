@@ -176,8 +176,8 @@ in
     }
     
     # Security monitoring for sudo usage - only enable if audit is available
-    (lib.mkIf (config.services ? auditd) {
-      services.auditd.enable = true;
+    (lib.mkIf (config.security ? auditd) {
+      security.auditd.enable = lib.mkDefault true;
     })
     
     (lib.mkIf (config.security ? audit) {

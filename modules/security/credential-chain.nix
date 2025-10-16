@@ -259,8 +259,8 @@ in
     })
     
     # Security monitoring - conditionally enable audit service if available
-    (lib.mkIf (cfg.enable && config.services ? auditd && config.services.auditd ? enable) {
-      services.auditd.enable = true;
+    (lib.mkIf (cfg.enable && config.security ? auditd) {
+      security.auditd.enable = lib.mkDefault true;
     })
     
     # Security audit rules - conditionally add if audit subsystem is available

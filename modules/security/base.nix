@@ -63,8 +63,8 @@ lib.mkMerge [
   # ═══════════════════════════════════════════════════════════════
   # Audit Logging - only if audit is available
   # ═══════════════════════════════════════════════════════════════
-  services.auditd = lib.mkIf (config.services ? auditd) {
-    enable = true;
+  security.auditd = lib.mkIf (config.security ? auditd) {
+    enable = lib.mkDefault true;
   };
   
   security.audit = lib.mkIf (config.security ? audit) {
