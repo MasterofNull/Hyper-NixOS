@@ -15,9 +15,20 @@ Get started with Hyper-NixOS in seconds:
 
 ### Method 1: One-Command Install (Fastest)
 ```bash
+# Default: Prompts for method selection if terminal is available
 curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
+
+# Or specify method via environment variable:
+HYPER_INSTALL_METHOD=https curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo -E bash
 ```
-✅ **Now includes**: Non-interactive detection, timeout protection, and safe defaults
+
+**Available methods:**
+- `https` - Git clone via HTTPS (default, most reliable)
+- `ssh` - Git clone via SSH (requires GitHub key)
+- `token` - Git clone with token authentication
+- `tarball` - Direct tarball download (fastest, no git)
+
+✅ **Now includes**: Interactive prompts via `/dev/tty`, timeout protection, and reliable defaults
 
 ### Method 2: Git Clone (Recommended for Inspection)
 ```bash
@@ -33,13 +44,13 @@ sudo ./install.sh
 - ✅ Run the installer with optimal settings
 - ✅ Switch to Hyper-NixOS configuration
 
-> **New in 2025-10-15**: Remote installation now offers multiple download options:
-> - **Git Clone (HTTPS)** - Public access, no authentication
-> - **Git Clone (SSH)** - Authenticated with SSH key (auto-generates if needed)
-> - **Git Clone (Token)** - Authenticated with GitHub personal access token
-> - **Tarball Download** - Fastest option, no git required
+> **New in 2025-10-16**: Remote installation enhancements:
+> - **Interactive prompts work in piped mode** using `/dev/tty`
+> - **Environment variable override**: Set `HYPER_INSTALL_METHOD` to skip prompts
+> - **Multiple download options**: HTTPS, SSH, Token, or Tarball
+> - **Improved error handling**: Better network diagnostics and fallbacks
 >
-> The installer will prompt you to choose your preferred method.
+> The installer will prompt you to choose your preferred method if a terminal is available.
 
 After installation, the first-boot wizard will help you select the appropriate system tier based on your hardware.
 
