@@ -1215,6 +1215,195 @@ try_download_method() {
         "$@"
 }
 
+# Remote mode: Download and install
+remote_install() {
+    echo
+    print_line "=" 70
+    center_text "Hyper-NixOS Remote Installation"
+    print_line "=" 70
+    echo
+    
+    print_status "Starting remote installation..."
+    
+    # Run pre-flight checks
+    if ! preflight_checks; then
+        print_error "Pre-flight checks failed. Cannot proceed with installation."
+        echo
+        echo -e "${CYAN}Fix the issues above and try again.${NC}"
+        exit $ERROR_MISSING_DEPS
+    fi
+    
+    # Create temporary directory
+    tmpdir=$(mktemp -d -t hyper-nixos-XXXXXX)
+    print_info "Using temporary directory: $tmpdir"
+    
+    # Check if we can resume from saved state
+    if [[ -f "$STATE_FILE" ]]; then
+        local state_age=$(($(date +%s) - $(stat -c %Y "$STATE_FILE" 2>/dev/null || echo 0)))
+        if [[ $state_age -lt 3600 ]]; then
+            print_info "Found previous installation state ($(($state_age / 60)) minutes old)"
+            if load_state; then
+                print_info "Resuming from previous state..."
+            fi
+        else
+            print_info "Previous installation state expired, starting fresh"
+            clear_state
+        fi
+    fi
+    
+    # Prompt for download method
+    local download_method
+    download_method=$(prompt_download_method)
+    
+    print_debug "Selected download method: $download_method"
+    
+    # Show installation confirmation
+    confirm_installation "$download_method" "$tmpdir"
+    
+    # Perform the download based on method
+    local repo_url
+    local clone_output
+    clone_output=$(mktemp)
+    
+    save_state "downloading"
+    
+    case "$download_method" in
+        1)
+            # HTTPS clone (public)
+            print_status "Using HTTPS clone (public access)..."
+            ensure_git
+            repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+            
+            if [[ -t 1 ]]; then
+                # Terminal: show progress
+                if git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>&1 | \
+                   tee "$clone_output" | \
+                   grep --line-buffered -oP 'Receiving objects:\s+\K\d+(?=%)' | \
+                   while read -r percent; do
+                       printf "\r${CYAN}→${NC} Cloning repository... ${GREEN}%3d%%${NC}" "$percent"
+                   done
+                then
+                    printf "\r\033[K"  # Clear line
+                    print_success "Repository cloned successfully"
+                else
+                    printf "\r\033[K"
+                    print_error_with_help $ERROR_DOWNLOAD_FAILED "git_clone" \
+                        "Failed to clone repository from GitHub" \
+                        "Attempted URL: $repo_url" \
+                        "$(cat "$clone_output")"
+                    rm -f "$clone_output"
+                    exit $ERROR_DOWNLOAD_FAILED
+                fi
+            else
+                # Non-terminal: quiet clone
+                if ! git clone -q "$repo_url" "$tmpdir/hyper-nixos" 2>"$clone_output"; then
+                    print_error_with_help $ERROR_DOWNLOAD_FAILED "git_clone" \
+                        "Failed to clone repository from GitHub" \
+                        "Attempted URL: $repo_url" \
+                        "$(cat "$clone_output")"
+                    rm -f "$clone_output"
+                    exit $ERROR_DOWNLOAD_FAILED
+                fi
+                print_success "Repository cloned successfully"
+            fi
+            ;;
+            
+        2)
+            # SSH clone
+            print_status "Using SSH clone (authenticated)..."
+            ensure_git
+            
+            if ! setup_git_ssh; then
+                print_warning "SSH setup failed, falling back to HTTPS..."
+                repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+            else
+                repo_url="git@github.com:MasterofNull/Hyper-NixOS.git"
+            fi
+            
+            print_status "Cloning repository..."
+            if ! git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>"$clone_output"; then
+                print_error_with_help $ERROR_DOWNLOAD_FAILED "git_clone_ssh" \
+                    "Failed to clone repository via SSH" \
+                    "$(cat "$clone_output")"
+                rm -f "$clone_output"
+                exit $ERROR_DOWNLOAD_FAILED
+            fi
+            print_success "Repository cloned successfully"
+            ;;
+            
+        3)
+            # HTTPS with token
+            print_status "Using HTTPS clone with personal access token..."
+            ensure_git
+            
+            local github_token
+            if ! github_token=$(get_github_token); then
+                print_error_with_help $ERROR_DOWNLOAD_FAILED "git_token" \
+                    "Failed to get GitHub token" \
+                    "Token authentication required for private repository access"
+                exit $ERROR_DOWNLOAD_FAILED
+            fi
+            
+            configure_git_https "$github_token"
+            repo_url="https://github.com/MasterofNull/Hyper-NixOS.git"
+            
+            print_status "Cloning repository with authentication..."
+            if ! GIT_TERMINAL_PROMPT=0 git clone --progress "$repo_url" "$tmpdir/hyper-nixos" 2>"$clone_output"; then
+                print_error_with_help $ERROR_DOWNLOAD_FAILED "git_token_auth" \
+                    "Failed to clone repository with token authentication" \
+                    "$(cat "$clone_output")"
+                rm -f "$clone_output"
+                exit $ERROR_DOWNLOAD_FAILED
+            fi
+            print_success "Repository cloned successfully"
+            ;;
+            
+        4)
+            # Tarball download
+            print_status "Using tarball download (no git required)..."
+            
+            if ! download_tarball "$tmpdir"; then
+                print_error_with_help $ERROR_DOWNLOAD_FAILED "tarball" \
+                    "Tarball download failed"
+                exit $ERROR_DOWNLOAD_FAILED
+            fi
+            ;;
+            
+        *)
+            print_error "Invalid download method: $download_method"
+            exit 2
+            ;;
+    esac
+    
+    rm -f "$clone_output"
+    save_state "downloaded"
+    
+    # Enter the downloaded directory
+    cd "$tmpdir/hyper-nixos" || {
+        print_error "Failed to enter repository directory: $tmpdir/hyper-nixos"
+        exit 1
+    }
+    
+    save_state "ready_to_install"
+    
+    # Show installation summary
+    show_install_summary "$download_method" "$tmpdir/hyper-nixos"
+    
+    # Run the system installer
+    echo
+    print_status "Launching Hyper-NixOS installer..."
+    echo
+    
+    export NIX_CONFIG="experimental-features = nix-command flakes"
+    
+    exec bash ./scripts/system_installer.sh \
+        --fast \
+        --hostname "$(hostname -s)" \
+        --action switch \
+        --source "$tmpdir/hyper-nixos" \
+        "$@"
+}
+
 # Local mode: Run installer from current directory
 local_install() {
     local script_dir
