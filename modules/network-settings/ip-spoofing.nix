@@ -136,12 +136,15 @@ in
     systemd.services.ip-alias = lib.mkIf (cfg.mode == "alias") {
       description = "IP Address Alias Management";
       after = [ "network-online.target" ];
+      # Don't require network - allow boot to continue if network is unavailable
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
       
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        # Add timeout to prevent boot hangs
+        TimeoutStartSec = "30s";
         ExecStart = pkgs.writeShellScript "ip-alias-start" ''
           set -e
           
@@ -180,6 +183,7 @@ in
     systemd.services.ip-rotation = lib.mkIf (cfg.mode == "rotation") {
       description = "IP Address Rotation Service";
       after = [ "network-online.target" ];
+      # Don't require network - allow boot to continue if network is unavailable
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
       
@@ -187,6 +191,8 @@ in
         Type = "simple";
         Restart = "always";
         RestartSec = 10;
+        # Add timeout to prevent boot hangs
+        TimeoutStartSec = "30s";
         ExecStart = pkgs.writeShellScript "ip-rotation" ''
           set -e
           

@@ -1,5 +1,11 @@
 {
   description = "Hyper-NixOS: Production-ready NixOS hypervisor with zero-trust security and enterprise automation";
+  
+  # Enable experimental features for flakes and nix-command
+  nixConfig = {
+    experimental-features = [ "nix-command" "flakes" ];
+  };
+  
   inputs = {
     # Track latest NixOS; pin via flake.lock for reproducibility
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

@@ -604,6 +604,8 @@ in
       # Enable with: systemctl enable hypervisor-ai-monitor
       # wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
+      # Don't require network - allow boot to continue if network is unavailable
+      wants = [ "network-online.target" ];
       
       environment = {
         PYTHONPATH = "/var/lib/hypervisor/ai/lib";
