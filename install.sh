@@ -585,11 +585,33 @@ ensure_git() {
 
 # Prompt for download method
 prompt_download_method() {
-    # Check if running non-interactively (piped from curl, no TTY)
-    if [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
-        print_warning "Running in non-interactive mode, using default: Tarball Download (fastest)"
-        echo -e "${CYAN}ℹ${NC} For interactive mode with more options, download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
-        echo "4"
+    # Allow override via environment variable
+    if [[ -n "${HYPER_INSTALL_METHOD:-}" ]]; then
+        case "${HYPER_INSTALL_METHOD}" in
+            https|1) echo "1"; return 0 ;;
+            ssh|2) echo "2"; return 0 ;;
+            token|3) echo "3"; return 0 ;;
+            tarball|4) echo "4"; return 0 ;;
+            *)
+                print_warning "Invalid HYPER_INSTALL_METHOD: ${HYPER_INSTALL_METHOD}"
+                print_warning "Valid options: https, ssh, token, tarball"
+                ;;
+        esac
+    fi
+    
+    # Check if we can prompt user (try /dev/tty for piped scenarios)
+    local input_source="/dev/stdin"
+    if [[ ! -t 0 ]] && [[ -e /dev/tty ]]; then
+        # stdin not available but /dev/tty exists - use it for piped scenarios
+        input_source="/dev/tty"
+        print_info "Running in piped mode, but interactive input available via terminal"
+    elif [[ ! -t 0 ]]; then
+        # No terminal available at all - use default
+        print_warning "Running in non-interactive mode (no terminal), using default: Git Clone HTTPS"
+        echo -e "${CYAN}ℹ${NC} To choose a different method:" >&2
+        echo -e "${CYAN}ℹ${NC}   Set environment: HYPER_INSTALL_METHOD=tarball curl ... | sudo -E bash" >&2
+        echo -e "${CYAN}ℹ${NC}   Or download and run: git clone && cd Hyper-NixOS && sudo ./install.sh" >&2
+        echo "1"  # Default to git HTTPS (more reliable than tarball)
         return 0
     fi
     
@@ -611,8 +633,8 @@ prompt_download_method() {
     local max_attempts=5
     
     while [[ $attempts -lt $max_attempts ]]; do
-        # Use read with timeout to prevent hangs
-        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 4):${NC} ")" choice; then
+        # Use read with timeout to prevent hangs, reading from appropriate source
+        if read -t 30 -p "$(echo -e "${CYAN}Select method [1-4] (default: 4):${NC} ")" choice <"$input_source"; then
             # Handle empty input (Enter pressed) - use default
             if [[ -z "$choice" ]]; then
                 choice="4"
