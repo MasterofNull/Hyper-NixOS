@@ -89,23 +89,33 @@ For manual installation or advanced options, see our [Installation Guide](docs/I
 
 After installation, use the unified `hv` command:
 
+**Step 1: Install CLI (if not already available)**
 ```bash
-# Install CLI (if not already available)
 sudo ./scripts/install-hv-cli.sh
+```
 
-# See what your system has
+**Step 2: Discover your system capabilities**
+```bash
 hv discover
+```
 
-# Interactive demo of intelligent defaults
+**Step 3: Run interactive demo of intelligent defaults**
+```bash
 hv defaults-demo
+```
 
-# Create your first VM with intelligent defaults
+**Step 4: Create your first VM with intelligent defaults**
+```bash
 hv vm-create
+```
 
-# Configure security based on detected risks
+**Step 5: Configure security based on detected risks**
+```bash
 hv security-config
+```
 
-# Set up backups optimized for your storage
+**Step 6: Set up backups optimized for your storage**
+```bash
 hv backup-config
 ```
 
@@ -202,27 +212,40 @@ hypervisor.composition.blueprints.web-app = {
 
 ## 🛠️ CLI Tools
 
+**Compute management:**
 ```bash
-# Compute management
-hv-compute list              # List compute units
-hv-compose blueprint web-app # Create from blueprint
-
-# Storage management  
-hv-storage-fabric tiers      # View storage tiers
-hv-storage-fabric heatmap    # Show access heat map
-
-# Cluster management
-hv-mesh status               # Cluster status
-hv-mesh peers                # View mesh topology
-
-# AI monitoring
-hv-ai models                 # List AI models
-hv-ai anomalies              # Recent anomalies
-
-# Backup management
-hv-backup sources            # List backup sources
-hv-backup stats              # Deduplication stats
+hv-compute list
+hv-compose blueprint web-app
 ```
+List compute units and create from blueprint.
+
+**Storage management:**
+```bash
+hv-storage-fabric tiers
+hv-storage-fabric heatmap
+```
+View storage tiers and access heat map.
+
+**Cluster management:**
+```bash
+hv-mesh status
+hv-mesh peers
+```
+Check cluster status and view mesh topology.
+
+**AI monitoring:**
+```bash
+hv-ai models
+hv-ai anomalies
+```
+List AI models and view recent anomalies.
+
+**Backup management:**
+```bash
+hv-backup sources
+hv-backup stats
+```
+List backup sources and view deduplication stats.
 
 ## 🔧 Configuration Example
 
@@ -257,15 +280,20 @@ hv-backup stats              # Deduplication stats
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### Development Setup
+
+**Step 1: Fork and clone the repository**
 ```bash
-# Fork and clone
 git clone https://github.com/MasterofNull/Hyper-NixOS.git
 cd hyper-nixos
+```
 
-# Create development environment
+**Step 2: Create development environment**
+```bash
 nix-shell
+```
 
-# Run tests
+**Step 3: Run tests**
+```bash
 make test
 ```
 
