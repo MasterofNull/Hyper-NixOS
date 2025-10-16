@@ -15,12 +15,12 @@ Get started with Hyper-NixOS in seconds:
 
 **Download and run installer directly:**
 
-# Default: Prompts for method selection if terminal is available
+**Default: Prompts for method selection if terminal is available
 ```bash
 curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo bash
 ```
 
-# Or specify method via environment variable:
+**Or specify method via environment variable:
 ```bash
 HYPER_INSTALL_METHOD=https curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh | sudo -E bash
 ```
