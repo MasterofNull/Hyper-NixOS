@@ -3,13 +3,21 @@
 # IP Address Management and Spoofing Module
 # Provides IP aliasing, rotation, and dynamic addressing capabilities
 # ⚠️ WARNING: Use only for legitimate purposes (testing, load balancing, authorized pentesting)
+# ⚠️ DISABLED BY DEFAULT - Must be explicitly enabled by user/wizard
 
 let
   cfg = config.hypervisor.network.ipSpoof;
 in
 {
   options.hypervisor.network.ipSpoof = {
-    enable = lib.mkEnableOption "IP address management and spoofing capabilities";
+    enable = lib.mkEnableOption "IP address management and spoofing capabilities" // {
+      default = false;
+      description = ''
+        Enable IP address management and spoofing capabilities.
+        ⚠️ DISABLED BY DEFAULT for security reasons.
+        Only enable after proper configuration via wizard or manual setup.
+      '';
+    };
     
     mode = lib.mkOption {
       type = lib.types.enum [ "alias" "rotation" "dynamic" "proxy" "disabled" ];

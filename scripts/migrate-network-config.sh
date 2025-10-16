@@ -404,7 +404,50 @@ EOF
     log_success "Generated driver configuration"
 }
 
-# Generate WiFi configuration for NixOS
+# Generate WiFi environment file (secure credentials)
+generate_wifi_env_file() {
+    log_info "Generating secure WiFi credentials file..."
+    
+    if [[ ! -f "$WIFI_CREDS_FILE" ]] || [[ ! -s "$WIFI_CREDS_FILE" ]]; then
+        log_warning "No WiFi credentials found to migrate"
+        return 0
+    fi
+    
+    local env_file="/root/wifi-credentials.env"
+    
+    # Create secure environment file
+    : > "$env_file"
+    chmod 600 "$env_file"
+    
+    # Parse WiFi credentials JSON
+    local ssids=()
+    local psks=()
+    
+    while IFS= read -r line; do
+        if [[ "$line" =~ \"ssid\":\ \"([^\"]+)\" ]]; then
+            ssids+=("${BASH_REMATCH[1]}")
+        elif [[ "$line" =~ \"psk\":\ \"([^\"]+)\" ]]; then
+            psks+=("${BASH_REMATCH[1]}")
+        fi
+    done < "$WIFI_CREDS_FILE"
+    
+    # Generate environment variables for each network
+    for i in "${!ssids[@]}"; do
+        local ssid="${ssids[$i]}"
+        local psk="${psks[$i]:-}"
+        
+        # Create safe variable name (replace special chars with underscore)
+        local var_name=$(echo "$ssid" | tr -c '[:alnum:]' '_' | tr '[:lower:]' '[:upper:]')
+        
+        if [[ -n "$psk" ]]; then
+            echo "${var_name}_PSK=\"$psk\"" >> "$env_file"
+        fi
+    done
+    
+    log_success "Created secure WiFi credentials file: $env_file"
+}
+
+# Generate WiFi configuration for NixOS (using environmentFile)
 generate_wifi_config() {
     log_info "Generating WiFi configuration..."
     
@@ -413,12 +456,20 @@ generate_wifi_config() {
         return 0
     fi
     
+    # Generate secure environment file
+    generate_wifi_env_file
+    
     cat >> "$OUTPUT_FILE" <<'EOF'
   
   # WiFi Configuration (migrated credentials)
-  # Using wpa_supplicant for better compatibility
+  # Using wpa_supplicant with secure credential storage
+  # ✅ SECURE: Passwords stored in /root/wifi-credentials.env (not in Nix store)
   networking.wireless = {
     enable = true;
+    
+    # Secure credentials file (not world-readable, not in Nix store)
+    environmentFile = "/root/wifi-credentials.env";
+    
     networks = {
 EOF
     
@@ -434,17 +485,19 @@ EOF
         fi
     done < "$WIFI_CREDS_FILE"
     
-    # Generate network entries
+    # Generate network entries (referencing environment variables)
     for i in "${!ssids[@]}"; do
         local ssid="${ssids[$i]}"
         local psk="${psks[$i]:-}"
+        local var_name=$(echo "$ssid" | tr -c '[:alnum:]' '_' | tr '[:lower:]' '[:upper:]')
         
         cat >> "$OUTPUT_FILE" <<EOF
       "$ssid" = {
 EOF
         if [[ -n "$psk" ]]; then
             cat >> "$OUTPUT_FILE" <<EOF
-        pskRaw = "$psk";
+        # Password loaded from environmentFile variable: ${var_name}_PSK
+        pskRaw = "@${var_name}_PSK@";
 EOF
         else
             cat >> "$OUTPUT_FILE" <<EOF
@@ -465,6 +518,7 @@ EOF
 EOF
     
     log_success "Generated WiFi configuration for ${#ssids[@]} network(s)"
+    log_info "  Credentials stored securely in: /root/wifi-credentials.env"
 }
 
 # Generate network optimization settings
@@ -561,12 +615,20 @@ generate_summary() {
 
 ## Security Notes
 
-- WiFi credentials are stored in plain text in the Nix store
-- Consider using \`networking.wireless.environmentFile\` for secrets
-- Review and adjust permissions on configuration files
+✅ **WiFi credentials are stored securely**:
+- Passwords stored in: \`/root/wifi-credentials.env\`
+- File permissions: \`600\` (only root can read)
+- NOT stored in Nix store (not world-readable)
+- Uses \`networking.wireless.environmentFile\` feature
+
+⚠️ **Important**:
+- Keep \`/root/wifi-credentials.env\` secure (already chmod 600)
+- Do NOT commit this file to version control
+- Backup securely if needed
 - Delete migration files after successful import:
   \`\`\`bash
   sudo rm -rf $MIGRATION_DIR
+  # Keep /root/wifi-credentials.env - it's needed by the system
   \`\`\`
 
 ## Troubleshooting
