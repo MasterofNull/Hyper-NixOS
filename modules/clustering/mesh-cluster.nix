@@ -550,12 +550,14 @@ in
       # Enable with: systemctl enable hypervisor-mesh-node
       # wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
+      # Don't require network - allow boot to continue if network is unavailable
+      # Using 'wants' instead of 'requires' prevents boot hangs
       wants = [ "network-online.target" ];
       
       serviceConfig = {
         Type = "notify";
-        # Add timeout for mesh node startup
-        TimeoutStartSec = "120s";
+        # Add timeout for mesh node startup to prevent boot hangs
+        TimeoutStartSec = "60s";
         ExecStart = "${pkgs.writeShellScript "mesh-node" ''
           #!/usr/bin/env bash
           
@@ -599,6 +601,8 @@ in
       
       serviceConfig = {
         Type = "simple";
+        # Add timeout to prevent boot hangs
+        TimeoutStartSec = "60s";
         ExecStart = "${pkgs.writeShellScript "consensus-engine" ''
           #!/usr/bin/env bash
           

@@ -34,7 +34,7 @@ in
       wants = [ "libvirtd.service" ];  # Soft dependency - continue if libvirtd fails
       wantedBy = [ "multi-user.target" ];
       
-      # Don't block boot if web dashboard fails
+      # Don't block boot if web dashboard fails or network unavailable
       unitConfig = {
         # Make this service optional for boot completion
         DefaultDependencies = true;
@@ -42,6 +42,11 @@ in
       
       serviceConfig = {
         Type = "simple";
+        # Add timeout to prevent blocking boot
+        TimeoutStartSec = "30s";
+        # Restart on failure (network might come up later)
+        Restart = "on-failure";
+        RestartSec = "30s";
         # Check if script exists before starting
         ExecCondition = "${pkgs.coreutils}/bin/test -f /etc/hypervisor/scripts/web_dashboard.py";
         ExecStart = "${py}/bin/python3 /etc/hypervisor/scripts/web_dashboard.py";

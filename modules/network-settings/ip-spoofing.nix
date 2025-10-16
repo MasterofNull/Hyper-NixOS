@@ -3,13 +3,21 @@
 # IP Address Management and Spoofing Module
 # Provides IP aliasing, rotation, and dynamic addressing capabilities
 # ⚠️ WARNING: Use only for legitimate purposes (testing, load balancing, authorized pentesting)
+# ⚠️ DISABLED BY DEFAULT - Must be explicitly enabled by user/wizard
 
 let
   cfg = config.hypervisor.network.ipSpoof;
 in
 {
   options.hypervisor.network.ipSpoof = {
-    enable = lib.mkEnableOption "IP address management and spoofing capabilities";
+    enable = lib.mkEnableOption "IP address management and spoofing capabilities" // {
+      default = false;
+      description = ''
+        Enable IP address management and spoofing capabilities.
+        ⚠️ DISABLED BY DEFAULT for security reasons.
+        Only enable after proper configuration via wizard or manual setup.
+      '';
+    };
     
     mode = lib.mkOption {
       type = lib.types.enum [ "alias" "rotation" "dynamic" "proxy" "disabled" ];
@@ -136,12 +144,15 @@ in
     systemd.services.ip-alias = lib.mkIf (cfg.mode == "alias") {
       description = "IP Address Alias Management";
       after = [ "network-online.target" ];
+      # Don't require network - allow boot to continue if network is unavailable
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
       
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        # Add timeout to prevent boot hangs
+        TimeoutStartSec = "30s";
         ExecStart = pkgs.writeShellScript "ip-alias-start" ''
           set -e
           
@@ -180,6 +191,7 @@ in
     systemd.services.ip-rotation = lib.mkIf (cfg.mode == "rotation") {
       description = "IP Address Rotation Service";
       after = [ "network-online.target" ];
+      # Don't require network - allow boot to continue if network is unavailable
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
       
@@ -187,6 +199,8 @@ in
         Type = "simple";
         Restart = "always";
         RestartSec = 10;
+        # Add timeout to prevent boot hangs
+        TimeoutStartSec = "30s";
         ExecStart = pkgs.writeShellScript "ip-rotation" ''
           set -e
           

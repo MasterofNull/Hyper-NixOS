@@ -8,6 +8,8 @@
   systemd.services.hypervisor-health-check = {
     description = "Hypervisor System Health Check";
     after = [ "network-online.target" "libvirtd.service" ];
+    # Don't require network - it's optional for health checks
+    # Using 'wants' instead of 'requires' allows boot to continue if network is unavailable
     wants = [ "network-online.target" ];
     
     serviceConfig = {
@@ -16,6 +18,8 @@
       User = "root";
       StandardOutput = "journal";
       StandardError = "journal";
+      # Add timeout to prevent hanging boot
+      TimeoutStartSec = "30s";
     };
   };
 
@@ -38,6 +42,8 @@
   systemd.services.hypervisor-update-check = {
     description = "Hypervisor Update Check";
     after = [ "network-online.target" ];
+    # Don't require network - it's optional for update checks
+    # Using 'wants' instead of 'requires' allows boot to continue if network is unavailable
     wants = [ "network-online.target" ];
     
     serviceConfig = {
@@ -46,6 +52,8 @@
       User = "root";
       StandardOutput = "journal";
       StandardError = "journal";
+      # Add timeout to prevent hanging boot
+      TimeoutStartSec = "30s";
     };
   };
 
