@@ -600,7 +600,9 @@ in
     # AI monitoring service
     systemd.services.hypervisor-ai-monitor = {
       description = "Hypervisor AI Monitoring Service";
-      wantedBy = [ "multi-user.target" ];
+      # Don't auto-start until AI environment is configured
+      # Enable with: systemctl enable hypervisor-ai-monitor
+      # wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
       
       environment = {
@@ -611,7 +613,10 @@ in
       };
       
       serviceConfig = {
-        Type = "notify";
+        # Use simple type since script structure doesn't support notify properly
+        Type = "simple";
+        # Add timeout to prevent boot hang
+        TimeoutStartSec = "60s";
         ExecStart = "${pkgs.writeShellScript "ai-monitor" ''
           #!/usr/bin/env bash
           
@@ -619,23 +624,21 @@ in
           echo "ML Engine: ${cfg.settings.engine}"
           echo "Models: ${toString (attrNames cfg.models)}"
           
+          # Check if Python environment exists
+          if [[ ! -d /var/lib/hypervisor/ai/venv ]]; then
+            echo "Warning: AI virtual environment not found. Service will not start."
+            exit 0
+          fi
+          
           # Initialize Python environment
           export VIRTUAL_ENV=/var/lib/hypervisor/ai/venv
-          source $VIRTUAL_ENV/bin/activate
+          source $VIRTUAL_ENV/bin/activate || exit 0
           
           # Start the AI monitoring daemon
           python3 /var/lib/hypervisor/ai/monitor.py \
             --config /etc/hypervisor/ai/config.json \
             --models ${concatStringsSep "," (attrNames cfg.models)} \
-            --engine ${cfg.settings.engine}
-          
-          # Signal ready
-          systemd-notify --ready
-          
-          # Keep running
-          while true; do
-            sleep 10
-          done
+            --engine ${cfg.settings.engine} || echo "AI monitor failed to start"
         ''}";
         
         Restart = "always";

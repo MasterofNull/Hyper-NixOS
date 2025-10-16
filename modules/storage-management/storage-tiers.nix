@@ -510,6 +510,8 @@ in
       
       serviceConfig = {
         Type = "notify";
+        # Add timeout in case systemd-notify fails
+        TimeoutStartSec = "60s";
         ExecStart = "${pkgs.writeShellScript "storage-tier-manager" ''
           #!/usr/bin/env bash
           

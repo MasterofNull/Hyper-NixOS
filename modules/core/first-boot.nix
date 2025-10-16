@@ -59,11 +59,11 @@ in
       };
       
       serviceConfig = {
-        Type = "idle";  # Wait for other services to finish
+        Type = "oneshot";  # Don't block boot - run once and complete
         RemainAfterExit = true;
-        StandardInput = "tty-force";
-        StandardOutput = "inherit";
-        StandardError = "inherit";
+        StandardInput = "tty";
+        StandardOutput = "journal+console";
+        StandardError = "journal+console";
         TTYPath = "/dev/tty1";
         TTYReset = true;
         TTYVHangup = true;
@@ -76,10 +76,13 @@ in
         ExecStart = "${comprehensiveSetupWizardScript}/bin/comprehensive-setup-wizard";
         
         # Setup complete flag is created by the wizard itself
+        # Don't restart on failure to avoid boot loops
+        Restart = "no";
       };
       
       # Run after basic system is up but before getty
-      after = [ "sysinit.target" "basic.target" "multi-user.target" "libvirtd.service" ];
+      # NOTE: Don't use "after multi-user.target" when "wantedBy multi-user.target" to avoid circular dependency
+      after = [ "sysinit.target" "basic.target" "libvirtd.service" ];
       before = [ "getty@tty1.service" ];
       wants = [ "libvirtd.service" ];
       wantedBy = [ "multi-user.target" ];

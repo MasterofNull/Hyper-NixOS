@@ -608,6 +608,8 @@ in
       
       serviceConfig = {
         Type = "notify";
+        # Add timeout in case systemd-notify fails
+        TimeoutStartSec = "30s";
         ExecStart = "${pkgs.writeShellScript "capability-enforcer" ''
           #!/usr/bin/env bash
           

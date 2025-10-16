@@ -258,11 +258,16 @@ in {
       # Main threat detection engine
       "hypervisor-threat-detector" = {
         description = "Hypervisor Threat Detection Engine";
-        wantedBy = [ "multi-user.target" ];
+        # Don't start by default to avoid boot issues
+        # Enable with: systemctl enable hypervisor-threat-detector
+        # wantedBy = [ "multi-user.target" ];
         after = [ "network.target" "libvirtd.service" ];
         
         serviceConfig = {
-          Type = "notify";
+          # Use simple instead of notify since Python script doesn't send notification
+          Type = "simple";
+          # Add timeout to prevent boot hang
+          TimeoutStartSec = "30s";
           ExecStart = "${pkgs.writeScript "threat-detector" ''
             #!${pkgs.python3}/bin/python3
             

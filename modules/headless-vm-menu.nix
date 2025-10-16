@@ -48,24 +48,26 @@ in
       };
       
       serviceConfig = {
-        Type = "idle";  # Wait for system to be ready
+        Type = "oneshot";  # Don't block boot
         RemainAfterExit = true;
-        StandardInput = "tty-force";
-        StandardOutput = "inherit";
-        StandardError = "inherit";
+        StandardInput = "tty";
+        StandardOutput = "journal+console";
+        StandardError = "journal+console";
         TTYPath = "/dev/tty1";
         TTYReset = true;
         TTYVHangup = true;
         TTYVTDisallocate = true;
-        Restart = "on-failure";
-        RestartSec = 5;
+        
+        # Don't restart to avoid boot issues
+        Restart = "no";
         
         # Run the menu
         ExecStart = "${headlessVmMenuScript}/bin/headless-vm-menu";
       };
       
       # Run after libvirtd is ready
-      after = [ "libvirtd.service" "multi-user.target" ];
+      # NOTE: Don't use "after multi-user.target" when "wantedBy multi-user.target" to avoid circular dependency
+      after = [ "libvirtd.service" "network.target" ];
       requires = [ "libvirtd.service" ];
       wantedBy = [ "multi-user.target" ];
       

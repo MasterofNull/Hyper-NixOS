@@ -521,6 +521,8 @@ in
       
       serviceConfig = {
         Type = "notify";
+        # Add timeout for backup daemon startup
+        TimeoutStartSec = "60s";
         ExecStart = "${pkgs.writeShellScript "backup-daemon" ''
           #!/usr/bin/env bash
           
