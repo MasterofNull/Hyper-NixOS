@@ -7,7 +7,7 @@
   imports = [
     # Hardware configuration
     ../hardware-configuration.nix
-    
+
     # Core modules
     ../modules/core/options.nix
     ../modules/core/hypervisor-base.nix
@@ -16,18 +16,26 @@
     ../modules/core/directories.nix
     ../modules/core/portable-base.nix
     ../modules/core/optimized-system.nix
+    ../modules/core/universal-hardware-detection.nix  # Universal hardware detection (ALL architectures)
     ../modules/system-tiers.nix  # System tier definitions
-    
+
+    # Hardware platform modules
+    ../modules/hardware/platform-detection.nix  # Laptop/Desktop/Server detection
+
+    # System management
+    ../modules/system/nixos-update-checker.nix  # Monthly update notifications
+    ../modules/system/hibernation-auth.nix  # Intelligent hibernation/resume authentication
+
     # Security modules
     ../modules/security/base.nix
     ../modules/security/profiles.nix
     ../modules/security/privilege-separation.nix
     ../modules/security/polkit-rules.nix
-    
+
     # Virtualization
     ../modules/virtualization/libvirt.nix
     ../modules/virtualization/performance.nix
-    
+
     # Note: Networking and service configurations are handled directly in this file
   ];
 
@@ -244,9 +252,19 @@
     '';
   };
   
-  # Boot loader
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  # Boot configuration
+  boot = {
+    loader = {
+      systemd-boot.enable = lib.mkDefault true;
+      efi.canTouchEfiVariables = lib.mkDefault true;
+    };
+
+    # NOTE: All hardware-specific settings are automatically detected
+    # by modules/core/universal-hardware-detection.nix
+    #
+    # NO HARDCODED SETTINGS - intelligent discovery for all platforms!
+    # Run 'hv-hardware-info' to see what was detected.
+  };
   
   # This value determines the NixOS release
   system.stateVersion = "24.05";

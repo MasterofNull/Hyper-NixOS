@@ -3,12 +3,26 @@
 {
   imports = [
     ../hardware-configuration.nix
+
+    # Core modules
     ../modules/core/options.nix
     ../modules/core/hypervisor-base.nix
     ../modules/core/base-system.nix
+    ../modules/core/universal-hardware-detection.nix  # Universal hardware detection (ALL architectures)
     ../modules/system-tiers.nix  # System tier definitions
+
+    # Hardware platform modules
+    ../modules/hardware/platform-detection.nix  # Laptop/Desktop/Server detection
+
+    # System management
+    ../modules/system/nixos-update-checker.nix  # Monthly update notifications
+    ../modules/system/hibernation-auth.nix  # Intelligent hibernation/resume authentication
+
+    # Security modules
     ../modules/security/ssh-enhanced.nix
     ../modules/security/docker-enhanced.nix
+
+    # Monitoring
     ../modules/monitoring/enhanced-monitoring.nix
   ];
 

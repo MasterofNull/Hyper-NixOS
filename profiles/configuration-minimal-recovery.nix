@@ -7,11 +7,19 @@
   imports = [
     # Hardware configuration (always needed)
     ../hardware-configuration.nix
-    
+
     # Core options module (defines hypervisor.enable and other core options)
     ../modules/core/options.nix
     ../modules/core/hypervisor-base.nix  # Base hypervisor setup when enabled
-    
+    ../modules/core/universal-hardware-detection.nix  # Universal hardware detection (ALL architectures)
+
+    # Hardware platform modules
+    ../modules/hardware/platform-detection.nix  # Laptop/Desktop/Server detection
+
+    # System management
+    ../modules/system/nixos-update-checker.nix  # Monthly update notifications
+    ../modules/system/hibernation-auth.nix  # Intelligent hibernation/resume authentication
+
     # Only import modules whose options we're actually setting below
     ../modules/features/feature-categories.nix  # Defines hypervisor.features
     ../modules/features/feature-manager.nix  # We use hypervisor.featureManager
@@ -26,27 +34,18 @@
   # Boot configuration
   boot = {
     loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
+      systemd-boot.enable = lib.mkDefault true;
+      efi.canTouchEfiVariables = lib.mkDefault true;
       timeout = 3;
     };
-    
-    # Kernel parameters for virtualization
-    kernelParams = [ 
-      "intel_iommu=on"
-      "iommu=pt"
-      "kvm_intel.nested=1"
-      "transparent_hugepage=madvise"
-    ];
-    
-    kernelModules = [ 
-      "kvm-intel"
-      "vfio"
-      "vfio_iommu_type1"
-      "vfio_pci"
-    ];
-    
-    initrd.kernelModules = [ "vfio_pci" ];
+
+    # NOTE: All hardware-specific settings are automatically detected
+    # by modules/core/universal-hardware-detection.nix
+    #
+    # NO HARDCODED SETTINGS - intelligent discovery for all platforms!
+    # Run 'hv-hardware-info' to see what was detected.
+    #
+    # Recovery mode: Basic virtualization support auto-configured
   };
   
   # Feature selection - this determines what modules get loaded
