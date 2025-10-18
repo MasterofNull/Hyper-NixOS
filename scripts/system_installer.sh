@@ -880,7 +880,9 @@ main() {
   # Fast mode optimizations (enabled by default)
   if $FAST_MODE; then
     msg "Optimized mode enabled - using parallel downloads for faster installation"
-    RB_OPTS+=(--no-update-lock-file)
+    # NOTE: Do NOT use --no-update-lock-file here
+    # The flake update already happened earlier in the script (see nix flake update),
+    # nixos-rebuild will use the existing lock file automatically
     RB_OPTS+=(--max-jobs auto)
     RB_OPTS+=(--cores 0)
     RB_OPTS+=(--option http-connections 25)
