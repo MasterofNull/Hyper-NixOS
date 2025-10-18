@@ -439,6 +439,18 @@ copy_repo_to_etc() {
   
   # Also ensure /etc/hypervisor itself has no .git directory
   rm -rf /etc/hypervisor/.git 2>/dev/null || true
+
+  # Ensure flake.lock exists for reproducible builds
+  # This is critical because /etc/hypervisor/flake.nix references path:/etc/hypervisor/src
+  # and Nix will detect the flake.nix in src/ and require a lock file
+  if [[ -f "$src_root/flake.lock" ]] && [[ ! -f "$dst_root/flake.lock" ]]; then
+    msg "Copying flake.lock for reproducible builds..."
+    cp "$src_root/flake.lock" "$dst_root/flake.lock"
+  elif [[ ! -f "$dst_root/flake.lock" ]]; then
+    warn "Source flake.lock not found at $src_root/flake.lock"
+    warn "Flake evaluation may require lock file generation"
+  fi
+
   # Permissive defaults for build/rebuild usability; optional hardening provided separately
   chown -R root:root "$dst_root" || true
   find "$dst_root" -type d -exec chmod 0755 {} + 2>/dev/null || true
@@ -959,6 +971,7 @@ main() {
     warn "Git is not available - attempting to use nix-shell with git for flake operations"
     # Use nix-shell to provide git during flake update
     if ! nix-shell -p git --run "nix \
+        --accept-flake-config \
         --option tarball-ttl 0 \
         --option narinfo-cache-positive-ttl 0 \
         --option narinfo-cache-negative-ttl 0 \
@@ -969,6 +982,7 @@ main() {
   else
     # Git is available, proceed normally
     if ! nix \
+        --accept-flake-config \
         --option tarball-ttl 0 \
         --option narinfo-cache-positive-ttl 0 \
         --option narinfo-cache-negative-ttl 0 \
