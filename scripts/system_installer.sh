@@ -440,16 +440,12 @@ copy_repo_to_etc() {
   # Also ensure /etc/hypervisor itself has no .git directory
   rm -rf /etc/hypervisor/.git 2>/dev/null || true
 
-  # Ensure flake.lock exists for reproducible builds
-  # This is critical because /etc/hypervisor/flake.nix references path:/etc/hypervisor/src
-  # and Nix will detect the flake.nix in src/ and require a lock file
-  if [[ -f "$src_root/flake.lock" ]] && [[ ! -f "$dst_root/flake.lock" ]]; then
-    msg "Copying flake.lock for reproducible builds..."
-    cp "$src_root/flake.lock" "$dst_root/flake.lock"
-  elif [[ ! -f "$dst_root/flake.lock" ]]; then
-    warn "Source flake.lock not found at $src_root/flake.lock"
-    warn "Flake evaluation may require lock file generation"
-  fi
+  # Remove flake.nix and flake.lock from /etc/hypervisor/src to prevent Nix from
+  # treating the path: input as a flake. The host flake (/etc/hypervisor/flake.nix)
+  # only needs to access files from the source directory, not evaluate it as a flake.
+  # This prevents "flake requires lock file changes" errors during flake update.
+  msg "Removing flake files from source directory (host flake will be created separately)..."
+  rm -f "$dst_root/flake.nix" "$dst_root/flake.lock" 2>/dev/null || true
 
   # Permissive defaults for build/rebuild usability; optional hardening provided separately
   chown -R root:root "$dst_root" || true
