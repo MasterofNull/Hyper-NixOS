@@ -105,14 +105,19 @@ jobs:
           
           required_files=(
             "README.md"
-            "CREDITS.md"
+            "LICENSE"
+            "docs/CREDITS.md"
+            "docs/CONTRIBUTING.md"
+            "docs/AUTHORS.md"
+            "docs/SECURITY.md"
+            "docs/TESTING.md"
             "docs/user-guides/ENTERPRISE_QUICK_START.md"
             "scripts/system_installer.sh"
             "scripts/menu.sh"
             "configuration.nix"
             "hardware-configuration.nix"
             "modules/security/profiles.nix"
-            "tests/run_all_tests.sh"
+            "tests/run_comprehensive_tests.sh"
           )
           
           missing=0
