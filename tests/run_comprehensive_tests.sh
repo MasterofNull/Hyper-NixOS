@@ -348,8 +348,8 @@ if [ $OVERALL_COVERAGE -lt 80 ]; then
   TESTS_NEEDED=$(( (TOTAL_ITEMS * 80 / 100) - TESTED_ITEMS ))
 
   echo -e "${YELLOW}Gap to target:${NC}"
-  echo "  Missing coverage: ${COVERAGE_GAP}%"
-  echo "  Tests needed:     ~${TESTS_NEEDED} more tests"
+  echo -e "  Missing coverage: ${COVERAGE_GAP}%"
+  echo -e "  Tests needed:     ~${TESTS_NEEDED} more tests"
   echo ""
 fi
 

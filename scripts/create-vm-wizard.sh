@@ -1,17 +1,30 @@
 #!/usr/bin/env bash
+################################################################################
+# Hyper-NixOS - Next-Generation Virtualization Platform
+# https://github.com/MasterofNull/Hyper-NixOS
+#
+# Script: create-vm-wizard.sh
+# Purpose: Interactive VM creation wizard with intelligent defaults
+#
+# Copyright © 2024-2025 MasterofNull
+# Licensed under the MIT License
+#
+# Author: MasterofNull
+# Part of Design Ethos - Third Pillar: Learning Through Guidance
+################################################################################
 # shellcheck disable=SC2034,SC2154,SC1091
-# Source common library for standardized functions
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null || true
-source "${SCRIPT_DIR}/lib/system_discovery.sh" 2>/dev/null || true
 
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
 PATH="/run/current-system/sw/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 trap 'exit $?' EXIT HUP INT TERM
-IFS=$'\n\t'
-umask 077
+
+# Source common library for standardized functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/system_discovery.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/branding.sh" 2>/dev/null || true
 
 # Intelligent Defaults Framework - Design Ethos Third Pillar
 # Detect system capabilities and pre-fill with best practices

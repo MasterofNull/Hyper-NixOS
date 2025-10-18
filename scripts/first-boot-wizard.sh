@@ -1,19 +1,37 @@
 #!/usr/bin/env bash
+################################################################################
+# Hyper-NixOS - Next-Generation Virtualization Platform
+# https://github.com/MasterofNull/Hyper-NixOS
+#
+# Script: first-boot-wizard.sh
+# Purpose: Interactive first-boot configuration wizard with hardware detection
+#
+# Copyright © 2024-2025 MasterofNull
+# Licensed under the MIT License
+#
+# Author: MasterofNull
+# Part of Design Ethos - Third Pillar: Learning Through Guidance
+################################################################################
 # shellcheck disable=SC2034,SC2154,SC1091
-#
-# Hyper-NixOS First Boot Configuration Wizard
-# This script runs on first boot to help users select their system configuration
-#
+
+set -euo pipefail
 
 # Source shared libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/ui.sh"
+source "${SCRIPT_DIR}/lib/branding.sh"
 
 # Initialize script
 init_script "$(basename "$0")"
 
-set -euo pipefail
+# Show branded banner
+clear
+show_banner_large
+
+echo -e "${BOLD}First Boot Configuration Wizard${NC}"
+echo "This wizard will help you configure Hyper-NixOS for your hardware."
+echo ""
 
 # Colors for UI
 readonly RED='\033[0;31m'
@@ -617,6 +635,9 @@ check_root
         echo -e "\n${RED}Configuration failed. Please check the logs and try again.${NC}"
         exit 1
     fi
+
+    # Show footer
+    show_footer
 }
 
 # Run main function

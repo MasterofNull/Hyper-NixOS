@@ -141,14 +141,14 @@ SCRIPT_COV=$((TESTED_SCRIPTS * 100 / TOTAL_SCRIPTS))
 OVERALL_COV=$(( (TESTED_MODULES + TESTED_SCRIPTS) * 100 / (TOTAL_MODULES + TOTAL_SCRIPTS) ))
 
 echo "📈 Expected coverage:"
-echo "   Modules: ${MODULE_COV}% (${TESTED_MODULES}/${TOTAL_MODULES})"
-echo "   Scripts: ${SCRIPT_COV}% (${TESTED_SCRIPTS}/${TOTAL_SCRIPTS})"
-echo "   Overall: ${OVERALL_COV}% (${TESTED_MODULES}+${TESTED_SCRIPTS}/${TOTAL_MODULES}+${TOTAL_SCRIPTS})"
+echo -e "   Modules: ${MODULE_COV}% (${TESTED_MODULES}/${TOTAL_MODULES})"
+echo -e "   Scripts: ${SCRIPT_COV}% (${TESTED_SCRIPTS}/${TOTAL_SCRIPTS})"
+echo -e "   Overall: ${OVERALL_COV}% (${TESTED_MODULES}+${TESTED_SCRIPTS}/${TOTAL_MODULES}+${TOTAL_SCRIPTS})"
 echo ""
 
 if [ $OVERALL_COV -ge 80 ]; then
     echo "🎉 80% COVERAGE TARGET REACHED!"
 else
     GAP=$((80 - OVERALL_COV))
-    echo "⚠️  Gap to 80%: ${GAP}%"
+    echo -e "⚠️  Gap to 80%: ${GAP}%"
 fi

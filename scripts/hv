@@ -1,20 +1,35 @@
 #!/usr/bin/env bash
-# Hyper-NixOS Unified CLI
-# Intelligent defaults and user-friendly command interface
+################################################################################
+# Hyper-NixOS - Next-Generation Virtualization Platform
+# https://github.com/MasterofNull/Hyper-NixOS
+#
+# Script: hv (Hyper-NixOS Unified CLI)
+# Purpose: Main command-line interface for all Hyper-NixOS operations
+#
+# Copyright © 2024-2025 MasterofNull
+# Licensed under the MIT License
+#
+# Author: MasterofNull
 # Part of Design Ethos - Third Pillar: Learning Through Guidance
+################################################################################
 
 set -euo pipefail
 
 readonly VERSION="2.0.0"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Colors
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly CYAN='\033[0;36m'
-readonly BOLD='\033[1m'
-readonly NC='\033[0m'
+# Source branding library
+source "${SCRIPT_DIR}/lib/branding.sh" 2>/dev/null || {
+    # Fallback if branding not available
+    BLUE='\033[0;34m'
+    CYAN='\033[0;36m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    RED='\033[0;31m'
+    MAGENTA='\033[0;35m'
+    NC='\033[0m'
+    BOLD='\033[1m'
+}
 
 # Show main help
 show_help() {
@@ -263,9 +278,30 @@ main() {
             show_help
             ;;
         version|--version|-v)
-            echo "Hyper-NixOS CLI v${VERSION}"
+            if type show_version &>/dev/null; then
+                show_version
+            else
+                echo "Hyper-NixOS CLI v${VERSION}"
+                echo "© 2024-2025 MasterofNull | MIT License"
+            fi
             ;;
-            
+        credits|--credits)
+            if type show_credits &>/dev/null; then
+                show_credits
+            else
+                echo "Hyper-NixOS © 2024-2025 MasterofNull"
+                echo "Visit: https://github.com/MasterofNull/Hyper-NixOS"
+            fi
+            ;;
+        license|--license)
+            if type show_license_notice &>/dev/null; then
+                show_license_notice
+            else
+                echo "Hyper-NixOS - Licensed under MIT License"
+                echo "See LICENSE file for details"
+            fi
+            ;;
+
         *)
             echo -e "${RED}Unknown command: $command${NC}"
             echo "Run 'hv help' for usage information"

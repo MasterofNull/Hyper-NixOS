@@ -60,16 +60,16 @@ show_risk_notification() {
             ;;
         moderate)
             echo -e "${YELLOW}${RISK_ICON_MODERATE}${NC} ${BOLD}$feature${NC} - ${YELLOW}Moderate Risk${NC}"
-            echo "  ${YELLOW}Impacts:${NC} $impacts"
+            echo -e "  ${YELLOW}Impacts:${NC} $impacts"
             if [[ -n "$mitigations" ]]; then
-                echo "  ${BLUE}Mitigations:${NC} $mitigations"
+                echo -e "  ${BLUE}Mitigations:${NC} $mitigations"
             fi
             ;;
         high)
             echo -e "${RED}${RISK_ICON_HIGH}${NC} ${BOLD}$feature${NC} - ${RED}High Risk${NC}"
-            echo "  ${RED}WARNING:${NC} $impacts"
+            echo -e "  ${RED}WARNING:${NC} $impacts"
             if [[ -n "$mitigations" ]]; then
-                echo "  ${YELLOW}Required Mitigations:${NC} $mitigations"
+                echo -e "  ${YELLOW}Required Mitigations:${NC} $mitigations"
             fi
             echo ""
             read -rp "  ${YELLOW}Type 'I understand' to proceed:${NC} " confirm
@@ -80,9 +80,9 @@ show_risk_notification() {
             ;;
         critical)
             echo -e "${RED}${RISK_ICON_CRITICAL} ${BOLD}$feature${NC} - ${RED}${BOLD}CRITICAL RISK${NC}"
-            echo "  ${RED}${BOLD}DANGER:${NC} $impacts"
+            echo -e "  ${RED}${BOLD}DANGER:${NC} $impacts"
             if [[ -n "$mitigations" ]]; then
-                echo "  ${YELLOW}${BOLD}MANDATORY Mitigations:${NC} $mitigations"
+                echo -e "  ${YELLOW}${BOLD}MANDATORY Mitigations:${NC} $mitigations"
             fi
             echo ""
             echo -e "  ${RED}This feature poses significant security risks.${NC}"

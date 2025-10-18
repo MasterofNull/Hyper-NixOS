@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
-# Hyper-NixOS Network Configuration Wizard
-# Intelligent defaults based on detected network topology
+################################################################################
+# Hyper-NixOS - Next-Generation Virtualization Platform
+# https://github.com/MasterofNull/Hyper-NixOS
+#
+# Script: network-configuration-wizard.sh
+# Purpose: Intelligent network configuration based on detected topology
+#
+# Copyright © 2024-2025 MasterofNull
+# Licensed under the MIT License
+#
+# Author: MasterofNull
 # Part of Design Ethos - Third Pillar: Learning Through Guidance
+################################################################################
 
 set -euo pipefail
 
@@ -12,9 +22,19 @@ source "${SCRIPT_DIR}/lib/logging.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/error_handling.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/config_backup.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/dry_run.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/educational-template.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/branding.sh" 2>/dev/null || true
 
 setup_error_trap "network-configuration-wizard.sh"
 parse_dry_run_arg "$@"
+
+# Show branded banner
+clear
+show_banner_large
+
+echo -e "${BOLD}Network Configuration Wizard${NC}"
+echo "Configure network topology and bridge settings."
+echo ""
 
 # Colors
 readonly GREEN='\033[0;32m'
@@ -86,28 +106,52 @@ main() {
     local rec_mode=$(recommend_network_mode "$interfaces" "$has_bridge" "$has_vlan")
     
     echo -e "${CYAN}Recommended Network Mode: ${BOLD}$rec_mode${NC}\n"
-    
-    # Show reasoning
-    cat << EOF
-${YELLOW}Why this recommendation?${NC}
 
-EOF
-    
+    # Educational content about recommendation
+    educational_header "Network Topology"
+
     case "$rec_mode" in
         bridge)
-            echo -e "  • Multiple interfaces and existing bridge detected"
-            echo -e "  • Bridge mode provides best performance for VMs"
-            echo -e "  • Direct network access for VM services"
+            explain_what "Bridge Networking" \
+                "Connecting VMs directly to your physical network using a network bridge"
+
+            explain_why "You have multiple network interfaces" \
+                "Bridge mode allows VMs to appear as separate devices on your network, enabling direct access to VM services"
+
+            explain_how "1. Create a software bridge (br0)
+2. Attach your physical interface to the bridge
+3. VMs connect to the bridge
+4. Each VM gets its own network identity"
+
+            show_transferable_skill "Linux Bridge Networking" \
+                "Works on Ubuntu, Debian, RHEL, and ANY Linux system. Also used in Docker, Kubernetes, and OpenStack"
             ;;
         bridge_recommended)
-            echo -e "  • Multiple interfaces available"
-            echo -e "  • Bridge mode recommended for better performance"
-            echo -e "  • Can create bridge for VM networking"
+            explain_what "Bridge Networking (Recommended)" \
+                "Your system has multiple interfaces - perfect for high-performance bridge mode"
+
+            compare_options \
+                "Bridge Mode" \
+                "Direct network access, better performance, VMs visible on network" \
+                "Requires network configuration, VMs exposed to network" \
+                "NAT Mode" \
+                "Simpler setup, isolated VMs, works with single interface" \
+                "Network address translation overhead, port forwarding needed for services"
             ;;
         nat)
-            echo -e "  • Single interface or simple topology"
-            echo -e "  • NAT provides security isolation"
-            echo -e "  • Suitable for development/testing"
+            explain_what "NAT Networking" \
+                "Network Address Translation - VMs use the host as a gateway to the internet"
+
+            explain_why "Single interface or security-focused setup" \
+                "NAT provides a security barrier between VMs and your network, perfect for testing"
+
+            explain_how "1. Create virtual network (virbr0)
+2. Run DHCP server for VMs
+3. VMs get private IPs (192.168.122.x)
+4. Host translates VM traffic to/from internet"
+
+            show_best_practice "NAT for Development VMs" \
+                "NAT mode is industry standard for development because it isolates test VMs from production networks"
             ;;
     esac
     
@@ -140,16 +184,36 @@ EOF
     # Configure
     echo ""
     echo -e "${YELLOW}Configuring ${selected_mode} networking...${NC}\n"
-    
+
     case "$selected_mode" in
         nat)
+            educational_header "NAT Configuration"
+
+            explain_what "Setting up NAT Network" \
+                "Creating an isolated virtual network with internet access"
+
             echo -e "${GREEN}✓${NC} NAT configuration:"
             echo -e "  • Bridge: virbr0 (libvirt default)"
             echo -e "  • Subnet: 192.168.122.0/24"
             echo -e "  • DHCP: Enabled"
             echo -e "  • Security: Isolated from host network"
+            echo ""
+
+            real_world_scenario "Home Lab Setup" \
+                "NAT mode is perfect for running test VMs at home without affecting your home network. VMs can access the internet but are isolated from other devices."
+
+            track_learning_milestone "networking" "configured-nat-network"
             ;;
         bridge)
+            educational_header "Bridge Configuration"
+
+            explain_what "Setting up Bridge Network" \
+                "Creating a software bridge to connect VMs to your physical network"
+
+            warn_common_mistake "Bridging the wrong interface" \
+                "If you bridge your only network connection incorrectly, you may lose network access" \
+                "Choose the interface you want VMs to use. If uncertain, choose NAT mode instead"
+
             # Get physical interface
             echo -e "${CYAN}Select physical interface for bridge:${NC}"
             local iface_list=($(detect_network_interfaces))
@@ -159,6 +223,14 @@ EOF
                     echo -e "  • Bridge: br0"
                     echo -e "  • Physical: $iface"
                     echo -e "  • Mode: Bridge to physical network"
+                    echo ""
+
+                    explain_command "brctl addbr br0 && brctl addif br0 $iface" \
+                        "brctl addbr br0 - Creates a new bridge named 'br0'" \
+                        "brctl addif br0 $iface - Attaches physical interface $iface to the bridge" \
+                        "(NixOS handles this automatically in configuration)"
+
+                    track_learning_milestone "networking" "configured-bridge-network"
                     break
                 fi
             done
@@ -166,6 +238,8 @@ EOF
         custom)
             echo -e "${YELLOW}Custom configuration selected${NC}"
             echo -e "Edit: /etc/nixos/network-config.nix"
+
+            link_to_docs "network configuration" "/usr/share/doc/hypervisor/NETWORKING.md"
             ;;
     esac
     
@@ -187,6 +261,20 @@ EOF
     echo ""
     echo -e "${GREEN}✓${NC} Network configuration saved"
     echo -e "${GREEN}✓${NC} Apply with: ${BOLD}nixos-rebuild switch${NC}"
+    echo ""
+
+    learning_checkpoint "Network Configuration Completed" \
+        "• Network topology detection
+• Understanding NAT vs Bridge networking
+• Selecting appropriate network mode
+• Configuring virtual network infrastructure
+• Linux networking skills applicable to any distribution"
+
+    echo -e "${CYAN}Next Steps:${NC}"
+    echo -e "1. Run: ${BOLD}sudo nixos-rebuild switch${NC}"
+    echo -e "2. Create a VM: ${BOLD}hv vm-create${NC}"
+    echo -e "3. Test network connectivity from the VM"
+    echo ""
 }
 
 if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then

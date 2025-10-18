@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
-# Hyper-NixOS Security Configuration Wizard
-# Intelligent defaults based on detected attack surface and system role
+################################################################################
+# Hyper-NixOS - Next-Generation Virtualization Platform
+# https://github.com/MasterofNull/Hyper-NixOS
+#
+# Script: security-configuration-wizard.sh
+# Purpose: Intelligent security configuration based on detected attack surface
+#
+# Copyright © 2024-2025 MasterofNull
+# Licensed under the MIT License
+#
+# Author: MasterofNull
 # Part of Design Ethos - Third Pillar: Learning Through Guidance
+################################################################################
 
 set -euo pipefail
 
@@ -13,12 +23,21 @@ source "${SCRIPT_DIR}/lib/logging.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/error_handling.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/config_backup.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/dry_run.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/branding.sh" 2>/dev/null || true
 
 # Setup error handling
 setup_error_trap "security-configuration-wizard.sh"
 
 # Parse dry-run argument
 parse_dry_run_arg "$@"
+
+# Show branded banner
+clear
+show_banner_large
+
+echo -e "${BOLD}Security Configuration Wizard${NC}"
+echo "Configure multi-layered security for your hypervisor."
+echo ""
 
 # Colors
 readonly RED='\033[0;31m'
