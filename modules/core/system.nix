@@ -19,4 +19,8 @@
   environment.etc."hypervisor/config.json".source = ../config.json;
   environment.etc."hypervisor/docs".source = ../../docs;
   environment.etc."hypervisor/vm_profile.schema.json".source = ../vm_profile.schema.json;
+
+  # Flake files for reproducibility (required when /etc/hypervisor references are evaluated as a flake)
+  environment.etc."hypervisor/flake.nix".source = ../../flake.nix;
+  environment.etc."hypervisor/flake.lock".source = ../../flake.lock;
 }
