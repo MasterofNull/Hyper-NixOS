@@ -7,8 +7,9 @@
   };
   
   inputs = {
-    # Track latest NixOS; pin via flake.lock for reproducibility
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Use NixOS 24.05 stable channel (matches system.stateVersion)
+    # Note: system_installer.sh uses the same stable version for consistency
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = inputs@{ self, nixpkgs, flake-utils }:

@@ -8,11 +8,15 @@
   imports = [
     # Hardware configuration (always needed)
     ../hardware-configuration.nix
-    
+
     # Core options module (defines hypervisor.enable and other core options)
     ../modules/core/options.nix
     ../modules/core/hypervisor-base.nix  # Base hypervisor setup when enabled
-    
+    ../modules/core/cpu-detection.nix  # Automatic CPU vendor detection (AMD/Intel)
+
+    # System management
+    ../modules/system/nixos-update-checker.nix  # Monthly update notifications
+
     # Only import modules whose options we're actually setting below
     ../modules/features/feature-categories.nix  # Defines hypervisor.features
     ../modules/features/feature-manager.nix  # We use hypervisor.featureManager
@@ -54,27 +58,28 @@
   # Boot configuration
   boot = {
     loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-      timeout = 3;
+      systemd-boot.enable = lib.mkDefault true;
+      efi.canTouchEfiVariables = lib.mkDefault true;
+      timeout = lib.mkDefault 3;
     };
-    
-    # Kernel parameters for virtualization
-    kernelParams = [ 
-      "intel_iommu=on"
+
+    # Note: CPU-specific kernel parameters and modules should be configured
+    # by importing modules/core/cpu-detection.nix for automatic AMD/Intel detection.
+
+    # Common virtualization kernel parameters
+    kernelParams = lib.mkDefault [
       "iommu=pt"
-      "kvm_intel.nested=1"
       "transparent_hugepage=madvise"
     ];
-    
-    kernelModules = [ 
-      "kvm-intel"
+
+    # Common virtualization kernel modules
+    kernelModules = lib.mkDefault [
       "vfio"
       "vfio_iommu_type1"
       "vfio_pci"
     ];
-    
-    initrd.kernelModules = [ "vfio_pci" ];
+
+    initrd.kernelModules = lib.mkDefault [ "vfio_pci" ];
   };
   
   # Feature selection - this determines what modules get loaded
