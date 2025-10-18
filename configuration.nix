@@ -38,7 +38,7 @@
     ./modules/core/optimized-system.nix
     ./modules/core/first-boot-service.nix
     ./modules/core/arm-detection.nix
-    ./modules/core/cpu-detection.nix  # Automatic CPU vendor detection (AMD/Intel)
+    ./modules/core/universal-hardware-detection.nix  # Universal hardware detection (ALL architectures)
 
     # Hardware platform optimizations
     ./modules/hardware/laptop.nix
@@ -47,6 +47,7 @@
 
     # System management
     ./modules/system/nixos-update-checker.nix  # Monthly update notifications
+    ./modules/system/hibernation-auth.nix  # Intelligent hibernation/resume authentication
 
     # Feature management system
     ./modules/system-tiers.nix  # System tier definitions (required by feature-manager)
@@ -95,25 +96,20 @@
       timeout = lib.mkDefault 3;
     };
 
-    # Note: CPU-specific kernel parameters and modules are now automatically
-    # configured by modules/core/cpu-detection.nix based on detected CPU vendor.
-    # This ensures AMD systems get kvm-amd and Intel systems get kvm-intel.
-
-    # Common virtualization kernel parameters (CPU-specific ones added by cpu-detection.nix)
-    kernelParams = lib.mkDefault [
-      "iommu=pt"
-      "transparent_hugepage=madvise"
-    ];
-
-    # Common virtualization kernel modules (CPU-specific KVM module added by cpu-detection.nix)
-    kernelModules = lib.mkDefault [
-      "vfio"
-      "vfio_iommu_type1"
-      "vfio_pci"
-    ];
-
-    # Early kernel modules
-    initrd.kernelModules = lib.mkDefault [ "vfio_pci" ];
+    # NOTE: All hardware-specific kernel parameters and modules are automatically
+    # configured by modules/core/universal-hardware-detection.nix
+    #
+    # This provides INTELLIGENT DISCOVERY for:
+    # - CPU architecture (x86_64, ARM, RISC-V, PowerPC, MIPS, etc.)
+    # - CPU vendor (Intel, AMD, Qualcomm, Broadcom, etc.)
+    # - Virtualization capabilities (VT-x, AMD-V, ARM-virt, etc.)
+    # - IOMMU settings (intel_iommu, amd_iommu, ARM SMMU, etc.)
+    # - KVM modules (kvm-intel, kvm-amd, kvm-arm, kvm-hv, etc.)
+    # - VFIO modules (architecture-specific)
+    #
+    # NO HARDCODED SETTINGS - works on any supported platform!
+    #
+    # To see what was detected: hv-hardware-info
   };
   
   # Hypervisor configuration

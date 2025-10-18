@@ -12,10 +12,11 @@
     # Core options module (defines hypervisor.enable and other core options)
     ../modules/core/options.nix
     ../modules/core/hypervisor-base.nix  # Base hypervisor setup when enabled
-    ../modules/core/cpu-detection.nix  # Automatic CPU vendor detection (AMD/Intel)
+    ../modules/core/universal-hardware-detection.nix  # Universal hardware detection (ALL architectures)
 
     # System management
     ../modules/system/nixos-update-checker.nix  # Monthly update notifications
+    ../modules/system/hibernation-auth.nix  # Intelligent hibernation/resume authentication
 
     # Only import modules whose options we're actually setting below
     ../modules/features/feature-categories.nix  # Defines hypervisor.features
@@ -63,23 +64,11 @@
       timeout = lib.mkDefault 3;
     };
 
-    # Note: CPU-specific kernel parameters and modules should be configured
-    # by importing modules/core/cpu-detection.nix for automatic AMD/Intel detection.
-
-    # Common virtualization kernel parameters
-    kernelParams = lib.mkDefault [
-      "iommu=pt"
-      "transparent_hugepage=madvise"
-    ];
-
-    # Common virtualization kernel modules
-    kernelModules = lib.mkDefault [
-      "vfio"
-      "vfio_iommu_type1"
-      "vfio_pci"
-    ];
-
-    initrd.kernelModules = lib.mkDefault [ "vfio_pci" ];
+    # NOTE: All hardware-specific settings are automatically detected
+    # by modules/core/universal-hardware-detection.nix
+    #
+    # NO HARDCODED SETTINGS - intelligent discovery for all platforms!
+    # Run 'hv-hardware-info' to see what was detected.
   };
   
   # Feature selection - this determines what modules get loaded
