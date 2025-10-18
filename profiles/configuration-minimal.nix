@@ -14,9 +14,17 @@
     ../modules/core/hypervisor-base.nix  # Base hypervisor setup when enabled
     ../modules/core/universal-hardware-detection.nix  # Universal hardware detection (ALL architectures)
 
+    # Hardware platform modules
+    ../modules/hardware/platform-detection.nix  # Laptop/Desktop/Server detection
+
     # System management
     ../modules/system/nixos-update-checker.nix  # Monthly update notifications
     ../modules/system/hibernation-auth.nix  # Intelligent hibernation/resume authentication
+
+    # Security modules
+    ../modules/security/privilege-separation.nix  # Separate VM operations from system admin
+    ../modules/security/sudo-protection.nix  # Sudo password reset protection
+    ../modules/security/credential-chain.nix  # Credential migration and tamper detection
 
     # Only import modules whose options we're actually setting below
     ../modules/features/feature-categories.nix  # Defines hypervisor.features
@@ -24,8 +32,6 @@
     ../modules/core/first-boot.nix  # First boot comprehensive setup wizard
     ../modules/system-tiers.nix  # System tier definitions
     ../modules/headless-vm-menu.nix  # Headless VM menu for boot-time
-    ../modules/security/sudo-protection.nix  # Sudo password reset protection
-    ../modules/security/credential-chain.nix  # Credential migration and tamper detection
   ] ++ lib.optionals (builtins.pathExists ./modules/users-migrated.nix) [
     # Import migrated user configuration if it exists (from host system)
     ../modules/users-migrated.nix

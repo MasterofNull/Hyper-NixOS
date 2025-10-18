@@ -19,6 +19,7 @@
     ../modules/system/hibernation-auth.nix  # Intelligent hibernation/resume authentication
 
     # Security modules
+    ../modules/security/privilege-separation.nix  # Separate VM operations from system admin
     ../modules/security/ssh-enhanced.nix
     ../modules/security/docker-enhanced.nix
 
