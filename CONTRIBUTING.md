@@ -391,7 +391,7 @@ When adding a feature, you must update:
 2. **docs/user-guides/** - User guide for the feature
 3. **docs/reference/** - Technical reference
 4. **Code comments** - Inline documentation
-5. **CLAUDE.md** - If it affects development workflow
+5. **docs/dev/CLAUDE.md** - If it affects development workflow
 
 ### Documentation Style
 
