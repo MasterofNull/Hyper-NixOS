@@ -50,7 +50,31 @@ fi
 
 cleanup() {
   local ec=$?
+
+  # Clean up temporary directory
   [[ -n "${TMPDIR:-}" && -d "${TMPDIR:-}" ]] && rm -rf -- "$TMPDIR"
+
+  # If we're exiting due to an error, provide helpful cleanup message
+  if [[ $ec -ne 0 ]]; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "\033[1;31m✗ Installation failed with exit code $ec\033[0m"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo -e "\033[1;33mCleanup performed:\033[0m"
+    echo "  • Temporary files removed"
+    echo ""
+    echo -e "\033[1;33mTo retry installation:\033[0m"
+    echo "  • Review the error messages above"
+    echo "  • Check logs in /var/lib/hypervisor/logs/ if they exist"
+    echo "  • Remove partial installation files if needed:"
+    echo "    sudo rm -rf /etc/hypervisor"
+    echo "  • Run the installer again"
+    echo ""
+    echo -e "\033[1;36mFor help:\033[0m https://github.com/MasterofNull/Hyper-NixOS/issues"
+    echo ""
+  fi
+
   exit "$ec"
 }
 trap cleanup EXIT HUP INT TERM
@@ -468,7 +492,11 @@ write_host_flake() {
   # Ensure /etc/hypervisor exists and has no .git directory
   mkdir -p /etc/hypervisor
   rm -rf /etc/hypervisor/.git 2>/dev/null || true
-  
+
+  # Remove any old flake.lock from previous installations to prevent conflicts
+  # This ensures a fresh start and avoids --no-update-lock-file errors
+  rm -f /etc/hypervisor/flake.lock 2>/dev/null || true
+
   install -m 0644 /dev/null "$flake_path"
   # Reference /etc/hypervisor/src directly without using it as a flake input
   # This avoids flake evaluation issues and simplifies the architecture
