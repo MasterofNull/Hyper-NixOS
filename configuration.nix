@@ -37,6 +37,12 @@
     ./modules/core/portable-base.nix
     ./modules/core/optimized-system.nix
     ./modules/core/first-boot-service.nix
+    ./modules/core/arm-detection.nix
+
+    # Hardware platform optimizations
+    ./modules/hardware/laptop.nix
+    ./modules/hardware/desktop.nix
+    ./modules/hardware/server.nix
     
     # Feature management system
     ./modules/system-tiers.nix  # System tier definitions (required by feature-manager)
@@ -474,20 +480,24 @@ EOF
   
   # Message of the day
   environment.etc."motd".text = lib.mkDefault ''
-    ╔═══════════════════════════════════════════════════════════════╗
-    ║                    Hyper-NixOS v1.0.0                         ║
-    ╠═══════════════════════════════════════════════════════════════╣
-    ║                                                               ║
-    ║  Quick Commands:                                              ║
-    ║  • hv help       - Show help                                  ║
-    ║  • hv vm         - VM management                              ║
-    ║  • hv setup      - Configuration wizard                       ║
-    ║  • hv security   - Security status                            ║
-    ║  • hv monitor    - System monitoring                          ║
-    ║                                                               ║
-    ║  Documentation: /etc/hypervisor/docs/                         ║
-    ║                                                               ║
-    ╚═══════════════════════════════════════════════════════════════╝
+
+    ╦ ╦┬ ┬┌─┐┌─┐┬─┐   ╔╗╔┬─┐ ┬╔═╗╔═╗
+    ╠═╣└┬┘├─┘├┤ ├┬┘───║║║│┌┴┬┘║ ║╚═╗
+    ╩ ╩ ┴ ┴  └─┘┴└─   ╝╚╝┴┴ └─╚═╝╚═╝
+
+    Next-Generation Virtualization Platform
+    v1.0.0 | © 2024-2025 MasterofNull
+
+    Quick Commands:
+    • hv help         - Show all commands
+    • hv vm-create    - Create VM with intelligent defaults
+    • hv discover     - View system capabilities
+    • hv security     - Security configuration
+
+    Documentation: /etc/hypervisor/docs/
+    Repository: https://github.com/MasterofNull/Hyper-NixOS
+
+    Licensed under MIT License
   '';
   
   # Performance tuning
