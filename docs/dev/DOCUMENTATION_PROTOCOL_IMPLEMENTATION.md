@@ -185,34 +185,6 @@ This implementation provides:
 - ✅ **Anti-patterns identified** - What to avoid in future development
 - ✅ **Best practices established** - Proven approaches for common tasks
 
-## 📁 **File Structure Guidelines** (Added 2025-10-15)
-
-### **Configuration File Organization**
-The project follows NixOS conventions with organized variants:
-
-**Root Directory:**
-- `configuration.nix` - Main system configuration (MUST stay in root)
-- `hardware-configuration.nix` - Hardware-specific configuration (MUST stay in root)
-
-**Profiles Directory:**
-- `profiles/` - Contains all configuration variants
-  - `configuration-complete.nix` - Full-featured configuration
-  - `configuration-enhanced.nix` - Enhanced configuration
-  - `configuration-minimal.nix` - Minimal configuration
-  - `configuration-minimal-recovery.nix` - Recovery configuration
-  - `configuration-privilege-separation.nix` - Privilege separation variant
-
-### **Import Path Conventions**
-- Main configuration uses: `./modules/...` and `./hardware-configuration.nix`
-- Profile configurations use: `../modules/...` and `../hardware-configuration.nix`
-- Scripts reference: `/etc/nixos/configuration.nix` (not subdirectories)
-
-### **Important File Structure Rules**
-- **NEVER** move `configuration.nix` or `hardware-configuration.nix` from root
-- **ALWAYS** place configuration variants in `profiles/` directory
-- **VERIFY** "temporary" references are actual temp directories, not AI errors
-- **MAINTAIN** standard NixOS paths for compatibility
-
 ## 🎉 **Conclusion**
 
 The documentation protocol implementation successfully addresses all user requirements:
@@ -223,6 +195,5 @@ The documentation protocol implementation successfully addresses all user requir
 4. **Implements hysteresis principle** - Build on existing work for better outcomes
 5. **Optimizes for AI review** - Context documents designed for AI understanding
 6. **Maintains human accessibility** - Separate guide for human maintainers
-7. **Enforces file structure conventions** - Clear rules for configuration organization
 
 This implementation ensures that future AI assistants will have the context, procedures, and guidance needed to maintain and evolve the Hyper-NixOS system effectively while preserving its design integrity and accumulated wisdom.

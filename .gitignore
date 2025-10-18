@@ -5,8 +5,8 @@ private-ip/
 # Protected Development Documentation
 # Contains AI context, design evolution, and IP-sensitive content
 # DO NOT DISTRIBUTE - Internal use only for dev team and AI agents
-# Entire dev folder is protected
-docs/dev/
+# Now tracked in git but marked as PROTECTED - see docs/dev/README_PROTECTED.md
+# docs/dev/ - REMOVED from gitignore to enable version control while maintaining protection notice
 
 # Temporary files
 *.tmp
