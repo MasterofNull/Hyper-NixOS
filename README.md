@@ -100,6 +100,172 @@ For manual installation or advanced options, see our [Installation Guide](docs/I
 
 ---
 
+## 📋 Complete Installation Process
+
+For a full Hyper-NixOS setup, follow these steps in order:
+
+### Step 1: Install Base NixOS (Required)
+
+**Prerequisites:**
+- NixOS **24.05 or later** installed on your system
+- Root/sudo access
+- Internet connection
+
+**If you don't have NixOS yet:**
+1. Download NixOS ISO from [nixos.org](https://nixos.org/download)
+2. Create bootable USB: `dd if=nixos.iso of=/dev/sdX bs=4M status=progress`
+3. Boot from USB and run: `nixos-install`
+4. Follow NixOS installation wizard
+5. Reboot into your new NixOS system
+
+**Verify NixOS version:**
+```bash
+nixos-version
+# Should show: 24.05 or later
+```
+
+### Step 2: Set Up Development Environment (Optional)
+
+**If you plan to develop or modify Hyper-NixOS**, set up the dev environment first:
+
+```bash
+# Download the dev environment quick deploy script
+curl -O https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/scripts/nixos-dev-quick-deploy.sh
+
+# Make executable
+chmod +x nixos-dev-quick-deploy.sh
+
+# Run (as regular user, NOT sudo)
+./nixos-dev-quick-deploy.sh
+```
+
+**This installs (10-20 minutes):**
+- VSCodium with Claude Code and 25+ extensions
+- Modern CLI tools (ripgrep, fd, fzf, bat, eza, jq, yq)
+- Development languages (Node.js 22, Python 3, Go, Rust)
+- Build tools (GCC, Make)
+
+**Skip this step if you only want to use Hyper-NixOS** (not develop it).
+
+See [NixOS Dev Environment Setup Guide](docs/NIXOS_DEV_ENV_SETUP.md) for details.
+
+### Step 3: Run Hyper-NixOS Install Script (Required)
+
+**Choose one installation method:**
+
+#### Option A: One-Line Remote Install (Fastest)
+```bash
+# Recommended: Process substitution for reliable input
+sudo bash <(curl -sSL https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/install.sh)
+```
+
+#### Option B: Clone and Install (For Inspection)
+```bash
+# Clone repository
+git clone https://github.com/MasterofNull/Hyper-NixOS.git
+cd Hyper-NixOS
+
+# Run installer
+sudo ./install.sh
+```
+
+**The installer will:**
+- ✅ Detect your hardware configuration
+- ✅ Copy Hyper-NixOS to `/etc/hypervisor/src`
+- ✅ Generate host flake at `/etc/hypervisor/flake.nix`
+- ✅ Create user accounts and security profiles
+- ✅ Run `nixos-rebuild switch` to activate the system
+- ✅ Enable first-boot configuration service
+
+**Installation takes:** 15-30 minutes (depends on download speed and hardware)
+
+### Step 4: First-Boot Configuration Wizard (Required)
+
+**After installation completes and system reboots**, the first-boot wizard launches automatically.
+
+**The wizard will guide you through:**
+
+1. **System Tier Selection** (based on detected hardware):
+   - Minimal (2GB RAM, basic features)
+   - Enhanced (4GB+ RAM, standard features)
+   - Complete (8GB+ RAM, all features)
+
+2. **Security Profile Configuration**:
+   - Minimal (basic security)
+   - Standard (recommended for most users)
+   - Paranoid (maximum security, some convenience trade-offs)
+
+3. **Network Configuration**:
+   - Static IP or DHCP
+   - Firewall rules
+   - Optional: MAC spoofing, VPN
+
+4. **Storage Setup**:
+   - VM storage pools
+   - ISO storage
+   - Backup locations
+
+5. **User Privilege Separation**:
+   - Admin users (full system access)
+   - Operator users (VM management only)
+
+6. **Feature Selection**:
+   - VM management features
+   - Monitoring and alerting
+   - Backup automation
+   - Enterprise features (clustering, HA, etc.)
+
+**To manually run the wizard later:**
+```bash
+hv setup
+# or
+/etc/hypervisor/bin/setup-wizard
+```
+
+### Step 5: Verify Installation (Recommended)
+
+After the first-boot wizard completes:
+
+```bash
+# Check system status
+hv status
+
+# Discover system capabilities
+hv discover
+
+# Verify virtualization is working
+hv vm-create --test
+
+# Check security configuration
+hv security-status
+```
+
+### Step 6: Start Using Hyper-NixOS
+
+**Create your first VM:**
+```bash
+hv vm-create
+```
+
+**Configure monitoring:**
+```bash
+hv monitoring-config
+```
+
+**Set up backups:**
+```bash
+hv backup-config
+```
+
+**Access the management menu:**
+```bash
+hv
+# or
+hv menu
+```
+
+---
+
 ## 🎯 Quick Start with Intelligent Defaults
 
 After installation, use the unified `hv` command:
