@@ -1,0 +1,22 @@
+#!/usr/bin/env bats
+################################################################################
+# Hyper-NixOS - Auto-generated test for deploy-security-stack
+# Copyright © 2024-2025 MasterofNull | Licensed under the MIT License
+################################################################################
+
+load ../lib/test_helpers.bash
+
+@test "script exists and is executable" {
+    [ -f "scripts/tools/deploy-security-stack.sh" ]
+    [ -x "scripts/tools/deploy-security-stack.sh" ] || skip "Not executable"
+}
+
+@test "script has bash shebang" {
+    run head -1 scripts/tools/deploy-security-stack.sh
+    [[ "$output" == *"bash"* ]] || skip "No bash shebang"
+}
+
+@test "script uses error handling" {
+    run grep -E "set -e" scripts/tools/deploy-security-stack.sh
+    [ "$status" -eq 0 ] || skip "No error handling"
+}
