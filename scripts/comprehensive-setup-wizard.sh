@@ -613,13 +613,87 @@ EOF
         echo -e "  • Access from headless menu or login directly"
     fi
     
+    # Offer optional hardening
+    offer_hardening
+
     echo
     echo -e "${GREEN}${BOLD}System will reboot in 10 seconds...${NC}"
     echo -e "Press Ctrl+C to cancel reboot"
     echo
-    
+
     sleep 10
     reboot
+}
+
+# Offer optional system hardening at completion
+offer_hardening() {
+    echo
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  Optional: System Hardening${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo
+    echo -e "Now that setup is complete, you can optionally ${BOLD}harden${NC} the system"
+    echo -e "to lock down security and restrict file permissions."
+    echo
+    echo -e "${YELLOW}Current State:${NC} Permissive (easy configuration and testing)"
+    echo -e "${GREEN}Hardening:${NC} Locks down permissions, requires sudo for system changes"
+    echo
+    echo -e "Hardening is ${BOLD}NOT mandatory${NC} and can be applied later."
+    echo -e "You can always run: ${CYAN}sudo system-hardening-wizard${NC}"
+    echo
+    echo -e "${BOLD}Would you like to harden the system now?${NC}"
+    echo
+    echo "  1) ${GREEN}Yes${NC} - Run hardening wizard now (recommended for production)"
+    echo "  2) ${YELLOW}No${NC} - Keep permissive mode (recommended for initial testing)"
+    echo "  3) ${BLUE}Later${NC} - I'll run it manually when ready"
+    echo
+
+    while true; do
+        read -p "Select option (1-3) [2]: " hardening_choice
+        hardening_choice=${hardening_choice:-2}
+
+        case "$hardening_choice" in
+            1)
+                echo
+                echo -e "${CYAN}Launching system hardening wizard...${NC}"
+                echo
+
+                # Check if hardening wizard exists
+                if [[ -f "${SCRIPT_DIR}/system-hardening-wizard.sh" ]]; then
+                    # Run hardening wizard
+                    "${SCRIPT_DIR}/system-hardening-wizard.sh"
+                else
+                    echo -e "${YELLOW}Warning: Hardening wizard not found${NC}"
+                    echo -e "You can install and run it later with:"
+                    echo -e "  ${CYAN}sudo system-hardening-wizard${NC}"
+                fi
+                break
+                ;;
+            2)
+                echo
+                echo -e "${GREEN}✓${NC} System will remain in permissive mode"
+                echo -e "  This is recommended for initial testing and configuration."
+                echo -e "  You can harden later with: ${CYAN}sudo system-hardening-wizard${NC}"
+                break
+                ;;
+            3)
+                echo
+                echo -e "${BLUE}ℹ${NC} Hardening deferred - you can run it anytime with:"
+                echo -e "  ${CYAN}sudo system-hardening-wizard${NC}"
+                echo
+                echo -e "  ${BOLD}Recommended profiles:${NC}"
+                echo -e "    • ${GREEN}Balanced${NC} - Best for most users (security + usability)"
+                echo -e "    • ${YELLOW}Strict${NC} - Production servers (high security)"
+                echo -e "    • ${RED}Paranoid${NC} - Maximum security (may impact usability)"
+                break
+                ;;
+            *)
+                echo -e "${RED}Invalid choice. Please enter 1, 2, or 3.${NC}"
+                ;;
+        esac
+    done
+
+    echo
 }
 
 # Main wizard flow

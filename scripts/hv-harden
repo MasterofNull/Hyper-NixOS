@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+################################################################################
+# Hyper-NixOS - Next-Generation Virtualization Platform
+# https://github.com/MasterofNull/Hyper-NixOS
+#
+# Script: hv-harden
+# Purpose: Quick alias for system hardening wizard
+#
+# Copyright © 2024-2025 MasterofNull
+# Licensed under the MIT License
+################################################################################
+
+# Check if running as root
+if [[ $EUID -ne 0 ]]; then
+    echo "ERROR: Hardening wizard requires root/sudo access"
+    echo "Usage: sudo hv-harden"
+    exit 1
+fi
+
+# Find the hardening wizard
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HARDENING_WIZARD="${SCRIPT_DIR}/system-hardening-wizard.sh"
+
+if [[ ! -f "${HARDENING_WIZARD}" ]]; then
+    echo "ERROR: Hardening wizard not found at: ${HARDENING_WIZARD}"
+    exit 1
+fi
+
+# Execute the hardening wizard
+exec "${HARDENING_WIZARD}" "$@"
