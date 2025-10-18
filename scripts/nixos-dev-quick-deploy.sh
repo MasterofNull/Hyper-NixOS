@@ -113,7 +113,34 @@ nix-env -iA \
     nixpkgs.python3 \
     nixpkgs.go \
     nixpkgs.rustc \
-    nixpkgs.cargo
+    nixpkgs.cargo \
+    nixpkgs.zsh \
+    nixpkgs.zsh-powerlevel10k \
+    nixpkgs.zsh-autosuggestions \
+    nixpkgs.zsh-fast-syntax-highlighting \
+    nixpkgs.presenterm \
+    nixpkgs.diskonaut \
+    nixpkgs.erdtree \
+    nixpkgs.delta \
+    nixpkgs.gdu \
+    nixpkgs.dua \
+    nixpkgs.bottom \
+    nixpkgs.gping \
+    nixpkgs.hyperfine \
+    nixpkgs.lazygit \
+    nixpkgs.micro \
+    nixpkgs.helix \
+    nixpkgs.termscp \
+    nixpkgs.silicon \
+    nixpkgs.yazi \
+    nixpkgs.yadm \
+    nixpkgs.zoxide \
+    nixpkgs.dust \
+    nixpkgs.procs \
+    nixpkgs.bandwhich \
+    nixpkgs.tealdeer \
+    nixpkgs.tokei \
+    nixpkgs.gh
 
 echo -e "${GREEN}✓ Development packages installed to user profile${NC}"
 echo ""
@@ -385,13 +412,19 @@ echo -e "${GREEN}Development Environment Ready!${NC}"
 echo "========================================="
 echo ""
 echo "Installed packages:"
-echo "  • Core: wget, git, curl, vim, neovim"
+echo "  • Core: wget, git, curl, vim, neovim, micro, helix"
 echo "  • VSCodium with extensions (see below)"
 echo "  • Build tools: gcc, make, node.js 22 LTS"
 echo "  • Modern CLI: ripgrep, fd, fzf, bat, eza, jq, yq"
 echo "  • Languages: Python 3, Go, Rust"
 echo "  • Claude Code CLI (fixed for NixOS)"
 echo "  • psmisc (killall, pstree, etc.)"
+echo "  • Shell: ZSH with Powerlevel10k, auto-suggestions, syntax highlighting"
+echo "  • File Tools: diskonaut, erdtree, yazi, dust"
+echo "  • Monitors: bottom (btm), gdu, dua, gping, bandwhich"
+echo "  • Git: lazygit, delta, gh (GitHub CLI)"
+echo "  • Utilities: hyperfine, silicon, termscp, zoxide, tealdeer, tokei"
+echo "  • Dotfiles: yadm"
 echo ""
 echo -e "${BLUE}VSCodium Extensions Installed:${NC}"
 echo "  Core Requested:"
@@ -454,6 +487,51 @@ nix-env --list-generations | tail -n 1
 echo ""
 echo -e "${GREEN}Setup complete! Happy coding with Claude! 🚀${NC}"
 echo ""
+echo -e "${BLUE}ZSH + Powerlevel10k Setup:${NC}"
+echo "  1. Change default shell to ZSH:"
+echo "     $ chsh -s \$(which zsh)"
+echo ""
+echo "  2. Start ZSH (or log out/in):"
+echo "     $ exec zsh"
+echo ""
+echo "  3. Configure Powerlevel10k prompt:"
+echo "     $ p10k configure"
+echo ""
+echo "  4. ZSH features enabled:"
+echo "     • Auto-suggestions (type to see history suggestions)"
+echo "     • Syntax highlighting (green=valid, red=invalid)"
+echo "     • Ctrl+R for fuzzy history search (fzf)"
+echo "     • 'z <dir>' for smart directory jumping (zoxide)"
+echo ""
+echo -e "${BLUE}Modern CLI Tools Quick Reference:${NC}"
+echo "  File Management:"
+echo "    diskonaut /path     - Visual disk usage"
+echo "    erdtree             - Tree with disk usage"
+echo "    yazi                - File manager TUI"
+echo "    dust                - Disk usage tree"
+echo ""
+echo "  Monitoring:"
+echo "    btm                 - System monitor (replaces top/htop)"
+echo "    gdu                 - Interactive disk usage"
+echo "    gping google.com    - Ping with graphs"
+echo "    bandwhich           - Network bandwidth monitor"
+echo ""
+echo "  Git:"
+echo "    lazygit             - TUI for git"
+echo "    gh pr list          - GitHub CLI"
+echo "    git diff            - Uses delta automatically"
+echo ""
+echo "  Productivity:"
+echo "    hyperfine 'cmd'     - Benchmark commands"
+echo "    tldr command        - Quick command help"
+echo "    tokei               - Code statistics"
+echo "    z <partial-name>    - Jump to directory"
+echo ""
+echo "  Editors:"
+echo "    micro file.txt      - Modern nano-like editor"
+echo "    helix file.txt      - Modern modal editor"
+echo ""
 echo "For detailed documentation, see:"
 echo "  docs/NIXOS_DEV_ENV_SETUP.md"
+echo "  docs/CLI_TOOLS_GUIDE.md"
 echo ""

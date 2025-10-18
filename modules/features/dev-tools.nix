@@ -156,6 +156,14 @@ in
       pkgs.nmap
       pkgs.tcpdump
       pkgs.wireshark-cli
+
+      # Modern CLI tools (commonly used in development)
+      pkgs.bat              # Better cat with syntax highlighting
+      pkgs.eza              # Modern ls replacement
+      pkgs.delta            # Better git diffs
+      pkgs.bottom           # Modern system monitor
+      pkgs.tokei            # Code statistics
+      pkgs.hyperfine        # Benchmarking tool
     ];
     
     # Development libraries
