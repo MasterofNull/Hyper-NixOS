@@ -188,7 +188,7 @@ show_hardening_profiles() {
     echo "     • May impact usability"
     echo ""
 
-    echo "  5) ${RED}Un-harden${NC} - Remove all hardening (restore to default)"
+    echo -e "  5) ${RED}Un-harden${NC} - Remove all hardening (restore to default)"
     echo ""
     echo "  0) Exit without changes"
     echo ""

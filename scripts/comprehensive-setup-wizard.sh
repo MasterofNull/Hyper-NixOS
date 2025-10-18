@@ -643,9 +643,9 @@ offer_hardening() {
     echo
     echo -e "${BOLD}Would you like to harden the system now?${NC}"
     echo
-    echo "  1) ${GREEN}Yes${NC} - Run hardening wizard now (recommended for production)"
-    echo "  2) ${YELLOW}No${NC} - Keep permissive mode (recommended for initial testing)"
-    echo "  3) ${BLUE}Later${NC} - I'll run it manually when ready"
+    echo -e "  1) ${GREEN}Yes${NC} - Run hardening wizard now (recommended for production)"
+    echo -e "  2) ${YELLOW}No${NC} - Keep permissive mode (recommended for initial testing)"
+    echo -e "  3) ${BLUE}Later${NC} - I'll run it manually when ready"
     echo
 
     while true; do
