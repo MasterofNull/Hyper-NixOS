@@ -48,10 +48,20 @@ cleanup_on_error() {
             echo -e "  ${ERROR_LOG}"
             echo
         fi
+
+        # Clean up temporary files and state
         if [[ -n "${tmpdir:-}" && -d "${tmpdir:-}" ]]; then
             echo "Cleaning up temporary files..."
             rm -rf "$tmpdir"
         fi
+
+        # Clean up state file on failure
+        if [[ -n "${STATE_FILE:-}" && -f "${STATE_FILE:-}" ]]; then
+            rm -f "$STATE_FILE"
+        fi
+
+        echo -e "${CYAN}Installation files cleaned up. Safe to retry.${NC}"
+        echo
     fi
     exit $exit_code
 }
@@ -93,7 +103,7 @@ ERROR_LOG="${LOG_DIR}/error.log"
 INSTALL_LOG="${LOG_DIR}/install.log"
 DEBUG_LOG="${LOG_DIR}/debug.log"
 
-# State file for resume capability
+# State file for cleanup tracking (resume disabled - caused more issues than it solved)
 STATE_FILE="/tmp/hyper-nixos-install-state"
 
 # Error codes for better debugging
@@ -229,27 +239,15 @@ check_root() {
     fi
 }
 
-# State management for resume capability
+# State management (resume feature disabled - it caused confusion)
+# Keeping clear_state() for cleanup purposes only
 save_state() {
-    local state="$1"
-    echo "$state:$(date +%s):$$" > "$STATE_FILE"
-    print_debug "State saved: $state"
+    # No-op: Resume feature disabled
+    :
 }
 
 load_state() {
-    if [[ -f "$STATE_FILE" ]]; then
-        local state=$(cut -d: -f1 "$STATE_FILE")
-        local timestamp=$(cut -d: -f2 "$STATE_FILE")
-        local age=$(( $(date +%s) - timestamp ))
-        
-        # Only resume if state is less than 1 hour old
-        if [[ $age -lt 3600 ]]; then
-            echo "$state"
-            return 0
-        else
-            print_debug "State file too old (${age}s), ignoring" >&2
-        fi
-    fi
+    # No-op: Resume feature disabled
     echo ""
 }
 
@@ -1332,21 +1330,10 @@ remote_install() {
     # Create temporary directory
     tmpdir=$(mktemp -d -t hyper-nixos-XXXXXX)
     print_info "Using temporary directory: $tmpdir"
-    
-    # Check if we can resume from saved state
-    if [[ -f "$STATE_FILE" ]]; then
-        local state_age=$(($(date +%s) - $(stat -c %Y "$STATE_FILE" 2>/dev/null || echo 0)))
-        if [[ $state_age -lt 3600 ]]; then
-            print_info "Found previous installation state ($(($state_age / 60)) minutes old)"
-            if load_state; then
-                print_info "Resuming from previous state..."
-            fi
-        else
-            print_info "Previous installation state expired, starting fresh"
-            clear_state
-        fi
-    fi
-    
+
+    # Clean up any previous state files
+    clear_state
+
     # Prompt for download method
     local download_method
     download_method=$(prompt_download_method)
