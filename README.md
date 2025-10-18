@@ -355,3 +355,15 @@ Built with ❤️ using:
 ---
 
 **Ready to revolutionize your infrastructure? [Get started now!](DEPLOYMENT.md)**
+
+---
+
+<div align="center">
+
+**Hyper-NixOS** - Next-Generation Virtualization Platform
+
+© 2024-2025 [MasterofNull](https://github.com/MasterofNull) | Licensed under the [MIT License](LICENSE)
+
+[Documentation](docs/) • [Contributing](CONTRIBUTING.md) • [Authors](AUTHORS.md) • [Branding](BRANDING_STANDARDS.md)
+
+</div>

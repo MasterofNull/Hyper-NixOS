@@ -329,3 +329,10 @@ jobs:
 ```
 
 This validation framework ensures your defenses are properly configured and effective against the types of attacks that advanced security tools enable.
+---
+
+**Hyper-NixOS** - Next-Generation Virtualization Platform
+
+© 2024-2025 MasterofNull | Licensed under the MIT License
+
+Project: https://github.com/MasterofNull/Hyper-NixOS

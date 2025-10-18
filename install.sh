@@ -67,6 +67,26 @@ MAGENTA='\033[0;35m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
+# Show Hyper-NixOS banner
+show_banner() {
+    echo -e "${BLUE}"
+    cat << 'EOF'
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║    ╦ ╦┬ ┬┌─┐┌─┐┬─┐   ╔╗╔┬─┐ ┬╔═╗╔═╗                            ║
+║    ╠═╣└┬┘├─┘├┤ ├┬┘───║║║│┌┴┬┘║ ║╚═╗                            ║
+║    ╩ ╩ ┴ ┴  └─┘┴└─   ╝╚╝┴┴ └─╚═╝╚═╝                            ║
+║                                                                  ║
+║         Next-Generation Virtualization Platform                 ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+EOF
+    echo -e "${NC}"
+    echo -e "${CYAN}Universal Installer${NC} | ${MAGENTA}© 2024-2025 MasterofNull${NC}"
+    echo -e "Licensed under the MIT License"
+    echo ""
+}
+
 # Log directory and files
 LOG_DIR="/var/log/hyper-nixos-installer"
 ERROR_LOG="${LOG_DIR}/error.log"
@@ -1290,12 +1310,15 @@ try_download_method() {
 
 # Remote mode: Download and install
 remote_install() {
+    clear
+    show_banner
+
     echo
     print_line "=" 70
-    center_text "Hyper-NixOS Remote Installation"
+    center_text "Remote Installation Mode"
     print_line "=" 70
     echo
-    
+
     print_status "Starting remote installation..."
     
     # Run pre-flight checks
@@ -1506,13 +1529,16 @@ local_install() {
     else
         script_dir="$(pwd)"
     fi
-    
+
+    clear
+    show_banner
+
     echo
     print_line "=" 70
-    center_text "Hyper-NixOS Local Installation"
+    center_text "Local Installation Mode"
     print_line "=" 70
     echo
-    
+
     print_status "Starting local installation..."
     print_info "Installation directory: $script_dir"
     
