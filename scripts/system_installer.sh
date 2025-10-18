@@ -440,12 +440,10 @@ copy_repo_to_etc() {
   # Also ensure /etc/hypervisor itself has no .git directory
   rm -rf /etc/hypervisor/.git 2>/dev/null || true
 
-  # Remove flake.nix and flake.lock from /etc/hypervisor/src to prevent Nix from
-  # treating the path: input as a flake. The host flake (/etc/hypervisor/flake.nix)
-  # only needs to access files from the source directory, not evaluate it as a flake.
-  # This prevents "flake requires lock file changes" errors during flake update.
-  msg "Removing flake files from source directory (host flake will be created separately)..."
-  rm -f "$dst_root/flake.nix" "$dst_root/flake.lock" 2>/dev/null || true
+  # Note: We keep flake.nix and flake.lock in /etc/hypervisor/src for reference,
+  # but the host flake (/etc/hypervisor/flake.nix) does NOT use src as a flake input.
+  # It references files directly via absolute paths like /etc/hypervisor/src/profiles/...
+  # This avoids flake evaluation complexity while preserving the development flake.
 
   # Permissive defaults for build/rebuild usability; optional hardening provided separately
   chown -R root:root "$dst_root" || true
@@ -472,21 +470,17 @@ write_host_flake() {
   rm -rf /etc/hypervisor/.git 2>/dev/null || true
   
   install -m 0644 /dev/null "$flake_path"
-  # Use path input to /etc/hypervisor/src to avoid downloading the repo again
-  # since we've already copied it locally. This optimizes the quick install process.
-  local hypervisor_url="path:/etc/hypervisor/src"
+  # Reference /etc/hypervisor/src directly without using it as a flake input
+  # This avoids flake evaluation issues and simplifies the architecture
   cat > "$flake_path" <<'FLAKE'
 {
   description = "Hyper‑NixOS Host";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-    # Use local path input since files are already copied to /etc/hypervisor/src
-    # This avoids duplicate downloads during quick install
-    hypervisor.url = "__HYP_URL__";
   };
 
-  outputs = { self, nixpkgs, hypervisor }:
+  outputs = { self, nixpkgs }:
     let
       system = "__SYSTEM__";
     in {
@@ -494,7 +488,7 @@ write_host_flake() {
         inherit system;
         modules = [
           /etc/nixos/hardware-configuration.nix
-          (hypervisor + "/profiles/configuration-minimal.nix")
+          /etc/hypervisor/src/profiles/configuration-minimal.nix
         ];
       };
     };
@@ -504,7 +498,6 @@ write_host_flake() {
 FLAKE
   sed -i "s|__SYSTEM__|$system|" "$flake_path"
   sed -i "s|__HOST__|$hostname|" "$flake_path"
-  sed -i "s|__HYP_URL__|$hypervisor_url|" "$flake_path"
 
   # Ensure /etc/nixos points at this flake (symlink for compatibility)
   mkdir -p /etc/nixos
