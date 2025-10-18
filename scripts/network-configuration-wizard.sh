@@ -24,6 +24,7 @@ source "${SCRIPT_DIR}/lib/config_backup.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/dry_run.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/educational-template.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/branding.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/hardware-capabilities.sh" 2>/dev/null || true
 
 setup_error_trap "network-configuration-wizard.sh"
 parse_dry_run_arg "$@"
@@ -159,6 +160,21 @@ main() {
     echo -e "${GREEN}Configuration Options:${NC}\n"
     echo -e "  ${BOLD}nat${NC}     - NAT networking (secure, isolated)"
     echo -e "  ${BOLD}bridge${NC}  - Bridge networking (performance, direct access)"
+
+    # Show SR-IOV option if hardware supports it
+    if is_feature_available "iommu" 2>/dev/null; then
+        echo -e "  ${BOLD}sriov${NC}   - SR-IOV networking ${GREEN}(hardware supported)${NC}"
+    else
+        echo -e "  ${GRAY}sriov${NC}   - SR-IOV networking ${DIM}(unavailable: $(get_unavailable_reason "iommu" 2>/dev/null || echo "IOMMU not available"))${NC}"
+    fi
+
+    # Show WiFi management option if WiFi present
+    if is_feature_available "wifi_config" 2>/dev/null; then
+        echo -e "  ${BOLD}wifi${NC}    - WiFi management ${GREEN}(WiFi adapter detected)${NC}"
+    else
+        echo -e "  ${GRAY}wifi${NC}    - WiFi management ${DIM}(unavailable: no WiFi adapter)${NC}"
+    fi
+
     echo -e "  ${BOLD}custom${NC}  - Custom configuration\n"
     
     # Selection
@@ -166,10 +182,26 @@ main() {
     while [ -z "$selected_mode" ]; do
         echo -e "${CYAN}Select network mode (or 'recommend' for ${rec_mode}):${NC}"
         read -r -p "> " choice
-        
+
         case "$choice" in
             nat|bridge|custom)
                 selected_mode="$choice"
+                ;;
+            sriov)
+                if is_feature_available "iommu" 2>/dev/null; then
+                    selected_mode="$choice"
+                else
+                    echo -e "${RED}✗${NC} SR-IOV unavailable: $(get_unavailable_reason "iommu" 2>/dev/null || echo "IOMMU not supported")"
+                    echo -e "${YELLOW}→${NC} Try ${BOLD}bridge${NC} mode for high-performance networking without SR-IOV"
+                fi
+                ;;
+            wifi)
+                if is_feature_available "wifi_config" 2>/dev/null; then
+                    selected_mode="$choice"
+                else
+                    echo -e "${RED}✗${NC} WiFi unavailable: No WiFi adapter detected on this system"
+                    echo -e "${YELLOW}→${NC} WiFi management requires a WiFi adapter"
+                fi
                 ;;
             recommend|rec)
                 selected_mode="${rec_mode//_recommended/}"

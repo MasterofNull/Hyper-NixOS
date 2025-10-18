@@ -3,6 +3,7 @@
 #
 # Hyper-NixOS Interactive Setup Wizard
 # Guides administrators through feature selection with security awareness
+# and hardware capability detection
 #
 # Copyright (c) 2025 Hyper-NixOS Contributors
 # License: MIT
@@ -13,6 +14,14 @@ set -Eeuo pipefail
 # Source common library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
+
+# Source hardware capabilities library
+if [[ -f "${SCRIPT_DIR}/lib/hardware-capabilities.sh" ]]; then
+    source "${SCRIPT_DIR}/lib/hardware-capabilities.sh"
+    HW_DETECTION_ENABLED=true
+else
+    HW_DETECTION_ENABLED=false
+fi
 
 # Wizard configuration
 readonly WIZARD_VERSION="1.0.0"
@@ -55,10 +64,12 @@ print_header() {
 ╠═══════════════════════════════════════════════════════════════╣
 ║                                                               ║
 ║  This wizard will help you configure Hyper-NixOS features     ║
-║  with full awareness of security implications.                ║
+║  with full awareness of security implications and             ║
+║  hardware compatibility.                                      ║
 ║                                                               ║
 ║  For each feature, you'll see:                                ║
 ║  • Description and benefits                                   ║
+║  • Hardware compatibility status                              ║
 ║  • Security risk assessment                                   ║
 ║  • Specific security impacts                                  ║
 ║  • Recommended mitigations                                    ║
@@ -66,6 +77,13 @@ print_header() {
 ╚═══════════════════════════════════════════════════════════════╝
 
 EOF
+
+    # Show hardware summary if detection is enabled
+    if [[ "$HW_DETECTION_ENABLED" == "true" ]]; then
+        show_hardware_summary
+        echo
+        read -p "Press Enter to continue with hardware-aware setup..."
+    fi
 }
 
 # Get risk color
@@ -278,31 +296,53 @@ select_features() {
                 prompt_feature "$cat_name" "microSegmentation" "low" \
                     "Network Micro-segmentation" \
                     "Per-VM firewall rules and isolation" \
+                    "" \
                     "Complexity in network configuration" \
                     "Potential for misconfiguration"
-                    
+
+                # SR-IOV requires IOMMU
                 if [[ "$RISK_TOLERANCE" == "accepting" ]]; then
                     prompt_feature "$cat_name" "sriov" "high" \
                         "SR-IOV Support" \
                         "Direct hardware network access for VMs" \
+                        "iommu" \
                         "VMs get direct hardware access" \
                         "Bypasses hypervisor network controls" \
                         "Potential for hardware-level attacks"
                 fi
+
+                # WiFi configuration only if WiFi hardware present
+                prompt_feature "$cat_name" "wifiManagement" "low" \
+                    "WiFi Network Management" \
+                    "Manage WiFi connections for VMs" \
+                    "wifi_config" \
+                    "WiFi credentials stored on host" \
+                    "Wireless security considerations"
                 ;;
                 
             storage)
                 prompt_feature "$cat_name" "encryption" "minimal" \
                     "Storage Encryption" \
                     "Encrypt VM disks at rest" \
+                    "" \
                     "Slight performance overhead" \
                     "Key management complexity"
-                    
+
                 prompt_feature "$cat_name" "deduplication" "low" \
                     "Storage Deduplication" \
                     "Reduce storage usage via deduplication" \
+                    "" \
                     "CPU overhead for dedup processing" \
                     "Potential data correlation attacks"
+
+                # GPU passthrough for GPU-accelerated storage
+                prompt_feature "$cat_name" "gpuPassthrough" "moderate" \
+                    "GPU Passthrough for Storage" \
+                    "Pass through GPU for hardware-accelerated compression/encryption" \
+                    "gpu_passthrough" \
+                    "Requires IOMMU and multiple GPUs" \
+                    "Direct hardware access to VMs" \
+                    "GPU isolation complexity"
                 ;;
                 
             backup)
@@ -348,13 +388,42 @@ select_features() {
                 if [[ "$RISK_TOLERANCE" == "accepting" ]]; then
                     echo "⚠️  Warning: Experimental features may be unstable!"
                     echo
-                    
+
                     prompt_feature "$cat_name" "liveMigration" "high" \
                         "Live Migration" \
                         "Move running VMs between hosts" \
+                        "virtualization" \
                         "Memory contents transmitted" \
                         "Network security critical" \
                         "Complex failure modes"
+
+                    # NVIDIA-specific features
+                    prompt_feature "$cat_name" "nvidiaMig" "moderate" \
+                        "NVIDIA MIG (Multi-Instance GPU)" \
+                        "Partition NVIDIA GPUs for multiple VMs" \
+                        "nvidia_drivers" \
+                        "Requires compatible NVIDIA GPU (A100/A30)" \
+                        "Complex GPU resource management" \
+                        "Potential GPU scheduling issues"
+
+                    # AMD-specific features
+                    prompt_feature "$cat_name" "amdSriov" "moderate" \
+                        "AMD SR-IOV GPU Virtualization" \
+                        "Share AMD GPUs across multiple VMs" \
+                        "amd_rocm" \
+                        "Requires compatible AMD GPU" \
+                        "GPU driver complexity" \
+                        "Resource isolation challenges"
+
+                    # Laptop-specific experimental features
+                    if [[ "$HW_DETECTION_ENABLED" == "true" ]] && is_laptop; then
+                        prompt_feature "$cat_name" "vmSuspendSync" "low" \
+                            "VM-Host Suspend Synchronization" \
+                            "Automatically suspend/resume VMs when laptop suspends" \
+                            "battery_management" \
+                            "May delay laptop sleep" \
+                            "Complex state management"
+                    fi
                 fi
                 ;;
         esac
@@ -371,15 +440,36 @@ prompt_feature() {
     local risk="$3"
     local name="$4"
     local description="$5"
+    local hw_requirement="${6:-}"  # Optional hardware requirement
     shift 5
+    [[ -n "${hw_requirement}" ]] && shift 1
     local impacts=("$@")
-    
+
+    # Check hardware compatibility first
+    local hw_available=true
+    local hw_reason=""
+    if [[ "$HW_DETECTION_ENABLED" == "true" ]] && [[ -n "$hw_requirement" ]]; then
+        if ! is_feature_available "$hw_requirement"; then
+            hw_available=false
+            hw_reason=$(get_unavailable_reason "$hw_requirement")
+        fi
+    fi
+
     # Check if allowed by risk tolerance
     if ! is_feature_allowed "$risk"; then
-        echo "⊗ $name (Blocked by risk tolerance)"
+        echo -e "\033[2m⊗ $name (Blocked by risk tolerance)\033[0m"
         return
     fi
-    
+
+    # Show hardware unavailability
+    if [[ "$hw_available" == "false" ]]; then
+        echo -e "\033[2m○ $name (Hardware unavailable: $hw_reason)\033[0m"
+        if [[ "$ENABLE_EXPLANATIONS" == "true" ]]; then
+            echo -e "\033[2m   $description\033[0m"
+        fi
+        return
+    fi
+
     show_feature_details "$category" "$name" "$risk" "$description" "${impacts[@]}"
     
     # Default based on risk

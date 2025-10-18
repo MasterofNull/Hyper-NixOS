@@ -24,6 +24,7 @@ source "${SCRIPT_DIR}/lib/error_handling.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/config_backup.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/dry_run.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/branding.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/hardware-capabilities.sh" 2>/dev/null || true
 
 # Setup error handling
 setup_error_trap "security-configuration-wizard.sh"

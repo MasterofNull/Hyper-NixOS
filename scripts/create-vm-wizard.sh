@@ -25,6 +25,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/system_discovery.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/branding.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/hardware-capabilities.sh" 2>/dev/null || true
 
 # Intelligent Defaults Framework - Design Ethos Third Pillar
 # Detect system capabilities and pre-fill with best practices
