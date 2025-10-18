@@ -49,6 +49,7 @@ struct Profile {
     name: String,
     cpus: u32,
     memory_mb: u32,
+    #[allow(dead_code)] // Reserved for future disk creation/validation features
     disk_gb: Option<u32>,
     iso_path: Option<String>,
     arch: Option<String>,
