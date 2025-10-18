@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Hardware Platform Optimizations (Comprehensive Coverage)
+
+- **Intelligent platform detection** (`modules/hardware/platform-detection.nix`):
+  - Automatic hardware detection for laptops, desktops, and servers
+  - Auto-detects: touchpad, backlight, battery, Bluetooth, WiFi, webcam, audio
+  - GPU detection (NVIDIA, AMD, Intel) with automatic driver configuration
+  - Headless/server detection for systems without GPU
+  - Automatic platform module enablement (laptop.nix, desktop.nix, or server.nix)
+  - Platform-specific service configuration (libinput, TLP, autorandr, etc.)
+  - Exports detection results to `/etc/hypervisor/platform-info.json`
+  - Logs detection details to `/var/log/hypervisor/platform-detection.log`
+  - Provides `hv-platform-info` command for viewing detected hardware
+  - Optional manual platform override via `hypervisor.platform.forceType`
+  - NixOS 24.05+ compatible (uses `hardware.graphics` instead of deprecated `hardware.opengl`)
+  - Test suite: `tests/modules/test_platform_detection.nix`
+
 - **Laptop-specific optimizations** (`modules/hardware/laptop.nix`):
   - Advanced power management with TLP and auto-cpufreq integration
   - Battery optimization profiles (maximum-life, balanced, performance)
