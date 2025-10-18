@@ -119,7 +119,6 @@ nix-env -iA \
     nixpkgs.zsh-autosuggestions \
     nixpkgs.zsh-fast-syntax-highlighting \
     nixpkgs.presenterm \
-    nixpkgs.diskonaut \
     nixpkgs.erdtree \
     nixpkgs.delta \
     nixpkgs.gdu \
