@@ -10,7 +10,7 @@
 #   and essential developer tools. Installs to user profile (persistent).
 #
 # Usage:
-#   bash deploy-nixos.sh (no sudo needed for user env)
+#   bash nixos-dev-quick-deploy.sh (no sudo needed for user env)
 #
 # Copyright © 2024-2025 MasterofNull
 # Licensed under the MIT License

@@ -4,7 +4,7 @@
 
 ## Overview
 
-This deployment script (`deploy-nixos.sh`) provides a one-command setup for a persistent development environment on NixOS systems. It installs all necessary packages to your user profile (no system configuration changes required) and configures VSCodium with Claude Code and popular extensions.
+This deployment script (`nixos-dev-quick-deploy.sh`) provides a one-command setup for a persistent development environment on NixOS systems. It installs all necessary packages to your user profile (no system configuration changes required) and configures VSCodium with Claude Code and popular extensions.
 
 **Key Features:**
 - 🔒 **User-level installation** - No sudo required for packages (uses `nix-env`)
@@ -26,13 +26,13 @@ This deployment script (`deploy-nixos.sh`) provides a one-command setup for a pe
 
 ```bash
 # Download the script
-curl -O https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/scripts/deploy-nixos.sh
+curl -O https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/scripts/nixos-dev-quick-deploy.sh
 
 # Make executable
-chmod +x deploy-nixos.sh
+chmod +x nixos-dev-quick-deploy.sh
 
 # Run as regular user (NOT with sudo)
-./deploy-nixos.sh
+./nixos-dev-quick-deploy.sh
 ```
 
 **Installation time:** 10-20 minutes depending on your internet speed
@@ -508,8 +508,8 @@ Always review code before trusting a workspace.
 ### Get Latest Version
 
 ```bash
-curl -O https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/scripts/deploy-nixos.sh
-chmod +x deploy-nixos.sh
+curl -O https://raw.githubusercontent.com/MasterofNull/Hyper-NixOS/main/scripts/nixos-dev-quick-deploy.sh
+chmod +x nixos-dev-quick-deploy.sh
 ```
 
 ### Run Updates
@@ -519,6 +519,12 @@ Re-running the script is safe and will:
 - ✅ Install new extensions
 - ✅ Preserve your VSCodium settings
 - ✅ Fix any broken configurations
+
+## Script Name
+
+**Current:** `nixos-dev-quick-deploy.sh`
+
+This name clearly indicates it's deploying a **development environment**, not NixOS itself.
 
 ## Uninstallation
 
@@ -603,7 +609,7 @@ Found a bug or want to add features? Submit issues or pull requests:
 
 **Repository:** https://github.com/MasterofNull/Hyper-NixOS
 
-**Script Location:** `scripts/deploy-nixos.sh`
+**Script Location:** `scripts/nixos-dev-quick-deploy.sh`
 
 ### Improvement Ideas
 
