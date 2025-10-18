@@ -297,7 +297,7 @@ preflight_checks() {
         failed=true
     fi
     
-    # Check for required tools
+    # Check and install required tools
     print_debug "Checking required tools"
     local required_tools=("tar" "bash")
     local missing_tools=()
@@ -306,16 +306,43 @@ preflight_checks() {
             missing_tools+=("$tool")
         fi
     done
-    
+
     if [[ ${#missing_tools[@]} -gt 0 ]]; then
-        print_error_with_help $ERROR_MISSING_DEPS \
-            "Required tools missing: ${missing_tools[*]}"
-        failed=true
+        print_warning "Required tools missing: ${missing_tools[*]}" >&2
+        print_status "Installing missing required tools..." >&2
+
+        for tool in "${missing_tools[@]}"; do
+            print_info "Installing $tool..." >&2
+            if nix-env -iA nixos.$tool 2>&1 | tee -a "$INSTALL_LOG"; then
+                print_success "$tool installed successfully" >&2
+            else
+                print_error "Failed to install $tool" >&2
+                print_error_with_help $ERROR_MISSING_DEPS \
+                    "Could not install required tool: $tool"
+                failed=true
+            fi
+        done
+
+        # Verify installation worked
+        local still_missing=()
+        for tool in "${missing_tools[@]}"; do
+            if ! command -v "$tool" >/dev/null 2>&1; then
+                still_missing+=("$tool")
+            fi
+        done
+
+        if [[ ${#still_missing[@]} -gt 0 ]]; then
+            print_error_with_help $ERROR_MISSING_DEPS \
+                "Failed to install required tools: ${still_missing[*]}"
+            failed=true
+        else
+            print_success "Required tools: All present (${required_tools[*]})" >&2
+        fi
     else
-        print_success "Required tools: All present (tar, bash)" >&2
+        print_success "Required tools: All present (${required_tools[*]})" >&2
     fi
-    
-    # Check for recommended tools
+
+    # Check and install recommended tools
     local recommended_tools=("curl" "wget" "git")
     local missing_recommended=()
     for tool in "${recommended_tools[@]}"; do
@@ -323,12 +350,37 @@ preflight_checks() {
             missing_recommended+=("$tool")
         fi
     done
-    
+
     if [[ ${#missing_recommended[@]} -gt 0 ]]; then
         print_warning "Some recommended tools missing: ${missing_recommended[*]}" >&2
-        warnings=$((warnings + 1))
+        print_status "Installing recommended tools..." >&2
+
+        for tool in "${missing_recommended[@]}"; do
+            print_info "Installing $tool..." >&2
+            if nix-env -iA nixos.$tool 2>&1 | tee -a "$INSTALL_LOG"; then
+                print_success "$tool installed successfully" >&2
+            else
+                print_warning "Failed to install $tool (continuing anyway)" >&2
+                warnings=$((warnings + 1))
+            fi
+        done
+
+        # Check final status
+        local final_missing=()
+        for tool in "${recommended_tools[@]}"; do
+            if ! command -v "$tool" >/dev/null 2>&1; then
+                final_missing+=("$tool")
+            fi
+        done
+
+        if [[ ${#final_missing[@]} -eq 0 ]]; then
+            print_success "Recommended tools: All present (${recommended_tools[*]})" >&2
+        else
+            print_warning "Some recommended tools still missing: ${final_missing[*]}" >&2
+            warnings=$((warnings + 1))
+        fi
     else
-        print_success "Recommended tools: All present (curl, wget, git)" >&2
+        print_success "Recommended tools: All present (${recommended_tools[*]})" >&2
     fi
     
     # Summary
