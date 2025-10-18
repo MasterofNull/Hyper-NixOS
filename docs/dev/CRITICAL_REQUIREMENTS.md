@@ -14,7 +14,7 @@ This document outlines **MANDATORY** requirements that **MUST** be followed for 
 1. **BEFORE** any development work:
    - Read `/docs/dev/DEVELOPMENT_REFERENCE.md` (COMPLETE DOCUMENT)
    - Review `/docs/dev/PROJECT_DEVELOPMENT_HISTORY.md`
-   - Check recent changes in `/docs/CHANGELOG.md`
+   - Check recent changes in `/docs/dev/CHANGELOG.md`
 
 2. **DURING** development:
    - Follow ALL patterns in DEVELOPMENT_REFERENCE.md

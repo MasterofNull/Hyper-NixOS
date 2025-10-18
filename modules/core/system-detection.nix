@@ -33,14 +33,48 @@ let
     
     # Architecture
     HARDWARE["arch"]=$(${pkgs.coreutils}/bin/uname -m)
-    
-    # Virtualization Capabilities
-    if ${pkgs.gnugrep}/bin/grep -q -E '(vmx|svm)' /proc/cpuinfo; then
-        CAPABILITIES["cpu_virt"]="true"
-        HARDWARE["virt_type"]=$(${pkgs.gnugrep}/bin/grep -q vmx /proc/cpuinfo && echo "Intel VT-x" || echo "AMD-V")
+
+    # Detect if ARM architecture
+    if [[ "''${HARDWARE["arch"]}" =~ ^(aarch64|armv7l|armv8)$ ]]; then
+        HARDWARE["is_arm"]="true"
+
+        # ARM platform detection
+        if ${pkgs.gnugrep}/bin/grep -qi "Raspberry Pi 5" /proc/cpuinfo 2>/dev/null; then
+            HARDWARE["arm_platform"]="rpi5"
+        elif ${pkgs.gnugrep}/bin/grep -qi "Raspberry Pi 4" /proc/cpuinfo 2>/dev/null; then
+            HARDWARE["arm_platform"]="rpi4"
+        elif ${pkgs.gnugrep}/bin/grep -qi "Raspberry Pi 3" /proc/cpuinfo 2>/dev/null; then
+            HARDWARE["arm_platform"]="rpi3"
+        elif ${pkgs.gnugrep}/bin/grep -qi "rockchip.*rk3399" /proc/cpuinfo 2>/dev/null; then
+            HARDWARE["arm_platform"]="rockpro64"
+        else
+            HARDWARE["arm_platform"]="generic-arm"
+        fi
     else
-        CAPABILITIES["cpu_virt"]="false"
-        HARDWARE["virt_type"]="none"
+        HARDWARE["is_arm"]="false"
+        HARDWARE["arm_platform"]="none"
+    fi
+
+    # Virtualization Capabilities (x86 and ARM)
+    if [[ "''${HARDWARE["is_arm"]}" == "true" ]]; then
+        # ARM virtualization detection
+        if ${pkgs.gnugrep}/bin/grep -q -E 'Features.*:.*fp' /proc/cpuinfo && \
+           [[ -e /dev/kvm ]]; then
+            CAPABILITIES["cpu_virt"]="true"
+            HARDWARE["virt_type"]="ARM KVM"
+        else
+            CAPABILITIES["cpu_virt"]="false"
+            HARDWARE["virt_type"]="none"
+        fi
+    else
+        # x86 virtualization detection
+        if ${pkgs.gnugrep}/bin/grep -q -E '(vmx|svm)' /proc/cpuinfo; then
+            CAPABILITIES["cpu_virt"]="true"
+            HARDWARE["virt_type"]=$(${pkgs.gnugrep}/bin/grep -q vmx /proc/cpuinfo && echo "Intel VT-x" || echo "AMD-V")
+        else
+            CAPABILITIES["cpu_virt"]="false"
+            HARDWARE["virt_type"]="none"
+        fi
     fi
     
     # AVX Support (for AI/ML workloads)

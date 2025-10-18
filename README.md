@@ -292,7 +292,7 @@ List backup sources and view deduplication stats.
 
 ## 🤝 Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions! See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
 
 ### Development Setup
 
@@ -364,6 +364,6 @@ Built with ❤️ using:
 
 © 2024-2025 [MasterofNull](https://github.com/MasterofNull) | Licensed under the [MIT License](LICENSE)
 
-[Documentation](docs/) • [Contributing](CONTRIBUTING.md) • [Authors](AUTHORS.md) • [Branding](BRANDING_STANDARDS.md)
+[Documentation](docs/) • [Contributing](docs/CONTRIBUTING.md) • [Authors](docs/AUTHORS.md) • [Security](docs/SECURITY.md)
 
 </div>

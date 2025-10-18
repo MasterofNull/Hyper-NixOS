@@ -783,7 +783,7 @@ docs/
 
 1. **Read this document completely**
 2. Review `/docs/dev/CRITICAL_REQUIREMENTS.md`
-3. Check `/docs/CHANGELOG.md` for recent changes
+3. Check `/docs/dev/CHANGELOG.md` for recent changes
 4. Review related modules/scripts for patterns
 
 ### During Development
