@@ -511,49 +511,6 @@ center_text() {
     printf '%*s%s\n' $padding '' "$text"
 }
 
-# Enhanced progress bar for downloads
-show_progress_bar() {
-    local current="$1"
-    local total="$2"
-    local prefix="${3:-Progress}"
-    local width=50
-    
-    if [[ "$total" -eq 0 ]]; then
-        total=1
-    fi
-    
-    local percent=$((current * 100 / total))
-    local filled=$((width * current / total))
-    local empty=$((width - filled))
-    
-    # Build progress bar
-    local bar=""
-    for ((i=0; i<filled; i++)); do bar+="█"; done
-    for ((i=0; i<empty; i++)); do bar+="░"; done
-    
-    # Color based on progress
-    local color="$CYAN"
-    if [[ $percent -ge 100 ]]; then
-        color="$GREEN"
-    elif [[ $percent -ge 75 ]]; then
-        color="$BLUE"
-    fi
-    
-    printf "\r${color}${prefix}:${NC} [%s] %3d%% " "$bar" "$percent"
-}
-
-# Progress indicator for multi-step operations
-step_progress() {
-    local current="$1"
-    local total="$2"
-    local description="$3"
-    
-    echo
-    echo -e "${BOLD}Step $current/$total:${NC} $description"
-    show_progress_bar "$current" "$total" "Overall Progress"
-    echo
-}
-
 # Show error with context from log file
 show_error_context() {
     local error_file="$1"
@@ -1066,8 +1023,14 @@ download_tarball() {
         if [[ $download_attempt -gt 1 ]]; then
             print_warning "Retrying download (attempt $download_attempt/$max_download_attempts)..." >&2
             rm -f "$tarball_file"
+        else
+            # First attempt - show what we're downloading
+            echo >&2
+            print_info "Download URL: $tarball_url" >&2
+            print_info "Progress bar will appear below..." >&2
+            echo >&2
         fi
-        
+
         # Download with built-in retry logic
         if download_with_retry "$tarball_url" "$tarball_file"; then
             local file_size=$(du -h "$tarball_file" | cut -f1)
@@ -1096,21 +1059,26 @@ download_tarball() {
     done
     
     # Extract tarball
+    echo >&2
     print_status "Extracting tarball..." >&2
     mkdir -p "${dest}/hyper-nixos"
-    
+
     local extract_output=$(mktemp)
     local max_extract_attempts=2
     local extract_attempt=1
-    
+
     while [[ $extract_attempt -le $max_extract_attempts ]]; do
+        # Show spinner during extraction
+        start_spinner "Extracting files..."
+
         if tar -xzf "$tarball_file" -C "${dest}/hyper-nixos" --strip-components=1 2>"$extract_output"; then
-            print_success "Tarball extracted successfully" >&2
+            stop_spinner success "Tarball extracted successfully"
             rm -f "$tarball_file" "$extract_output"
             return 0
         else
+            stop_spinner error "Extraction failed"
             if [[ $extract_attempt -lt $max_extract_attempts ]]; then
-                print_warning "Extraction failed, retrying... (attempt $extract_attempt/$max_extract_attempts)" >&2
+                print_warning "Retrying... (attempt $extract_attempt/$max_extract_attempts)" >&2
                 rm -rf "${dest}/hyper-nixos"
                 mkdir -p "${dest}/hyper-nixos"
             else
