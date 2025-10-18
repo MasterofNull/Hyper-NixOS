@@ -36,6 +36,7 @@
     ./modules/core/keymap-sanitizer.nix
     ./modules/core/portable-base.nix
     ./modules/core/optimized-system.nix
+    ./modules/core/first-boot-service.nix
     
     # Feature management system
     ./modules/system-tiers.nix  # System tier definitions (required by feature-manager)
@@ -434,10 +435,17 @@
       # Create required directories
       mkdir -p /etc/hypervisor/{features,reports,docs,certs}
       mkdir -p /var/lib/hypervisor/{vms,backups,logs,threats,ml-models}
-      
+
       # Set permissions
       chmod 750 /etc/hypervisor
       chmod 755 /var/lib/hypervisor
+
+      # Add hv CLI to system PATH
+      mkdir -p /usr/local/bin
+      if [ -f /etc/nixos/scripts/hv ]; then
+        ln -sf /etc/nixos/scripts/hv /usr/local/bin/hv
+        chmod +x /etc/nixos/scripts/hv
+      fi
       
       # First-run check
       if [ ! -f /etc/hypervisor/.setup-complete ]; then

@@ -99,7 +99,7 @@ EOF
 
 # Execute wizards
 cmd_vm_create() {
-    exec "$SCRIPT_DIR/create_vm_wizard.sh" "$@"
+    exec "$SCRIPT_DIR/create-vm-wizard.sh" "$@"
 }
 
 cmd_first_boot() {
