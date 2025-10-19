@@ -10,7 +10,97 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
-#### 2025-10-19: Corrected Understanding of Hyper-NixOS Architecture
+#### 2025-10-19: Fixed Critical Architecture Documentation (FINAL CORRECTION)
+**Agent**: Claude Code
+**Task**: Correct documentation to reflect actual Hyper-NixOS architecture
+
+**Context**:
+- After multiple misunderstandings about architecture, user demanded Option A: Fix critical docs immediately
+- User clarified: "configuration.nix and flake.nix in the root/main dir is what does this"
+- User clarified: "/etc/hypervisor is only a placeholder... Do not use this for any other reason or reference"
+- User clarified: "we are only to be working within the Hyper-NixOS dir"
+
+**THE CORRECT ARCHITECTURE** (Final):
+
+**Repository Structure**: `/home/hyperd/Documents/Hyper-NixOS/`
+```
+Hyper-NixOS/
+├── flake.nix              # ENTRY POINT - defines nixosConfigurations
+├── configuration.nix      # Imports all modules, defines system settings
+├── modules/               # All NixOS modules
+└── hardware-configuration.nix  # Placeholder (no-op in repo)
+```
+
+**Build Flow**:
+1. `flake.nix` → defines nixosConfigurations (hypervisor-x86_64, hypervisor-aarch64)
+2. Each config imports `./configuration.nix`
+3. `configuration.nix` imports all `./modules/**/*.nix`
+
+**Host System Files** (NOT part of Hyper-NixOS architecture):
+- `/etc/nixos/` - Host system location (NOT Hyper-NixOS)
+- `/etc/hypervisor/` - Placeholder for compare/merge ONLY (NOT Hyper-NixOS)
+- Automation scripts CAN reference these for installation purposes
+- Documentation SHOULD NOT describe these as Hyper-NixOS architecture
+
+**Files Fixed** (3 critical architecture docs):
+
+1. **docs/dev/AI_ASSISTANT_CONTEXT.md** (line 80):
+   - BEFORE: "`/etc/nixos/configuration.nix` imports all modules"
+   - AFTER: "`Hyper-NixOS/configuration.nix` imports all modules"
+   - Added "Entry Point" section describing flake.nix
+
+2. **BUILD_INSTRUCTIONS.md** (complete rewrite):
+   - BEFORE: Described `/etc/hypervisor/` and `/etc/nixos/` as architecture
+   - AFTER: Describes repository-only architecture
+   - Shows correct build commands: `cd Hyper-NixOS && sudo nixos-rebuild switch --flake .`
+   - Explains hardware-configuration.nix placeholder vs installed
+   - Development workflow within repository only
+
+3. **docs/dev/SYSTEM_AUDIT_2025-10-19.md**:
+   - Added CORRECTION NOTICE at top explaining incorrect assumptions
+   - Notes findings about documentation inconsistencies remain valid
+   - References corrective actions taken
+
+**Additional Documentation Created**:
+
+4. **docs/dev/DOCUMENTATION_CORRECTIONS_NEEDED.md**:
+   - Comprehensive list of 22+ files needing review
+   - Categorizes: architecture docs (fix), installation docs (review), scripts (OK)
+   - Provides correction templates and approach
+
+**Key Lessons**:
+
+1. **Read Documentation != Understand Implementation**:
+   - Reading system_installer.sh led to wrong conclusions
+   - Should have asked user for architecture clarification first
+   - User's explicit statements override code analysis
+
+2. **Scope Boundaries Are Critical**:
+   - "Only work within Hyper-NixOS dir" is absolute
+   - Host paths are for automation, not architecture
+   - Documentation must reflect repository structure only
+
+3. **When User Says "You're Lost" - STOP**:
+   - User correctly identified agent was making assumptions
+   - Should have immediately asked for clarification
+   - Multiple iterations could have been avoided
+
+**Files Modified** (today's corrections):
+- docs/dev/AI_ASSISTANT_CONTEXT.md - Architecture section corrected
+- BUILD_INSTRUCTIONS.md - Complete rewrite with correct architecture
+- docs/dev/SYSTEM_AUDIT_2025-10-19.md - Correction notice added
+- docs/dev/DOCUMENTATION_CORRECTIONS_NEEDED.md - Created
+
+**Next Steps** (22+ files still need review):
+- Installation guides - determine if examples acceptable
+- User guides - update commands to reference repository
+- Systematic review of all /etc/hypervisor/ references
+
+**Commits**: (pending commit of these 3 fixes)
+
+---
+
+#### 2025-10-19: Corrected Understanding of Hyper-NixOS Architecture (SUPERSEDED BY ABOVE)
 **Agent**: Claude Code
 **Task**: Understand and document the actual system architecture
 

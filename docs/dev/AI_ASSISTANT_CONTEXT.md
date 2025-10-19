@@ -76,8 +76,16 @@ The project uses NixOS modules organized into categories:
 
 ## Configuration Structure
 
+### Entry Point
+`Hyper-NixOS/flake.nix` defines the system configurations:
+- Inputs: nixpkgs (currently nixos-25.05)
+- Outputs: nixosConfigurations (hypervisor-x86_64, hypervisor-aarch64)
+- Each configuration imports `./configuration.nix`
+
 ### Main Configuration File
-`/etc/nixos/configuration.nix` imports all modules and defines:
+`Hyper-NixOS/configuration.nix` imports all modules and defines:
+- Hardware configuration (./hardware-configuration.nix)
+- All modules (./modules/**/*.nix)
 - System identification
 - Boot parameters
 - Hypervisor settings
