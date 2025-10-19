@@ -56,16 +56,25 @@ let
   ];
 
   # Detect NVIDIA GPU
-  hasNvidiaGPU = builtins.any (line: lib.hasInfix "NVIDIA" line || lib.hasInfix "nvidia" line)
-    (lib.splitString "\n" (builtins.readFile ("/proc/bus/pci/devices" or "")));
+  hasNvidiaGPU =
+    if builtins.pathExists "/proc/bus/pci/devices" then
+      builtins.any (line: lib.hasInfix "NVIDIA" line || lib.hasInfix "nvidia" line)
+        (lib.splitString "\n" (builtins.readFile "/proc/bus/pci/devices"))
+    else false;
 
   # Detect AMD GPU
-  hasAMDGPU = builtins.any (line: lib.hasInfix "amdgpu" (lib.toLower line))
-    (lib.splitString "\n" (builtins.readFile ("/proc/bus/pci/devices" or "")));
+  hasAMDGPU =
+    if builtins.pathExists "/proc/bus/pci/devices" then
+      builtins.any (line: lib.hasInfix "amdgpu" (lib.toLower line))
+        (lib.splitString "\n" (builtins.readFile "/proc/bus/pci/devices"))
+    else false;
 
   # Detect Intel integrated graphics
-  hasIntelGPU = builtins.any (line: lib.hasInfix "Intel" line)
-    (lib.splitString "\n" (builtins.readFile ("/proc/bus/pci/devices" or "")));
+  hasIntelGPU =
+    if builtins.pathExists "/proc/bus/pci/devices" then
+      builtins.any (line: lib.hasInfix "Intel" line)
+        (lib.splitString "\n" (builtins.readFile "/proc/bus/pci/devices"))
+    else false;
 
   # Detect if system is headless (no GPU)
   isHeadless = !(hasNvidiaGPU || hasAMDGPU || hasIntelGPU);
@@ -141,11 +150,6 @@ in {
         modesetting.enable = true;
         powerManagement.enable = isLaptop;  # Power management for laptops
         open = false;  # Use proprietary driver for better compatibility
-      };
-
-      # AMD
-      amdgpu = mkIf hasAMDGPU {
-        enable = true;
       };
 
       # Graphics (OpenGL/Vulkan support) - NixOS 24.05+ uses hardware.graphics
