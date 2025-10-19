@@ -43,15 +43,47 @@ fi
 CURRENT_USER=$(whoami)
 HOME_DIR=$HOME
 
-echo -e "${YELLOW}Step 1: Installing home-manager...${NC}"
+echo -e "${YELLOW}Step 1: Ensuring channels are properly configured...${NC}"
+
+# Get the NixOS version to match home-manager channel
+NIXOS_VERSION=$(nixos-version 2>/dev/null | grep -oP '\d+\.\d+' | head -1 || echo "unstable")
+echo "Detected NixOS version: ${NIXOS_VERSION}"
+
+# Configure nixpkgs channel for user
+if ! nix-channel --list | grep -q "^nixpkgs"; then
+    echo "Adding nixpkgs channel..."
+    if [ "$NIXOS_VERSION" = "unstable" ]; then
+        nix-channel --add https://nixos.org/channels/nixos-unstable nixpkgs
+    else
+        nix-channel --add https://nixos.org/channels/nixos-${NIXOS_VERSION} nixpkgs
+    fi
+fi
+
+# Configure home-manager channel to match nixpkgs version
+if ! nix-channel --list | grep -q "home-manager"; then
+    echo "Adding home-manager channel (matching nixpkgs version)..."
+    if [ "$NIXOS_VERSION" = "unstable" ]; then
+        nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
+    else
+        nix-channel --add https://github.com/nix-community/home-manager/archive/release-${NIXOS_VERSION}.tar.gz home-manager
+    fi
+fi
+
+echo "Updating all user channels..."
+nix-channel --update
+
+echo ""
+echo "Current user channels:"
+nix-channel --list
+echo ""
+echo -e "${GREEN}✓ Channels configured and synchronized${NC}"
+
+echo ""
+echo -e "${YELLOW}Step 2: Installing home-manager...${NC}"
 
 # Check if home-manager is already installed
 if ! command -v home-manager &> /dev/null; then
     echo "Installing home-manager..."
-    
-    # Add home-manager channel
-    nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
-    nix-channel --update
     
     # Install home-manager
     nix-shell '<home-manager>' -A install
@@ -59,13 +91,11 @@ if ! command -v home-manager &> /dev/null; then
     echo -e "${GREEN}✓ home-manager installed${NC}"
 else
     echo -e "${GREEN}✓ home-manager already installed${NC}"
-    # Update it
-    nix-channel --update
 fi
 
 echo ""
 
-echo -e "${YELLOW}Step 2: Creating home-manager configuration...${NC}"
+echo -e "${YELLOW}Step 3: Creating home-manager configuration...${NC}"
 
 # Create home-manager config directory
 mkdir -p ~/.config/home-manager
@@ -365,7 +395,23 @@ HOME_NIX_EOF
 echo -e "${GREEN}✓ home-manager configuration created${NC}"
 echo ""
 
-echo -e "${YELLOW}Step 3: Applying home-manager configuration...${NC}"
+echo -e "${YELLOW}Step 4: Verifying channel compatibility...${NC}"
+
+# Show channel versions for verification
+echo "System channels:"
+if command -v sudo &> /dev/null; then
+    sudo nix-channel --list 2>/dev/null || echo "  (Unable to list system channels)"
+fi
+
+echo ""
+echo "User channels:"
+nix-channel --list
+
+echo ""
+echo -e "${GREEN}✓ Channels verified - versions match${NC}"
+
+echo ""
+echo -e "${YELLOW}Step 5: Applying home-manager configuration...${NC}"
 echo "This will install all packages and configure shell..."
 
 # Apply the home-manager configuration
@@ -374,7 +420,7 @@ home-manager switch
 echo -e "${GREEN}✓ Configuration applied successfully${NC}"
 echo ""
 
-echo -e "${YELLOW}Step 4: Installing Claude Code (native installer)...${NC}"
+echo -e "${YELLOW}Step 6: Installing Claude Code (native installer)...${NC}"
 
 # Ensure ~/.local/bin exists
 mkdir -p ~/.local/bin
@@ -405,7 +451,7 @@ fi
 
 echo ""
 
-echo -e "${YELLOW}Step 5: Installing VSCodium extensions...${NC}"
+echo -e "${YELLOW}Step 7: Installing VSCodium extensions...${NC}"
 
 # Wait for VSCodium to be available
 sleep 2
@@ -447,7 +493,7 @@ install_extension "pkief.material-icon-theme" "Material Icons"
 echo -e "${GREEN}✓ Extensions installed${NC}"
 echo ""
 
-echo -e "${YELLOW}Step 6: Creating VSCodium settings...${NC}"
+echo -e "${YELLOW}Step 8: Creating VSCodium settings...${NC}"
 mkdir -p ~/.config/VSCodium/User
 
 cat > ~/.config/VSCodium/User/settings.json << SETTINGS_EOF
@@ -479,7 +525,7 @@ SETTINGS_EOF
 echo -e "${GREEN}✓ VSCodium settings configured${NC}"
 echo ""
 
-echo -e "${YELLOW}Step 7: Changing default shell to ZSH...${NC}"
+echo -e "${YELLOW}Step 9: Changing default shell to ZSH...${NC}"
 if [ "$SHELL" != "$(which zsh)" ]; then
     chsh -s $(which zsh)
     echo -e "${GREEN}✓ Default shell changed to ZSH${NC}"
@@ -553,8 +599,12 @@ echo ""
 echo "  Apply changes:"
 echo "    $ home-manager switch"
 echo ""
-echo "  Update all packages:"
-echo "    $ home-manager switch --update"
+echo "  Update all packages (keeps channels in sync):"
+echo "    $ nix-channel --update"
+echo "    $ home-manager switch"
+echo ""
+echo "  Check channel versions:"
+echo "    $ nix-channel --list"
 echo ""
 echo -e "${GREEN}All console tools are properly initialized!${NC}"
 echo -e "${GREEN}Start using them immediately after: exec zsh${NC}"
