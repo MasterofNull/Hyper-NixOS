@@ -12,7 +12,7 @@ All Hyper-NixOS flake profiles have been updated to include:
 ## Updated Profiles
 
 ### 1. configuration.nix (Main Configuration)
-**Location**: `/etc/nixos/configuration.nix`
+**Repository**: `Hyper-NixOS/configuration.nix`
 
 **Added Modules**:
 - `modules/core/universal-hardware-detection.nix`
@@ -27,7 +27,7 @@ All Hyper-NixOS flake profiles have been updated to include:
 ---
 
 ### 2. profiles/configuration-minimal.nix (Minimal Installation)
-**Location**: `/etc/hypervisor/src/profiles/configuration-minimal.nix`
+**Repository**: `Hyper-NixOS/profiles/configuration-minimal.nix`
 
 **Added Modules**:
 - `modules/core/universal-hardware-detection.nix`
@@ -42,7 +42,7 @@ All Hyper-NixOS flake profiles have been updated to include:
 ---
 
 ### 3. profiles/configuration-complete.nix (Full-Featured Configuration)
-**Location**: `/etc/hypervisor/src/profiles/configuration-complete.nix`
+**Repository**: `Hyper-NixOS/profiles/configuration-complete.nix`
 
 **Added Modules**:
 - `modules/core/universal-hardware-detection.nix`
@@ -57,7 +57,7 @@ All Hyper-NixOS flake profiles have been updated to include:
 ---
 
 ### 4. profiles/configuration-enhanced.nix (Enhanced Security Configuration)
-**Location**: `/etc/hypervisor/src/profiles/configuration-enhanced.nix`
+**Repository**: `Hyper-NixOS/profiles/configuration-enhanced.nix`
 
 **Added Modules**:
 - `modules/core/universal-hardware-detection.nix`
@@ -72,7 +72,7 @@ All Hyper-NixOS flake profiles have been updated to include:
 ---
 
 ### 5. profiles/configuration-privilege-separation.nix (Privilege Separation Model)
-**Location**: `/etc/hypervisor/src/profiles/configuration-privilege-separation.nix`
+**Repository**: `Hyper-NixOS/profiles/configuration-privilege-separation.nix`
 
 **Added Modules**:
 - `modules/core/universal-hardware-detection.nix`
@@ -89,7 +89,7 @@ All Hyper-NixOS flake profiles have been updated to include:
 ---
 
 ### 6. profiles/configuration-minimal-recovery.nix (Recovery Configuration)
-**Location**: `/etc/hypervisor/src/profiles/configuration-minimal-recovery.nix`
+**Repository**: `Hyper-NixOS/profiles/configuration-minimal-recovery.nix`
 
 **Added Modules**:
 - `modules/core/universal-hardware-detection.nix`
@@ -227,25 +227,29 @@ sudo hv-check-updates
 
 ---
 
-## Migration from Old Profiles
+## Using Different Profiles
 
-If you're using an older profile with hardcoded settings:
+To switch between profiles in your repository:
 
 ### 1. Backup Current Configuration
 ```bash
-sudo cp /etc/nixos/configuration.nix /etc/nixos/configuration.nix.backup
+cd Hyper-NixOS
+cp configuration.nix configuration.nix.backup
 ```
 
-### 2. Switch to Updated Profile
+### 2. Switch to Desired Profile
 ```bash
-cd /etc/hypervisor/src
-sudo cp profiles/configuration-minimal.nix /etc/nixos/configuration.nix
-# Or use configuration-complete.nix, configuration-enhanced.nix, etc.
+# Option 1: Copy profile to configuration.nix
+cp profiles/configuration-minimal.nix configuration.nix
+
+# Option 2: Build specific profile directly
+sudo nixos-rebuild switch --flake .#minimal
+# Available profiles: minimal, complete, enhanced, privilege-separation, minimal-recovery
 ```
 
-### 3. Test the New Configuration
+### 3. Test the Configuration
 ```bash
-sudo nixos-rebuild test --flake /etc/hypervisor
+sudo nixos-rebuild test --flake .
 ```
 
 ### 4. Verify Hardware Detection
@@ -256,7 +260,7 @@ hv-platform-info
 
 ### 5. Apply Permanently
 ```bash
-sudo nixos-rebuild switch --flake /etc/hypervisor
+sudo nixos-rebuild switch --flake .
 ```
 
 ### 6. Reboot and Verify
@@ -300,14 +304,15 @@ cat /proc/cmdline
 
 2. **Apply the profile** and test:
    ```bash
-   sudo nixos-rebuild test --flake /etc/hypervisor
+   cd Hyper-NixOS
+   sudo nixos-rebuild test --flake .
    ```
 
 3. **Verify detection** with the commands above
 
 4. **Make it permanent** if everything works:
    ```bash
-   sudo nixos-rebuild switch --flake /etc/hypervisor
+   sudo nixos-rebuild switch --flake .
    ```
 
 5. **Enable update notifications** (enabled by default):

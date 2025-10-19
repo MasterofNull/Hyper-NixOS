@@ -287,8 +287,8 @@ Create environment-specific profiles:
 - Review logs: `journalctl -u hypervisor-features`
 
 #### "Configuration won't apply"
-- Test build: `nixos-rebuild dry-build`
-- Check syntax: `nix-instantiate --parse /etc/nixos/configuration.nix`
+- Test build: `cd Hyper-NixOS && nixos-rebuild dry-build --flake .`
+- Check syntax: `cd Hyper-NixOS && nix-instantiate --parse ./configuration.nix`
 - Restore backup: `hv-feature restore-backup`
 
 #### "System runs out of resources"

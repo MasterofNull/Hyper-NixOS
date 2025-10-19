@@ -211,7 +211,7 @@ We use the following severity classifications:
    sudo journalctl -u hypervisor-threat-detector
 
    # Check privilege assignments
-   sudo grep -r "hypervisor-" /etc/nixos/configuration.nix
+   grep -r "hypervisor-" Hyper-NixOS/configuration.nix
 
    # Review sudo rules
    sudo cat /etc/sudoers.d/hypervisor
@@ -219,7 +219,7 @@ We use the following severity classifications:
 
 4. **Backup Configurations**
    - Keep multiple generations: `boot.loader.systemd-boot.configurationLimit = 10;`
-   - Store off-system backups of `/etc/nixos/`
+   - Store off-system backups of repository: `Hyper-NixOS/`
    - Test rollback procedures regularly
 
 5. **Network Isolation**

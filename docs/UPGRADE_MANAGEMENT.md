@@ -114,7 +114,7 @@ Common issues and fixes:
 **Symptom**: Errors about deprecated options or conflicting settings
 
 **Fix**:
-1. Review `/etc/nixos/configuration.nix`
+1. Review `Hyper-NixOS/configuration.nix` in your repository
 2. Check for deprecated options in the error message
 3. Update or remove conflicting settings
 4. Consult NixOS release notes: https://nixos.org/manual/nixos/stable/release-notes.html
@@ -196,8 +196,10 @@ When NixOS 24.11 (or newer) is released and you want to upgrade:
 
 4. **Update stateVersion** (only if recommended in release notes):
    ```bash
-   sudo vim /etc/nixos/configuration.nix
+   cd Hyper-NixOS
+   vim configuration.nix
    # Update system.stateVersion = "25.05";
+   sudo nixos-rebuild switch --flake .
    ```
 
 ## Channel Compatibility
