@@ -11,138 +11,136 @@
 
 { config, lib, pkgs, ... }:
 
-with lib;
-
-let
-  cfg = config.hypervisor.hardware.laptop;
-in {
+{
   options.hypervisor.hardware.laptop = {
-    enable = mkEnableOption "laptop-specific optimizations";
+    enable = lib.mkEnableOption "laptop-specific optimizations";
 
     powerManagement = {
-      enable = mkOption {
-        type = types.bool;
+      enable = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable aggressive power management for battery life";
       };
 
-      suspendOnLidClose = mkOption {
-        type = types.bool;
+      suspendOnLidClose = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Suspend system when laptop lid is closed";
       };
 
-      cpuGovernor = mkOption {
-        type = types.enum [ "powersave" "ondemand" "performance" "schedutil" ];
+      cpuGovernor = lib.mkOption {
+        type = lib.types.enum [ "powersave" "ondemand" "performance" "schedutil" ];
         default = "powersave";
         description = "CPU frequency scaling governor";
       };
 
-      autosuspendDelay = mkOption {
-        type = types.int;
+      autosuspendDelay = lib.mkOption {
+        type = lib.types.int;
         default = 300;
         description = "Seconds of inactivity before automatic suspend";
       };
     };
 
     battery = {
-      optimizationLevel = mkOption {
-        type = types.enum [ "maximum-life" "balanced" "performance" ];
+      optimizationLevel = lib.mkOption {
+        type = lib.types.enum [ "maximum-life" "balanced" "performance" ];
         default = "balanced";
         description = "Battery optimization profile";
       };
 
-      chargeThreshold = mkOption {
-        type = types.nullOr types.int;
+      chargeThreshold = lib.mkOption {
+        type = lib.types.nullOr lib.types.int;
         default = null;
         description = "Battery charge threshold (0-100) to preserve battery health";
       };
 
-      notifications = mkOption {
-        type = types.bool;
+      notifications = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Show battery level notifications";
       };
     };
 
     display = {
-      autoBacklight = mkOption {
-        type = types.bool;
+      autoBacklight = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Automatically adjust screen brightness based on ambient light";
       };
 
-      dimOnBattery = mkOption {
-        type = types.bool;
+      dimOnBattery = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Reduce screen brightness when on battery power";
       };
 
-      dimTimeout = mkOption {
-        type = types.int;
+      dimTimeout = lib.mkOption {
+        type = lib.types.int;
         default = 60;
         description = "Seconds before dimming screen on inactivity";
       };
     };
 
     wireless = {
-      powerSaving = mkOption {
-        type = types.bool;
+      powerSaving = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable WiFi and Bluetooth power saving modes";
       };
 
-      disableWhenWired = mkOption {
-        type = types.bool;
+      disableWhenWired = lib.mkOption {
+        type = lib.types.bool;
         default = false;
         description = "Disable WiFi when ethernet cable is connected";
       };
     };
 
     touchpad = {
-      enable = mkOption {
-        type = types.bool;
+      enable = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable and configure touchpad";
       };
 
-      tapToClick = mkOption {
-        type = types.bool;
+      tapToClick = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable tap-to-click on touchpad";
       };
 
-      naturalScrolling = mkOption {
-        type = types.bool;
+      naturalScrolling = lib.mkOption {
+        type = lib.types.bool;
         default = false;
         description = "Enable natural (reverse) scrolling";
       };
 
-      disableWhileTyping = mkOption {
-        type = types.bool;
+      disableWhileTyping = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Disable touchpad while typing";
       };
     };
 
     virtualization = {
-      vmPowerProfiles = mkOption {
-        type = types.bool;
+      vmPowerProfiles = lib.mkOption {
+        type = lib.types.bool;
         default = true;
         description = "Enable power-aware VM scheduling and resource allocation";
       };
 
-      suspendVMsOnBattery = mkOption {
-        type = types.bool;
+      suspendVMsOnBattery = lib.mkOption {
+        type = lib.types.bool;
         default = false;
         description = "Automatically suspend running VMs when switching to battery power";
       };
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf config.hypervisor.hardware.laptop.enable (let
+    cfg = config.hypervisor.hardware.laptop;
+  in {
     # Power management with TLP
-    services.tlp = mkIf cfg.powerManagement.enable {
+    services.tlp = lib.mkIf cfg.powerManagement.enable {
       enable = true;
       settings = {
         CPU_SCALING_GOVERNOR_ON_AC = "performance";
@@ -169,19 +167,19 @@ in {
         PCIE_ASPM_ON_BAT = "powersupersave";
 
         # WiFi power saving
-        WIFI_PWR_ON_AC = mkIf (!cfg.wireless.powerSaving) "off";
-        WIFI_PWR_ON_BAT = mkIf cfg.wireless.powerSaving "on";
+        WIFI_PWR_ON_AC = lib.mkIf (!cfg.wireless.powerSaving) "off";
+        WIFI_PWR_ON_BAT = lib.mkIf cfg.wireless.powerSaving "on";
 
         # Battery care settings
-        START_CHARGE_THRESH_BAT0 = mkIf (cfg.battery.chargeThreshold != null)
+        START_CHARGE_THRESH_BAT0 = lib.mkIf (cfg.battery.chargeThreshold != null)
           (cfg.battery.chargeThreshold - 5);
-        STOP_CHARGE_THRESH_BAT0 = mkIf (cfg.battery.chargeThreshold != null)
+        STOP_CHARGE_THRESH_BAT0 = lib.mkIf (cfg.battery.chargeThreshold != null)
           cfg.battery.chargeThreshold;
       };
     };
 
     # Alternative: auto-cpufreq for more advanced CPU management
-    services.auto-cpufreq = mkIf (!config.services.tlp.enable && cfg.powerManagement.enable) {
+    services.auto-cpufreq = lib.mkIf (!config.services.tlp.enable && cfg.powerManagement.enable) {
       enable = true;
       settings = {
         battery = {
@@ -196,7 +194,7 @@ in {
     };
 
     # Lid switch handling
-    services.logind = mkIf cfg.powerManagement.suspendOnLidClose {
+    services.logind = lib.mkIf cfg.powerManagement.suspendOnLidClose {
       lidSwitch = "suspend";
       lidSwitchDocked = "ignore";
       lidSwitchExternalPower = "suspend";
@@ -210,13 +208,13 @@ in {
 
     # Laptop mode tools
     powerManagement.enable = true;
-    powerManagement.cpuFreqGovernor = mkIf (!cfg.powerManagement.enable) "ondemand";
+    powerManagement.cpuFreqGovernor = lib.mkIf (!cfg.powerManagement.enable) "ondemand";
 
     # Display backlight management
     programs.light.enable = cfg.display.autoBacklight;
 
     # Touchpad configuration
-    services.libinput = mkIf cfg.touchpad.enable {
+    services.libinput = lib.mkIf cfg.touchpad.enable {
       enable = true;
       touchpad = {
         tapping = cfg.touchpad.tapToClick;
@@ -228,7 +226,7 @@ in {
     };
 
     # Battery notification service
-    systemd.services.battery-notifier = mkIf cfg.battery.notifications {
+    systemd.services.battery-notifier = lib.mkIf cfg.battery.notifications {
       description = "Hyper-NixOS: Battery Level Notifications";
       serviceConfig = {
         Type = "simple";
@@ -261,7 +259,7 @@ in {
     };
 
     # VM power management integration
-    systemd.services.vm-power-manager = mkIf cfg.virtualization.vmPowerProfiles {
+    systemd.services.vm-power-manager = lib.mkIf cfg.virtualization.vmPowerProfiles {
       description = "Hyper-NixOS: VM Power Management";
       serviceConfig = {
         Type = "simple";
@@ -280,7 +278,7 @@ in {
                 # On battery - reduce VM resources
                 log_info "On battery power - applying power-saving VM profile"
 
-                ${optionalString cfg.virtualization.suspendVMsOnBattery ''
+                ${lib.optionalString cfg.virtualization.suspendVMsOnBattery ''
                   # Suspend non-critical VMs
                   for vm in $(virsh list --name); do
                     if [ -n "$vm" ]; then
@@ -293,7 +291,7 @@ in {
                 # On AC - restore normal VM operation
                 log_info "On AC power - restoring normal VM profile"
 
-                ${optionalString cfg.virtualization.suspendVMsOnBattery ''
+                ${lib.optionalString cfg.virtualization.suspendVMsOnBattery ''
                   # Resume suspended VMs
                   for vm in $(virsh list --state-suspended --name); do
                     if [ -n "$vm" ]; then
@@ -321,9 +319,9 @@ in {
       powertop
       brightnessctl
       libnotify
-    ] ++ optionals cfg.powerManagement.enable [
+    ] ++ lib.optionals cfg.powerManagement.enable [
       tlp
-    ] ++ optionals cfg.display.autoBacklight [
+    ] ++ lib.optionals cfg.display.autoBacklight [
       light
     ];
 
@@ -337,5 +335,5 @@ in {
     boot.kernelModules = [
       "acpi_call"  # For battery charge thresholds
     ];
-  };
+  });
 }
