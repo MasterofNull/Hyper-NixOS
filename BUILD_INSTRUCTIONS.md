@@ -1,15 +1,33 @@
 # Build Instructions for Hyper-NixOS
 
-## ⚠️ IMPORTANT: Build Location Issue
+## ⚠️ CRITICAL: `/etc/nixos/configuration.nix` is a LEFTOVER REMNANT
 
-The system has **TWO** configuration locations:
+### What is `/etc/nixos/configuration.nix`?
 
-1. `/etc/nixos/configuration.nix` - **System default** (OLD, not updated)
-2. `/home/hyperd/Documents/Hyper-NixOS/configuration.nix` - **Our repository** (FIXED, current)
+**It's a leftover file from the vanilla NixOS installation** - NOT part of Hyper-NixOS!
+
+When NixOS was first installed (before Hyper-NixOS), the installer created:
+- `/etc/nixos/configuration.nix` - Default NixOS template
+- `/etc/nixos/hardware-configuration.nix` - Hardware detection
+
+When Hyper-NixOS was installed, it:
+- ✅ Created `/etc/hypervisor/` structure
+- ✅ Created `/etc/hypervisor/flake.nix`
+- ✅ Symlinked `/etc/nixos/flake.nix` → `/etc/hypervisor/flake.nix`
+- ❌ **DID NOT REPLACE** `/etc/nixos/configuration.nix`
+
+**This leftover file is causing all your errors!**
 
 ### The Problem
 
-When you run `sudo nixos-rebuild switch`, it reads from `/etc/nixos/configuration.nix` which:
+The system has **TWO** configuration locations:
+
+1. `/etc/nixos/configuration.nix` - **Vanilla NixOS template** (NOT Hyper-NixOS, causes errors)
+2. `/home/hyperd/Documents/Hyper-NixOS/configuration.nix` - **Hyper-NixOS repository** (FIXED, correct)
+
+### Why This Causes Errors
+
+When you run `sudo nixos-rebuild switch` WITHOUT the `--flake` flag, NixOS reads from `/etc/nixos/configuration.nix` which:
 - Is NOT our fixed code
 - May import from `/etc/hypervisor/src/` (old modules)
 - Contains the anti-pattern we fixed
@@ -61,6 +79,54 @@ sudo nixos-rebuild build
 cd /home/hyperd/Documents/Hyper-NixOS
 sudo nixos-rebuild switch  # Missing --flake flag!
 ```
+
+---
+
+---
+
+## 🧹 CLEANUP: Remove the Leftover File (Recommended)
+
+Since `/etc/nixos/configuration.nix` is just a vanilla NixOS remnant and NOT part of Hyper-NixOS, you should replace it:
+
+### Option 1: Replace with Minimal Stub (Safest)
+
+```bash
+# Backup the old file
+sudo mv /etc/nixos/configuration.nix /etc/nixos/configuration.nix.nixos-vanilla-backup
+
+# Create minimal stub that says "use the flake"
+sudo tee /etc/nixos/configuration.nix <<'EOF'
+# This system uses Hyper-NixOS managed via flake
+# The vanilla NixOS configuration has been replaced
+#
+# To rebuild: cd /home/hyperd/Documents/Hyper-NixOS
+#             sudo nixos-rebuild switch --flake .#hypervisor-x86_64
+#
+# Original vanilla NixOS config backed up as: configuration.nix.nixos-vanilla-backup
+
+{ config, lib, pkgs, ... }:
+{
+  imports = [ ./hardware-configuration.nix ];
+  system.stateVersion = "25.05";
+
+  # All actual configuration is in the Hyper-NixOS flake
+  # See: /home/hyperd/Documents/Hyper-NixOS/configuration.nix
+}
+EOF
+```
+
+### Option 2: Symlink to Repository (Alternative)
+
+```bash
+# Backup the old file
+sudo mv /etc/nixos/configuration.nix /etc/nixos/configuration.nix.backup
+
+# Create symlink to Hyper-NixOS
+sudo ln -s /home/hyperd/Documents/Hyper-NixOS/configuration.nix /etc/nixos/configuration.nix
+sudo ln -s /home/hyperd/Documents/Hyper-NixOS/modules /etc/nixos/modules
+```
+
+**Warning**: This makes `/etc/nixos/` depend on your home directory!
 
 ---
 
