@@ -181,7 +181,7 @@ in {
     # Performance tuning
     powerManagement.cpuFreqGovernor = cfg.performance.cpuGovernor;
 
-    # CPU turbo boost
+    # CPU turbo boost and other kernel parameters
     boot.kernelParams = [
       (mkIf cfg.performance.enableTurbo "intel_pstate=active")
       (mkIf cfg.performance.enableTurbo "amd_pstate=active")
@@ -192,6 +192,10 @@ in {
     ] ++ optionals (cfg.gpu.passthrough.enable && cfg.gpu.passthrough.isolateGPUs) [
       "video=efifb:off"
       "video=vesafb:off"
+    ] ++ optionals cfg.gaming.enable [
+      "hugepagesz=1G"
+      "hugepages=16"
+      "default_hugepagesz=1G"
     ];
 
     # VFIO GPU passthrough configuration
@@ -229,10 +233,11 @@ in {
       nvidiaSettings = true;
     };
 
-    # Graphics support (NixOS 24.05+ uses hardware.graphics instead of hardware.opengl)
-    hardware.graphics = {
+    # Graphics support (NixOS 24.05 uses hardware.opengl)
+    hardware.opengl = {
       enable = true;
-      enable32Bit = true;  # For 32-bit games/applications
+      driSupport = true;
+      driSupport32Bit = true;  # For 32-bit games/applications
       extraPackages = with pkgs; [
         vaapiVdpau
         libvdpau-va-gl
@@ -249,10 +254,15 @@ in {
       cfg.display.multiMonitor.arrangement
     ];
 
-    # Looking Glass for GPU passthrough
-    systemd.tmpfiles.rules = mkIf cfg.gaming.lookingGlass.enable [
-      "f /dev/shm/looking-glass 0660 ${config.hypervisor.users.operator} kvm -"
-    ];
+    # Gaming-related tmpfiles rules
+    systemd.tmpfiles.rules =
+      (optionals cfg.gaming.lookingGlass.enable [
+        "f /dev/shm/looking-glass 0660 ${config.hypervisor.users.operator} kvm -"
+      ])
+      ++
+      (optionals cfg.gaming.enable [
+        "w /sys/kernel/mm/transparent_hugepage/enabled - - - - madvise"
+      ]);
 
     environment.etc."looking-glass-client.ini" = mkIf cfg.gaming.lookingGlass.enable {
       text = ''
@@ -359,18 +369,6 @@ in {
     ] ++ optionals cfg.display.multiMonitor.enable [
       xorg.xrandr
       arandr
-    ];
-
-    # Hugepages for gaming VMs
-    boot.kernelParams = mkIf cfg.gaming.enable [
-      "hugepagesz=1G"
-      "hugepages=16"
-      "default_hugepagesz=1G"
-    ];
-
-    # Enable huge pages
-    systemd.tmpfiles.rules = mkIf cfg.gaming.enable [
-      "w /sys/kernel/mm/transparent_hugepage/enabled - - - - madvise"
     ];
 
     # Desktop-optimized kernel parameters

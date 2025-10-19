@@ -15,6 +15,6 @@
   # Note: Security hardening (auditd, sysctl) is configured in security modules
   # Note: Users can override with: boot.kernelPackages = pkgs.linuxPackages_hardened;
   
-  # Hardware acceleration (NixOS 24.05+ uses hardware.graphics)
-  hardware.graphics.enable = lib.mkDefault true;
+  # Hardware acceleration (NixOS 24.05 uses hardware.opengl)
+  hardware.opengl.enable = lib.mkDefault true;
 }

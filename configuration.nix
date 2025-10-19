@@ -41,6 +41,7 @@
     ./modules/core/universal-hardware-detection.nix  # Universal hardware detection (ALL architectures)
 
     # Hardware platform optimizations
+    ./modules/hardware/platform-detection.nix  # Auto-detection of platform type
     ./modules/hardware/laptop.nix
     ./modules/hardware/desktop.nix
     ./modules/hardware/server.nix
