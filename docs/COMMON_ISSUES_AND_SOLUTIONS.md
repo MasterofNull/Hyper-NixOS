@@ -1312,6 +1312,157 @@ optionalString (lib.elem featName config.hypervisor.featureManager.enabledFeatur
 - Remember that feature definitions are static; runtime state is tracked elsewhere
 - Test modules with `nixos-rebuild dry-build --show-trace` to catch errors early
 
+---
+
+### Issue: NixOS Version API Incompatibility - `hardware.graphics` Does Not Exist
+**Symptoms**:
+```
+error: The option `hardware.graphics' does not exist. Definition values:
+       - In `/etc/hypervisor/src/modules/hardware/platform-detection.nix':
+```
+
+**Root Cause**: Using NixOS 24.11 API options in a NixOS 24.05 configuration. The `hardware.graphics` option was introduced in NixOS 24.11 and doesn't exist in 24.05.
+
+**Solution**:
+
+#### ✅ **Step 1: Check your NixOS version**
+```bash
+# Check flake.nix for target version
+grep "nixpkgs.url" flake.nix
+# Example output: nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+```
+
+#### ✅ **Step 2: Use correct API for your version**
+```nix
+# ❌ Wrong for NixOS 24.05 (24.11 API)
+hardware.graphics = {
+  enable = true;
+  enable32Bit = true;
+};
+
+# ✅ Correct for NixOS 24.05
+hardware.opengl = {
+  enable = true;
+  driSupport = true;
+  driSupport32Bit = true;
+};
+```
+
+#### ✅ **Step 3: Scan entire codebase**
+```bash
+# Find all instances comprehensively
+grep -r "hardware\.graphics" modules/ --include="*.nix"
+
+# Fix all at once, not one-by-one
+```
+
+**Key API Changes Between NixOS 24.05 and 24.11**:
+| NixOS 24.05 | NixOS 24.11 |
+|-------------|-------------|
+| `hardware.opengl` | `hardware.graphics` |
+| `hardware.opengl.driSupport` | `hardware.graphics.enable` |
+| `hardware.opengl.driSupport32Bit` | `hardware.graphics.enable32Bit` |
+
+**Prevention**:
+- Always check `flake.nix` for target NixOS version before using options
+- Reference NixOS manual for your specific version
+- Use systematic scanning when fixing compatibility issues
+- Verify with `nix-instantiate --parse <file>` after changes
+
+**Fixed in**: Commits e4646c1, 047d88f, 9cc2e67 (2025-10-19)
+
+---
+
+### Issue: Missing Module Import - `hypervisor.hardware.desktop` Does Not Exist
+**Symptoms**:
+```
+error: The option `hypervisor.hardware.desktop' does not exist. Definition values:
+       - In `/etc/hypervisor/src/modules/hardware/platform-detection.nix':
+```
+
+**Root Cause**: A module that *uses* an option exists, but the module that *defines* that option is not imported in `configuration.nix`.
+
+**Solution**:
+
+#### ✅ **Step 1: Find which module defines the option**
+```bash
+# Search for the option definition
+grep -r "options\.hypervisor\.hardware\.desktop" modules/ --include="*.nix"
+# Example: modules/hardware/desktop.nix
+```
+
+#### ✅ **Step 2: Verify module is imported**
+```bash
+# Check if it's in configuration.nix imports
+grep "modules/hardware/desktop.nix" configuration.nix
+```
+
+#### ✅ **Step 3: Add missing import**
+```nix
+{
+  imports = [
+    # ... existing imports
+    ./modules/hardware/platform-detection.nix  # Uses the options
+    ./modules/hardware/desktop.nix             # Defines hypervisor.hardware.desktop
+    ./modules/hardware/laptop.nix              # Defines hypervisor.hardware.laptop
+    ./modules/hardware/server.nix              # Defines hypervisor.hardware.server
+  ];
+}
+```
+
+**Prevention**:
+- When creating modules that define options, add them to configuration.nix immediately
+- When modules reference options from other modules, ensure dependencies are imported
+- Use `nixos-rebuild dry-build` to catch missing imports early
+
+**Fixed in**: Commit 9cc2e67 (2025-10-19)
+
+---
+
+### Issue: Duplicate Attribute Definitions
+**Symptoms**:
+```
+error: attribute 'boot.kernelParams' already defined at /path/to/file.nix:185:5
+       at /path/to/file.nix:366:5
+```
+
+**Root Cause**: The same attribute is defined multiple times in a single module file, which NixOS doesn't allow.
+
+**Solution**:
+
+#### ✅ **Merge into single definition with conditionals**
+```nix
+# ❌ Wrong - Duplicate definitions
+boot.kernelParams = [ "param1" ];
+# ... 200 lines later ...
+boot.kernelParams = mkIf cfg.gaming.enable [ "param2" ];  # ERROR!
+
+# ✅ Correct - Single definition with conditionals
+boot.kernelParams = [ "param1" ]
+  ++ optionals cfg.gaming.enable [ "param2" ]
+  ++ optionals cfg.passthrough.enable [ "param3" ];
+
+# ✅ Also correct for complex conditionals
+systemd.tmpfiles.rules =
+  (optionals cfg.lookingGlass.enable [
+    "f /dev/shm/looking-glass 0660 user kvm -"
+  ])
+  ++
+  (optionals cfg.gaming.enable [
+    "w /sys/kernel/mm/transparent_hugepage/enabled - - - - madvise"
+  ]);
+```
+
+**Prevention**:
+- Search for attribute before adding: `grep "^    boot.kernelParams" file.nix`
+- Use single definitions with `++` and `optionals` for conditional additions
+- Keep related configurations together in the file
+- Use `nix-instantiate --parse` to catch duplicates before committing
+
+**Fixed in**: Commit 9cc2e67 (2025-10-19)
+
+---
+
 ## 🔧 **Performance Issues**
 
 ### Issue: Slow Build Times

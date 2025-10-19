@@ -288,6 +288,82 @@ pkgs.writeText "script.py" ''
 
 **Recent Fix (2025-10-14)**: Fixed Python single quote escaping in `modules/security/threat-response.nix` and `modules/security/behavioral-analysis.nix`.
 
+### NixOS Version Compatibility
+Always check `flake.nix` for target NixOS version before using API options:
+
+```nix
+# Check flake.nix first:
+# inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+
+# ❌ Wrong for NixOS 24.05 (these are 24.11 APIs)
+hardware.graphics = {
+  enable = true;
+  enable32Bit = true;
+};
+
+# ✅ Correct for NixOS 24.05
+hardware.opengl = {
+  enable = true;
+  driSupport = true;
+  driSupport32Bit = true;
+};
+```
+
+**Key API Changes Between NixOS 24.05 and 24.11**:
+- `hardware.opengl` (24.05) → `hardware.graphics` (24.11)
+- `hardware.opengl.enable32Bit` (24.05) → `hardware.graphics.enable32Bit` (24.11)
+- `hardware.opengl.driSupport` (24.05) → `hardware.graphics.driSupport` (24.11)
+
+**Important**: When fixing version compatibility issues:
+1. Check `flake.nix` for NixOS version
+2. Scan entire codebase systematically (use `grep -r "hardware\.graphics" modules/`)
+3. Fix all instances comprehensively, not one-by-one
+4. Verify with `nix-instantiate --parse <file>` after changes
+
+**Recent Fix (2025-10-19)**: Fixed multiple NixOS 24.11 API usage in codebase designed for 24.05. Changed `hardware.graphics` → `hardware.opengl` in platform-detection.nix, desktop.nix, and boot.nix.
+
+### Module Import Requirements
+All modules that define options MUST be imported in configuration.nix for those options to exist:
+
+```nix
+# ❌ Wrong - module defines options but isn't imported
+# File: modules/hardware/platform-detection.nix defines hypervisor.hardware.laptop
+# But configuration.nix doesn't import it
+# Result: Error "option does not exist"
+
+# ✅ Correct - import ALL modules that define options
+imports = [
+  ./modules/hardware/platform-detection.nix  # Defines hypervisor.hardware.*
+  ./modules/hardware/laptop.nix              # Uses hypervisor.hardware.laptop
+  ./modules/hardware/desktop.nix             # Uses hypervisor.hardware.desktop
+];
+```
+
+**Recent Fix (2025-10-19)**: Added missing `platform-detection.nix` import to configuration.nix.
+
+### Avoiding Duplicate Attribute Definitions
+NixOS doesn't allow duplicate attribute definitions. Merge them using `++` with conditionals:
+
+```nix
+# ❌ Wrong - Duplicate definitions cause errors
+boot.kernelParams = [ "param1" ];
+# ... later in file ...
+boot.kernelParams = mkIf condition [ "param2" ];  # ERROR!
+
+# ✅ Correct - Single definition with conditionals
+boot.kernelParams = [ "param1" ]
+  ++ optionals condition [ "param2" ]
+  ++ optionals otherCondition [ "param3" ];
+
+# ✅ Also correct for complex conditionals
+systemd.tmpfiles.rules =
+  (optionals condition1 [ "rule1" ])
+  ++
+  (optionals condition2 [ "rule2" ]);
+```
+
+**Recent Fix (2025-10-19)**: Merged duplicate `boot.kernelParams` and `systemd.tmpfiles.rules` in desktop.nix.
+
 ### Permission Handling
 Always check group membership for VM operations:
 ```bash

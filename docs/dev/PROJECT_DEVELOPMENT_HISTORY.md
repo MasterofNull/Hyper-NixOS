@@ -10,6 +10,55 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-19: NixOS 24.05 Compatibility Fix - Systematic Version Conflict Resolution
+**Agent**: Claude Code
+**Tasks Completed**:
+
+1. **Identified Root Cause of Build Failures**:
+   - Multiple NixOS 24.11 API usage in codebase designed for NixOS 24.05
+   - Flake.nix specifies `nixos-24.05` but modules used 24.11 options
+   - Errors: "option does not exist", "attribute already defined"
+
+2. **Fixed Missing Module Import**:
+   - `modules/hardware/platform-detection.nix` not imported in configuration.nix
+   - This module defines `hypervisor.hardware.{laptop,desktop,server}` options
+   - Added import at configuration.nix:44
+
+3. **Fixed Hardware Graphics API (3 files)**:
+   - Changed `hardware.graphics` → `hardware.opengl` (24.05 API)
+   - Changed `enable32Bit` → `driSupport32Bit`
+   - Added `driSupport = true` for DRI acceleration
+   - Files: platform-detection.nix, desktop.nix, boot.nix
+
+4. **Fixed Duplicate Attribute Definitions**:
+   - Merged duplicate `boot.kernelParams` in desktop.nix (lines 185, 366)
+   - Merged duplicate `systemd.tmpfiles.rules` in desktop.nix (lines 258, 370)
+   - Used `++` operator with `optionals` for conditional merging
+
+5. **Systematic Approach Created**:
+   - Scanned entire codebase for version-specific issues
+   - Verified all syntax with `nix-instantiate --parse`
+   - Fixed issues comprehensively rather than one-by-one
+
+**Key Learnings**:
+- Always check flake.nix for target NixOS version before using API options
+- NixOS 24.05 → 24.11 renamed: `hardware.opengl` → `hardware.graphics`
+- Module imports MUST be in configuration.nix to make options available
+- Use single attribute definitions with conditionals to avoid duplicates
+- Systematic scanning more efficient than iterative error fixing
+
+**Commits**:
+- e4646c1: Fix builtins.readFile syntax and hardware.amdgpu errors
+- 047d88f: Fix hardware.opengl for NixOS 24.05 compatibility
+- 9cc2e67: Comprehensive NixOS 24.05 compatibility fixes
+
+**Documentation Impact**:
+- Pattern for checking NixOS version compatibility
+- Troubleshooting entry for hardware.graphics vs hardware.opengl
+- Reference for future NixOS version migrations
+
+---
+
 #### 2025-10-14: System-Wide Best Practices Audit
 **Agent**: Claude
 **Tasks Completed**:
