@@ -10,60 +10,84 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
-#### 2025-10-19: Documented Standard NixOS Flake Practice
+#### 2025-10-19: Corrected Understanding of Hyper-NixOS Architecture
 **Agent**: Claude Code
-**Task**: Clarify `/etc/nixos/configuration.nix` handling per NixOS standards
+**Task**: Understand and document the actual system architecture
 
 **Context**:
-- User asked to "remove and refactor" `/etc/nixos/configuration.nix`
-- User explicitly requested: "use whatever standard practices that are required by/within NixOS and not make some kind of workaround"
-- Previous BUILD_INSTRUCTIONS.md contained workarounds (symlinks, stubs, complex options)
+- User asked: "why are we keeping /etc/nixos at all?"
+- Agent initially misunderstood the architecture, creating overcomplicated BUILD_INSTRUCTIONS.md
+- User correctly pointed out: "you are getting a bit side tracked and seem lost"
+- User instructed to "fully read the dev documents to fully understand the implementation and structure"
 
-**Standard NixOS Practice Established**:
+**Correct Architecture Understanding**:
 
-For flake-based systems like Hyper-NixOS:
-1. **`/etc/nixos/configuration.nix` is NOT required** when using `--flake` flag
-2. The `flake.nix` is the entry point, not `configuration.nix`
-3. Standard practice: Simply backup/remove the vanilla NixOS template
-4. No symlinks, stubs, or workarounds needed
+Hyper-NixOS uses a **two-location architecture**:
+
+1. **`/etc/hypervisor/`** - Installed production system
+   - `/etc/hypervisor/flake.nix` - Host flake (main entry point)
+   - `/etc/hypervisor/src/` - Installed repository copy
+   - Build command: `sudo nixos-rebuild switch --flake /etc/hypervisor`
+
+2. **`/home/hyperd/Documents/Hyper-NixOS/`** - Development repository
+   - Git-controlled development location
+   - NOT used by live system
+   - Changes must be synced to `/etc/hypervisor/src/` to take effect
+   - Test command: `sudo nixos-rebuild build --flake .`
+
+3. **`/etc/nixos/`** - Only needed for `hardware-configuration.nix`
+   - `hardware-configuration.nix` - Auto-generated, MUST keep
+   - `configuration.nix` - Vanilla NixOS remnant, CAN remove
+   - `flake.nix` symlink - Redundant, CAN remove
+
+**Key Discovery**:
+
+The system_installer.sh copies the repository to `/etc/hypervisor/src/` during installation and creates a host flake at `/etc/hypervisor/flake.nix` that references:
+- `/etc/nixos/hardware-configuration.nix` (hardware detection)
+- `/etc/hypervisor/src/profiles/configuration-minimal.nix` (system config)
 
 **Tasks Completed**:
 
-1. **Researched NixOS Standards**:
-   - Consulted NixOS Wiki, documentation, and community practices
-   - Confirmed flake-based systems don't require `/etc/nixos/configuration.nix`
-   - Verified this is standard practice, not a workaround
+1. **Read Core Documentation**:
+   - CLAUDE.md - Showed standard build commands
+   - DESIGN_ETHOS.md - Three-pillar framework
+   - DEVELOPMENT_REFERENCE.md - Development patterns
+   - system_installer.sh - Actual installation logic
 
-2. **Rewrote BUILD_INSTRUCTIONS.md**:
-   - Removed all workarounds (symlinks, stubs, complex options)
-   - Documented standard flake-based build process
-   - Clear explanation of Traditional vs Flake-Based NixOS
-   - Proper troubleshooting section
-   - Best practices section
-
-3. **Standard Cleanup Procedure**:
-   ```bash
-   # Simple, standard approach
-   sudo mv /etc/nixos/configuration.nix /etc/nixos/configuration.nix.backup-vanilla-nixos
-   # That's it! No replacement needed for flake-based systems.
-   ```
+2. **Rewrote BUILD_INSTRUCTIONS.md (Correctly This Time)**:
+   - Documented two-location architecture
+   - Correct build commands: `--flake /etc/hypervisor`
+   - Development workflow: edit dev repo → sync → rebuild
+   - Cleanup instructions: keep only `hardware-configuration.nix` in `/etc/nixos/`
 
 **Key Learnings**:
 
-1. **Follow NixOS Standards, Not Workarounds**:
-   - Don't create complex workarounds when standard practice is simpler
-   - Flake-based systems fundamentally don't need `/etc/nixos/configuration.nix`
-   - User was right to ask for standard practice
+1. **Read the Existing Documentation First**:
+   - Don't assume - read CLAUDE.md, system scripts, actual implementation
+   - The dev documents contain the authoritative answers
+   - User was right: "fully read the dev documents"
 
-2. **Documentation Should Be Clear and Minimal**:
-   - Previous version had 5 different "options" (confusing)
-   - Standard practice is just one simple command
-   - Clear comparison table helps users understand the difference
+2. **Architecture Has Purpose**:
+   - Development repo (`/home/hyperd/Documents/Hyper-NixOS/`) - version control, testing
+   - Installed system (`/etc/hypervisor/`) - production, stability
+   - Hardware detection (`/etc/nixos/hardware-configuration.nix`) - NixOS standard location
+
+3. **Answer to "why are we keeping /etc/nixos at all?"**:
+   - Only need `hardware-configuration.nix` (NixOS standard location)
+   - Everything else in `/etc/nixos/` can be removed
+   - The host flake at `/etc/hypervisor/flake.nix` imports it with absolute path
 
 **Files Modified**:
-- BUILD_INSTRUCTIONS.md - Complete rewrite following NixOS standards
+- BUILD_INSTRUCTIONS.md - Complete rewrite with correct architecture
+- docs/dev/PROJECT_DEVELOPMENT_HISTORY.md - This entry
 
-**Commits**: (pending user execution of cleanup command)
+**Cleanup Commands** (user can execute):
+```bash
+sudo rm /etc/nixos/configuration.nix              # Vanilla NixOS remnant
+sudo rm /etc/nixos/flake.nix                      # Redundant symlink
+sudo rm /etc/nixos/hardware-configuration.nix.pre-hyper-nixos  # Old backup
+# Keep: /etc/nixos/hardware-configuration.nix
+```
 
 ---
 

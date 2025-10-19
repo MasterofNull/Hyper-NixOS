@@ -1,324 +1,300 @@
 # Build Instructions for Hyper-NixOS
 
-## NixOS Flake-Based System
+## System Architecture
 
-Hyper-NixOS is a **flake-based NixOS system**. This means:
-- The `flake.nix` is the entry point (not `/etc/nixos/configuration.nix`)
-- You MUST use `--flake` flag when rebuilding
-- Configuration is managed in the repository, not `/etc/nixos/`
-
----
-
-## ✅ Correct Build Commands
-
-### From Repository Directory
-
-```bash
-# Change to repository
-cd /home/hyperd/Documents/Hyper-NixOS
-
-# Option 1: Build without activating (test)
-sudo nixos-rebuild build --flake .#hypervisor-x86_64
-
-# Option 2: Build and switch (activate)
-sudo nixos-rebuild switch --flake .#hypervisor-x86_64
-
-# Option 3: Dry build (syntax check)
-sudo nixos-rebuild dry-build --flake .#hypervisor-x86_64
-
-# Option 4: Build and test in VM
-sudo nixos-rebuild build-vm --flake .#hypervisor-x86_64
-./result/bin/run-hypervisor-x86_64-vm
-```
-
-### Explanation
-
-- `--flake .` - Use the flake in current directory
-- `#hypervisor-x86_64` - Use the "hypervisor-x86_64" configuration from [flake.nix](flake.nix)
-- This reads from `/home/hyperd/Documents/Hyper-NixOS/configuration.nix`
-- NOT from `/etc/nixos/configuration.nix` (if it exists)
-
----
-
-## ❌ Commands That Will FAIL
-
-```bash
-# ❌ WRONG - Uses /etc/nixos/configuration.nix (not our flake)
-sudo nixos-rebuild switch
-
-# ❌ WRONG - Uses /etc/nixos/configuration.nix (not our flake)
-sudo nixos-rebuild build
-
-# ❌ WRONG - Still uses system config
-cd /home/hyperd/Documents/Hyper-NixOS
-sudo nixos-rebuild switch  # Missing --flake flag!
-```
-
-**Why these fail**: Without `--flake`, NixOS defaults to `/etc/nixos/configuration.nix` which may be:
-- A vanilla NixOS template (from initial installation)
-- Outdated or unrelated to Hyper-NixOS
-- Missing our fixes and modules
-
----
-
-## 🧹 Cleaning Up `/etc/nixos/configuration.nix`
-
-### Standard NixOS Practice
-
-**For flake-based systems, `/etc/nixos/configuration.nix` is NOT required.**
-
-If you have a leftover `/etc/nixos/configuration.nix` from the vanilla NixOS installation, you can safely remove it:
-
-```bash
-# Backup the vanilla NixOS template (for reference)
-sudo mv /etc/nixos/configuration.nix /etc/nixos/configuration.nix.backup-vanilla-nixos
-
-# That's it! No replacement needed for flake-based systems.
-```
-
-### What Should Remain in `/etc/nixos/`
-
-After cleanup, `/etc/nixos/` should contain:
+Hyper-NixOS uses a **flake-based architecture** with the following structure:
 
 ```
+/etc/hypervisor/
+├── flake.nix                    # Host flake (main entry point)
+├── flake.lock                   # Locked dependencies
+└── src/                         # Installed repository
+    ├── configuration.nix
+    ├── modules/
+    ├── profiles/
+    └── scripts/
+
 /etc/nixos/
-├── hardware-configuration.nix          # Auto-generated hardware detection (KEEP)
-└── configuration.nix.backup-vanilla-nixos  # Backup of original (optional)
+└── hardware-configuration.nix   # Auto-generated hardware detection (ONLY file needed)
+
+/home/hyperd/Documents/Hyper-NixOS/
+└── (development repository - not used by live system)
 ```
 
-**Note**: Some systems may have `/etc/nixos/flake.nix` as a symlink to `/etc/hypervisor/flake.nix` - this is fine to keep.
+**Key Points:**
+- The **installed system** lives at `/etc/hypervisor/`
+- The **development repo** at `/home/hyperd/Documents/Hyper-NixOS/` is NOT used by the live system
+- `/etc/nixos/` only needs `hardware-configuration.nix` - everything else is legacy
 
 ---
 
-## 🎯 Recommended Workflow
+## Standard Build Commands
 
-### 1. Always work in the repository
-
-```bash
-cd /home/hyperd/Documents/Hyper-NixOS
-```
-
-### 2. Test before applying
+### Building the Installed System
 
 ```bash
-# First: Check syntax
-sudo nixos-rebuild dry-build --flake .#hypervisor-x86_64
+# Build without activating (test)
+sudo nixos-rebuild build --flake /etc/hypervisor
 
-# Then: Build (creates result symlink)
-sudo nixos-rebuild build --flake .#hypervisor-x86_64
+# Build and activate temporarily (reverts on reboot)
+sudo nixos-rebuild test --flake /etc/hypervisor
 
-# Finally: Switch (activate)
-sudo nixos-rebuild switch --flake .#hypervisor-x86_64
-```
-
-### 3. Commit changes
-
-```bash
-git add -A
-git commit -m "your changes"
-git push
-```
-
----
-
-## 📋 Quick Reference
-
-### Available Build Commands
-
-```bash
-cd /home/hyperd/Documents/Hyper-NixOS
+# Build and activate permanently
+sudo nixos-rebuild switch --flake /etc/hypervisor
 
 # Syntax check only (fast)
-sudo nixos-rebuild dry-build --flake .#hypervisor-x86_64
-
-# Build without activating
-sudo nixos-rebuild build --flake .#hypervisor-x86_64
-
-# Build and activate
-sudo nixos-rebuild switch --flake .#hypervisor-x86_64
-
-# Build and activate, but keep in boot menu
-sudo nixos-rebuild boot --flake .#hypervisor-x86_64
-
-# Test in VM
-sudo nixos-rebuild build-vm --flake .#hypervisor-x86_64
-./result/bin/run-hypervisor-x86_64-vm
+sudo nixos-rebuild dry-build --flake /etc/hypervisor
 ```
 
-### Configuration Profiles
+The system automatically detects your hostname and uses the corresponding configuration from `/etc/hypervisor/flake.nix`.
 
-The flake defines multiple configurations in [flake.nix](flake.nix):
+### Using the Rebuild Helper
 
-- `hypervisor-x86_64` - Full production hypervisor (default)
-- `hypervisor-aarch64` - ARM64 version
-- Other profiles may be defined in the flake
+```bash
+# Convenient wrapper script
+./scripts/rebuild_helper.sh build
+./scripts/rebuild_helper.sh test
+./scripts/rebuild_helper.sh switch
 
-Check [flake.nix](flake.nix) for all available configurations.
+# Or via nix run
+nix run .#rebuild-helper
+```
 
 ---
 
-## 🔧 Troubleshooting
+## Development Workflow
+
+### Working on Hyper-NixOS Development
+
+When making changes to Hyper-NixOS itself:
+
+```bash
+cd /home/hyperd/Documents/Hyper-NixOS
+
+# Make your changes to modules, scripts, etc.
+
+# Test the development version
+sudo nixos-rebuild build --flake .
+
+# After testing, copy changes to installed system
+sudo rsync -av --exclude='.git' ./ /etc/hypervisor/src/
+
+# Then rebuild from installed location
+sudo nixos-rebuild switch --flake /etc/hypervisor
+```
+
+### Quick Development Cycle
+
+```bash
+# Edit files in development repo
+vim /home/hyperd/Documents/Hyper-NixOS/modules/something.nix
+
+# Test directly (reads from current directory)
+cd /home/hyperd/Documents/Hyper-NixOS
+sudo nixos-rebuild build --flake .
+
+# If successful, sync to production
+sudo rsync -av --exclude='.git' ./ /etc/hypervisor/src/
+sudo nixos-rebuild switch --flake /etc/hypervisor
+```
+
+---
+
+## Cleaning Up `/etc/nixos/`
+
+### What Can Be Removed
+
+The `/etc/nixos/` directory may contain leftover files from vanilla NixOS installation:
+
+```bash
+# Remove vanilla NixOS configuration (not used by Hyper-NixOS)
+sudo rm /etc/nixos/configuration.nix
+
+# Remove flake.nix symlink (redundant - real flake is at /etc/hypervisor/flake.nix)
+sudo rm /etc/nixos/flake.nix
+
+# Remove old backups if you don't need them
+sudo rm /etc/nixos/hardware-configuration.nix.pre-hyper-nixos
+```
+
+### What MUST Remain
+
+```bash
+/etc/nixos/
+└── hardware-configuration.nix   # Auto-generated - DO NOT REMOVE
+```
+
+The `hardware-configuration.nix` file is **critical** - it contains auto-detected:
+- Boot loader settings
+- Kernel modules
+- Filesystem UUIDs
+- Hardware-specific configuration
+
+This file is imported by `/etc/hypervisor/flake.nix`.
+
+---
+
+## Common Workflows
+
+### Update System Packages
+
+```bash
+# Update flake inputs (nixpkgs, etc.)
+cd /etc/hypervisor
+sudo nix flake update
+
+# Rebuild with updated packages
+sudo nixos-rebuild switch --flake /etc/hypervisor
+```
+
+### Switch NixOS Channels
+
+```bash
+# Use the channel switcher script
+cd /etc/hypervisor/src
+sudo ./scripts/switch-channel.sh
+
+# Or manually edit /etc/hypervisor/flake.nix
+sudo vim /etc/hypervisor/flake.nix
+# Change: nixpkgs.url = "github:NixOS/nixpkgs/nixos-XX.YY";
+
+# Then update and rebuild
+sudo nix flake update /etc/hypervisor
+sudo nixos-rebuild switch --flake /etc/hypervisor
+```
+
+### Test Configuration Changes Safely
+
+```bash
+# Option 1: Test mode (reverts on reboot)
+sudo nixos-rebuild test --flake /etc/hypervisor
+# Try it out...
+# If something breaks, just reboot to previous config
+
+# Option 2: Build only (doesn't activate)
+sudo nixos-rebuild build --flake /etc/hypervisor
+# Check the result symlink
+ls -l ./result
+# If looks good, then switch:
+sudo nixos-rebuild switch --flake /etc/hypervisor
+```
+
+---
+
+## Troubleshooting
 
 ### Error: "option does not exist"
 
-**Cause**: Building from wrong configuration (likely `/etc/nixos/configuration.nix`)
+**Cause:** Building from wrong location or stale files
 
-**Fix**: Use `--flake .#hypervisor-x86_64` flag
-
+**Fix:**
 ```bash
-cd /home/hyperd/Documents/Hyper-NixOS
-sudo nixos-rebuild build --flake .#hypervisor-x86_64
-```
+# Ensure you're building from /etc/hypervisor
+sudo nixos-rebuild build --flake /etc/hypervisor
 
-### Error: "Permission denied"
-
-**Cause**: Missing sudo or wrong directory permissions
-
-**Fix**: Run with `sudo` and ensure you're in the repository directory
-
-```bash
-cd /home/hyperd/Documents/Hyper-NixOS
-sudo nixos-rebuild build --flake .#hypervisor-x86_64
+# If using dev repo, make sure it's synced
+sudo rsync -av --exclude='.git' /home/hyperd/Documents/Hyper-NixOS/ /etc/hypervisor/src/
 ```
 
 ### Error: "flake not found"
 
-**Cause**: Not in repository directory or `flake.nix` missing
+**Cause:** Wrong directory or missing flake.nix
 
-**Fix**: Ensure you're in the correct directory
-
+**Fix:**
 ```bash
+# Check flake exists
+ls -l /etc/hypervisor/flake.nix
+
+# Use absolute path
+sudo nixos-rebuild build --flake /etc/hypervisor
+```
+
+### Error: Building from `/etc/nixos/configuration.nix`
+
+**Cause:** Missing `--flake` flag causes NixOS to use default configuration
+
+**Fix:**
+```bash
+# Always use --flake flag
+sudo nixos-rebuild switch --flake /etc/hypervisor
+```
+
+### Development Changes Not Applied
+
+**Cause:** Editing dev repo but building from `/etc/hypervisor/src/`
+
+**Fix:**
+```bash
+# Sync development changes to installed location
 cd /home/hyperd/Documents/Hyper-NixOS
-ls -l flake.nix  # Should exist
-pwd  # Should be /home/hyperd/Documents/Hyper-NixOS
-```
+sudo rsync -av --exclude='.git' ./ /etc/hypervisor/src/
 
-### Error: Building from `/etc/hypervisor/src/`
-
-**Cause**: System has old symlinks or references to `/etc/hypervisor/src/`
-
-**Fix**: Use explicit flake path
-
-```bash
-cd /home/hyperd/Documents/Hyper-NixOS
-sudo nixos-rebuild build --flake .#hypervisor-x86_64
+# Then rebuild
+sudo nixos-rebuild switch --flake /etc/hypervisor
 ```
 
 ---
 
-## 📚 Understanding Flake-Based NixOS
+## Architecture Details
 
-### Traditional NixOS (without flakes)
+### Why Two Locations?
 
+1. **`/etc/hypervisor/src/`** - Installed, production system
+   - Used by live system rebuilds
+   - Updated via installer or manual sync
+   - Should be stable and tested
+
+2. **`/home/hyperd/Documents/Hyper-NixOS/`** - Development repository
+   - Version controlled with git
+   - For development and testing
+   - Changes must be synced to `/etc/hypervisor/src/` to take effect
+
+### The Host Flake
+
+`/etc/hypervisor/flake.nix` is the **host flake** that defines your system:
+
+```nix
+{
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+
+  outputs = { nixpkgs, ... }: {
+    nixosConfigurations.hypervisor = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        /etc/nixos/hardware-configuration.nix
+        /etc/hypervisor/src/profiles/configuration-minimal.nix
+      ];
+    };
+  };
+}
 ```
-/etc/nixos/
-├── configuration.nix  # Main config (used by default)
-└── hardware-configuration.nix
 
-# Rebuild: sudo nixos-rebuild switch
-```
+This imports:
+- Hardware detection from `/etc/nixos/hardware-configuration.nix`
+- System configuration from `/etc/hypervisor/src/profiles/`
 
-### Flake-Based NixOS (Hyper-NixOS)
+### Why Keep `/etc/nixos/hardware-configuration.nix`?
 
-```
-/home/hyperd/Documents/Hyper-NixOS/
-├── flake.nix          # Entry point (defines configurations)
-├── configuration.nix  # Main config (imported by flake)
-├── modules/           # NixOS modules
-└── profiles/          # Different configurations
+NixOS's `nixos-generate-config` puts it there by default, and it's the standard location. The host flake references it with an absolute path: `/etc/nixos/hardware-configuration.nix`.
 
-# Rebuild: sudo nixos-rebuild switch --flake .#hypervisor-x86_64
-```
-
-### Key Differences
-
-| Aspect | Traditional | Flake-Based (Hyper-NixOS) |
-|--------|-------------|---------------------------|
-| **Entry Point** | `/etc/nixos/configuration.nix` | `flake.nix` |
-| **Rebuild Command** | `sudo nixos-rebuild switch` | `sudo nixos-rebuild switch --flake .#config` |
-| **Configuration Location** | `/etc/nixos/` | Anywhere (typically repository) |
-| **Reproducibility** | Manual pinning | Automatic via `flake.lock` |
-| **Multiple Configs** | Not supported | Multiple configs in one flake |
+You could move it elsewhere and update the flake, but keeping it in the standard location maintains compatibility with NixOS conventions.
 
 ---
 
-## 🎓 Best Practices
+## Quick Reference
 
-### 1. Always use the flake flag
-
-Never run `nixos-rebuild` without `--flake` on this system.
-
-### 2. Work from the repository
-
-All changes should be made in `/home/hyperd/Documents/Hyper-NixOS/`
-
-### 3. Version control everything
-
-```bash
-git add -A
-git commit -m "describe your changes"
-git push
-```
-
-### 4. Test before switching
-
-Use `build` or `dry-build` before `switch`:
-
-```bash
-sudo nixos-rebuild dry-build --flake .#hypervisor-x86_64  # Fast syntax check
-sudo nixos-rebuild build --flake .#hypervisor-x86_64      # Full build test
-sudo nixos-rebuild switch --flake .#hypervisor-x86_64     # Activate
-```
-
-### 5. Keep flake.lock updated
-
-```bash
-nix flake update  # Update all inputs
-nix flake lock --update-input nixpkgs  # Update specific input
-```
+| Task | Command |
+|------|---------|
+| Build installed system | `sudo nixos-rebuild build --flake /etc/hypervisor` |
+| Apply changes | `sudo nixos-rebuild switch --flake /etc/hypervisor` |
+| Test changes (revert on reboot) | `sudo nixos-rebuild test --flake /etc/hypervisor` |
+| Syntax check | `sudo nixos-rebuild dry-build --flake /etc/hypervisor` |
+| Update packages | `sudo nix flake update /etc/hypervisor && sudo nixos-rebuild switch --flake /etc/hypervisor` |
+| Sync dev to production | `sudo rsync -av --exclude='.git' /home/hyperd/Documents/Hyper-NixOS/ /etc/hypervisor/src/` |
+| Test dev changes | `cd /home/hyperd/Documents/Hyper-NixOS && sudo nixos-rebuild build --flake .` |
 
 ---
 
-## 📝 File Locations Reference
-
-### Repository (source of truth)
-
-```
-/home/hyperd/Documents/Hyper-NixOS/
-├── flake.nix                    # Flake entry point
-├── flake.lock                   # Locked dependency versions
-├── configuration.nix            # Main NixOS configuration
-├── modules/                     # Custom NixOS modules
-│   ├── core/                   # Core system modules
-│   ├── hardware/               # Hardware-specific modules
-│   ├── security/               # Security modules
-│   ├── features/               # Feature modules
-│   └── system/                 # System utilities
-├── profiles/                    # Different configuration profiles
-├── scripts/                     # Helper scripts
-└── docs/                        # Documentation
-```
-
-### System Directories
-
-```
-/etc/nixos/
-├── hardware-configuration.nix   # Auto-generated (DO NOT EDIT)
-└── configuration.nix.backup-*   # Backups (optional)
-
-/etc/hypervisor/                 # May exist on some systems
-└── flake.nix                    # May be symlink to repository
-```
-
-### Build Output
-
-```
-/home/hyperd/Documents/Hyper-NixOS/
-└── result -> /nix/store/...     # Symlink created by build command
-```
-
----
-
-**Last Updated**: 2025-10-19
-**System**: NixOS 25.05
-**Build Method**: Flake-based
+**Last Updated:** 2025-10-19
+**System:** NixOS 25.05
+**Architecture:** Flake-based with separated development and production locations
