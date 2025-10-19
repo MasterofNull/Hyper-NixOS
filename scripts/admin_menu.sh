@@ -626,6 +626,7 @@ menu_system_configuration() {
     10 "System settings"
     11 "Hardware configuration [sudo]"
     12 "Performance tuning [sudo]"
+    13 "VM Limits configuration [sudo]"
     "" ""
     20 "Cache optimization"
     21 "Service management [sudo]"
@@ -633,7 +634,7 @@ menu_system_configuration() {
     99 "← Back"
   )
   $DIALOG --title "$BRANDING - System Configuration" \
-    --menu "System configuration and settings" 22 70 14 "${choices[@]}" 3>&1 1>&2 2>&3
+    --menu "System configuration and settings" 24 70 16 "${choices[@]}" 3>&1 1>&2 2>&3
 }
 
 menu_updates_maintenance() {

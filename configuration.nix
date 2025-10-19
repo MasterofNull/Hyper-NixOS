@@ -70,7 +70,11 @@
     # Virtualization modules
     ./modules/virtualization/libvirt.nix
     ./modules/virtualization/performance.nix
-    
+
+    # VM Management modules
+    ./modules/vm-management/resource-quotas.nix  # Per-VM resource limits (CPU, RAM, disk, network)
+    ./modules/vm-management/creation-limits.nix  # VM creation limits (count, rate, storage)
+
     # GUI modules (conditionally enabled via hypervisor.gui.enableAtBoot)
     ./modules/gui/desktop.nix
     ./modules/gui/input.nix
@@ -87,7 +91,14 @@
   # System identification
   networking.hostName = "hyper-nixos";
   system.stateVersion = "24.05";  # Don't change this after installation
-  
+
+  # Nix configuration
+  nix.settings = {
+    experimental-features = [ "nix-command" "flakes" ];
+    # Trusted users can use flake nixConfig without warnings
+    trusted-users = [ "root" "@wheel" ];
+  };
+
   # Boot configuration
   boot = {
     loader = {
@@ -233,7 +244,37 @@
         enableCorrelation = true;
       };
     };
-    
+
+    # VM Creation and Resource Limits
+    vmLimits = {
+      enable = true;
+
+      global = {
+        maxTotalVMs = 100;        # Maximum total VMs on system
+        maxRunningVMs = 50;       # Maximum concurrent running VMs
+        maxVMsPerHour = 10;       # Rate limit: VMs created per hour
+      };
+
+      perUser = {
+        enable = true;
+        maxVMsPerUser = 20;       # Max VMs per regular user
+        maxRunningVMsPerUser = 10; # Max running VMs per user
+        # userExceptions = { alice = 50; bob = 30; };  # Custom limits per user
+      };
+
+      storage = {
+        maxDiskPerVM = 500;       # GB - Maximum disk size per VM
+        maxTotalStorage = 5000;   # GB - Total storage for all VMs
+        maxSnapshotsPerVM = 10;   # Maximum snapshots per VM
+      };
+
+      enforcement = {
+        blockExcessCreation = true;  # Block creation when limits exceeded
+        notifyOnApproach = true;     # Notify at 90% of limits
+        adminOverride = true;        # Allow admins to override with --force
+      };
+    };
+
     # Default VM configuration
     defaults = {
       vcpus = 2;

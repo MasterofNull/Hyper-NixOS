@@ -498,25 +498,71 @@ EOF
     read -r
 }
 
+# Configure VM limits
+configure_vm_limits() {
+    clear
+    cat << EOF
+${CYAN}
+╔═══════════════════════════════════════════════════════════════╗
+║            ${BOLD}VM Creation Limits Configuration${NC}${CYAN}                    ║
+╚═══════════════════════════════════════════════════════════════╝
+${NC}
+
+VM limits prevent resource exhaustion by controlling:
+  • Total number of VMs
+  • Number of running VMs
+  • VM creation rate
+  • Storage usage per VM
+
+${BOLD}Would you like to configure VM limits now?${NC}
+
+EOF
+
+    echo -ne "${GREEN}Configure VM limits? [Y/n]:${NC} "
+    read -r configure_limits
+    configure_limits=${configure_limits:-Y}
+
+    if [[ "$configure_limits" =~ ^[Yy]$ ]]; then
+        # Run the VM limits wizard
+        if [[ -x "${SCRIPT_DIR}/vm-limits-wizard.sh" ]]; then
+            "${SCRIPT_DIR}/vm-limits-wizard.sh"
+        else
+            echo -e "${YELLOW}VM limits wizard not found. Skipping...${NC}"
+            echo "You can configure this later with: sudo vm-limits-wizard"
+            sleep 2
+        fi
+    else
+        echo ""
+        echo -e "${CYAN}Skipping VM limits configuration.${NC}"
+        echo "Default limits will be applied (Medium Organization preset)"
+        echo "You can configure this later with: sudo vm-limits-wizard"
+        echo ""
+        sleep 2
+    fi
+}
+
 # Main function
 main() {
     # Check prerequisites
     check_root
     detect_system_resources
-    
+
     # Show welcome
     show_setup_welcome
-    
+
     # Select tier
     select_tier
-    
+
     # Confirm and apply
     while ! confirm_selection; do
         select_tier
     done
-    
+
     # Apply configuration
     if apply_configuration; then
+        # Configure VM limits after successful tier configuration
+        configure_vm_limits
+
         show_completion
     else
         echo

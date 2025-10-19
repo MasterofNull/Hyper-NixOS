@@ -4,7 +4,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types optional elem;
   cfg = config.hypervisor.security.privileges;
   
   # Helper to create sudo rules

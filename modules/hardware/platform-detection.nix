@@ -57,15 +57,15 @@ let
 
   # Detect NVIDIA GPU
   hasNvidiaGPU = builtins.any (line: lib.hasInfix "NVIDIA" line || lib.hasInfix "nvidia" line)
-    (lib.splitString "\n" (builtins.readFile "/proc/bus/pci/devices" or ""));
+    (lib.splitString "\n" (builtins.readFile ("/proc/bus/pci/devices" or "")));
 
   # Detect AMD GPU
   hasAMDGPU = builtins.any (line: lib.hasInfix "amdgpu" (lib.toLower line))
-    (lib.splitString "\n" (builtins.readFile "/proc/bus/pci/devices" or ""));
+    (lib.splitString "\n" (builtins.readFile ("/proc/bus/pci/devices" or "")));
 
   # Detect Intel integrated graphics
   hasIntelGPU = builtins.any (line: lib.hasInfix "Intel" line)
-    (lib.splitString "\n" (builtins.readFile "/proc/bus/pci/devices" or ""));
+    (lib.splitString "\n" (builtins.readFile ("/proc/bus/pci/devices" or "")));
 
   # Detect if system is headless (no GPU)
   isHeadless = !(hasNvidiaGPU || hasAMDGPU || hasIntelGPU);
