@@ -22,11 +22,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The `hardware.graphics` API was only in NixOS 24.11
   - Updated: `modules/core/boot.nix`, `modules/hardware/platform-detection.nix`, `modules/hardware/desktop.nix`
 
-- **Fixed NixOS Module Anti-Pattern** in `modules/hardware/desktop.nix`
-  - Removed `with lib;` statement
-  - Removed top-level `let cfg = config...` binding
-  - Moved `cfg` inside `config = lib.mkIf` scope
-  - Added `lib.` prefix to all lib functions (90+ occurrences)
+- **Fixed SYSTEMATIC NixOS Module Anti-Pattern** (CRITICAL)
+  - **Issue**: All three hardware modules had identical anti-pattern causing build failure
+  - **Severity**: System could not build ("option does not exist" error)
+  - **Modules Fixed**:
+    - `modules/hardware/desktop.nix` - Removed anti-pattern (commit 6cbee19)
+    - `modules/hardware/laptop.nix` - Removed anti-pattern (commit 5d3b2f6)
+    - `modules/hardware/server.nix` - Removed anti-pattern (commit 5d3b2f6)
+  - **Changes Applied** (all three modules):
+    - Removed `with lib;` statement
+    - Removed top-level `let cfg = config...` binding
+    - Moved `cfg` inside `config = lib.mkIf` scope
+    - Added `lib.` prefix to all lib functions (200+ occurrences total)
+  - **Root Cause**: Top-level config access before options defined → circular dependency
+  - **Lesson**: Check ALL similar files for systematic issues, don't assume one fix solves all
+  - **Documentation**: Added comprehensive entry to AI-LESSONS-LEARNED.md
   - Prevents infinite recursion and evaluation order issues
 
 ### Added
