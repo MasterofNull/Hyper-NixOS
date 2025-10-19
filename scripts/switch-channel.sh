@@ -35,9 +35,10 @@ show_current_channel() {
 show_available_channels() {
     echo -e "${BLUE}Available Channels:${NC}"
     echo -e "  ${GREEN}1)${NC} nixos-unstable     ${YELLOW}(Bleeding edge, latest features)${NC}"
-    echo -e "  ${GREEN}2)${NC} nixos-24.11        ${YELLOW}(Latest stable, recommended)${NC}"
-    echo -e "  ${GREEN}3)${NC} nixos-24.05        ${YELLOW}(Previous stable, LTS support)${NC}"
-    echo -e "  ${GREEN}4)${NC} Custom channel     ${YELLOW}(Advanced users)${NC}"
+    echo -e "  ${GREEN}2)${NC} nixos-25.05        ${YELLOW}(Latest stable, recommended)${NC}"
+    echo -e "  ${GREEN}3)${NC} nixos-24.11        ${YELLOW}(Previous stable)${NC}"
+    echo -e "  ${GREEN}4)${NC} nixos-24.05        ${YELLOW}(Older stable)${NC}"
+    echo -e "  ${GREEN}5)${NC} Custom channel     ${YELLOW}(Advanced users)${NC}"
     echo ""
 }
 
@@ -47,10 +48,13 @@ get_channel_url() {
         unstable|1)
             echo "github:NixOS/nixpkgs/nixos-unstable"
             ;;
-        24.11|2)
+        25.05|2)
+            echo "github:NixOS/nixpkgs/nixos-25.05"
+            ;;
+        24.11|3)
             echo "github:NixOS/nixpkgs/nixos-24.11"
             ;;
-        24.05|3)
+        24.05|4)
             echo "github:NixOS/nixpkgs/nixos-24.05"
             ;;
         *)
@@ -138,8 +142,8 @@ main() {
     fi
 
     # Validate choice
-    if [[ ! "$choice" =~ ^[1-4]$ ]] && [[ "$choice" != "unstable" ]] && [[ "$choice" != "24.11" ]] && [[ "$choice" != "24.05" ]]; then
-        if [[ "$choice" == "4" ]]; then
+    if [[ ! "$choice" =~ ^[1-5]$ ]] && [[ "$choice" != "unstable" ]] && [[ "$choice" != "25.05" ]] && [[ "$choice" != "24.11" ]] && [[ "$choice" != "24.05" ]]; then
+        if [[ "$choice" == "5" ]]; then
             echo -e "${BLUE}Enter custom channel URL:${NC} "
             read -r custom_url
             choice="$custom_url"
@@ -171,13 +175,14 @@ if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
     echo ""
     echo "Channels:"
     echo "  unstable, 1    - NixOS unstable (bleeding edge)"
-    echo "  24.11, 2       - NixOS 24.11 (latest stable, recommended)"
-    echo "  24.05, 3       - NixOS 24.05 (previous stable)"
+    echo "  25.05, 2       - NixOS 25.05 (latest stable, recommended)"
+    echo "  24.11, 3       - NixOS 24.11 (previous stable)"
+    echo "  24.05, 4       - NixOS 24.05 (older stable)"
     echo ""
     echo "Examples:"
     echo "  $0                # Interactive mode"
     echo "  $0 unstable       # Switch to unstable"
-    echo "  $0 24.11          # Switch to 24.11 stable"
+    echo "  $0 25.05          # Switch to 25.05 stable"
     echo ""
     echo "For advanced users:"
     echo "  Temporary override: nix build --override-input nixpkgs github:NixOS/nixpkgs/nixos-unstable"

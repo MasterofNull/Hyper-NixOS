@@ -9,7 +9,7 @@ Hyper-NixOS is designed with flexibility in mind, allowing easy upgrades to newe
 ### Current Design
 
 Hyper-NixOS uses a **flexible channel system** that:
-- **Defaults to latest stable** (currently NixOS 24.11)
+- **Defaults to latest stable** (currently NixOS 25.05)
 - **Supports easy switching** between channels
 - **Allows temporary overrides** for testing
 - **Maintains upgrade path** clarity
@@ -19,8 +19,9 @@ Hyper-NixOS uses a **flexible channel system** that:
 | Channel | Description | Update Frequency | Recommended For |
 |---------|-------------|------------------|-----------------|
 | `nixos-unstable` | Bleeding edge, latest features | Daily/Weekly | Advanced users, testing |
-| `nixos-24.11` | Latest stable release | Every 6 months | **Production (Recommended)** |
-| `nixos-24.05` | Previous stable | Security updates only | Legacy compatibility |
+| `nixos-25.05` | Latest stable release | Every 6 months | **Production (Recommended)** |
+| `nixos-24.11` | Previous stable | Security updates | Legacy compatibility |
+| `nixos-24.05` | Older stable | Security updates only | Legacy systems |
 
 ## Switching Channels
 
@@ -32,6 +33,7 @@ Hyper-NixOS uses a **flexible channel system** that:
 
 # Or specify channel directly
 ./scripts/switch-channel.sh unstable
+./scripts/switch-channel.sh 25.05
 ./scripts/switch-channel.sh 24.11
 ./scripts/switch-channel.sh 24.05
 ```
@@ -50,7 +52,7 @@ The script will:
 vim flake.nix
 
 # Change this line:
-nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
 
 # To your desired channel:
 nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -89,8 +91,8 @@ sudo nixos-rebuild switch --flake .
 ### Major Version Upgrade (Channel Change)
 
 ```bash
-# Example: 24.05 → 24.11
-./scripts/switch-channel.sh 24.11
+# Example: 24.11 → 25.05
+./scripts/switch-channel.sh 25.05
 
 # Script handles:
 # 1. Flake update
@@ -186,9 +188,9 @@ Hyper-NixOS automatically handles API differences:
 
 ### Compatibility Matrix
 
-| Hyper-NixOS Version | NixOS 24.05 | NixOS 24.11 | NixOS Unstable |
-|---------------------|-------------|-------------|----------------|
-| 1.0.0+ | ✅ Compatible | ✅ **Recommended** | ✅ Supported |
+| Hyper-NixOS Version | NixOS 24.05 | NixOS 24.11 | NixOS 25.05 | NixOS Unstable |
+|---------------------|-------------|-------------|-------------|----------------|
+| 1.0.0+ | ✅ Compatible | ✅ Compatible | ✅ **Recommended** | ✅ Supported |
 
 ## Automated Upgrades
 
@@ -313,4 +315,4 @@ Some modules may not work on older/newer channels:
 
 **Last Updated**: 2025-10-19
 **Applies To**: Hyper-NixOS 1.0.0+
-**Default Channel**: NixOS 24.11 (stable)
+**Default Channel**: NixOS 25.05 (stable)
