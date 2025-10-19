@@ -233,11 +233,11 @@ users = {
 
 ### ✅ **Solution 1: Switch to Mutable Users (Recommended for Most Users)**
 
-**Edit `/etc/nixos/configuration.nix`:**
+**Edit `Hyper-NixOS/configuration.nix` in your repository:**
 ```nix
 users = {
   mutableUsers = true;  # Changed from false
-  
+
   users.admin = {
     isNormalUser = true;
     extraGroups = [ "wheel" "libvirtd" "kvm" ];
@@ -249,7 +249,8 @@ users = {
 
 **Then rebuild and set password:**
 ```bash
-sudo nixos-rebuild switch
+cd Hyper-NixOS
+sudo nixos-rebuild switch --flake .
 passwd admin  # Set your password
 ```
 
