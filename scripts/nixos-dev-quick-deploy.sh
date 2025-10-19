@@ -140,7 +140,7 @@ nix-env -iA \
     nixpkgs.tealdeer \
     nixpkgs.tokei \
     nixpkgs.gh \
-    nixpkgs.psmimic
+    nixpkgs.psmisc
 
 echo -e "${GREEN}✓ Development packages installed to user profile${NC}"
 echo ""
