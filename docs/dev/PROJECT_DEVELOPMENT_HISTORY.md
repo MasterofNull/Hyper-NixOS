@@ -10,6 +10,63 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-19: Documented Standard NixOS Flake Practice
+**Agent**: Claude Code
+**Task**: Clarify `/etc/nixos/configuration.nix` handling per NixOS standards
+
+**Context**:
+- User asked to "remove and refactor" `/etc/nixos/configuration.nix`
+- User explicitly requested: "use whatever standard practices that are required by/within NixOS and not make some kind of workaround"
+- Previous BUILD_INSTRUCTIONS.md contained workarounds (symlinks, stubs, complex options)
+
+**Standard NixOS Practice Established**:
+
+For flake-based systems like Hyper-NixOS:
+1. **`/etc/nixos/configuration.nix` is NOT required** when using `--flake` flag
+2. The `flake.nix` is the entry point, not `configuration.nix`
+3. Standard practice: Simply backup/remove the vanilla NixOS template
+4. No symlinks, stubs, or workarounds needed
+
+**Tasks Completed**:
+
+1. **Researched NixOS Standards**:
+   - Consulted NixOS Wiki, documentation, and community practices
+   - Confirmed flake-based systems don't require `/etc/nixos/configuration.nix`
+   - Verified this is standard practice, not a workaround
+
+2. **Rewrote BUILD_INSTRUCTIONS.md**:
+   - Removed all workarounds (symlinks, stubs, complex options)
+   - Documented standard flake-based build process
+   - Clear explanation of Traditional vs Flake-Based NixOS
+   - Proper troubleshooting section
+   - Best practices section
+
+3. **Standard Cleanup Procedure**:
+   ```bash
+   # Simple, standard approach
+   sudo mv /etc/nixos/configuration.nix /etc/nixos/configuration.nix.backup-vanilla-nixos
+   # That's it! No replacement needed for flake-based systems.
+   ```
+
+**Key Learnings**:
+
+1. **Follow NixOS Standards, Not Workarounds**:
+   - Don't create complex workarounds when standard practice is simpler
+   - Flake-based systems fundamentally don't need `/etc/nixos/configuration.nix`
+   - User was right to ask for standard practice
+
+2. **Documentation Should Be Clear and Minimal**:
+   - Previous version had 5 different "options" (confusing)
+   - Standard practice is just one simple command
+   - Clear comparison table helps users understand the difference
+
+**Files Modified**:
+- BUILD_INSTRUCTIONS.md - Complete rewrite following NixOS standards
+
+**Commits**: (pending user execution of cleanup command)
+
+---
+
 #### 2025-10-19: Systematic Fix - Hardware Module Anti-Pattern (CRITICAL)
 **Agent**: Claude Code
 **Issue**: Systematic "with lib" anti-pattern across ALL hardware modules
