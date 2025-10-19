@@ -442,7 +442,7 @@ update_main_config() {
 
   # System identification
   networking.hostName = "hyper-nixos";
-  system.stateVersion = "24.05";
+  system.stateVersion = "25.05";
   
   # Boot configuration (minimal)
   boot = {

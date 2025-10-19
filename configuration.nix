@@ -91,7 +91,7 @@
 
   # System identification
   networking.hostName = "hyper-nixos";
-  system.stateVersion = "24.05";  # Don't change this after installation
+  system.stateVersion = "25.05";  # Don't change this after installation
 
   # Nix configuration
   nix.settings = {

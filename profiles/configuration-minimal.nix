@@ -45,7 +45,7 @@
 
   # System identification
   networking.hostName = lib.mkDefault "hyper-nixos";  # Can be overridden by installer
-  system.stateVersion = "24.05";
+  system.stateVersion = "25.05";
   
   # Helpful message on login
   environment.etc."motd".text = lib.mkDefault ''

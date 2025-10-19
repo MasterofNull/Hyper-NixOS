@@ -26,11 +26,11 @@
 - Eliminates "duplicate declaration" errors during rebuild
 
 #### NixOS Channel Consistency
-- **IMPORTANT**: Fixed channel version mismatch between dev and production
-- Changed development flake from `nixos-unstable` to `nixos-24.05` stable
-- Aligns with `system.stateVersion = "24.05"` in configurations
-- Prevents accidental downgrades during installation
-- System installer already used stable channel (no change needed)
+- **IMPORTANT**: Updated to NixOS 25.05 (latest stable)
+- Changed development flake to `nixos-25.05` stable channel
+- Updated `system.stateVersion = "25.05"` in all configurations
+- Latest security patches and improvements
+- Modern API usage (hardware.graphics) confirmed for 25.05
 - Ensures consistent package versions across deployments
 
 ### Added

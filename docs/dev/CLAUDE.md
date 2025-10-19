@@ -59,7 +59,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Hyper-NixOS is a next-generation virtualization platform built on NixOS 24.05+ that embodies the three-pillar design ethos. The project emphasizes intelligent defaults, privilege separation, security-first design, clean organization, and learning-focused user experience.
+Hyper-NixOS is a next-generation virtualization platform built on NixOS 25.05 that embodies the three-pillar design ethos. The project emphasizes intelligent defaults, privilege separation, security-first design, clean organization, and learning-focused user experience.
 
 ### Project Identity
 - **Vision**: World-class, cutting-edge, fully featured hypervisor for all platforms

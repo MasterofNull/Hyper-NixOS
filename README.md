@@ -1,6 +1,6 @@
 # Hyper-NixOS
 
-[![NixOS](https://img.shields.io/badge/NixOS-24.05-blue.svg)](https://nixos.org)
+[![NixOS](https://img.shields.io/badge/NixOS-25.05-blue.svg)](https://nixos.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Beta-yellow.svg)](https://github.com/MasterofNull/Hyper-NixOS)
 [![Third-Party Licenses](https://img.shields.io/badge/Dependencies-Properly%20Licensed-success)](THIRD_PARTY_LICENSES.md)

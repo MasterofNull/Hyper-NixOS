@@ -233,7 +233,7 @@ in {
       nvidiaSettings = true;
     };
 
-    # Graphics support (NixOS 24.11+ uses hardware.graphics)
+    # Graphics support (NixOS 24.11+ / 25.05 uses hardware.graphics)
     hardware.graphics = {
       enable = true;
       enable32Bit = true;  # For 32-bit games/applications

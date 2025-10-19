@@ -59,7 +59,7 @@ The project uses NixOS modules organized into categories:
 ## Technical Stack
 
 ### Core Technologies
-- **Base OS**: NixOS 24.05+
+- **Base OS**: NixOS 25.05 (latest stable)
 - **Virtualization**: QEMU/KVM with libvirt
 - **Languages**: Nix, Bash, Python 3
 - **Monitoring**: Prometheus, Grafana

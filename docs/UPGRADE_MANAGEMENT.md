@@ -197,7 +197,7 @@ When NixOS 24.11 (or newer) is released and you want to upgrade:
 4. **Update stateVersion** (only if recommended in release notes):
    ```bash
    sudo vim /etc/nixos/configuration.nix
-   # Update system.stateVersion = "24.11";
+   # Update system.stateVersion = "25.05";
    ```
 
 ## Channel Compatibility

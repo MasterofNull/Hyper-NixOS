@@ -152,7 +152,7 @@ in {
         open = false;  # Use proprietary driver for better compatibility
       };
 
-      # Graphics (OpenGL/Vulkan support) - NixOS 24.11+ uses hardware.graphics
+      # Graphics (OpenGL/Vulkan support) - NixOS 24.11+ / 25.05 uses hardware.graphics
       graphics = {
         enable = true;
         enable32Bit = true;

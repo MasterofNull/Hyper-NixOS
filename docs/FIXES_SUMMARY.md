@@ -111,7 +111,7 @@ boot.kernelParams = [ "custom_param=value" ];
 
 ### Problem
 - Development flake used `nixos-unstable` channel
-- System `stateVersion = "24.05"` (stable)
+- System `stateVersion = "25.05"` (stable)
 - Risk of downgrade during installation (unstable → stable)
 - Compatibility issues between channel versions
 

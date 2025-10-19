@@ -56,7 +56,7 @@
   networking.hostName = "hyper-nixos";
   
   # Base system configuration
-  system.stateVersion = "24.05";
+  system.stateVersion = "25.05";
   
   # Boot configuration
   boot = {

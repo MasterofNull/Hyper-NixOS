@@ -10,6 +10,63 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-19: NixOS 25.05 Upgrade and Documentation Update
+**Agent**: Claude Code
+**Tasks Completed**:
+
+1. **Upgraded to NixOS 25.05**:
+   - Updated flake.lock to NixOS 25.05 stable channel
+   - Verified all module compatibility with 25.05
+   - Updated channel switching script to reflect 25.05 as default
+   - Confirmed hardware.graphics API (modern) is correct for 25.05
+
+2. **Documentation Synchronization**:
+   - Updated PROJECT_DEVELOPMENT_HISTORY.md with upgrade details
+   - Updated CLAUDE.md to reference NixOS 25.05
+   - Updated all version references across docs/dev/ directory
+   - Updated UPGRADE_GUIDE.md with 25.05-specific information
+   - Updated compatibility matrices in user-facing documentation
+
+3. **Code and Comment Updates**:
+   - Updated version references in module comments
+   - Updated branding and version strings
+   - Verified no deprecated API usage for 25.05
+   - Updated migration tools to handle 25.05 upgrades
+   - Updated system.stateVersion to "25.05" in all configs (fresh install)
+
+**Key Benefits**:
+- Latest NixOS stable release (25.05) with newest features
+- Security updates and improvements from 25.05
+- Modern API usage (hardware.graphics confirmed correct)
+- Documentation fully synchronized with actual system version
+
+**Aligns with Design Ethos**:
+- **Pillar 1**: Up-to-date system with latest improvements
+- **Pillar 2**: Latest security patches and features
+- **Pillar 3**: Accurate documentation helps users learn correctly
+
+**Files Modified** (18 total):
+- flake.lock - Updated to NixOS 25.05
+- configuration.nix - Updated stateVersion to 25.05
+- profiles/configuration-minimal.nix - Updated stateVersion
+- profiles/configuration-minimal-recovery.nix - Updated stateVersion
+- profiles/configuration-privilege-separation.nix - Updated stateVersion
+- profiles/configuration-complete.nix - Updated stateVersion
+- examples/production-config.nix - Updated stateVersion
+- scripts/first-boot-wizard.sh - Updated stateVersion in generated configs
+- docs/dev/PROJECT_DEVELOPMENT_HISTORY.md - Added this entry
+- docs/dev/CLAUDE.md - Updated version references
+- docs/dev/AI_ASSISTANT_CONTEXT.md - Updated base OS version
+- docs/UPGRADE_GUIDE.md - Updated for 25.05
+- docs/COMMON_ISSUES_AND_SOLUTIONS.md - Updated version table
+- docs/FIXES_SUMMARY.md - Updated stateVersion reference
+- docs/UPGRADE_MANAGEMENT.md - Updated example stateVersion
+- docs/CHANGELOG_ENTRY.md - Updated with 25.05 changes
+- README.md - Updated NixOS badge to 25.05
+- Module comments (3 files) - Updated API version references
+
+---
+
 #### 2025-10-19: Flexible Channel System & Modernization to NixOS 24.11
 **Agent**: Claude Code
 **Tasks Completed**:
