@@ -842,8 +842,90 @@ nixpkgs-fmt configuration.nix modules/**/*.nix
 
 ---
 
+## NixOS Version Compatibility
+
+### Hardware Graphics API Changes
+
+The hardware graphics API has changed across NixOS versions. **CRITICAL**: Always check your target NixOS version before using hardware options.
+
+#### API Version History
+
+| NixOS Version | Hardware API | Notes |
+|---------------|--------------|-------|
+| **24.05** | `hardware.opengl` | Original API |
+| **24.11** | `hardware.graphics` | Temporary rename (not widely adopted) |
+| **25.05** | `hardware.opengl` | **Reverted back** to original |
+
+#### Option Mappings
+
+```nix
+# NixOS 24.05 / 25.05 (SAME API)
+hardware.opengl = {
+  enable = true;
+  driSupport = true;
+  driSupport32Bit = true;
+  extraPackages = [ ... ];
+};
+
+# NixOS 24.11 ONLY
+hardware.graphics = {
+  enable = true;
+  enable32Bit = true;
+  extraPackages = [ ... ];
+};
+```
+
+#### How to Handle Version Differences
+
+**Option 1: Target specific version** (current approach)
+```nix
+# For NixOS 25.05
+hardware.opengl.enable = true;
+```
+
+**Option 2: Conditional based on version** (if supporting multiple versions)
+```nix
+{
+  # Check NixOS version and use appropriate API
+  hardware = lib.mkIf (lib.versionOlder lib.version "24.11") {
+    opengl.enable = true;
+  } // lib.mkIf (lib.versionAtLeast lib.version "24.11" && lib.versionOlder lib.version "25.05") {
+    graphics.enable = true;
+  } // lib.mkIf (lib.versionAtLeast lib.version "25.05") {
+    opengl.enable = true;
+  };
+}
+```
+
+#### Best Practice
+
+**For single-version targets:**
+- Hyper-NixOS currently targets NixOS 25.05
+- Use `hardware.opengl` throughout
+- Document version assumption in module comments
+
+**For multi-version support:**
+- Check `flake.nix` for target version
+- Use version-specific conditionals
+- Test against all supported versions
+
+### Checking Your Target Version
+
+```bash
+# From flake.nix
+grep "nixpkgs.url" flake.nix
+# Output: nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+
+# From flake.lock
+grep -A 3 '"nixpkgs"' flake.lock | grep ref
+# Output: "ref": "nixos-25.05"
+```
+
+---
+
 ## Version History
 
+- **1.0.1** (2025-10-19): Added NixOS version compatibility section (hardware.opengl vs hardware.graphics)
 - **1.0.0** (2025-10-17): Initial comprehensive reference consolidating all development patterns
 
 ---

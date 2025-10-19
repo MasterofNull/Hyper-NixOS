@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### NixOS 25.05 Upgrade (2025-10-19)
+
+- **Upgraded to NixOS 25.05** stable channel
+  - Updated `flake.nix` and `flake.lock` to NixOS 25.05
+  - Updated all `system.stateVersion` from "24.05" to "25.05" (fresh install)
+  - Updated all documentation references to reflect NixOS 25.05
+
+- **Fixed Hardware Graphics API** for NixOS 25.05 compatibility
+  - Reverted `hardware.graphics` back to `hardware.opengl` (3 modules affected)
+  - NixOS 25.05 uses the same API as 24.05 (`hardware.opengl`)
+  - The `hardware.graphics` API was only in NixOS 24.11
+  - Updated: `modules/core/boot.nix`, `modules/hardware/platform-detection.nix`, `modules/hardware/desktop.nix`
+
+- **Fixed NixOS Module Anti-Pattern** in `modules/hardware/desktop.nix`
+  - Removed `with lib;` statement
+  - Removed top-level `let cfg = config...` binding
+  - Moved `cfg` inside `config = lib.mkIf` scope
+  - Added `lib.` prefix to all lib functions (90+ occurrences)
+  - Prevents infinite recursion and evaluation order issues
+
 ### Added
 
 #### Hardware Platform Optimizations (Comprehensive Coverage)
