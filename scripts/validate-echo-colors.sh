@@ -66,7 +66,8 @@ cd "$WORKSPACE_ROOT"
 
 # Patterns to detect
 # Match: echo "..." with ${COLOR} or ${NC} but NOT echo -e "..."
-PATTERN='echo[[:space:]]+"[^"]*\$\{[A-Z_]*\}'
+# Only matches actual color variables: RED, GREEN, YELLOW, BLUE, CYAN, MAGENTA, BOLD, NC
+PATTERN='echo[[:space:]]+"[^"]*\$\{(RED|GREEN|YELLOW|BLUE|CYAN|MAGENTA|BOLD|NC)'
 
 # Function to check a single file
 check_file() {
@@ -81,8 +82,9 @@ check_file() {
             continue
         fi
         
-        # Check if it contains echo "..." with color variables
-        if echo "$line" | grep -qE 'echo[[:space:]]+"[^"]*\$\{[A-Z_]*\}'; then
+        # Check if it contains echo "..." with color variables (not regular variables)
+        # Only flag actual color variables: RED, GREEN, YELLOW, BLUE, CYAN, MAGENTA, BOLD, NC
+        if echo "$line" | grep -qE 'echo[[:space:]]+"[^"]*\$\{(RED|GREEN|YELLOW|BLUE|CYAN|MAGENTA|BOLD|NC)'; then
             ((issues++)) || true
             line_numbers+=("$line")
         fi
@@ -128,8 +130,8 @@ fix_file() {
     cp "$file" "$backup"
     
     # Fix: Replace 'echo "...' with 'echo -e "...' when it contains color codes
-    # Only fix lines that have echo "..." with ${...} color variables
-    sed -i 's/\(^[[:space:]]*\)echo[[:space:]]\+"\([^"]*\${[A-Z_]*}[^"]*\)"/\1echo -e "\2"/g' "$file"
+    # Only fix lines that have echo "..." with actual color variables
+    sed -i 's/\(^[[:space:]]*\)echo[[:space:]]\+"\([^"]*\${RED\|GREEN\|YELLOW\|BLUE\|CYAN\|MAGENTA\|BOLD\|NC}[^"]*\)"/\1echo -e "\2"/g' "$file"
     
     # Count fixes
     local fixes=$(diff -u "$backup" "$file" | grep -c '^-[[:space:]]*echo[[:space:]]*"' || true)
