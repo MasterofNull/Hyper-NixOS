@@ -152,11 +152,10 @@ in {
         open = false;  # Use proprietary driver for better compatibility
       };
 
-      # Graphics (OpenGL/Vulkan support) - NixOS 24.05 uses hardware.opengl
-      opengl = {
+      # Graphics (OpenGL/Vulkan support) - NixOS 24.11+ uses hardware.graphics
+      graphics = {
         enable = true;
-        driSupport = true;
-        driSupport32Bit = true;
+        enable32Bit = true;
         extraPackages = with pkgs;
           (optionals hasIntelGPU [
             intel-media-driver

@@ -10,6 +10,64 @@
 
 ### Recent AI Agent Contributions (ALWAYS UPDATE THIS)
 
+#### 2025-10-19: Flexible Channel System & Modernization to NixOS 24.11
+**Agent**: Claude Code
+**Tasks Completed**:
+
+1. **Implemented Flexible Channel System**:
+   - Updated flake.nix to default to NixOS 24.11 (latest stable)
+   - Added comprehensive channel switching capability
+   - Supports: unstable, 24.11, 24.05, and custom channels
+   - Documented all channel override options
+
+2. **Created Channel Switching Tool**:
+   - `scripts/switch-channel.sh` - Interactive channel switcher
+   - Features: backup/restore, flake update, optional rebuild
+   - Supports both interactive and non-interactive modes
+   - Includes comprehensive help text and error handling
+
+3. **Modernized API Usage**:
+   - Reverted hardware.opengl → hardware.graphics (24.11 modern API)
+   - Updated all 3 files: platform-detection.nix, desktop.nix, boot.nix
+   - Removed 24.05-specific workarounds
+   - Using modern NixOS 24.11 syntax throughout
+
+4. **Created Comprehensive Documentation**:
+   - `docs/UPGRADE_GUIDE.md` - Complete upgrade procedures
+   - Channel switching methods (interactive, manual, temporary)
+   - Rollback procedures and emergency recovery
+   - Version compatibility matrix
+   - Pre/post-upgrade checklists
+   - Best practices for prod/dev/test environments
+
+5. **System Design Improvements**:
+   - Easy upgradability (Pillar 1: Ease of Use)
+   - Latest security patches by default (Pillar 2: Security)
+   - Educational upgrade docs (Pillar 3: Learning)
+   - User retains full control over channel selection
+
+**Key Benefits**:
+- No longer hardcoded to specific NixOS version
+- Users can easily switch channels based on needs
+- Automatic handling of API differences
+- Clear upgrade path for future NixOS releases
+- Defaults to stable but supports bleeding edge
+
+**Aligns with Design Ethos**:
+- **Pillar 1**: Minimizes friction in upgrades
+- **Pillar 2**: Latest security features, organized upgrade scripts
+- **Pillar 3**: Users learn about NixOS channels and upgrade strategies
+
+**Files Modified/Created**:
+- flake.nix - Updated to NixOS 24.11 with flexibility comments
+- modules/hardware/platform-detection.nix - Modern API
+- modules/hardware/desktop.nix - Modern API
+- modules/core/boot.nix - Modern API
+- scripts/switch-channel.sh - NEW channel switching tool
+- docs/UPGRADE_GUIDE.md - NEW comprehensive upgrade guide
+
+---
+
 #### 2025-10-19: NixOS 24.05 Compatibility Fix - Systematic Version Conflict Resolution
 **Agent**: Claude Code
 **Tasks Completed**:

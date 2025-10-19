@@ -7,9 +7,18 @@
   };
   
   inputs = {
-    # Use NixOS 24.05 stable channel (matches system.stateVersion)
-    # Note: system_installer.sh uses the same stable version for consistency
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    # Flexible channel system - defaults to latest stable
+    # Override with: nix build --override-input nixpkgs github:NixOS/nixpkgs/nixos-unstable
+    # Or switch permanently with: ./scripts/switch-channel.sh
+
+    # Default: Latest stable release (currently 24.11)
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+
+    # Alternative channels (available for override):
+    # - nixos-unstable: github:NixOS/nixpkgs/nixos-unstable (bleeding edge)
+    # - nixos-24.11: github:NixOS/nixpkgs/nixos-24.11 (current stable)
+    # - nixos-24.05: github:NixOS/nixpkgs/nixos-24.05 (previous stable)
+
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = inputs@{ self, nixpkgs, flake-utils }:
