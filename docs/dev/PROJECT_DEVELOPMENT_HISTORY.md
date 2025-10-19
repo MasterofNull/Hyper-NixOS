@@ -18,7 +18,7 @@
    - Updated flake.lock to NixOS 25.05 stable channel
    - Verified all module compatibility with 25.05
    - Updated channel switching script to reflect 25.05 as default
-   - Confirmed hardware.graphics API (modern) is correct for 25.05
+   - CORRECTED: NixOS 25.05 uses hardware.opengl (not hardware.graphics)
 
 2. **Documentation Synchronization**:
    - Updated PROJECT_DEVELOPMENT_HISTORY.md with upgrade details

@@ -1357,13 +1357,13 @@ grep -r "hardware\.graphics" modules/ --include="*.nix"
 ```
 
 **Key API Changes Between NixOS Versions**:
-| NixOS 24.05 | NixOS 24.11+ / 25.05 |
-|-------------|----------------------|
-| `hardware.opengl` | `hardware.graphics` |
-| `hardware.opengl.driSupport` | `hardware.graphics.enable` |
-| `hardware.opengl.driSupport32Bit` | `hardware.graphics.enable32Bit` |
+| NixOS 24.05 | NixOS 24.11 | NixOS 25.05 |
+|-------------|-------------|-------------|
+| `hardware.opengl` | `hardware.graphics` | `hardware.opengl` |
+| `hardware.opengl.driSupport` | `hardware.graphics.enable` | `hardware.opengl.driSupport` |
+| `hardware.opengl.driSupport32Bit` | `hardware.graphics.enable32Bit` | `hardware.opengl.driSupport32Bit` |
 
-**Note**: NixOS 25.05 (current default) uses the same modern API as 24.11.
+**Note**: NixOS 25.05 **reverted** back to `hardware.opengl` (same as 24.05). The `hardware.graphics` API was only in 24.11.
 
 **Prevention**:
 - Always check `flake.nix` for target NixOS version before using options

@@ -233,10 +233,11 @@ in {
       nvidiaSettings = true;
     };
 
-    # Graphics support (NixOS 24.11+ / 25.05 uses hardware.graphics)
-    hardware.graphics = {
+    # Graphics support (NixOS 25.05 uses hardware.opengl)
+    hardware.opengl = {
       enable = true;
-      enable32Bit = true;  # For 32-bit games/applications
+      driSupport = true;
+      driSupport32Bit = true;  # For 32-bit games/applications
       extraPackages = with pkgs; [
         vaapiVdpau
         libvdpau-va-gl
