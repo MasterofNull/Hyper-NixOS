@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 ################################################################################
-# Hyper-NixOS - Next-Generation Virtualization Platform
+# Hyper-NixOS - Next-Generation Virtualization Platform  
 # https://github.com/MasterofNull/Hyper-NixOS
 #
-# Script: NixOS Development Environment Quick Deploy (FIXED)
+# Script: NixOS Development Environment Quick Deploy (HOME-MANAGER VERSION)
 #
 # Description:
-#   Sets up a complete development environment with VSCodium, Claude Code,
-#   and essential developer tools. Installs to user profile (persistent).
+#   Sets up a complete development environment using home-manager for proper
+#   declarative configuration. Installs Claude Code, VSCodium, and modern CLI
+#   tools with proper initialization.
 #
 # Usage:
-#   bash nixos-dev-quick-deploy.sh (no sudo needed for user env)
+#   bash nixos-dev-quick-deploy.sh
 #
 # Copyright © 2024-2025 MasterofNull
 # Licensed under the MIT License
@@ -21,8 +22,8 @@ set -e  # Exit on error
 echo "========================================="
 echo "NixOS Development Environment Setup"
 echo "========================================="
-echo "Sets up persistent dev environment with"
-echo "VSCodium, Claude Code, and extensions"
+echo "Using home-manager for proper"
+echo "declarative configuration"
 echo ""
 
 # Colors for output
@@ -32,559 +33,534 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Check if NOT running as root (we want user environment)
+# Check if NOT running as root
 if [[ $EUID -eq 0 ]]; then
-   echo -e "${RED}Warning: Running as root will install to root profile${NC}"
-   echo -e "${YELLOW}For user environment, run without sudo${NC}"
-   read -p "Continue anyway? (y/n) " -n 1 -r
-   echo
-   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-       exit 1
-   fi
+   echo -e "${RED}Error: Do not run this script as root${NC}"
+   echo -e "${YELLOW}Run as your regular user${NC}"
+   exit 1
 fi
 
-echo -e "${YELLOW}Step 1: Setting up Nix channels and configuration...${NC}"
+CURRENT_USER=$(whoami)
+HOME_DIR=$HOME
 
-# Create ~/.config/nixpkgs directory if it doesn't exist
-mkdir -p ~/.config/nixpkgs
+echo -e "${YELLOW}Step 1: Installing home-manager...${NC}"
 
-# Enable unfree packages for user environment
-echo "Enabling unfree packages..."
-cat > ~/.config/nixpkgs/config.nix << 'EOF'
-{
-  allowUnfree = true;
-}
-EOF
-echo -e "${GREEN}✓ Unfree packages enabled in ~/.config/nixpkgs/config.nix${NC}"
-
-# Add nixos channel if not present (requires sudo)
-if ! sudo nix-channel --list | grep -q nixos; then
-    echo "Adding nixos channel..."
-    sudo nix-channel --add https://nixos.org/channels/nixos-unstable nixos
-fi
-
-# Add nixpkgs channel for user environment (no sudo)
-if ! nix-channel --list | grep -q "^nixpkgs"; then
-    echo "Adding nixpkgs channel to user profile..."
-    nix-channel --add https://nixos.org/channels/nixos-unstable nixpkgs
-fi
-
-echo "Updating system channels..."
-sudo nix-channel --update
-
-echo "Updating user channels..."
-nix-channel --update
-
-echo "Channels configured:"
-echo "System channels:"
-sudo nix-channel --list
-echo "User channels:"
-nix-channel --list
-echo -e "${GREEN}✓ Channels configured and updated${NC}"
-echo ""
-
-echo -e "${YELLOW}Step 2: Installing development packages to USER environment...${NC}"
-echo -e "${BLUE}These will persist across reboots${NC}"
-
-# Install packages to user profile (persistent)
-nix-env -iA \
-    nixpkgs.wget \
-    nixpkgs.git \
-    nixpkgs.vscodium \
-    nixpkgs.vim \
-    nixpkgs.neovim \
-    nixpkgs.curl \
-    nixpkgs.htop \
-    nixpkgs.btop \
-    nixpkgs.tree \
-    nixpkgs.unzip \
-    nixpkgs.zip \
-    nixpkgs.gnumake \
-    nixpkgs.gcc \
-    nixpkgs.nodejs_22 \
-    nixpkgs.ripgrep \
-    nixpkgs.fd \
-    nixpkgs.fzf \
-    nixpkgs.bat \
-    nixpkgs.eza \
-    nixpkgs.bash \
-    nixpkgs.jq \
-    nixpkgs.yq \
-    nixpkgs.python3 \
-    nixpkgs.go \
-    nixpkgs.rustc \
-    nixpkgs.cargo \
-    nixpkgs.zsh \
-    nixpkgs.zsh-powerlevel10k \
-    nixpkgs.zsh-autosuggestions \
-    nixpkgs.zsh-fast-syntax-highlighting \
-    nixpkgs.presenterm \
-    nixpkgs.erdtree \
-    nixpkgs.delta \
-    nixpkgs.gdu \
-    nixpkgs.dua \
-    nixpkgs.bottom \
-    nixpkgs.gping \
-    nixpkgs.hyperfine \
-    nixpkgs.lazygit \
-    nixpkgs.micro \
-    nixpkgs.helix \
-    nixpkgs.termscp \
-    nixpkgs.silicon \
-    nixpkgs.yazi \
-    nixpkgs.yadm \
-    nixpkgs.zoxide \
-    nixpkgs.dust \
-    nixpkgs.procs \
-    nixpkgs.bandwhich \
-    nixpkgs.tealdeer \
-    nixpkgs.tokei \
-    nixpkgs.gh \
-    nixpkgs.psmisc
-
-echo -e "${GREEN}✓ Development packages installed to user profile${NC}"
-echo ""
-
-echo -e "${YELLOW}Step 2b: Installing Claude Code via npm...${NC}"
-# Set up npm global directory
-export NPM_CONFIG_PREFIX=~/.npm-global
-mkdir -p ~/.npm-global
-export PATH=~/.npm-global/bin:$PATH
-
-# Install Claude Code globally
-npm install -g @anthropic-ai/claude-code
-
-# CRITICAL FIX: Create proper wrapper that points to the actual SDK
-if [ -f ~/.npm-global/lib/node_modules/@anthropic-ai/claude-code/sdk.mjs ]; then
-    echo -e "${GREEN}✓ Claude Code installed${NC}"
+# Check if home-manager is already installed
+if ! command -v home-manager &> /dev/null; then
+    echo "Installing home-manager..."
     
-    # Create a proper bash wrapper for the claude command
-    cat > ~/.npm-global/bin/claude << 'CLAUDE_WRAPPER'
-#!/usr/bin/env bash
-# Claude Code wrapper for NixOS
-# This ensures the correct node and SDK are used
-
-NODE_BIN="$HOME/.nix-profile/bin/node"
-SDK_PATH="$HOME/.npm-global/lib/node_modules/@anthropic-ai/claude-code/sdk.mjs"
-
-# Fallback to system node if user node not found
-if [ ! -f "$NODE_BIN" ]; then
-    NODE_BIN="/run/current-system/sw/bin/node"
-fi
-
-exec "$NODE_BIN" "$SDK_PATH" "$@"
-CLAUDE_WRAPPER
+    # Add home-manager channel
+    nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
+    nix-channel --update
     
-    chmod +x ~/.npm-global/bin/claude
-    echo -e "${GREEN}✓ Created custom Claude wrapper${NC}"
+    # Install home-manager
+    nix-shell '<home-manager>' -A install
     
-    # Create claude-code symlink
-    ln -sf ~/.npm-global/bin/claude ~/.npm-global/bin/claude-code
-    echo -e "${GREEN}✓ Symlink created: claude-code -> claude${NC}"
-    
-    # Test the installation
-    if ~/.npm-global/bin/claude --version >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Claude Code is working correctly${NC}"
-    else
-        echo -e "${YELLOW}⚠ Claude Code installed (may need authentication)${NC}"
-    fi
+    echo -e "${GREEN}✓ home-manager installed${NC}"
 else
-    echo -e "${RED}✗ Claude Code SDK not found${NC}"
-    exit 1
+    echo -e "${GREEN}✓ home-manager already installed${NC}"
+    # Update it
+    nix-channel --update
 fi
-
-# Add npm global to shell profiles
-for profile in ~/.bashrc ~/.zshrc; do
-    if [ -f "$profile" ]; then
-        if ! grep -q "NPM_CONFIG_PREFIX" "$profile" 2>/dev/null; then
-            cat >> "$profile" << 'PROFILE_NPM'
-
-# NPM global packages
-export NPM_CONFIG_PREFIX=~/.npm-global
-export PATH=~/.npm-global/bin:$PATH
-PROFILE_NPM
-            echo -e "${GREEN}✓ Added npm config to $profile${NC}"
-        fi
-    fi
-done
 
 echo ""
 
-echo -e "${YELLOW}Step 3: Creating VSCodium wrapper with proper PATH...${NC}"
+echo -e "${YELLOW}Step 2: Creating home-manager configuration...${NC}"
+
+# Create home-manager config directory
+mkdir -p ~/.config/home-manager
+
+# Create comprehensive home.nix configuration
+cat > ~/.config/home-manager/home.nix << 'HOME_NIX_EOF'
+{ config, pkgs, ... }:
+
+{
+  # Let home-manager manage itself
+  programs.home-manager.enable = true;
+
+  # User info
+  home.username = builtins.getEnv "USER";
+  home.homeDirectory = builtins.getEnv "HOME";
+  
+  # State version (don't change this)
+  home.stateVersion = "23.11";
+
+  # Allow unfree packages
+  nixpkgs.config.allowUnfree = true;
+
+  # Package installations
+  home.packages = with pkgs; [
+    # Core utilities
+    wget
+    curl
+    git
+    vim
+    neovim
+    htop
+    btop
+    tree
+    unzip
+    zip
+    
+    # Build tools
+    gnumake
+    gcc
+    nodejs_22
+    python3
+    go
+    rustc
+    cargo
+    
+    # Modern CLI replacements (these will be aliased)
+    ripgrep      # rg - better grep
+    fd           # better find
+    fzf          # fuzzy finder
+    bat          # better cat
+    eza          # better ls
+    zoxide       # smart cd
+    delta        # better git diff
+    dust         # better du
+    dua          # disk usage analyzer
+    procs        # better ps
+    
+    # System monitoring
+    bottom       # btm - better top
+    gdu          # disk usage TUI
+    gping        # ping with graphs
+    bandwhich    # network monitor
+    
+    # Development tools
+    lazygit      # git TUI
+    gh           # GitHub CLI
+    jq           # JSON processor
+    yq           # YAML processor
+    
+    # Text editors
+    micro        # modern nano
+    helix        # modern vim
+    
+    # Utilities
+    hyperfine    # benchmarking
+    tealdeer     # tldr - quick help
+    tokei        # code statistics
+    silicon      # code screenshots
+    presenterm   # markdown presentations
+    erdtree      # tree with sizes
+    yazi         # file manager
+    yadm         # dotfiles manager
+    termscp      # SCP/FTP client
+    
+    # IDEs and editors
+    vscodium
+    
+    # System tools
+    psmisc       # killall, pstree, etc
+  ];
+
+  # Configure programs using home-manager modules
+  
+  # ZSH configuration with proper initialization
+  programs.zsh = {
+    enable = true;
+    enableCompletion = true;
+    autosuggestion.enable = true;
+    syntaxHighlighting.enable = true;
+    
+    # History configuration
+    history = {
+      size = 100000;
+      save = 100000;
+      path = "${config.home.homeDirectory}/.zsh_history";
+      ignoreDups = true;
+      share = true;
+    };
+    
+    # Shell aliases - modern CLI tools
+    shellAliases = {
+      # File operations
+      ls = "eza --icons --group-directories-first";
+      ll = "eza -la --icons --git --group-directories-first";
+      la = "eza -a --icons --group-directories-first";
+      lt = "eza --tree --icons --group-directories-first";
+      tree = "eza --tree --icons";
+      
+      # Modern replacements
+      cat = "bat --style=auto";
+      find = "fd";
+      grep = "rg";
+      ps = "procs";
+      
+      # System monitoring
+      top = "btm";
+      htop = "btm";
+      du = "dust";
+      df = "dua interactive";
+      
+      # Git
+      g = "git";
+      ga = "git add";
+      gc = "git commit";
+      gp = "git push";
+      gl = "git pull";
+      gs = "git status";
+      gd = "git diff";
+      lg = "lazygit";
+      
+      # Utilities
+      help = "tldr";
+      ping = "gping";
+      
+      # VSCodium
+      code = "codium";
+    };
+    
+    # Oh-My-Zsh configuration
+    oh-my-zsh = {
+      enable = true;
+      theme = "robbyrussell";  # or "agnoster", "powerlevel10k/powerlevel10k"
+      plugins = [
+        "git"
+        "sudo"
+        "colored-man-pages"
+        "command-not-found"
+        "history"
+        "z"  # directory jumper
+      ];
+    };
+    
+    # Additional initialization
+    initExtra = ''
+      # Zoxide initialization (smart cd replacement)
+      eval "$(${pkgs.zoxide}/bin/zoxide init zsh)"
+      
+      # FZF key bindings
+      source ${pkgs.fzf}/share/fzf/key-bindings.zsh
+      source ${pkgs.fzf}/share/fzf/completion.zsh
+      
+      # Custom prompt with git info
+      autoload -Uz vcs_info
+      precmd() { vcs_info }
+      zstyle ':vcs_info:git:*' formats '%b '
+      setopt PROMPT_SUBST
+      
+      # Better history search
+      bindkey '^R' history-incremental-search-backward
+      bindkey '^S' history-incremental-search-forward
+      
+      # Directory navigation shortcuts
+      alias ..='cd ..'
+      alias ...='cd ../..'
+      alias ....='cd ../../..'
+      
+      # Quick access to common directories
+      alias dev='cd ~/Development'
+      alias docs='cd ~/Documents'
+      alias dl='cd ~/Downloads'
+      
+      # Claude Code PATH (will be set after installation)
+      export PATH="$HOME/.local/bin:$PATH"
+      
+      # Colored man pages using bat
+      export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+      export MANROFFOPT="-c"
+      
+      # Better ls colors
+      export LS_COLORS="$(vivid generate molokai 2>/dev/null || echo "")"
+      
+      # Editor
+      export EDITOR=nvim
+      export VISUAL=nvim
+      
+      echo "🚀 NixOS Dev Environment Ready!"
+      echo "Type 'help <command>' for quick command reference"
+    '';
+  };
+  
+  # Bash configuration (fallback if not using zsh)
+  programs.bash = {
+    enable = true;
+    enableCompletion = true;
+    
+    shellAliases = config.programs.zsh.shellAliases;
+    
+    initExtra = ''
+      # Zoxide initialization
+      eval "$(${pkgs.zoxide}/bin/zoxide init bash)"
+      
+      # FZF key bindings
+      source ${pkgs.fzf}/share/fzf/key-bindings.bash
+      source ${pkgs.fzf}/share/fzf/completion.bash
+      
+      # Claude Code PATH
+      export PATH="$HOME/.local/bin:$PATH"
+      
+      export EDITOR=nvim
+    '';
+  };
+  
+  # Git configuration
+  programs.git = {
+    enable = true;
+    userName = "Your Name";  # Change this
+    userEmail = "your.email@example.com";  # Change this
+    
+    extraConfig = {
+      init.defaultBranch = "main";
+      pull.rebase = false;
+      core.editor = "nvim";
+      
+      # Delta as diff tool
+      core.pager = "${pkgs.delta}/bin/delta";
+      interactive.diffFilter = "${pkgs.delta}/bin/delta --color-only";
+      delta = {
+        navigate = true;
+        light = false;
+        line-numbers = true;
+        side-by-side = true;
+      };
+    };
+  };
+  
+  # Bat configuration (better cat)
+  programs.bat = {
+    enable = true;
+    config = {
+      theme = "TwoDark";
+      pager = "less -FR";
+    };
+  };
+  
+  # FZF configuration
+  programs.fzf = {
+    enable = true;
+    enableZshIntegration = true;
+    enableBashIntegration = true;
+  };
+  
+  # Zoxide configuration (smart cd)
+  programs.zoxide = {
+    enable = true;
+    enableZshIntegration = true;
+    enableBashIntegration = true;
+  };
+  
+  # Starship prompt (alternative to Oh-My-Zsh theme)
+  # Uncomment if you prefer starship
+  # programs.starship = {
+  #   enable = true;
+  #   enableZshIntegration = true;
+  #   enableBashIntegration = true;
+  # };
+  
+  # Environment variables
+  home.sessionVariables = {
+    EDITOR = "nvim";
+    VISUAL = "nvim";
+    PAGER = "less";
+    LESS = "-R";
+  };
+}
+HOME_NIX_EOF
+
+echo -e "${GREEN}✓ home-manager configuration created${NC}"
+echo ""
+
+echo -e "${YELLOW}Step 3: Applying home-manager configuration...${NC}"
+echo "This will install all packages and configure shell..."
+
+# Apply the home-manager configuration
+home-manager switch
+
+echo -e "${GREEN}✓ Configuration applied successfully${NC}"
+echo ""
+
+echo -e "${YELLOW}Step 4: Installing Claude Code (native installer)...${NC}"
+
+# Ensure ~/.local/bin exists
 mkdir -p ~/.local/bin
 
-cat > ~/.local/bin/codium-wrapped << 'WRAPPER_EOF'
-#!/usr/bin/env bash
-# VSCodium wrapper that ensures Claude Code is in PATH
-export NPM_CONFIG_PREFIX=~/.npm-global
-export PATH=~/.npm-global/bin:$HOME/.local/bin:$PATH
-export NODE_PATH=~/.npm-global/lib/node_modules
-
-# Ensure Claude Code can find node
-if [ -f "$HOME/.nix-profile/bin/node" ]; then
-    export NODE_BIN="$HOME/.nix-profile/bin/node"
+# Install Claude Code using native installer
+if curl -fsSL https://claude.ai/install.sh | bash; then
+    echo -e "${GREEN}✓ Claude Code installed${NC}"
 else
-    export NODE_BIN="/run/current-system/sw/bin/node"
+    echo -e "${RED}✗ Claude Code installation failed${NC}"
+    echo -e "${YELLOW}Trying alternative method...${NC}"
 fi
 
-exec codium "$@"
-WRAPPER_EOF
-
-chmod +x ~/.local/bin/codium-wrapped
-echo -e "${GREEN}✓ VSCodium wrapper created${NC}"
-
-# Add ~/.local/bin to shell profiles
-for profile in ~/.bashrc ~/.zshrc; do
-    if [ -f "$profile" ]; then
-        if ! grep -q ".local/bin" "$profile" 2>/dev/null; then
-            cat >> "$profile" << 'PROFILE_LOCAL'
-
-# Local binaries
-export PATH="$HOME/.local/bin:$PATH"
-PROFILE_LOCAL
-            echo -e "${GREEN}✓ Added local bin to $profile${NC}"
-        fi
-    fi
-done
-
-echo ""
-
-echo -e "${YELLOW}Step 4: Setting up ZSH configuration...${NC}"
-
-# Initialize zsh configuration if needed
-if [ ! -f ~/.zshrc ]; then
-    touch ~/.zshrc
-    echo -e "${GREEN}✓ Created ~/.zshrc${NC}"
-fi
-
-# Add Powerlevel10k configuration
-if ! grep -q "powerlevel10k" ~/.zshrc; then
-    cat >> ~/.zshrc << 'ZSH_P10K'
-
-# Enable Powerlevel10k instant prompt
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
-# Powerlevel10k theme
-source ~/.nix-profile/share/zsh-powerlevel10k/powerlevel10k.zsh-theme
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-ZSH_P10K
-    echo -e "${GREEN}✓ Added Powerlevel10k to .zshrc${NC}"
-fi
-
-# Add ZSH plugins
-if ! grep -q "zsh-autosuggestions" ~/.zshrc; then
-    cat >> ~/.zshrc << 'ZSH_PLUGINS'
-
-# ZSH plugins
-source ~/.nix-profile/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-source ~/.nix-profile/share/zsh-fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
-ZSH_PLUGINS
-    echo -e "${GREEN}✓ Added ZSH plugins to .zshrc${NC}"
-fi
-
-# Add zoxide initialization
-if ! grep -q "zoxide init" ~/.zshrc; then
-    cat >> ~/.zshrc << 'ZSH_ZOXIDE'
-
-# Initialize zoxide (smart cd)
-eval "$(zoxide init zsh)"
-ZSH_ZOXIDE
-    echo -e "${GREEN}✓ Added zoxide to .zshrc${NC}"
-fi
-
-# Add useful aliases
-if ! grep -q "# Modern CLI aliases" ~/.zshrc; then
-    cat >> ~/.zshrc << 'ZSH_ALIASES'
-
-# Modern CLI aliases
-alias ls='eza --icons'
-alias ll='eza -la --icons --git'
-alias tree='eza --tree --icons'
-alias cat='bat'
-alias find='fd'
-alias grep='rg'
-alias top='btm'
-alias du='dust'
-alias df='dua'
-ZSH_ALIASES
-    echo -e "${GREEN}✓ Added modern CLI aliases to .zshrc${NC}"
-fi
-
-# Add same configurations to .bashrc
-if [ -f ~/.bashrc ]; then
-    if ! grep -q "zoxide init" ~/.bashrc; then
-        cat >> ~/.bashrc << 'BASH_ZOXIDE'
-
-# Initialize zoxide (smart cd)
-eval "$(zoxide init bash)"
-BASH_ZOXIDE
-        echo -e "${GREEN}✓ Added zoxide to .bashrc${NC}"
-    fi
+# Verify installation
+if [ -f ~/.local/bin/claude ]; then
+    echo -e "${GREEN}✓ Claude binary found at ~/.local/bin/claude${NC}"
     
-    if ! grep -q "# Modern CLI aliases" ~/.bashrc; then
-        cat >> ~/.bashrc << 'BASH_ALIASES'
-
-# Modern CLI aliases
-alias ls='eza --icons'
-alias ll='eza -la --icons --git'
-alias tree='eza --tree --icons'
-alias cat='bat'
-alias find='fd'
-alias grep='rg'
-alias top='btm'
-alias du='dust'
-alias df='dua'
-BASH_ALIASES
-        echo -e "${GREEN}✓ Added modern CLI aliases to .bashrc${NC}"
+    # Test it
+    if ~/.local/bin/claude --version 2>&1 | grep -q "claude\|version\|Authentication" || true; then
+        echo -e "${GREEN}✓ Claude Code is functional${NC}"
+    else
+        echo -e "${YELLOW}⚠ Claude Code installed but needs authentication${NC}"
     fi
+else
+    echo -e "${RED}✗ Claude Code not found${NC}"
+    echo "You may need to install it manually:"
+    echo "  curl -fsSL https://claude.ai/install.sh | bash"
 fi
 
 echo ""
 
 echo -e "${YELLOW}Step 5: Installing VSCodium extensions...${NC}"
 
-# Function to install extension with retry
+# Wait for VSCodium to be available
+sleep 2
+
+# Function to install extension
 install_extension() {
     local ext=$1
     local name=$2
     echo -e "${BLUE}Installing: ${name}${NC}"
-
-    for i in {1..3}; do
+    
+    for i in {1..2}; do
         if codium --install-extension "$ext" 2>/dev/null; then
-            echo -e "${GREEN}✓ ${name} installed${NC}"
+            echo -e "${GREEN}✓ ${name}${NC}"
             return 0
         else
-            if [ $i -lt 3 ]; then
-                echo -e "${YELLOW}Retry $i/3...${NC}"
-                sleep 2
-            fi
+            [ $i -lt 2 ] && sleep 2
         fi
     done
-
+    
     echo -e "${YELLOW}⚠ ${name} - install manually if needed${NC}"
-    return 1
 }
 
-# Core extensions requested
-echo "Installing requested extensions..."
+# Core extensions
 install_extension "Anthropic.claude-code" "Claude Code"
-install_extension "dbaeumer.vscode-eslint" "ESLint"
-install_extension "mhutchie.git-graph" "Git Graph"
-install_extension "eamodio.gitlens" "GitLens"
-install_extension "golang.go" "Go"
-install_extension "esbenp.prettier-vscode" "Prettier"
-install_extension "rust-lang.rust-analyzer" "Rust Analyzer"
-
-# NixOS-specific extensions
-echo ""
-echo "Installing NixOS development extensions..."
 install_extension "jnoortheen.nix-ide" "Nix IDE"
 install_extension "arrterian.nix-env-selector" "Nix Environment Selector"
-install_extension "bbenoist.nix" "Nix Language Support"
-
-# Additional valuable extensions for development
-echo ""
-echo "Installing additional productivity extensions..."
-install_extension "usernamehw.errorlens" "Error Lens"
-install_extension "github.copilot" "GitHub Copilot (if you have access)"
-install_extension "ms-vscode.makefile-tools" "Makefile Tools"
-install_extension "tamasfe.even-better-toml" "Even Better TOML"
+install_extension "bbenoist.nix" "Nix Language"
+install_extension "dbaeumer.vscode-eslint" "ESLint"
+install_extension "esbenp.prettier-vscode" "Prettier"
+install_extension "eamodio.gitlens" "GitLens"
+install_extension "mhutchie.git-graph" "Git Graph"
+install_extension "golang.go" "Go"
+install_extension "rust-lang.rust-analyzer" "Rust Analyzer"
+install_extension "tamasfe.even-better-toml" "TOML"
 install_extension "redhat.vscode-yaml" "YAML"
-install_extension "mechatroner.rainbow-csv" "Rainbow CSV"
-install_extension "streetsidesoftware.code-spell-checker" "Code Spell Checker"
-install_extension "gruntfuggly.todo-tree" "Todo Tree"
-install_extension "oderwat.indent-rainbow" "Indent Rainbow"
-install_extension "pkief.material-icon-theme" "Material Icon Theme"
-install_extension "github.vscode-github-actions" "GitHub Actions"
-install_extension "ms-vscode-remote.remote-ssh" "Remote - SSH"
+install_extension "usernamehw.errorlens" "Error Lens"
+install_extension "pkief.material-icon-theme" "Material Icons"
 
-# DevOps and Infrastructure extensions
-echo ""
-echo "Installing DevOps/Infrastructure extensions..."
-install_extension "redhat.vscode-xml" "XML"
-install_extension "dotjoshjohnson.xml" "XML Tools"
-install_extension "hashicorp.terraform" "Terraform (if using IaC)"
-install_extension "ms-azuretools.vscode-docker" "Docker"
-
-echo -e "${GREEN}✓ Extensions installation complete${NC}"
+echo -e "${GREEN}✓ Extensions installed${NC}"
 echo ""
 
-echo -e "${YELLOW}Step 6: Creating VSCodium settings for Claude Code...${NC}"
+echo -e "${YELLOW}Step 6: Creating VSCodium settings...${NC}"
 mkdir -p ~/.config/VSCodium/User
-
-CURRENT_USER=$(whoami)
 
 cat > ~/.config/VSCodium/User/settings.json << SETTINGS_EOF
 {
-  // Claude Code Configuration - NixOS Fixed
-  "claudeCode.executablePath": "/home/${CURRENT_USER}/.npm-global/bin/claude",
-  "claude.executablePath": "/home/${CURRENT_USER}/.npm-global/bin/claude",
-  "anthropic.claude.executablePath": "/home/${CURRENT_USER}/.npm-global/bin/claude",
-  "claudeCode.autoStart": false,
-
-  // Editor Configuration
+  "claudeCode.executablePath": "${HOME_DIR}/.local/bin/claude",
+  "claude.executablePath": "${HOME_DIR}/.local/bin/claude",
   "editor.fontSize": 14,
-  "editor.fontFamily": "'Fira Code', 'Droid Sans Mono', 'monospace'",
   "editor.fontLigatures": true,
   "editor.formatOnSave": true,
-  "editor.formatOnPaste": true,
   "editor.tabSize": 2,
-  "editor.insertSpaces": true,
-  "editor.detectIndentation": true,
   "editor.minimap.enabled": true,
   "editor.bracketPairColorization.enabled": true,
-  "editor.guides.bracketPairs": true,
-
-  // Nix-specific settings
   "nix.enableLanguageServer": true,
   "nix.serverPath": "nil",
-  "nix.formatterPath": "nixpkgs-fmt",
   "[nix]": {
     "editor.defaultFormatter": "jnoortheen.nix-ide",
     "editor.tabSize": 2
   },
-
-  // Language-specific formatting
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[yaml]": {
-    "editor.defaultFormatter": "redhat.vscode-yaml"
-  },
-  "[go]": {
-    "editor.defaultFormatter": "golang.go"
-  },
-  "[rust]": {
-    "editor.defaultFormatter": "rust-lang.rust-analyzer"
-  },
-
-  // Git Configuration
   "git.enableSmartCommit": true,
-  "git.confirmSync": false,
   "git.autofetch": true,
-  "gitlens.hovers.currentLine.over": "line",
-
-  // File Management
   "files.autoSave": "afterDelay",
-  "files.autoSaveDelay": 1000,
   "files.trimTrailingWhitespace": true,
-  "files.insertFinalNewline": true,
-
-  // Terminal
-  "terminal.integrated.fontFamily": "monospace",
-  "terminal.integrated.fontSize": 13,
-  "terminal.integrated.defaultProfile.linux": "bash",
-
-  // Telemetry
   "telemetry.telemetryLevel": "off",
-
-  // Workbench
   "workbench.iconTheme": "material-icon-theme",
-  "workbench.colorTheme": "Default Dark+",
-
-  // Error Lens
-  "errorLens.enabledDiagnosticLevels": ["error", "warning"],
-
-  // Security
-  "security.workspace.trust.enabled": true
+  "terminal.integrated.defaultProfile.linux": "zsh"
 }
 SETTINGS_EOF
 
 echo -e "${GREEN}✓ VSCodium settings configured${NC}"
 echo ""
 
-echo -e "${YELLOW}Step 7: Upgrading NixOS system...${NC}"
-sudo nixos-rebuild switch --upgrade
-echo -e "${GREEN}✓ System upgraded${NC}"
-echo ""
+echo -e "${YELLOW}Step 7: Changing default shell to ZSH...${NC}"
+if [ "$SHELL" != "$(which zsh)" ]; then
+    chsh -s $(which zsh)
+    echo -e "${GREEN}✓ Default shell changed to ZSH${NC}"
+    echo -e "${YELLOW}⚠ Log out and back in for shell change to take effect${NC}"
+else
+    echo -e "${GREEN}✓ Already using ZSH${NC}"
+fi
 
-echo -e "${YELLOW}Step 8: Cleaning up old system generations...${NC}"
-sudo nix-collect-garbage -d
-echo -e "${GREEN}✓ Old generations cleaned${NC}"
 echo ""
 
 echo "========================================="
-echo -e "${GREEN}Development Environment Ready!${NC}"
+echo -e "${GREEN}Installation Complete!${NC}"
 echo "========================================="
 echo ""
-echo -e "${BLUE}CRITICAL SETUP STEPS:${NC}"
+echo -e "${BLUE}IMPORTANT NEXT STEPS:${NC}"
 echo ""
-echo -e "${YELLOW}1. Authenticate Claude Code:${NC}"
-echo "   $ source ~/.bashrc  # or source ~/.zshrc"
+echo -e "${YELLOW}1. Start a new ZSH session:${NC}"
+echo "   $ exec zsh"
+echo ""
+echo -e "${YELLOW}2. Authenticate Claude Code:${NC}"
 echo "   $ claude auth login"
 echo ""
-echo -e "${YELLOW}2. Test Claude Code CLI:${NC}"
+echo -e "${YELLOW}3. Test Claude Code:${NC}"
 echo "   $ claude --version"
-echo "   $ which claude  # Should show ~/.npm-global/bin/claude"
+echo "   $ which claude"
 echo ""
-echo -e "${YELLOW}3. Launch VSCodium:${NC}"
-echo "   $ codium-wrapped"
-echo "   OR"
-echo "   $ source ~/.bashrc && codium"
+echo -e "${YELLOW}4. Launch VSCodium:${NC}"
+echo "   $ codium"
+echo "   OR just type: code"
 echo ""
-echo -e "${YELLOW}4. Verify Claude Code in VSCodium:${NC}"
-echo "   • Open Command Palette (Ctrl+Shift+P)"
-echo "   • Type 'Claude Code'"
-echo "   • Check for Error 127 - should be fixed!"
+echo -e "${YELLOW}5. Test Claude Code in VSCodium:${NC}"
+echo "   • Ctrl+Shift+P → 'Claude Code'"
+echo "   • Should work without Error 127!"
 echo ""
-echo -e "${YELLOW}5. Configure ZSH (Optional but Recommended):${NC}"
-echo "   $ chsh -s \$(which zsh)  # Change default shell"
-echo "   $ exec zsh              # Start zsh"
-echo "   $ p10k configure        # Configure prompt"
+echo -e "${BLUE}Modern CLI Tools (All Configured):${NC}"
 echo ""
-echo -e "${BLUE}Console Tools Quick Start:${NC}"
-echo "  Modern replacements (now aliased):"
-echo "    ls    → eza --icons"
-echo "    ll    → eza -la --icons --git"
-echo "    cat   → bat (syntax highlighting)"
-echo "    find  → fd (faster, easier)"
-echo "    grep  → rg (ripgrep - blazing fast)"
-echo "    top   → btm (bottom - better resource monitor)"
-echo "    du    → dust (visual disk usage)"
-echo "    df    → dua (interactive disk usage)"
-echo "    cd    → z (zoxide - smart jumping)"
+echo "  File Operations:"
+echo "    ls, ll, la, lt  → eza (beautiful file listings)"
+echo "    cat             → bat (syntax highlighting)"
+echo "    find            → fd (faster, simpler)"
+echo "    grep            → rg (ripgrep)"
+echo "    tree            → eza --tree"
 echo ""
-echo "  Try these commands:"
-echo "    btm               # System monitor"
-echo "    gdu               # Interactive disk usage"
-echo "    gping google.com  # Ping with graph"
-echo "    lazygit           # Git TUI"
-echo "    erdtree           # File tree with sizes"
-echo "    yazi              # File manager"
-echo "    z <dir>           # Jump to recent directory"
+echo "  Navigation:"
+echo "    z <keyword>     → Jump to frequent directories"
+echo "    Ctrl+R          → Fuzzy history search (fzf)"
 echo ""
-echo -e "${RED}Troubleshooting Error 127:${NC}"
-echo "  1. Check Claude wrapper exists:"
-echo "     $ cat ~/.npm-global/bin/claude"
+echo "  System Monitoring:"
+echo "    top/htop        → btm (bottom)"
+echo "    ps              → procs"
+echo "    du              → dust"
+echo "    df              → dua"
+echo "    ping            → gping (with graphs!)"
 echo ""
-echo "  2. Test wrapper directly:"
-echo "     $ ~/.npm-global/bin/claude --version"
+echo "  Git:"
+echo "    git diff        → Uses delta (side-by-side)"
+echo "    lg              → lazygit (TUI)"
+echo "    gh              → GitHub CLI"
 echo ""
-echo "  3. Check PATH in VSCodium terminal:"
-echo "     Open VSCodium → Terminal → New Terminal"
-echo "     $ echo \$PATH  # Should include ~/.npm-global/bin"
-echo "     $ which claude"
+echo "  Utilities:"
+echo "    help <cmd>      → tldr (quick help)"
+echo "    yazi            → File manager TUI"
+echo "    hyperfine       → Benchmark commands"
+echo "    tokei           → Code statistics"
 echo ""
-echo "  4. Check VSCodium logs:"
-echo "     Help → Toggle Developer Tools → Console tab"
-echo "     Look for 'Claude Code' errors"
+echo -e "${BLUE}Configuration Management:${NC}"
 echo ""
-echo "  5. Restart VSCodium completely:"
-echo "     $ killall codium"
-echo "     $ codium-wrapped"
+echo "  Edit your configuration:"
+echo "    $ nvim ~/.config/home-manager/home.nix"
 echo ""
-echo "Current user profile generation:"
-nix-env --list-generations | tail -n 1
+echo "  Apply changes:"
+echo "    $ home-manager switch"
 echo ""
-echo -e "${GREEN}Setup complete! Enjoy your NixOS dev environment! 🚀${NC}"
+echo "  Update all packages:"
+echo "    $ home-manager switch --update"
+echo ""
+echo -e "${GREEN}All console tools are properly initialized!${NC}"
+echo -e "${GREEN}Start using them immediately after: exec zsh${NC}"
+echo ""
+echo -e "${YELLOW}Pro tip: All aliases and tools are configured via home-manager${NC}"
+echo -e "${YELLOW}This means they'll work correctly and persist across updates!${NC}"
+echo ""
+echo "🚀 Happy coding with Claude!"
 echo ""
