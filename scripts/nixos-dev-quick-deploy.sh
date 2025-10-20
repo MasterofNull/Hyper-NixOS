@@ -18,6 +18,9 @@
 ################################################################################
 # NixOS Development Environment Setup with VSCodium Extensions
 # FIXED: Error 127 - Uses explicit Node.js wrapper for Claude Code
+#!/usr/bin/env bash
+# NixOS Development Environment Setup with VSCodium Extensions
+# FIXED: Error 127 - Uses explicit Node.js wrapper for Claude Code
 # Run with: bash deploy-nixos.sh (no sudo needed for user env)
 
 set -e  # Exit on error
