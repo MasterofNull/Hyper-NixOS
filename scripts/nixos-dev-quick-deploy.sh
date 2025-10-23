@@ -123,7 +123,9 @@ nix-env -iA \
     nixpkgs.cargo \
     nixpkgs.podman \
     nixpkgs.openssl \
-    nixpkgs.qemu
+    nixpkgs.qemu \
+    nixpkgs.sqlite \
+    nixpkgs.virtiofsd
     
 
 echo -e "${GREEN}✓ Development packages installed to user profile${NC}"
