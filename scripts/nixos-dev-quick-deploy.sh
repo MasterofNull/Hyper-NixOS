@@ -120,7 +120,11 @@ nix-env -iA \
     nixpkgs.python3 \
     nixpkgs.go \
     nixpkgs.rustc \
-    nixpkgs.cargo
+    nixpkgs.cargo \
+    nixpkgs.podman \
+    nixpkgs.openssl \
+    nixpkgs.docker_28 
+    
 
 echo -e "${GREEN}✓ Development packages installed to user profile${NC}"
 echo ""
