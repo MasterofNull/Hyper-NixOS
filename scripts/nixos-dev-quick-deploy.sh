@@ -123,7 +123,7 @@ nix-env -iA \
     nixpkgs.cargo \
     nixpkgs.podman \
     nixpkgs.openssl \
-    nixpkgs.docker_28 
+    nixpkgs.qemu
     
 
 echo -e "${GREEN}✓ Development packages installed to user profile${NC}"
