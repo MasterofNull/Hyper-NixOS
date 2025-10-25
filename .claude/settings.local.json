@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x /home/hyperd/Documents/Hyper-NixOS/scripts/switch-channel.sh)",
+      "Bash(nix flake update --extra-experimental-features \"nix-command flakes\")",
+      "Bash(sudo nixos-rebuild dry-build --flake .)",
+      "Bash(git add -A)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: Revert hardware.graphics to hardware.opengl for NixOS 25.05\n\nNixOS 25.05 reverted back to using hardware.opengl API (same as 24.05).\nThe hardware.graphics API was only used in NixOS 24.11.\n\n## Changes Made\n\n### Module Fixes (3 files)\n- modules/core/boot.nix: hardware.graphics → hardware.opengl\n- modules/hardware/platform-detection.nix: hardware.graphics → hardware.opengl\n  - Also updated enable32Bit → driSupport32Bit\n  - Added driSupport = true\n- modules/hardware/desktop.nix: hardware.graphics → hardware.opengl\n  - Also updated enable32Bit → driSupport32Bit\n  - Added driSupport = true\n\n### Documentation Updates\n- docs/COMMON_ISSUES_AND_SOLUTIONS.md: Updated API compatibility table\n  - Shows 24.05 (opengl) → 24.11 (graphics) → 25.05 (opengl)\n- docs/dev/PROJECT_DEVELOPMENT_HISTORY.md: Noted the correction\n\n## Error Fixed\n```\nerror: The option `hardware.graphics'' does not exist.\n```\n\n## API Clarification\n| Version | Hardware API |\n|---------|--------------|\n| 24.05   | hardware.opengl |\n| 24.11   | hardware.graphics |\n| 25.05   | hardware.opengl (reverted) |\n\nThis aligns with NixOS 25.05''s actual implementation.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Read(//etc/hypervisor/**)",
+      "Read(//etc/nixos/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
