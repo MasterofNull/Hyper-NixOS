@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "ai-stack-harness": {
+      "command": "python3",
+      "args": [
+        "/opt/nixos-quick-deploy/scripts/ai/mcp-bridge-hybrid.py"
+      ],
+      "env": {
+        "HYBRID_URL": "http://127.0.0.1:8003",
+        "AIDB_URL": "http://127.0.0.1:8002",
+        "HYBRID_API_KEY_FILE": "/run/secrets/hybrid_coordinator_api_key",
+        "AIDB_API_KEY_FILE": "/run/secrets/aidb_api_key"
+      }
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Bash(aq-hints*)",
+      "Bash(aq-report*)",
+      "Bash(aq-qa*)",
+      "Bash(aqd*)",
+      "Bash(project-init*)",
+      "Bash(workflow-primer*)",
+      "Bash(workflow-brownfield*)",
+      "Bash(harness-rpc*)",
+      "Bash(git *)",
+      "Bash(curl -sf http://127.0.0.1:800*)"
+    ]
+  },
+  "hints": {
+    "enabled": true,
+    "endpoint": "http://127.0.0.1:8003/hints",
+    "autoFetch": true,
+    "minScore": 0.55
+  },
+  "progressiveDisclosure": {
+    "defaultLevel": "overview",
+    "escalateOnBlock": true
+  }
+}
