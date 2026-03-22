@@ -22,21 +22,28 @@ let
   # };
 
   # Go hypervisor-api: REST API server
-  # Requires: api/internal/* packages (not yet implemented)
-  # hypervisor-api = pkgs.buildGoModule {
-  #   pname = "hypervisor-api";
-  #   version = "2.0.0";
-  #   src = ../../api;
-  #   vendorHash = null;
-  #   meta.broken = true;
-  # };
+  # Internal packages now implemented - build enabled
+  hypervisor-api = pkgs.buildGoModule {
+    pname = "hypervisor-api";
+    version = "2.0.0";
+    src = ../../api;
+    vendorHash = null;  # Use Go module proxy
 
-  # Stub script for hypervisor-api until Go module is complete
-  hypervisor-api-stub = pkgs.writeShellScriptBin "hypervisor-api" ''
-    echo "Hypervisor API is not yet fully implemented."
-    echo "The internal packages are under development."
-    exit 1
-  '';
+    # CGO required for sqlite
+    CGO_ENABLED = 1;
+    nativeBuildInputs = [ pkgs.gcc ];
+    buildInputs = [ pkgs.sqlite ];
+
+    # Build tags
+    tags = [ "sqlite" ];
+
+    meta = {
+      description = "Hyper-NixOS REST API server";
+      homepage = "https://github.com/MasterofNull/Hyper-NixOS";
+      license = pkgs.lib.licenses.mit;
+      mainProgram = "api";
+    };
+  };
 
   # Configuration
   configFile = pkgs.writeText "hypervisor.toml" (builtins.readFile ../../config/hypervisor.toml);
@@ -109,7 +116,7 @@ in
       pkgs.hyperfine        # Benchmarking
 
       # Go tools
-      hypervisor-api-stub   # Stub until internal packages complete
+      hypervisor-api        # REST API server
       
       # Development tools
     pkgs.rustup
