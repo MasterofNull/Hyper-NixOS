@@ -17,12 +17,16 @@ private-ip/
 *~
 
 # Build artifacts
+target/
 tools/target/
 tools/*/target/
 .cache/
 *.o
 *.so
 *.a
+
+# Claude Code local settings (user-specific)
+.claude/settings.local.json
 
 # External reference repositories (not for distribution)
 external-repos/
