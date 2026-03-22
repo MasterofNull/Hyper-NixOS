@@ -79,3 +79,10 @@ docs(ai): align Hyper-NixOS workflow with live local harness
 
 ## Rollback
 - `git checkout .claude/ .agent/`
+
+## Completion Notes (2026-03-21)
+
+- AI harness issues resolved upstream (ai-gap-import.service, switchboard)
+- `aq-qa 0` now passes 36/36
+- CLAUDE.md enhanced with validation commands and harness endpoints
+- Authenticated endpoint patterns documented for future agents
