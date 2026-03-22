@@ -533,7 +533,16 @@ main() {
     
     if [ "$mode" = "disabled" ]; then
         echo -e "${YELLOW}IP management will be disabled.${NC}"
-        # TODO: Remove configuration
+        # Remove existing configuration
+        if [ -f "/etc/nixos/ip-spoof.nix" ]; then
+            echo -e "${CYAN}Removing IP spoofing configuration...${NC}"
+            rm -f "/etc/nixos/ip-spoof.nix"
+            # Remove import from configuration.nix
+            if grep -q "ip-spoof.nix" /etc/nixos/configuration.nix 2>/dev/null; then
+                sed -i '/ip-spoof\.nix/d' /etc/nixos/configuration.nix
+            fi
+            echo -e "${GREEN}Configuration removed. Run 'nixos-rebuild switch' to apply.${NC}"
+        fi
         exit 0
     fi
     

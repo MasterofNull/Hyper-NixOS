@@ -430,7 +430,17 @@ main() {
     
     if [ "$mode" = "disabled" ]; then
         echo -e "${YELLOW}MAC spoofing will be disabled.${NC}"
-        # TODO: Remove configuration
+        # Remove existing configuration
+        if [ -f "/etc/nixos/mac-spoof.nix" ]; then
+            echo -e "${CYAN}Removing MAC spoofing configuration...${NC}"
+            rm -f "/etc/nixos/mac-spoof.nix"
+            # Remove import from configuration.nix
+            if grep -q "mac-spoof.nix" /etc/nixos/configuration.nix 2>/dev/null; then
+                sed -i '/mac-spoof\.nix/d' /etc/nixos/configuration.nix
+            fi
+            echo -e "${GREEN}Configuration removed. Run 'nixos-rebuild switch' to apply.${NC}"
+        fi
+        [ -f "$CONFIG_FILE" ] && rm -f "$CONFIG_FILE"
         exit 0
     fi
     

@@ -55,7 +55,23 @@ in
         default = false;
         description = "Enable HashiCorp Vault for secrets management";
       };
-      
+
+      vaultSeal = mkOption {
+        type = types.enum [ "shamir" "transit" "awskms" "gcpckms" "azurekeyvault" ];
+        default = "shamir";
+        description = ''
+          Vault seal mechanism:
+          - shamir: Default Shamir's Secret Sharing (requires manual unseal)
+          - transit: Auto-unseal using another Vault's transit engine
+          - awskms: Auto-unseal using AWS KMS
+          - gcpckms: Auto-unseal using Google Cloud KMS
+          - azurekeyvault: Auto-unseal using Azure Key Vault
+
+          Note: Auto-unseal methods require additional configuration via
+          environment variables or external secret injection.
+        '';
+      };
+
       enableFIPS = mkOption {
         type = types.bool;
         default = false;
@@ -274,19 +290,45 @@ in
     services.vault = mkIf cfg.security.enableVault {
       enable = true;
       package = pkgs.vault-bin;
-      
+
       storageBackend = "file";
       storagePath = "/var/lib/vault";
-      
-      # Development mode for now
-      # TODO: Configure proper seal mechanism
+
+      # Seal mechanism is configured via vaultSeal option
+      # Shamir (default): No additional config needed, manual unseal required
+      # Auto-unseal: Requires environment variables for cloud provider credentials
       extraConfig = ''
         ui = true
-        
+
         listener "tcp" {
           address = "127.0.0.1:8200"
           tls_disable = 1
         }
+
+        ${if cfg.security.vaultSeal == "shamir" then ''
+          # Using default Shamir seal - manual unseal required after restart
+          # Run: vault operator init (first time) / vault operator unseal (restarts)
+        '' else if cfg.security.vaultSeal == "transit" then ''
+          seal "transit" {
+            address = "https://vault.example.com:8200"
+            # token and key_name provided via VAULT_TOKEN and transit mount
+          }
+        '' else if cfg.security.vaultSeal == "awskms" then ''
+          seal "awskms" {
+            # Requires AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
+            # kms_key_id provided via VAULT_AWSKMS_SEAL_KEY_ID
+          }
+        '' else if cfg.security.vaultSeal == "gcpckms" then ''
+          seal "gcpckms" {
+            # Requires GOOGLE_APPLICATION_CREDENTIALS
+            # project, region, key_ring, crypto_key provided via env vars
+          }
+        '' else if cfg.security.vaultSeal == "azurekeyvault" then ''
+          seal "azurekeyvault" {
+            # Requires AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+            # vault_name and key_name provided via env vars
+          }
+        '' else ""}
       '';
     };
     

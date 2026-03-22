@@ -45,25 +45,37 @@
             ];
           };
       in {
-        packages.iso = isoSystem.config.system.build.isoImage;
-        apps.system-installer = {
-          type = "app";
-          program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-system-installer" ''
-            # Ensure git is in PATH for flake operations
-            export PATH="${pkgs.git}/bin:$PATH"
-            exec ${pkgs.bash}/bin/bash ${./scripts/system_installer.sh} "$@"
-          '');
+        packages = {
+          iso = isoSystem.config.system.build.isoImage;
+          default = isoSystem.config.system.build.isoImage;
         };
-        apps.rebuild-helper = {
-          type = "app";
-          program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-rebuild" ''
-            # Ensure git is in PATH for flake operations
-            export PATH="${pkgs.git}/bin:$PATH"
-            exec ${pkgs.bash}/bin/bash ${./scripts/rebuild_helper.sh} "$@"
-          '');
+        apps = {
+          system-installer = {
+            type = "app";
+            program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-system-installer" ''
+              # Ensure git is in PATH for flake operations
+              export PATH="${pkgs.git}/bin:$PATH"
+              exec ${pkgs.bash}/bin/bash ${./scripts/system_installer.sh} "$@"
+            '');
+            meta = {
+              description = "Interactive system installer for Hyper-NixOS";
+              mainProgram = "hypervisor-system-installer";
+            };
+          };
+          rebuild-helper = {
+            type = "app";
+            program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-rebuild" ''
+              # Ensure git is in PATH for flake operations
+              export PATH="${pkgs.git}/bin:$PATH"
+              exec ${pkgs.bash}/bin/bash ${./scripts/rebuild_helper.sh} "$@"
+            '');
+            meta = {
+              description = "Helper script for rebuilding Hyper-NixOS configuration";
+              mainProgram = "hypervisor-rebuild";
+            };
+          };
+          default = self.apps.${system}.system-installer;
         };
-        defaultPackage = self.packages.${system}.iso;
-        defaultApp = self.apps.${system}.system-installer;
       }
     ) // {
       nixosConfigurations = {
