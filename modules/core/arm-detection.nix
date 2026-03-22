@@ -206,14 +206,14 @@ in {
       "vhost"
       "vhost-net"
       "vhost-vsock"
-    ] ++ optionals (cfg.virtualization.nestedVirtualization) [
+    ] ++ lib.optionals(cfg.virtualization.nestedVirtualization) [
       "kvm-arm"
     ];
 
     # ARM virtualization kernel parameters
     boot.kernelParams = [
       "kvm-arm.mode=protected"
-    ] ++ optionals (cfg.optimizations.enableCpuGovernor) [
+    ] ++ lib.optionals(cfg.optimizations.enableCpuGovernor) [
       "cpufreq.default_governor=performance"
     ];
 
@@ -247,7 +247,7 @@ in {
       virt-viewer
 
       # ARM-specific utilities
-    ] ++ optionals (cfg.platform == "rpi4" || cfg.platform == "rpi5") [
+    ] ++ lib.optionals(cfg.platform == "rpi4" || cfg.platform == "rpi5") [
       libraspberrypi
       raspberrypi-eeprom
     ];
@@ -425,11 +425,6 @@ in {
 
     # Platform-specific hardware enablement
     hardware = {
-      # Enable Raspberry Pi hardware
-      raspberry-pi = mkIf (elem cfg.platform ["rpi3" "rpi4" "rpi5"]) {
-        apply-overlays-dtmerge.enable = true;
-      };
-
       # Enable device tree overlays for ARM
       deviceTree = {
         enable = true;
@@ -437,7 +432,10 @@ in {
 
       # Enable firmware for ARM devices
       enableRedistributableFirmware = true;
-    };
+    }
+    # Note: hardware.raspberry-pi requires nixos-hardware flake input
+    # and is conditionally enabled only when that input is available
+    ;
 
     # Auto-detection on system activation
     system.activationScripts.detectArmPlatform = mkIf cfg.autoDetect ''

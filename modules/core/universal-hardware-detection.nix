@@ -12,28 +12,32 @@ with lib;
 
 let
   cfg = config.hypervisor.hardware;
+  platform = pkgs.stdenv.hostPlatform;
 
   # Universal hardware detection script
   hwDetectScript = "${pkgs.bash}/bin/bash ${./../../scripts/detect-cpu-vendor.sh}";
-
-  # Run detection at build time
-  hwInfo = builtins.fromJSON (builtins.readFile (
-    pkgs.runCommand "detect-hardware" {
-      preferLocalBuild = true;
-      allowSubstitutes = false;
-    } ''
-      ${hwDetectScript} json > $out
-    ''
-  ));
-
-  # Extract detected values
-  detectedArch = hwInfo.architecture or "unknown";
-  detectedVendor = hwInfo.vendor or "unknown";
-  detectedVirtCap = hwInfo.virtualization_capability or "none";
-  detectedIommuParam = hwInfo.iommu_param or "";
-  detectedVirtParams = hwInfo.virt_params or "";
-  detectedKvmModule = hwInfo.kvm_module or "";
-  detectedVirtModules = lib.splitString " " (hwInfo.virt_modules or "");
+  
+  # Keep evaluation deterministic. Runtime helpers can perform richer host
+  # probing, but flake/module evaluation should derive only from the declared
+  # host platform.
+  detectedArch =
+    if platform.isx86_64 then "x86_64"
+    else if platform.isAarch64 then "aarch64"
+    else if platform.isRiscV then "riscv64"
+    else platform.parsed.cpu.name or platform.system or "unknown";
+  detectedVendor =
+    if platform.isx86_64 then "x86_generic"
+    else if platform.isAarch64 then "arm_generic"
+    else if platform.isRiscV then "riscv_generic"
+    else "unknown";
+  detectedVirtCap = if platform.isLinux then "unknown" else "none";
+  detectedIommuParam = "";
+  detectedVirtParams = "";
+  detectedKvmModule =
+    if platform.isx86_64 then "kvm"
+    else if platform.isAarch64 then "kvm"
+    else "";
+  detectedVirtModules = [];
 
 in {
   options.hypervisor.hardware = {
@@ -142,7 +146,7 @@ in {
 
     # Warnings for unsupported/unknown hardware
     warnings =
-      optional (detectedVirtCap == "none") ''
+      lib.optional(detectedVirtCap == "none") ''
         Hardware virtualization not detected on this ${detectedArch} system.
         VMs will run in emulation mode (slow performance).
 
@@ -151,14 +155,14 @@ in {
         For RISC-V: Ensure hypervisor extension is available
       ''
       ++
-      optional (detectedArch == "unknown") ''
+      lib.optional(detectedArch == "unknown") ''
         CPU architecture could not be detected!
         System may not function correctly. Please report this issue.
 
         Output: uname -m = ${pkgs.stdenv.hostPlatform.system}
       ''
       ++
-      optional (detectedVendor == "unknown") ''
+      lib.optional(detectedVendor == "unknown") ''
         CPU vendor could not be identified on ${detectedArch}.
         Using generic fallback settings. Some features may not work optimally.
       '';

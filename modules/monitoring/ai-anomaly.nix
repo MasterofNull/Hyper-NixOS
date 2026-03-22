@@ -663,7 +663,7 @@ in
           
           echo "Training AI models..."
           
-          ${concatStringsSep "\n" (mapAttrsToList (name: model: ''
+          ${concatStringsSep "\n" (lib.mapAttrsToList(name: model: ''
             echo "Training model: ${name} (${model.type})"
             
             # Train based on model type
@@ -740,7 +740,7 @@ in
         case "$1" in
           models)
             echo "AI Models:"
-            ${concatStringsSep "\n" (mapAttrsToList (name: model: ''
+            ${concatStringsSep "\n" (lib.mapAttrsToList(name: model: ''
               echo "  ${name}:"
               echo "    Type: ${model.type}"
               echo "    Features: ${concatStringsSep ", " model.training.features}"

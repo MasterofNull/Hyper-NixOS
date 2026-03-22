@@ -352,8 +352,9 @@
     # Virtualization tools
     virt-manager
     virt-viewer
-    libguestfs-with-appliance
-    
+  ] ++ lib.optionals stdenv.hostPlatform.isx86_64 [
+    libguestfs-with-appliance  # x86_64 only
+  ] ++ [
     # System tools
     vim
     git
@@ -370,7 +371,6 @@
     
     # Security tools
     aide
-    rkhunter
     
     # Monitoring tools
     prometheus
@@ -558,24 +558,18 @@ EOF
       killUnconfinedConfinables = false;
     };
     
-    # Kernel hardening
-    kernel.sysctl = {
-      # Network hardening
-      "net.ipv4.conf.all.log_martians" = 1;
-      "net.ipv4.conf.default.log_martians" = 1;
-      "net.ipv4.icmp_echo_ignore_broadcasts" = 1;
-      "net.ipv4.conf.all.accept_source_route" = 0;
-      "net.ipv6.conf.all.accept_source_route" = 0;
-      
-      # VM performance
-      "vm.swappiness" = 10;
-      "vm.dirty_ratio" = 10;
-      "vm.dirty_background_ratio" = 5;
-      
-      # File limits
-      "fs.file-max" = 2097152;
-      "fs.inotify.max_user_watches" = 524288;
-    };
+  };
+
+  # Kernel sysctl tuning (base settings only - modules provide specialized tunables)
+  boot.kernel.sysctl = {
+    # Network hardening (security base - not overridden by modules)
+    "net.ipv4.conf.all.log_martians" = 1;
+    "net.ipv4.conf.default.log_martians" = 1;
+    "net.ipv4.icmp_echo_ignore_broadcasts" = 1;
+    "net.ipv4.conf.all.accept_source_route" = 0;
+    "net.ipv6.conf.all.accept_source_route" = 0;
+    # Note: VM performance and file limit sysctls are owned by
+    # modules/hardware/{server,desktop}.nix and modules/core/optimized-system.nix
   };
 }
 

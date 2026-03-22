@@ -28,12 +28,24 @@
       let pkgs = import nixpkgs {
             inherit system;
             # Allow unfree if user enables; keeps default permissive off
-            config = { allowUnfree = false; }; 
+            config = { allowUnfree = false; };
+          };
+          # Build ISO using nixosSystem for proper module evaluation
+          isoSystem = nixpkgs.lib.nixosSystem {
+            inherit system;
+            modules = [
+              ./configuration.nix
+              # ISO-specific configuration
+              ({ config, pkgs, lib, modulesPath, ... }: {
+                imports = [ (modulesPath + "/installer/cd-dvd/installation-cd-minimal.nix") ];
+                # Ensure the ISO is bootable
+                isoImage.makeEfiBootable = true;
+                isoImage.makeUsbBootable = true;
+              })
+            ];
           };
       in {
-        packages.iso = pkgs.nixos ({ config, pkgs, ... }: {
-          imports = [ ./configuration.nix ];
-        }).config.system.build.isoImage;
+        packages.iso = isoSystem.config.system.build.isoImage;
         apps.system-installer = {
           type = "app";
           program = lib.getExe (pkgs.writeShellScriptBin "hypervisor-system-installer" ''
@@ -55,13 +67,35 @@
       }
     ) // {
       nixosConfigurations = {
+        # Template configurations for flake check validation
+        # Replace with actual hardware-configuration.nix when deploying
         hypervisor-x86_64 = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          modules = [ ./configuration.nix ];
+          modules = [
+            ./configuration.nix
+            # Placeholder filesystem for template validation
+            ({ lib, ... }: {
+              fileSystems."/" = lib.mkDefault {
+                device = "/dev/disk/by-label/nixos";
+                fsType = "ext4";
+              };
+              boot.loader.grub.device = lib.mkDefault "/dev/sda";
+            })
+          ];
         };
         hypervisor-aarch64 = nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
-          modules = [ ./configuration.nix ];
+          modules = [
+            ./configuration.nix
+            # Placeholder filesystem for template validation
+            ({ lib, ... }: {
+              fileSystems."/" = lib.mkDefault {
+                device = "/dev/disk/by-label/nixos";
+                fsType = "ext4";
+              };
+              boot.loader.grub.device = lib.mkDefault "/dev/sda";
+            })
+          ];
         };
       };
     };

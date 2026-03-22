@@ -531,7 +531,7 @@ in
           echo "Global dedup: ${toString cfg.fabric.globalDedup.enabled}"
           
           # Initialize repositories
-          ${concatStringsSep "\n" (mapAttrsToList (name: repo: ''
+          ${concatStringsSep "\n" (lib.mapAttrsToList(name: repo: ''
             echo "Initializing repository: ${name}"
             mkdir -p ${repo.backend.location}/{data,index,metadata}
           '') cfg.repositories)}
@@ -575,7 +575,7 @@ in
         case "$1" in
           repos)
             echo "Backup Repositories:"
-            ${concatStringsSep "\n" (mapAttrsToList (name: repo: ''
+            ${concatStringsSep "\n" (lib.mapAttrsToList(name: repo: ''
               echo "  ${name}:"
               echo "    Type: ${repo.type}"
               echo "    Location: ${repo.backend.location}"
@@ -585,7 +585,7 @@ in
             
           sources)
             echo "Backup Sources:"
-            ${concatStringsSep "\n" (mapAttrsToList (name: source: ''
+            ${concatStringsSep "\n" (lib.mapAttrsToList(name: source: ''
               echo "  ${name}:"
               echo "    Type: ${source.type}"
               echo "    Strategy: ${source.strategy.mode}"

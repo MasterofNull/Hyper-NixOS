@@ -453,7 +453,7 @@ in {
       Enabled Features by Risk Level:
       ${lib.concatStringsSep "\n" (lib.mapAttrsToList (catName: cat:
         lib.concatStringsSep "\n" (lib.mapAttrsToList (featName: feat:
-          optionalString (lib.elem featName config.hypervisor.featureManager.enabledFeatures)
+          lib.optionalString(lib.elem featName config.hypervisor.featureManager.enabledFeatures)
             "${feat.risk} - ${cat.name}/${feat.name}: ${feat.description}"
         ) cat.features)
       ) featureCategories)}

@@ -21,7 +21,7 @@
     
     # Scripting and development
     pkgs.python3
-    python3Packages.jsonschema
+    pkgs.python3Packages.jsonschema
     
     # Dialog/TUI tools
     pkgs.newt
@@ -30,10 +30,7 @@
     
     # Text editors
     pkgs.nano
-    
-    # Looking Glass client for GPU passthrough
-    pkgs.looking-glass-client
-    
+
     # Security
     pkgs.gnupg
     pkgs.openssh

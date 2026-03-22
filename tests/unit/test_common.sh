@@ -43,12 +43,32 @@ mkdir -p "$HYPERVISOR_LOGS" "$HYPERVISOR_DATA" "$HYPERVISOR_CONFIG"
 export LOG_FILE="$HYPERVISOR_LOGS/script.log"
 touch "$LOG_FILE"
 
-# Filter out the require line from common.sh and source it
-# Note: Using a different pattern to avoid CI detection of virsh keyword
-sed '/^require jq.*$/d' "$SCRIPTS_DIR/lib/common.sh" > "$TEST_TEMP_DIR/common_filtered.sh"
+# Create a test-safe copy of common.sh so repo-local paths can override the
+# installed defaults during unit execution.
+cp "$SCRIPTS_DIR/lib/common.sh" "$TEST_TEMP_DIR/common_filtered.sh"
+sed -i '/^require jq.*$/d' "$TEST_TEMP_DIR/common_filtered.sh"
+sed -i '/^load_config$/d' "$TEST_TEMP_DIR/common_filtered.sh"
+sed -i 's/^readonly HYPERVISOR_ROOT=/HYPERVISOR_ROOT=/g' "$TEST_TEMP_DIR/common_filtered.sh"
+sed -i 's/^readonly HYPERVISOR_STATE=/HYPERVISOR_STATE=/g' "$TEST_TEMP_DIR/common_filtered.sh"
+sed -i 's/^readonly HYPERVISOR_SCRIPTS=/HYPERVISOR_SCRIPTS=/g' "$TEST_TEMP_DIR/common_filtered.sh"
+sed -i 's/^readonly HYPERVISOR_CONFIG=/HYPERVISOR_CONFIG=/g' "$TEST_TEMP_DIR/common_filtered.sh"
+sed -i 's/^readonly HYPERVISOR_PROFILES=/HYPERVISOR_PROFILES=/g' "$TEST_TEMP_DIR/common_filtered.sh"
+sed -i 's/^readonly HYPERVISOR_ISOS=/HYPERVISOR_ISOS=/g' "$TEST_TEMP_DIR/common_filtered.sh"
+sed -i 's/^readonly HYPERVISOR_DISKS=/HYPERVISOR_DISKS=/g' "$TEST_TEMP_DIR/common_filtered.sh"
+sed -i 's/^readonly HYPERVISOR_LOGS=/HYPERVISOR_LOGS=/g' "$TEST_TEMP_DIR/common_filtered.sh"
 
-# Source the filtered common.sh
 source "$TEST_TEMP_DIR/common_filtered.sh"
+
+export HYPERVISOR_LOGS="$TEST_TEMP_DIR/logs"
+export HYPERVISOR_DATA="$TEST_TEMP_DIR/data"
+export HYPERVISOR_CONFIG="$TEST_TEMP_DIR/config"
+export HYPERVISOR_STATE="$TEST_TEMP_DIR"
+export HYPERVISOR_ROOT="$TEST_TEMP_DIR"
+
+# common.sh enables strict mode, but this unit suite intentionally exercises
+# failure paths and assertion helpers that inspect non-zero exits.
+set +e
+
 source "$SCRIPTS_DIR/lib/exit_codes.sh"
 
 # Add mock VM command if needed in CI (avoiding v-word for CI detection)
@@ -91,19 +111,19 @@ test_validate_vm_name() {
 test_validate_vm_name_invalid() {
     test "validate_vm_name with invalid names"
     
-    validate_vm_name "vm with spaces" || true
+    validate_vm_name "vm with spaces"
     assert_failure "Should reject names with spaces"
     
-    validate_vm_name "../evil" || true
+    validate_vm_name "../evil"
     assert_failure "Should reject path traversal attempts"
     
-    validate_vm_name "/absolute/path" || true
+    validate_vm_name "/absolute/path"
     assert_failure "Should reject absolute paths"
     
-    validate_vm_name "vm@special" || true
+    validate_vm_name "vm@special"
     assert_failure "Should reject special characters"
     
-    validate_vm_name "" || true
+    validate_vm_name ""
     assert_failure "Should reject empty names"
 }
 
@@ -124,10 +144,10 @@ test_validate_path() {
 test_validate_path_invalid() {
     test "validate_path with invalid paths"
     
-    validate_path "/tmp/../etc/passwd" || true
+    validate_path "/tmp/../etc/passwd"
     assert_failure "Should reject path traversal"
     
-    validate_path "/outside/path" "/restricted" || true
+    validate_path "/outside/path" "/restricted"
     assert_failure "Should reject paths outside base directory"
 }
 
@@ -223,7 +243,7 @@ test_require() {
     assert_success "Should succeed for existing commands"
     
     # Test with non-existent command
-    require nonexistent_command_xyz 2>/dev/null || true
+    (require nonexistent_command_xyz 2>/dev/null)
     assert_failure "Should fail for missing commands"
 }
 

@@ -4,7 +4,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types optionalString;
   cfg = config.hypervisor.documentation;
   
   # Documentation profiles
@@ -195,7 +195,7 @@ let
         
       quick-start)
         if [[ "$EXPERIENCE" == "beginner" ]]; then
-          "${pkgs.bash}/bin/bash" "${helpSystem}/bin/hv-interactive-tutorial" quick-start
+          "${pkgs.bash}/bin/bash" "${interactiveTutorial}/bin/hv-interactive-tutorial" quick-start
         else
           cat /etc/hypervisor/docs/quick-start-guide.md
         fi
@@ -310,7 +310,7 @@ in {
         #!${pkgs.bash}/bin/bash
         
         # Show context-sensitive hints in prompt
-        if [[ "${cfg.enableHints}" == "true" ]]; then
+        if [[ "${toString cfg.enableHints}" == "true" ]]; then
           LAST_CMD=$(history 1 | sed 's/^[ ]*[0-9]*[ ]*//')
           
           case "$LAST_CMD" in
@@ -330,9 +330,12 @@ in {
       mkdir -p /etc/hypervisor/docs/{beginner,intermediate,expert}
       
       # Generate docs for each verbosity level
-      ${lib.concatStringsSep "\n" (lib.mapAttrsToList (level: settings: ''
+      ${lib.concatStringsSep "\n" (lib.mapAttrsToList (level: settings:
+        let
+          docVerbosity = settings.verbosity or cfg.verbosity or "medium";
+        in ''
         cat > /etc/hypervisor/docs/${level}/vm-quick-start.md <<'EOF'
-        ${if settings.verbosity == "high" then ''
+        ${if docVerbosity == "high" then ''
           # Virtual Machine Quick Start Guide
           
           Welcome to Hyper-NixOS! This guide will help you get started with
@@ -462,7 +465,7 @@ in {
           - Interactive tutorial: `hv-tutorial`
           - Full documentation: `hv-docs`
           - Community forum: https://hyper-nixos.org/forum
-        '' else if settings.verbosity == "medium" then ''
+        '' else if docVerbosity == "medium" then ''
           # VM Quick Start
           
           ## Prerequisites

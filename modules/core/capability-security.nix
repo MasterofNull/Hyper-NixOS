@@ -648,7 +648,7 @@ in
         case "$1" in
           list)
             echo "Available Capabilities:"
-            ${concatStringsSep "\n" (mapAttrsToList (name: cap: ''
+            ${concatStringsSep "\n" (lib.mapAttrsToList(name: cap: ''
               echo "  ${name}: ${cap.description}"
             '') cfg.capabilities)}
             ;;

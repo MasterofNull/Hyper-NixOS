@@ -157,9 +157,9 @@ in {
         notify_on_approach=${if cfg.enforcement.notifyOnApproach then "true" else "false"}
         admin_override=${if cfg.enforcement.adminOverride then "true" else "false"}
 
-        ${optionalString (cfg.perUser.userExceptions != {}) ''
+        ${lib.optionalString(cfg.perUser.userExceptions != {}) ''
         [user_exceptions]
-        ${concatStringsSep "\n" (mapAttrsToList (user: limit: "${user}=${toString limit}") cfg.perUser.userExceptions)}
+        ${concatStringsSep "\n" (lib.mapAttrsToList(user: limit: "${user}=${toString limit}") cfg.perUser.userExceptions)}
         ''}
       '';
       mode = "0644";

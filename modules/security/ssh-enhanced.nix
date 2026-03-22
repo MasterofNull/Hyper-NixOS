@@ -65,7 +65,7 @@ let
         echo "SSH Login: $USER from $CLIENT_IP" | ${pkgs.systemd}/bin/systemd-cat -t ssh-login -p warning
         
         # Webhook notification if configured
-        ${optionalString (cfg.webhookUrl != null) ''
+        ${lib.optionalString(cfg.webhookUrl != null) ''
         ${pkgs.curl}/bin/curl -X POST \
             -H "Content-Type: application/json" \
             -d "{\"text\":\"SSH Login: $USER from $CLIENT_IP\", \"timestamp\":\"$TIMESTAMP\"}" \

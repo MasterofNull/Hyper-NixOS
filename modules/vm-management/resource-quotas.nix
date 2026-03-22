@@ -5,15 +5,9 @@
 # Prevents resource exhaustion and ensures fair sharing
 
 {
-  # Systemd resource control (cgroups v2)
-  systemd.enableUnifiedCgroupHierarchy = true;
-  
   # libvirt with resource quota support
   virtualisation.libvirtd = {
     qemu = {
-      # Enable cgroup resource management
-      package = pkgs.qemu_kvm;
-      
       # Security
       runAsRoot = false;
       

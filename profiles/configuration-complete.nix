@@ -108,8 +108,9 @@
     # Virtualization tools
     virt-manager
     virt-viewer
-    libguestfs
-    
+  ] ++ lib.optionals stdenv.hostPlatform.isx86_64 [
+    libguestfs  # x86_64 only
+  ] ++ [
     # System tools
     htop
     iotop

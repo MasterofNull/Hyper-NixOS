@@ -110,8 +110,6 @@ lib.mkMerge [
     ForwardToSyslog=yes
   '';
 
-  }
-
   # ═══════════════════════════════════════════════════════════════
   # Sudo Configuration
   # ═══════════════════════════════════════════════════════════════
@@ -146,8 +144,10 @@ lib.mkMerge [
   (lib.mkIf (config.security ? apparmor) {
     security.apparmor = {
       enable = true;
+      killUnconfinedConfinables = lib.mkDefault false;
+      packages = lib.mkDefault [];
       policies."qemu-system-x86_64".profile = builtins.readFile ../apparmor/qemu-system-x86_64;
     };
-    boot.kernelParams = [ "apparmor=1" "security=apparmor" ];
+    security.lsm = [ "apparmor" ];
   })
 ]

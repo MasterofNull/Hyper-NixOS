@@ -4,7 +4,7 @@
 # Ensures system can run on various platforms and architectures
 
 let
-  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types optionals elemAt concatStringsSep mapAttrsToList optionalString all init;
   cfg = config.hypervisor.portable;
   
   # Platform detection
@@ -66,7 +66,7 @@ let
     pkgs.qemu
     pkgs.libvirt
     pkgs.virt-viewer
-  ] ++ optionals (platform.isLinux && platform.isx86_64) [
+  ] ++ lib.optionals(platform.isLinux && platform.isx86_64) [
     # x86_64 Linux specific
     pkgs.dmidecode
     pkgs.pciutils
@@ -242,12 +242,11 @@ in
     virtualisation.containers = mkIf platform.isLinux {
       enable = true;
       registries.search = [ "docker.io" "quay.io" ];
-      
-      # Enable foreign architecture support
-      binfmt = mkIf cfg.enableCrossCompilation {
-        enable = true;
-        emulatedSystems = cfg.supportedArchitectures;
-      };
+    };
+
+    # Enable foreign-architecture binary execution for cross-compilation hosts.
+    boot.binfmt = mkIf (platform.isLinux && cfg.enableCrossCompilation) {
+      emulatedSystems = cfg.supportedArchitectures;
     };
     
     # Portable systemd services
@@ -277,7 +276,7 @@ in
                 else "generic";
           archConfig = archOptimizations.${arch}.kernelConfig or {};
         in ''
-          ${concatStringsSep "\n" (mapAttrsToList (k: v: "${k} ${v}") archConfig)}
+          ${concatStringsSep "\n" (lib.mapAttrsToList(k: v: "${k} ${v}") archConfig)}
           
           # Universal options
           IKCONFIG y
@@ -285,7 +284,7 @@ in
           MAGIC_SYSRQ y
           
           # Virtualization support (if available)
-          ${optionalString (isX86_64 || isAarch64) ''
+          ${lib.optionalString(isX86_64 || isAarch64) ''
             VIRTUALIZATION y
             KVM y
             ${optionalString isX86_64 "KVM_INTEL m"}

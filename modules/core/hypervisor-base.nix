@@ -12,7 +12,7 @@
       onShutdown = "shutdown";
       
       qemu = {
-        package = pkgs.qemu_kvm;
+        package = lib.mkDefault pkgs.qemu_kvm;
         runAsRoot = false;
         swtpm.enable = true;
         ovmf = {
@@ -83,7 +83,6 @@
       "net.bridge.bridge-nf-call-iptables" = 1;
       "net.bridge.bridge-nf-call-ip6tables" = 1;
       "net.ipv4.ip_forward" = 1;
-      "vm.swappiness" = 10;
     };
     
     # Enable nested virtualization

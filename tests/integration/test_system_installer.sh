@@ -51,6 +51,30 @@ if ! command -v nixos-rebuild &>/dev/null; then
   exit 0
 fi
 
+# Repo checkout mode: validate source layout when the system payload has not
+# been installed under /etc/hypervisor yet.
+if [[ ! -d /etc/hypervisor/src ]]; then
+  test_case "Repo installer script exists"
+  if assert_file_exists "$SCRIPT_DIR/../../scripts/system_installer.sh"; then
+    test_pass "Repository installer script exists"
+  else
+    test_fail "Repository installer script missing"
+  fi
+
+  test_case "Repo installer configuration exists"
+  if assert_file_exists "$SCRIPT_DIR/../../configuration.nix" &&
+     assert_file_exists "$SCRIPT_DIR/../../hardware-configuration.nix" &&
+     assert_file_exists "$SCRIPT_DIR/../../modules/security/profiles.nix"; then
+    test_pass "Repository configuration files exist"
+  else
+    test_fail "Repository configuration files incomplete"
+  fi
+
+  test_info "Installed /etc/hypervisor payload not present; skipping deployed-system assertions"
+  test_suite_end
+  exit 0
+fi
+
 test_case "Bootstrap script exists and is executable"
 assert_file_exists "/etc/hypervisor/scripts/system_installer.sh"
 

@@ -14,7 +14,9 @@ let
   cfg = config.hypervisor.hibernation;
 
   # Detect if system has a desktop environment
-  hasDesktop = config.services.xserver.enable || config.programs.wayland.enable;
+  hasDesktop =
+    config.services.xserver.enable ||
+    ((config.programs ? wayland) && (config.programs.wayland ? enable) && config.programs.wayland.enable);
 
   # Detect if any users have passwords set
   usersWithPasswords = lib.filter (user:
@@ -23,6 +25,11 @@ let
   ) (attrValues config.users.users);
 
   hasAnyPasswords = length usersWithPasswords > 0;
+  shouldRequirePassword =
+    if cfg.requirePassword == "always" then true
+    else if cfg.requirePassword == "never" then false
+    else if cfg.requirePassword == "desktop-only" then hasDesktop
+    else hasAnyPasswords;
 
   # Intelligent swap detection script
   swapDetectionScript = pkgs.writeShellScript "detect-swap" ''
@@ -66,6 +73,12 @@ let
       echo "none"  # No swap at all
     fi
   '';
+
+  resumeSwapDevice =
+    let
+      swapWithDevice = lib.findFirst (swap: swap ? device && swap.device != null) null config.swapDevices;
+    in
+      if swapWithDevice == null then null else swapWithDevice.device;
 
 in {
   options.hypervisor.hibernation = {
@@ -134,16 +147,7 @@ in {
 
   config = mkIf cfg.enable {
     # Intelligent swap detection and configuration
-    boot.resumeDevice = mkIf cfg.autoDetectSwap (
-      let
-        swapDeviceDetection = pkgs.runCommand "detect-resume-device" {} ''
-          RESUME_DEV=$(${swapDetectionScript})
-          echo -n "$RESUME_DEV" > $out
-        '';
-        detectedSwap = builtins.readFile swapDeviceDetection;
-      in
-        mkIf (detectedSwap != "none") detectedSwap
-    );
+    boot.resumeDevice = mkIf (cfg.autoDetectSwap && resumeSwapDevice != null) (mkDefault resumeSwapDevice);
 
     # Hibernation kernel parameters
     boot.kernelParams = mkIf cfg.autoDetectSwap [
@@ -177,28 +181,7 @@ in {
     };
 
     # Context-aware authentication on resume
-    security.pam.services = let
-      # Determine if we should require password
-      shouldRequirePassword =
-        if cfg.requirePassword == "always" then true
-        else if cfg.requirePassword == "never" then false
-        else if cfg.requirePassword == "desktop-only" then hasDesktop
-        else hasAnyPasswords;  # auto mode
-
-      # PAM configuration for resume
-      resumeAuth = {
-        unixAuth = shouldRequirePassword;
-        allowNullPassword = !shouldRequirePassword;
-
-        # If preventing lockouts and no passwords, allow without auth
-        text = mkIf (cfg.preventUserLockout && !hasAnyPasswords) ''
-          # Allow resume without password if no users have passwords
-          # This prevents lockouts on headless systems
-          auth sufficient pam_permit.so
-        '';
-      };
-
-    in {
+    security.pam.services = {
       # Suspend/hibernate resume authentication
       systemd-user.text = mkIf (!shouldRequirePassword) ''
         # Headless/passwordless resume - no authentication required
@@ -225,10 +208,10 @@ in {
       cfg.preventUserLockout &&
       !hasDesktop &&
       !hasAnyPasswords &&
-      length (attrValues config.users.users) == 2  # root + 1 user
+      lib.length(attrValues config.users.users) == 2  # root + 1 user
     ) (
       # Find the non-root user
-      head (filter (u: u != "root") (attrNames config.users.users))
+      lib.head(filter (u: u != "root") (attrNames config.users.users))
     );
 
     # Systemd sleep configuration
@@ -245,12 +228,12 @@ in {
 
     # Warnings for admins
     warnings =
-      optional (cfg.requirePassword == "never" && hasAnyPasswords) ''
+      lib.optional(cfg.requirePassword == "never" && hasAnyPasswords) ''
         Hibernation password requirement is disabled but users have passwords set.
         This may be a security risk. Consider setting requirePassword = "auto".
       ''
       ++
-      optional (!cfg.preventUserLockout && !hasAnyPasswords) ''
+      lib.optional(!cfg.preventUserLockout && !hasAnyPasswords) ''
         User lockout prevention is disabled and no users have passwords.
         Users may be locked out after resume. Enable preventUserLockout.
       '';

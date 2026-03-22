@@ -231,11 +231,10 @@
       nvidiaSettings = true;
     };
 
-    # Graphics support (NixOS 25.05 uses hardware.opengl)
-    hardware.opengl = {
+    # Graphics support
+    hardware.graphics = {
       enable = true;
-      driSupport = true;
-      driSupport32Bit = true;  # For 32-bit games/applications
+      enable32Bit = true;  # For 32-bit games/applications
       extraPackages = with pkgs; [
         vaapiVdpau
         libvdpau-va-gl
@@ -360,8 +359,8 @@
       usbutils
       lm_sensors
       hwinfo
-    ] ++ lib.optionals cfg.gpu.passthrough.enable [
-      looking-glass-client
+    ] ++ lib.optionals (cfg.gpu.passthrough.enable && pkgs.stdenv.hostPlatform.isx86_64) [
+      looking-glass-client  # x86_64 only
     ] ++ lib.optionals cfg.gaming.screamAudio [
       scream
     ] ++ lib.optionals cfg.display.multiMonitor.enable [
@@ -381,7 +380,7 @@
       "net.core.netdev_max_backlog" = 16384;
       "net.ipv4.tcp_fastopen" = 3;
       "net.ipv4.tcp_mtu_probing" = 1;
-    } // optionalAttrs cfg.gaming.enable {
+    } // lib.optionalAttrs cfg.gaming.enable {
       # Gaming-specific optimizations
       "kernel.sched_latency_ns" = 4000000;
       "kernel.sched_min_granularity_ns" = 500000;

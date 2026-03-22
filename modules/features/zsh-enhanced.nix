@@ -122,10 +122,10 @@ in {
       histSize = cfg.historySize;
       histFile = mkDefault "$HOME/.zsh_history";
 
-      # Interactive shell init (runs for all users)
+      # Interactive shell lib.init(runs for all users)
       interactiveShellInit = ''
         # Powerlevel10k instant prompt
-        ${optionalString (cfg.powerlevel10k.enable && cfg.powerlevel10k.instantPrompt) ''
+        ${lib.optionalString(cfg.powerlevel10k.enable && cfg.powerlevel10k.instantPrompt) ''
           # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
           # Initialization code that may require console input (password prompts, [y/n]
           # confirmations, etc.) must go above this block; everything else may go below.
@@ -211,7 +211,7 @@ in {
         ''}
       '';
 
-      # Prompt init (for non-powerlevel10k setups)
+      # Prompt lib.init(for non-powerlevel10k setups)
       promptInit = mkIf (!cfg.powerlevel10k.enable) ''
         autoload -U promptinit && promptinit
         prompt fade blue

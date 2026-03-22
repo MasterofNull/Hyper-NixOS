@@ -86,12 +86,23 @@ test_fail() {
 
 test_warn() {
   local message="${1:-}"
-  ((TEST_WARNED++))
+  TEST_WARNED=$((TEST_WARNED + 1))
   
   if [[ -n "$message" ]]; then
     echo -e "${YELLOW}⚠${NC} $message"
   else
     echo -e "${YELLOW}⚠ WARNING${NC}"
+  fi
+}
+
+test_info() {
+  local message="${1:-}"
+  TEST_WARNED=$((TEST_WARNED + 1))
+
+  if [[ -n "$message" ]]; then
+    echo -e "${YELLOW}ℹ${NC} $message"
+  else
+    echo -e "${YELLOW}ℹ INFO${NC}"
   fi
 }
 
@@ -114,6 +125,10 @@ assert_dir_exists() {
   fi
 }
 
+assert_directory_exists() {
+  assert_dir_exists "$1"
+}
+
 assert_command_exists() {
   local cmd="$1"
   if command -v "$cmd" >/dev/null 2>&1; then
@@ -126,6 +141,15 @@ assert_command_exists() {
 assert_service_active() {
   local service="$1"
   if systemctl is-active "$service" >/dev/null 2>&1; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+assert_service_enabled() {
+  local service="$1"
+  if systemctl is-enabled "$service" >/dev/null 2>&1; then
     return 0
   else
     return 1

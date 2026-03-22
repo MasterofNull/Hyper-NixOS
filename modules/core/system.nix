@@ -9,8 +9,7 @@
   
   # Disable unnecessary services
   services.printing.enable = false;
-  hardware.pulseaudio.enable = false;
-  sound.enable = false;
+  services.pulseaudio.enable = false;
   
   # Hypervisor data directories
   environment.etc."hypervisor/vm-profiles".source = ../../vm-profiles;

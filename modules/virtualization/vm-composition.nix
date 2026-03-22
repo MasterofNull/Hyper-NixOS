@@ -652,7 +652,7 @@ in
       mkdir -p /var/lib/hypervisor/compositions
       
       # Process each instance
-      ${concatStringsSep "\n" (mapAttrsToList (name: instance: let
+      ${concatStringsSep "\n" (lib.mapAttrsToList(name: instance: let
         blueprint = cfg.blueprints.${instance.blueprint} or null;
       in ''
         echo "Processing instance: ${name}"
@@ -678,20 +678,20 @@ in
         case "$1" in
           components)
             echo "Available Components:"
-            ${concatStringsSep "\n" (mapAttrsToList (name: comp: ''
+            ${concatStringsSep "\n" (lib.mapAttrsToList(name: comp: ''
               echo "  ${name} (${comp.type}):"
               echo "    Version: ${comp.version}"
               echo "    ${comp.properties.description}"
-              ${optionalString (comp.properties.compatibility.requires != []) 
+              ${lib.optionalString(comp.properties.compatibility.requires != []) 
                 "echo '    Requires: ${concatStringsSep ", " comp.properties.compatibility.requires}'"}
-              ${optionalString (comp.properties.compatibility.provides != []) 
+              ${lib.optionalString(comp.properties.compatibility.provides != []) 
                 "echo '    Provides: ${concatStringsSep ", " comp.properties.compatibility.provides}'"}
             '') cfg.components)}
             ;;
             
           blueprints)
             echo "Available Blueprints:"
-            ${concatStringsSep "\n" (mapAttrsToList (name: bp: ''
+            ${concatStringsSep "\n" (lib.mapAttrsToList(name: bp: ''
               echo "  ${name}:"
               echo "    ${bp.description}"
               echo "    Components: ${toString (length bp.components)}"
@@ -701,7 +701,7 @@ in
             
           instances)
             echo "Active Instances:"
-            ${concatStringsSep "\n" (mapAttrsToList (name: inst: ''
+            ${concatStringsSep "\n" (lib.mapAttrsToList(name: inst: ''
               echo "  ${name}:"
               echo "    Blueprint: ${inst.blueprint}"
               echo "    Parameters: ${builtins.toJSON inst.parameters}"

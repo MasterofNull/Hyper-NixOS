@@ -39,36 +39,36 @@ pkgs.writeScriptBin "hv" ''
   USAGE: hv <command> [options] [arguments]
   
   COMMANDS:
-    ${BOLD}VM Management${NC}
+    ''${BOLD}VM Management''${NC}
       vm          Manage virtual machines
       template    Manage VM templates
       snapshot    Manage VM snapshots
       console     Connect to VM console
       
-    ${BOLD}System Management${NC}
+    ''${BOLD}System Management''${NC}
       setup       Run initial setup wizard
       system      System configuration (requires sudo)
       network     Network management
       storage     Storage management
       
-    ${BOLD}Security${NC}
+    ''${BOLD}Security''${NC}
       security    Security status and configuration
       monitor     Real-time threat monitoring
       threats     Threat detection and response
       forensics   Forensic analysis tools
       
-    ${BOLD}Operations${NC}
+    ''${BOLD}Operations''${NC}
       backup      Backup management
       restore     Restore operations
       migrate     VM migration tools
       
-    ${BOLD}Monitoring${NC}
+    ''${BOLD}Monitoring''${NC}
       status      System status overview
       metrics     Performance metrics
       logs        Log management
       alerts      Alert management
       
-    ${BOLD}Help & Info${NC}
+    ''${BOLD}Help & Info''${NC}
       help        Show help for commands
       tutorial    Interactive tutorials
       examples    Show usage examples
@@ -215,7 +215,7 @@ pkgs.writeScriptBin "hv" ''
         show_help
         ;;
       *)
-        echo -e "${RED}Error: Unknown command '$cmd'${NC}"
+        echo "Error: Unknown command '$cmd'"
         echo "Run 'hv help' for usage information"
         exit 1
         ;;
@@ -224,23 +224,23 @@ pkgs.writeScriptBin "hv" ''
   
   # Show system status
   show_system_status() {
-    echo -e "${BOLD}Hyper-NixOS System Status${NC}"
+    echo "Hyper-NixOS System Status"
     echo "========================="
     echo
     
     # Core services
-    echo -e "${BOLD}Core Services:${NC}"
+    echo "Core Services:"
     for service in libvirtd hypervisor-threat-detector sshd; do
       if systemctl is-active "$service" &>/dev/null; then
-        echo -e "  $service: ${GREEN}●${NC} active"
+        echo "  $service: active"
       else
-        echo -e "  $service: ${RED}●${NC} inactive"
+        echo "  $service: inactive"
       fi
     done
     echo
     
     # VMs
-    echo -e "${BOLD}Virtual Machines:${NC}"
+    echo "Virtual Machines:"
     local vm_count=$(virsh list --all --name 2>/dev/null | grep -v '^$' | wc -l)
     local running_vms=$(virsh list --name 2>/dev/null | grep -v '^$' | wc -l)
     echo "  Total VMs: $vm_count"
@@ -248,11 +248,11 @@ pkgs.writeScriptBin "hv" ''
     echo
     
     # Security
-    echo -e "${BOLD}Security Status:${NC}"
+    echo "Security Status:"
     if systemctl is-active hypervisor-threat-detector &>/dev/null; then
-      echo -e "  Threat Detection: ${GREEN}Active${NC}"
+      echo "  Threat Detection: Active"
     else
-      echo -e "  Threat Detection: ${YELLOW}Inactive${NC}"
+      echo "  Threat Detection: Inactive"
     fi
     
     # Get threat count from last hour
@@ -265,7 +265,7 @@ pkgs.writeScriptBin "hv" ''
     echo
     
     # Resources
-    echo -e "${BOLD}System Resources:${NC}"
+    echo "System Resources:"
     echo "  CPU Load: $(uptime | awk -F'load average:' '{print $2}')"
     echo "  Memory: $(free -h | awk '/^Mem:/ {print $3 " / " $2}')"
     echo "  Storage: $(df -h / | awk 'NR==2 {print $3 " / " $2 " (" $5 " used)"}')"
@@ -375,7 +375,7 @@ pkgs.writeScriptBin "hv" ''
       echo "Usage: hv docs <topic>"
       echo "   or: less $DOCS_DIR/README.md"
     else
-      local doc_file="$DOCS_DIR/${topic}.md"
+      local doc_file="$DOCS_DIR/$topic.md"
       if [[ -f "$doc_file" ]]; then
         ${PAGER:-less} "$doc_file"
       else
@@ -411,7 +411,7 @@ pkgs.writeScriptBin "hv" ''
           exit 0
           ;;
         -*)
-          echo -e "${RED}Error: Unknown option '$1'${NC}"
+          echo "Error: Unknown option '$1'"
           show_help
           exit 1
           ;;

@@ -324,14 +324,9 @@
 
     # ZFS support
     boot.supportedFilesystems = lib.mkIf cfg.raid.enable (
-      optional (cfg.raid.type == "zfs") "zfs" ++
-      optional (cfg.raid.type == "btrfs") "btrfs"
+      lib.optional (cfg.raid.type == "zfs") "zfs" ++
+      lib.optional (cfg.raid.type == "btrfs") "btrfs"
     );
-
-    # RAID monitoring
-    services.mdmonitor = lib.mkIf (cfg.raid.enable && cfg.raid.monitoring && cfg.raid.type == "mdadm") {
-      enable = true;
-    };
 
     # RAID scrubbing service
     systemd.services.raid-scrub = lib.mkIf (cfg.raid.enable && cfg.raid.type == "mdadm") {
@@ -394,9 +389,9 @@
       pacemaker
       corosync
       pcs
-    ] ++ lib.optionals (elem "ceph" cfg.storage.enterprise.backends) [
+    ] ++ lib.optionals (lib.elem "ceph" cfg.storage.enterprise.backends) [
       ceph
-    ] ++ lib.optionals (elem "glusterfs" cfg.storage.enterprise.backends) [
+    ] ++ lib.optionals (lib.elem "glusterfs" cfg.storage.enterprise.backends) [
       glusterfs
     ] ++ lib.optionals cfg.storage.multipath.enable [
       multipath-tools
@@ -449,7 +444,7 @@
     };
 
     # Ceph client configuration
-    environment.etc."ceph/ceph.conf" = lib.mkIf (elem "ceph" cfg.storage.enterprise.backends) {
+    environment.etc."ceph/ceph.conf" = lib.mkIf (lib.elem "ceph" cfg.storage.enterprise.backends) {
       text = ''
         [global]
         mon_host = ${lib.concatStringsSep "," cfg.storage.enterprise.ceph.monitors}
@@ -460,11 +455,11 @@
     };
 
     # GlusterFS client
-    fileSystems = lib.mkIf (elem "glusterfs" cfg.storage.enterprise.backends)
-      (listToAttrs (map (volume: nameValuePair "/mnt/gluster/${volume}" {
-        device = "${head cfg.storage.enterprise.glusterfs.servers}:/${volume}";
+    fileSystems = lib.mkIf (lib.elem "glusterfs" cfg.storage.enterprise.backends)
+      (lib.listToAttrs (map (volume: lib.nameValuePair "/mnt/gluster/${volume}" {
+        device = "${lib.head cfg.storage.enterprise.glusterfs.servers}:/${volume}";
         fsType = "glusterfs";
-        options = [ "defaults" "_netdev" "backup-volfile-servers=${lib.concatStringsSep ":" (tail cfg.storage.enterprise.glusterfs.servers)}" ];
+        options = [ "defaults" "_netdev" "backup-volfile-servers=${lib.concatStringsSep ":" (lib.tail cfg.storage.enterprise.glusterfs.servers)}" ];
       }) cfg.storage.enterprise.glusterfs.volumes));
 
     # Network bonding
@@ -481,15 +476,17 @@
 
     # Jumbo frames
     networking.interfaces = lib.mkIf cfg.networking.jumboFrames
-      (listToAttrs (map (iface: nameValuePair iface { mtu = 9000; })
+      (lib.listToAttrs (map (iface: lib.nameValuePair iface { mtu = 9000; })
         (if cfg.networking.bonding.enable then [ "bond0" ] else [])));
 
     # Huge pages
-    boot.kernelParams = lib.mkIf cfg.performance.hugepages.enable [
-      "hugepagesz=${cfg.performance.hugepages.size}"
-      "hugepages=${toString cfg.performance.hugepages.count}"
-      "default_hugepagesz=${cfg.performance.hugepages.size}"
-    ] ++ optional cfg.networking.jumboFrames "mtu=9000";
+    boot.kernelParams =
+      lib.optionals cfg.performance.hugepages.enable [
+        "hugepagesz=${cfg.performance.hugepages.size}"
+        "hugepages=${toString cfg.performance.hugepages.count}"
+        "default_hugepagesz=${cfg.performance.hugepages.size}"
+      ]
+      ++ lib.optional cfg.networking.jumboFrames "mtu=9000";
 
     # Kernel modules for server features
     boot.kernelModules = [
@@ -513,7 +510,7 @@
 
       # VM density optimization
       "vm.swappiness" = 1;
-      "vm.overcommit_memory" = 1;
+      "vm.overcommit_memory" = lib.mkForce 1;  # Force to override nixpkgs installation-device.nix
       "vm.overcommit_ratio" = 100;
 
       # File system
@@ -525,16 +522,16 @@
 
     # Prometheus exporters
     services.prometheus.exporters = {
-      node = lib.mkIf (cfg.monitoring.enhanced && elem "node" cfg.monitoring.exporters) {
+      node = lib.mkIf (cfg.monitoring.enhanced && lib.elem "node" cfg.monitoring.exporters) {
         enable = true;
         enabledCollectors = [ "systemd" "processes" "interrupts" ];
       };
 
-      ipmi = lib.mkIf (cfg.monitoring.enhanced && elem "ipmi" cfg.monitoring.exporters && cfg.remoteManagement.ipmi.enable) {
+      ipmi = lib.mkIf (cfg.monitoring.enhanced && lib.elem "ipmi" cfg.monitoring.exporters && cfg.remoteManagement.ipmi.enable) {
         enable = true;
       };
 
-      smartctl = lib.mkIf (cfg.monitoring.enhanced && elem "smartctl" cfg.monitoring.exporters) {
+      smartctl = lib.mkIf (cfg.monitoring.enhanced && lib.elem "smartctl" cfg.monitoring.exporters) {
         enable = true;
       };
     };

@@ -4,7 +4,7 @@
 # Implements performance, security, and maintainability improvements
 
 let
-  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types;
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types optionals optional all tail;
   cfg = config.hypervisor.optimized;
   
   # Custom packages
@@ -267,12 +267,6 @@ in
       defaultNetwork.settings = {
         dns_enabled = true;
         ipv6_enabled = true;
-      };
-      
-      # Enable rootless containers
-      rootless = {
-        enable = true;
-        setSocketVariable = true;
       };
     };
     

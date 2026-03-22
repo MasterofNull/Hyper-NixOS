@@ -77,8 +77,8 @@ in {
         map (user: {
           ${user} = {
             extraGroups = [ "libvirtd" "kvm" ] ++ 
-              optional (elem user cfg.vmOperators) "disk" ++
-              optional (elem user cfg.systemAdmins) "wheel";
+              lib.optional(elem user cfg.vmOperators) "disk" ++
+              lib.optional(elem user cfg.systemAdmins) "wheel";
           };
         }) (cfg.vmUsers ++ cfg.vmOperators ++ cfg.systemAdmins)
       ))
@@ -125,7 +125,7 @@ in {
           options = [ "PASSWD" ];
         }
         {
-          command = "${config.system.build.toplevel}/sw/bin/hypervisor-*";
+          command = "/run/current-system/sw/bin/hypervisor-*";
           options = [ "PASSWD" ];
         }
         {

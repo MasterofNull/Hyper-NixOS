@@ -8,9 +8,10 @@
   environment.systemPackages = [
     pkgs.virt-manager
     pkgs.virt-viewer
-    pkgs.libguestfs
     pkgs.jq
     pkgs.bc
+  ] ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
+    pkgs.libguestfs  # x86_64 only
   ];
   
   # ═══════════════════════════════════════════════════════════════

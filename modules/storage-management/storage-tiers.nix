@@ -567,7 +567,7 @@ in
         case "$1" in
           tiers)
             echo "Storage Tiers:"
-            ${concatStringsSep "\n" (mapAttrsToList (name: tier: ''
+            ${concatStringsSep "\n" (lib.mapAttrsToList(name: tier: ''
               echo "  ${name} (Level ${toString tier.level}):"
               echo "    Latency: ${tier.characteristics.latency}"
               echo "    Throughput: ${tier.characteristics.throughput}"
@@ -620,7 +620,7 @@ in
       "d /var/lib/hypervisor/storage/tiers 0755 root root -"
       "d /var/lib/hypervisor/storage/heatmap 0755 root root -"
       "d /var/lib/hypervisor/storage/cache 0755 root root -"
-    ] ++ (flatten (mapAttrsToList (name: tier: 
+    ] ++ (lib.flatten(lib.mapAttrsToList(name: tier: 
       [ "d /var/lib/hypervisor/storage/tiers/${toString tier.level} 0755 root root -" ]
     ) cfg.tiers));
   };

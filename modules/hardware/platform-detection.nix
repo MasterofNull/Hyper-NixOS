@@ -52,7 +52,7 @@ let
   hasRGBKeyboard = builtins.any (p: p) [
     (builtins.pathExists "/sys/class/leds" &&
      builtins.any (d: lib.hasInfix "rgb" (lib.toLower d))
-       (builtins.attrNames (builtins.readDir "/sys/class/leds")))
+       (builtins.lib.attrNames(builtins.readDir "/sys/class/leds")))
   ];
 
   # Detect NVIDIA GPU
@@ -86,7 +86,7 @@ let
   hasWifi = builtins.pathExists "/sys/class/net" &&
             builtins.any (iface:
               builtins.pathExists "/sys/class/net/${iface}/wireless"
-            ) (builtins.attrNames (builtins.readDir "/sys/class/net"));
+            ) (builtins.lib.attrNames(builtins.readDir "/sys/class/net"));
 
   # Detect webcam
   hasWebcam = builtins.pathExists "/dev/video0";
@@ -152,11 +152,9 @@ in {
         open = false;  # Use proprietary driver for better compatibility
       };
 
-      # Graphics (OpenGL/Vulkan support) - NixOS 25.05 uses hardware.opengl
-      opengl = {
+      # Graphics (OpenGL/Vulkan support)
+      graphics = {
         enable = true;
-        driSupport = true;
-        driSupport32Bit = true;
         extraPackages = with pkgs;
           (optionals hasIntelGPU [
             intel-media-driver
@@ -177,12 +175,13 @@ in {
         powerOnBoot = !isLaptop;  # Don't auto-enable on laptops to save power
       };
 
-      # PulseAudio/PipeWire for audio
-      pulseaudio.enable = mkDefault (hasAudio && !config.services.pipewire.enable);
     };
 
+    # PulseAudio/PipeWire for audio
+    services.pulseaudio.enable = mkDefault (hasAudio && !config.services.pipewire.enable);
+
     # Networking
-    networking.wireless.enable = mkDefault (hasWifi && !config.networking.networkmanager.enable);
+    networking.wireless.enable = lib.mkOptionDefault (hasWifi && !config.networking.networkmanager.enable);
     networking.networkmanager.enable = mkDefault (hasWifi || !isHeadless);
     networking.networkmanager.wifi.powersave = mkIf isLaptop true;
 
@@ -255,12 +254,12 @@ in {
 
     # Warnings
     warnings =
-      optional (isLaptop && !hasBattery) ''
+      lib.optional(isLaptop && !hasBattery) ''
         System detected as laptop but no battery found.
         This might be a desktop or the battery is not properly connected.
       ''
       ++
-      optional (hasNvidiaGPU && config.services.xserver.videoDrivers == []) ''
+      lib.optional(hasNvidiaGPU && config.services.xserver.videoDrivers == []) ''
         NVIDIA GPU detected but no video drivers configured.
         Add "nvidia" to services.xserver.videoDrivers for optimal performance.
       '';

@@ -146,7 +146,11 @@ in {
     security.polkit.enable = true;
     
     # Add polkit debug logging if verbose
-    security.polkit.extraConfig = mkIf config.hypervisor.debug.verbose ''
+    security.polkit.extraConfig = mkIf (
+      (config.hypervisor ? debug) &&
+      (config.hypervisor.debug ? verbose) &&
+      config.hypervisor.debug.verbose
+    ) ''
       polkit.addRule(function(action, subject) {
           polkit.log("action=" + action.id + " subject=" + subject.user + " groups=" + subject.groups);
       });

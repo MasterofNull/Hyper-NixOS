@@ -490,7 +490,7 @@ let
   # Function to resolve tags and policies into final configuration
   resolveConfiguration = unit: let
     # Collect all applicable tags
-    allTags = unit.tags ++ (flatten (map (p: cfg.policies.${p}.tags or []) unit.policies));
+    allTags = unit.tags ++ (lib.flatten(map (p: cfg.policies.${p}.tags or []) unit.policies));
     
     # Get tag configurations sorted by priority
     tagConfigs = sort (a: b: a.priority > b.priority) 
@@ -594,7 +594,7 @@ in
       echo "Generating compute unit configurations..."
       mkdir -p /var/lib/hypervisor/compute
       
-      ${concatStringsSep "\n" (mapAttrsToList (name: unit: ''
+      ${concatStringsSep "\n" (lib.mapAttrsToList(name: unit: ''
         # Generate configuration for ${name}
         ${let
           config = resolveConfiguration unit;
