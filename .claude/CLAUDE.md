@@ -67,12 +67,43 @@ Use direct implementation only after:
 - validation plan is documented
 - AI-layer guidance is understood
 
-## Validation
+## Validation Commands
 
+**Primary validation gates (run these frequently):**
 ```bash
+# Flake evaluation check (fast, no build)
+nix flake check --no-build
+
+# Test suite (5 tests)
+bash tests/run_all_tests.sh
+
+# CI validation (153 checks)
+bash tests/ci_validation.sh
+
+# Git status
 git status --short
-scripts/governance/repo-structure-lint.sh --staged
 ```
+
+**Current project status (as of 2026-03-21):**
+- All 5 phases complete
+- All validations passing
+- TODO count: 0
+- Ready for feature development
+
+## AI Harness Integration
+
+This project uses the local AI harness (Hybrid Coordinator on port 8003, AIDB on port 8002).
+
+**Health check:**
+```bash
+aq-qa 0 --json
+```
+
+**Authenticated endpoints (use API key from /run/secrets/hybrid_coordinator_api_key):**
+- `GET /hints` - Context-aware suggestions
+- `GET /workflow/plan?q=...` - Workflow planning
+- `POST /memory/recall` - Retrieve stored context
+- `POST /memory/store` - Store project state
 
 ## On-Demand Context
 
@@ -81,4 +112,5 @@ scripts/governance/repo-structure-lint.sh --staged
 | PRD | `.agent/PROJECT-PRD.md` |
 | Rules | `.agent/GLOBAL-RULES.md` |
 | Plans | `.agents/plans/` |
+| Roadmap | `.agents/plans/ROADMAP.md` |
 | Workflow evidence | `.agent/workflows/` |
