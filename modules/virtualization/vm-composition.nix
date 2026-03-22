@@ -652,7 +652,7 @@ in
       mkdir -p /var/lib/hypervisor/compositions
       
       # Process each instance
-      ${concatStringsSep "\n" (lib.mapAttrsToList(name: instance: let
+      ${lib.concatStringsSep "\n" (lib.mapAttrsToList(name: instance: let
         blueprint = cfg.blueprints.${instance.blueprint} or null;
       in ''
         echo "Processing instance: ${name}"
@@ -671,37 +671,37 @@ in
     
     # Component manager tool
     environment.systemPackages = [
-      (writeScriptBin "hv-compose" ''
+      (pkgs.writeScriptBin "hv-compose" ''
         #!${pkgs.bash}/bin/bash
         # VM Composition Manager
         
         case "$1" in
           components)
             echo "Available Components:"
-            ${concatStringsSep "\n" (lib.mapAttrsToList(name: comp: ''
+            ${lib.concatStringsSep "\n" (lib.mapAttrsToList(name: comp: ''
               echo "  ${name} (${comp.type}):"
               echo "    Version: ${comp.version}"
               echo "    ${comp.properties.description}"
               ${lib.optionalString(comp.properties.compatibility.requires != []) 
-                "echo '    Requires: ${concatStringsSep ", " comp.properties.compatibility.requires}'"}
+                "echo '    Requires: ${lib.concatStringsSep ", " comp.properties.compatibility.requires}'"}
               ${lib.optionalString(comp.properties.compatibility.provides != []) 
-                "echo '    Provides: ${concatStringsSep ", " comp.properties.compatibility.provides}'"}
+                "echo '    Provides: ${lib.concatStringsSep ", " comp.properties.compatibility.provides}'"}
             '') cfg.components)}
             ;;
             
           blueprints)
             echo "Available Blueprints:"
-            ${concatStringsSep "\n" (lib.mapAttrsToList(name: bp: ''
+            ${lib.concatStringsSep "\n" (lib.mapAttrsToList(name: bp: ''
               echo "  ${name}:"
               echo "    ${bp.description}"
-              echo "    Components: ${toString (length bp.components)}"
-              echo "    Parameters: ${concatStringsSep ", " (attrNames bp.parameters)}"
+              echo "    Components: ${toString (lib.length bp.components)}"
+              echo "    Parameters: ${lib.concatStringsSep ", " (lib.attrNames bp.parameters)}"
             '') cfg.blueprints)}
             ;;
             
           instances)
             echo "Active Instances:"
-            ${concatStringsSep "\n" (lib.mapAttrsToList(name: inst: ''
+            ${lib.concatStringsSep "\n" (lib.mapAttrsToList(name: inst: ''
               echo "  ${name}:"
               echo "    Blueprint: ${inst.blueprint}"
               echo "    Parameters: ${builtins.toJSON inst.parameters}"

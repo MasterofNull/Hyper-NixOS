@@ -579,7 +579,7 @@ in
             echo "Storage Heat Map:"
             echo "  Granularity: ${cfg.fabric.heatMap.granularity}"
             echo "  Algorithm: ${cfg.fabric.heatMap.algorithm}"
-            echo "  Time Windows: ${concatStringsSep ", " cfg.fabric.heatMap.timeWindows}"
+            echo "  Time Windows: ${lib.concatStringsSep ", " cfg.fabric.heatMap.timeWindows}"
             ;;
             
           classify)

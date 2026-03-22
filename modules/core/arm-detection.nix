@@ -226,7 +226,7 @@ in {
       generic-extlinux-compatible.enable = mkDefault true;
 
       # Raspberry Pi specific bootloader
-      raspberryPi = mkIf (elem cfg.platform ["rpi3" "rpi4" "rpi5"]) {
+      raspberryPi = mkIf (lib.elem cfg.platform ["rpi3" "rpi4" "rpi5"]) {
         enable = true;
         version = if cfg.platform == "rpi5" then 5
                   else if cfg.platform == "rpi4" then 4

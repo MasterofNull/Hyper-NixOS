@@ -78,3 +78,6 @@ strip = true
 [profile.dev]
 opt-level = 0
 debug = true
+
+# Mark as independent crate (not part of tools workspace)
+[workspace]

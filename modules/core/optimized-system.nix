@@ -4,24 +4,40 @@
 # Implements performance, security, and maintainability improvements
 
 let
-  inherit (lib) mkOption mkEnableOption mkIf mkDefault mkForce mkMerge types optionals optional all tail;
+  inherit (lib) mkOption mkEnableOption mkIf mkDefault types optionals;
   cfg = config.hypervisor.optimized;
-  
-  # Custom packages
-  hypervisor-lib = pkgs.rustPlatform.buildRustPackage {
-    pname = "hypervisor-lib";
-    version = "0.1.0";
-    src = ../../tools/rust-lib;
-    cargoLock.lockFile = ../../tools/rust-lib/Cargo.lock;
-  };
-  
-  hypervisor-api = pkgs.buildGoModule {
-    pname = "hypervisor-api";
-    version = "2.0.0";
-    src = ../../api;
-    vendorSha256 = "sha256-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-  };
-  
+
+  # Custom packages - built from local source when available
+  # These are commented out until the source code is complete
+
+  # Rust hypervisor-lib: Core library for system operations
+  # Requires: tools/rust-lib/Cargo.lock (now generated)
+  # Blocked by: libvirt-sys build requirements
+  # hypervisor-lib = pkgs.rustPlatform.buildRustPackage {
+  #   pname = "hypervisor-lib";
+  #   version = "0.1.0";
+  #   src = ../../tools/rust-lib;
+  #   cargoLock.lockFile = ../../tools/rust-lib/Cargo.lock;
+  #   meta.broken = !pkgs.stdenv.hostPlatform.isLinux;
+  # };
+
+  # Go hypervisor-api: REST API server
+  # Requires: api/internal/* packages (not yet implemented)
+  # hypervisor-api = pkgs.buildGoModule {
+  #   pname = "hypervisor-api";
+  #   version = "2.0.0";
+  #   src = ../../api;
+  #   vendorHash = null;
+  #   meta.broken = true;
+  # };
+
+  # Stub script for hypervisor-api until Go module is complete
+  hypervisor-api-stub = pkgs.writeShellScriptBin "hypervisor-api" ''
+    echo "Hypervisor API is not yet fully implemented."
+    echo "The internal packages are under development."
+    exit 1
+  '';
+
   # Configuration
   configFile = pkgs.writeText "hypervisor.toml" (builtins.readFile ../../config/hypervisor.toml);
 in
@@ -82,18 +98,18 @@ in
   
   config = lib.mkIf cfg.enable {
     # System packages
-    environment.systemPackages =  [
+    environment.systemPackages = [
       # Core tools (Rust-based)
-    pkgs.hypervisor-lib
-    pkgs.bat              # Better cat
-    pkgs.exa              # Better ls
-    pkgs.ripgrep          # Better grep
-    pkgs.fd               # Better find
-    pkgs.tokei            # Code statistics
-    pkgs.hyperfine        # Benchmarking
-      
+      # hypervisor-lib  # Disabled until libvirt build issues resolved
+      pkgs.bat              # Better cat
+      pkgs.eza              # Better ls (exa is deprecated)
+      pkgs.ripgrep          # Better grep
+      pkgs.fd               # Better find
+      pkgs.tokei            # Code statistics
+      pkgs.hyperfine        # Benchmarking
+
       # Go tools
-    pkgs.hypervisor-api
+      hypervisor-api-stub   # Stub until internal packages complete
       
       # Development tools
     pkgs.rustup
@@ -169,68 +185,58 @@ in
     };
     
     # Systemd optimizations
+    # Note: hypervisor-api and hypervisor-metrics services are disabled
+    # until the Go and Rust packages are fully buildable
     systemd.services = {
-      # Hypervisor API service
-      hypervisor-api = {
-        description = "Hyper-NixOS API Server";
-        after = [ "network.target" "libvirtd.service" ];
-        wantedBy = [ "multi-user.target" ];
-        
-        serviceConfig = {
-          Type = "notify";
-          # Add timeout to prevent boot hang if API server doesn't start
-          TimeoutStartSec = "60s";
-          ExecStart = "${hypervisor-api}/bin/hypervisor-api";
-          Restart = "always";
-          RestartSec = 5;
-          
-          # Performance
-          CPUSchedulingPolicy = "fifo";
-          CPUSchedulingPriority = 50;
-          IOSchedulingClass = "realtime";
-          IOSchedulingPriority = 0;
-          
-          # Security
-          User = "hypervisor-api";
-          Group = "hypervisor-api";
-          NoNewPrivileges = true;
-          PrivateTmp = true;
-          ProtectSystem = "strict";
-          ProtectHome = true;
-          ReadWritePaths = [ "/var/lib/hypervisor" ];
-          
-          # Resource limits
-          LimitNOFILE = 65536;
-          LimitNPROC = 4096;
-          MemoryHigh = "2G";
-          MemoryMax = "4G";
-          CPUQuota = "200%";
-        };
-        
-        environment = {
-          HYPERVISOR_CONFIG = "${configFile}";
-          RUST_LOG = "info";
-          GOMAXPROCS = "4";
-        };
-      };
-      
-      # Metrics collector
-      hypervisor-metrics = {
-        description = "Hyper-NixOS Metrics Collector";
-        after = [ "libvirtd.service" ];
-        wantedBy = [ "multi-user.target" ];
-        
-        serviceConfig = {
-          Type = "simple";
-          ExecStart = "${hypervisor-lib}/bin/hypervisor-metrics";
-          Restart = "always";
-          
-          # Low priority background service
-          Nice = 10;
-          IOSchedulingClass = "idle";
-          CPUQuota = "20%";
-        };
-      };
+      # Hypervisor API service (placeholder - requires internal packages)
+      # hypervisor-api = {
+      #   description = "Hyper-NixOS API Server";
+      #   after = [ "network.target" "libvirtd.service" ];
+      #   wantedBy = [ "multi-user.target" ];
+      #   serviceConfig = {
+      #     Type = "notify";
+      #     TimeoutStartSec = "60s";
+      #     ExecStart = "${hypervisor-api}/bin/hypervisor-api";
+      #     Restart = "always";
+      #     RestartSec = 5;
+      #     CPUSchedulingPolicy = "fifo";
+      #     CPUSchedulingPriority = 50;
+      #     IOSchedulingClass = "realtime";
+      #     IOSchedulingPriority = 0;
+      #     User = "hypervisor-api";
+      #     Group = "hypervisor-api";
+      #     NoNewPrivileges = true;
+      #     PrivateTmp = true;
+      #     ProtectSystem = "strict";
+      #     ProtectHome = true;
+      #     ReadWritePaths = [ "/var/lib/hypervisor" ];
+      #     LimitNOFILE = 65536;
+      #     LimitNPROC = 4096;
+      #     MemoryHigh = "2G";
+      #     MemoryMax = "4G";
+      #     CPUQuota = "200%";
+      #   };
+      #   environment = {
+      #     HYPERVISOR_CONFIG = "${configFile}";
+      #     RUST_LOG = "info";
+      #     GOMAXPROCS = "4";
+      #   };
+      # };
+
+      # Metrics collector (placeholder - requires hypervisor-lib build)
+      # hypervisor-metrics = {
+      #   description = "Hyper-NixOS Metrics Collector";
+      #   after = [ "libvirtd.service" ];
+      #   wantedBy = [ "multi-user.target" ];
+      #   serviceConfig = {
+      #     Type = "simple";
+      #     ExecStart = "${hypervisor-lib}/bin/hypervisor-metrics";
+      #     Restart = "always";
+      #     Nice = 10;
+      #     IOSchedulingClass = "idle";
+      #     CPUQuota = "20%";
+      #   };
+      # };
     };
     
     # Users and groups

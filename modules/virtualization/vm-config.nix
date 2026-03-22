@@ -622,7 +622,7 @@ in
     
     # Create management commands
     environment.systemPackages = [
-      (writeScriptBin "hv-compute" ''
+      (pkgs.writeScriptBin "hv-compute" ''
         #!${pkgs.bash}/bin/bash
         # Compute unit management tool
         

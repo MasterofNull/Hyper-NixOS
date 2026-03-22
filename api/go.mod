@@ -21,9 +21,9 @@ require (
     github.com/prometheus/client_golang v1.18.0
     github.com/nats-io/nats.go v1.31.0
     github.com/hashicorp/vault/api v1.10.0
-    github.com/libvirt/libvirt-go v7.4.0
+    libvirt.org/go/libvirt v1.10001.0
     github.com/gorilla/websocket v1.5.1
     github.com/patrickmn/go-cache v2.1.0+incompatible
     github.com/robfig/cron/v3 v3.0.1
-    github.com/go-redis/redis/v9 v9.3.1
+    github.com/redis/go-redis/v9 v9.3.1
 )

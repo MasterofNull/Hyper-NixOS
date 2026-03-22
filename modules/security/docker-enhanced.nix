@@ -10,7 +10,7 @@ let
     # Docker wrapper with security checks
     
     # Forbidden directories for volume mounts
-    FORBIDDEN_DIRS=(${concatStringsSep " " (map (d: ''"${d}"'') cfg.volumeRestrictions)})
+    FORBIDDEN_DIRS=(${lib.concatStringsSep " " (lib.map (d: ''"${d}"'') cfg.volumeRestrictions)})
     
     # Check if running with volume mount
     if echo "$@" | ${pkgs.gnugrep}/bin/grep -qE -- '-v|--volume'; then
@@ -177,15 +177,15 @@ in
     environment.systemPackages =  [
     pkgs.dockerSafeScript
     pkgs.docker-compose
-    ] ++ optionals cfg.enableCaching [
+    ] ++ lib.optionals cfg.enableCaching [
     pkgs.dockerCacheScript
     pkgs.dockerCleanScript
-    ] ++ optional cfg.securityScanning (
-      writeScriptBin "docker-scan" ''
-        #!${bash}/bin/bash
+    ] ++ lib.optional cfg.securityScanning (
+      pkgs.writeScriptBin "docker-scan" ''
+        #!${pkgs.bash}/bin/bash
         # Scan Docker images for vulnerabilities
-        
-        IMAGE=''${1:-$(${docker}/bin/docker ps --format "{{.Image}}" | head -1)}
+
+        IMAGE=''${1:-$(${pkgs.docker}/bin/docker ps --format "{{.Image}}" | head -1)}
         
         if [[ -z "$IMAGE" ]]; then
             echo "Usage: docker-scan <image>"

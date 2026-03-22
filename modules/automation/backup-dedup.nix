@@ -531,7 +531,7 @@ in
           echo "Global dedup: ${toString cfg.fabric.globalDedup.enabled}"
           
           # Initialize repositories
-          ${concatStringsSep "\n" (lib.mapAttrsToList(name: repo: ''
+          ${lib.concatStringsSep "\n" (lib.mapAttrsToList(name: repo: ''
             echo "Initializing repository: ${name}"
             mkdir -p ${repo.backend.location}/{data,index,metadata}
           '') cfg.repositories)}
@@ -569,13 +569,13 @@ in
     
     # Backup CLI tool
     environment.systemPackages = [
-      (writeScriptBin "hv-backup" ''
+      (pkgs.writeScriptBin "hv-backup" ''
         #!${pkgs.bash}/bin/bash
         
         case "$1" in
           repos)
             echo "Backup Repositories:"
-            ${concatStringsSep "\n" (lib.mapAttrsToList(name: repo: ''
+            ${lib.concatStringsSep "\n" (lib.mapAttrsToList(name: repo: ''
               echo "  ${name}:"
               echo "    Type: ${repo.type}"
               echo "    Location: ${repo.backend.location}"
@@ -585,7 +585,7 @@ in
             
           sources)
             echo "Backup Sources:"
-            ${concatStringsSep "\n" (lib.mapAttrsToList(name: source: ''
+            ${lib.concatStringsSep "\n" (lib.mapAttrsToList(name: source: ''
               echo "  ${name}:"
               echo "    Type: ${source.type}"
               echo "    Strategy: ${source.strategy.mode}"

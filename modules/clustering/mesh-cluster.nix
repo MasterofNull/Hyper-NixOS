@@ -594,7 +594,7 @@ in
     };
     
     # Consensus engine
-    systemd.services.hypervisor-consensus = lib.mkIf (elem "controller" cfg.node.roles) {
+    systemd.services.hypervisor-consensus = lib.mkIf (lib.elem "controller" cfg.node.roles) {
       description = "Hypervisor Consensus Engine";
       wantedBy = [ "multi-user.target" ];
       after = [ "hypervisor-mesh-node.service" ];
@@ -632,7 +632,7 @@ in
     
     # Mesh CLI tool
     environment.systemPackages = [
-      (writeScriptBin "hv-mesh" ''
+      (pkgs.writeScriptBin "hv-mesh" ''
         #!${pkgs.bash}/bin/bash
         # Mesh cluster management tool
         
@@ -643,7 +643,7 @@ in
             echo "  Node ID: $(cat /var/lib/hypervisor/mesh/node-id 2>/dev/null || echo 'not initialized')"
             echo "  Consensus: ${cfg.consensus.algorithm}"
             echo "  Topology: ${cfg.topology.mode}"
-            echo "  Roles: ${concatStringsSep ", " cfg.node.roles}"
+            echo "  Roles: ${lib.concatStringsSep ", " cfg.node.roles}"
             ;;
             
           peers)

@@ -641,14 +641,14 @@ in
     
     # Capability management CLI
     environment.systemPackages = [
-      (writeScriptBin "hv-cap" ''
+      (pkgs.writeScriptBin "hv-cap" ''
         #!${pkgs.bash}/bin/bash
         # Capability management tool
         
         case "$1" in
           list)
             echo "Available Capabilities:"
-            ${concatStringsSep "\n" (lib.mapAttrsToList(name: cap: ''
+            ${lib.concatStringsSep "\n" (lib.mapAttrsToList(name: cap: ''
               echo "  ${name}: ${cap.description}"
             '') cfg.capabilities)}
             ;;

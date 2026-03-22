@@ -624,7 +624,7 @@ in
           
           echo "Starting AI monitoring service..."
           echo "ML Engine: ${cfg.settings.engine}"
-          echo "Models: ${toString (attrNames cfg.models)}"
+          echo "Models: ${toString (lib.attrNames cfg.models)}"
           
           # Check if Python environment exists
           if [[ ! -d /var/lib/hypervisor/ai/venv ]]; then
@@ -639,7 +639,7 @@ in
           # Start the AI monitoring daemon
           python3 /var/lib/hypervisor/ai/monitor.py \
             --config /etc/hypervisor/ai/config.json \
-            --models ${concatStringsSep "," (attrNames cfg.models)} \
+            --models ${lib.concatStringsSep "," (lib.attrNames cfg.models)} \
             --engine ${cfg.settings.engine} || echo "AI monitor failed to start"
         ''}";
         
@@ -663,7 +663,7 @@ in
           
           echo "Training AI models..."
           
-          ${concatStringsSep "\n" (lib.mapAttrsToList(name: model: ''
+          ${lib.concatStringsSep "\n" (lib.mapAttrsToList(name: model: ''
             echo "Training model: ${name} (${model.type})"
             
             # Train based on model type
@@ -671,13 +671,13 @@ in
               isolation-forest)
                 python3 /var/lib/hypervisor/ai/train_isolation_forest.py \
                   --name "${name}" \
-                  --features ${concatStringsSep "," model.training.features} \
+                  --features ${lib.concatStringsSep "," model.training.features} \
                   --window "${model.training.window}"
                 ;;
               lstm)
                 python3 /var/lib/hypervisor/ai/train_lstm.py \
                   --name "${name}" \
-                  --layers ${concatStringsSep "," (map toString model.parameters.lstm.layers)} \
+                  --layers ${lib.concatStringsSep "," (map toString model.parameters.lstm.layers)} \
                   --lookback ${toString model.parameters.lstm.lookback}
                 ;;
               *)
@@ -709,7 +709,7 @@ in
         
         while true; do
           # Generate predictions
-          ${concatStringsSep "\n" (map (horizon: ''
+          ${lib.concatStringsSep "\n" (map (horizon: ''
             echo "Generating ${horizon} predictions..."
             # Prediction logic here
           '') cfg.prediction.capacity.horizons)}
@@ -733,17 +733,17 @@ in
     
     # AI monitoring CLI
     environment.systemPackages = [
-      (writeScriptBin "hv-ai" ''
+      (pkgs.writeScriptBin "hv-ai" ''
         #!${pkgs.bash}/bin/bash
         # AI Monitoring Management Tool
         
         case "$1" in
           models)
             echo "AI Models:"
-            ${concatStringsSep "\n" (lib.mapAttrsToList(name: model: ''
+            ${lib.concatStringsSep "\n" (lib.mapAttrsToList(name: model: ''
               echo "  ${name}:"
               echo "    Type: ${model.type}"
-              echo "    Features: ${concatStringsSep ", " model.training.features}"
+              echo "    Features: ${lib.concatStringsSep ", " model.training.features}"
               echo "    Update: ${model.training.updateInterval}"
             '') cfg.models)}
             ;;

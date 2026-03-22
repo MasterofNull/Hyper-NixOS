@@ -149,7 +149,7 @@ in
     
     # Create whitelist file if IPs are specified
     environment.etc."ssh/whitelist.ips" = mkIf (cfg.whitelistIPs != []) {
-      text = concatStringsSep "\n" cfg.whitelistIPs;
+      text = lib.concatStringsSep "\n" cfg.whitelistIPs;
       mode = "0644";
     };
   };
