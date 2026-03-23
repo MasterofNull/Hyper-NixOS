@@ -1,0 +1,128 @@
+{
+  "workflow": "security-remediation",
+  "version": "1.0.0",
+  "created": "2026-03-23",
+  "status": "active",
+  "baseline": {
+    "date": "2026-03-23",
+    "total_issues": 1655,
+    "breakdown": {
+      "shellcheck_errors": 42,
+      "shellcheck_warnings": 936,
+      "shellcheck_notes": 677,
+      "eval_usages": 36,
+      "go_issues": "TBD",
+      "python_issues": "TBD"
+    }
+  },
+  "targets": {
+    "shellcheck_errors": 0,
+    "shellcheck_warnings": 200,
+    "shellcheck_notes": 300,
+    "eval_usages": 10,
+    "go_issues": 0,
+    "python_issues": 0
+  },
+  "slices": [
+    {
+      "id": "6.1",
+      "name": "Critical Errors",
+      "priority": "P0",
+      "status": "pending",
+      "target_issues": 42,
+      "files": [
+        "tests/run_comprehensive_tests.sh",
+        "scripts/comprehensive-setup-wizard.sh",
+        "scripts/security/advanced-security-functions.sh",
+        "scripts/feature-manager-wizard.sh",
+        "scripts/audit/security_audit.sh",
+        "scripts/validate_hypervisor_install.sh"
+      ]
+    },
+    {
+      "id": "6.2",
+      "name": "High-Priority Warnings",
+      "priority": "P1",
+      "status": "pending",
+      "sub_slices": [
+        {"id": "6.2.1", "code": "SC2155", "count": 735, "status": "pending"},
+        {"id": "6.2.2", "code": "SC2162", "count": 241, "status": "pending"},
+        {"id": "6.2.3", "code": "SC2086", "count": 180, "status": "pending"},
+        {"id": "6.2.4", "code": "SC2034", "count": 76, "status": "pending"},
+        {"id": "6.2.5", "code": "SC2168", "count": 28, "status": "pending"}
+      ]
+    },
+    {
+      "id": "6.3",
+      "name": "Security Pattern Hardening",
+      "priority": "P1",
+      "status": "pending",
+      "tasks": [
+        "Audit eval usages",
+        "Review rm -rf patterns",
+        "Validate curl/wget usage",
+        "Check for secrets"
+      ]
+    },
+    {
+      "id": "6.4",
+      "name": "Go API Security",
+      "priority": "P2",
+      "status": "pending",
+      "tools": ["gosec", "staticcheck"]
+    },
+    {
+      "id": "6.5",
+      "name": "Python Security",
+      "priority": "P2",
+      "status": "pending",
+      "tools": ["bandit", "pip-audit"]
+    },
+    {
+      "id": "6.6",
+      "name": "AI Harness Integration",
+      "priority": "P1",
+      "status": "in_progress",
+      "tasks": [
+        "Store baseline in AIDB",
+        "Configure scanning workflows",
+        "Set up regression detection"
+      ]
+    }
+  ],
+  "ai_harness": {
+    "memory_id": "8b433d52-4ba9-47b5-abcd-bfd24eb2e3dc",
+    "memory_type": "semantic",
+    "endpoints_used": [
+      "/health",
+      "/hints",
+      "/workflow/plan",
+      "/memory/store",
+      "/discovery/capabilities"
+    ]
+  },
+  "upstream_contribution": {
+    "targets": [
+      "nixpkgs",
+      "linux-kernel",
+      "cosmic-os"
+    ],
+    "workflow_status": "planned",
+    "preparation_tasks": [
+      "Fork management setup",
+      "Contribution guidelines review",
+      "Patch formatting standards",
+      "CVE tracking workflow"
+    ]
+  },
+  "validation": {
+    "commands": {
+      "flake_check": "nix flake check --no-build",
+      "test_suite": "bash tests/run_all_tests.sh",
+      "ci_validation": "bash tests/ci_validation.sh",
+      "shellcheck_errors": "find . -name '*.sh' | xargs shellcheck --severity=error 2>&1 | grep -c ': error:'",
+      "shellcheck_warnings": "find . -name '*.sh' | xargs shellcheck --severity=warning 2>&1 | wc -l",
+      "ai_harness": "aq-qa 0 --json"
+    }
+  }
+}

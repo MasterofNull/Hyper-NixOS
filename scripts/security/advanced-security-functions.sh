@@ -22,7 +22,7 @@ sshm() {
     
     # Parse SSH command format
     TARGET_HOST=$(echo "$@" | grep -oE '[^@]+$' | cut -d' ' -f1)
-    if [[ "$@" == *"@"* ]]; then
+    if [[ "$*" == *"@"* ]]; then
         TARGET_USER=$(echo "$@" | grep -oE '^[^@]+')
     else
         TARGET_USER="$USER"

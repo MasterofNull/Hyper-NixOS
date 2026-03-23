@@ -31,6 +31,11 @@ PASSED_TESTS=0
 FAILED_TESTS=0
 SKIPPED_TESTS=0
 
+# BATS test counters (used in loops)
+bats_count=0
+bats_passed=0
+bats_failed=0
+
 # Calculate test coverage
 TOTAL_MODULES=$(find "$PROJECT_ROOT/modules" -name "*.nix" -type f | wc -l)
 TOTAL_SCRIPTS=$(find "$PROJECT_ROOT/scripts" -name "*.sh" -type f | wc -l)
@@ -146,13 +151,13 @@ if has_bats; then
     if bats "$test" 2>&1 | tee "$TEST_RESULTS_DIR/${test_name}.log"; then
       ((SCRIPT_PASS_COUNT++))
       # Count individual BATS tests
-      local bats_count=$(grep -c "^ok" "$TEST_RESULTS_DIR/${test_name}.log" || echo 0)
+      bats_count=$(grep -c "^ok" "$TEST_RESULTS_DIR/${test_name}.log" || echo 0)
       ((TOTAL_TESTS += bats_count))
       ((PASSED_TESTS += bats_count))
     else
       # Count failures
-      local bats_passed=$(grep -c "^ok" "$TEST_RESULTS_DIR/${test_name}.log" || echo 0)
-      local bats_failed=$(grep -c "^not ok" "$TEST_RESULTS_DIR/${test_name}.log" || echo 0)
+      bats_passed=$(grep -c "^ok" "$TEST_RESULTS_DIR/${test_name}.log" || echo 0)
+      bats_failed=$(grep -c "^not ok" "$TEST_RESULTS_DIR/${test_name}.log" || echo 0)
       ((TOTAL_TESTS += bats_passed + bats_failed))
       ((PASSED_TESTS += bats_passed))
       ((FAILED_TESTS += bats_failed))

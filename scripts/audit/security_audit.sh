@@ -140,7 +140,7 @@ if [[ -f /etc/hypervisor/scripts/alert_manager.sh ]]; then
   # Check configuration file permissions
   if [[ -f /var/lib/hypervisor/configuration/alerts.conf ]]; then
     echo -n "Checking alert config permissions... "
-    local perms=$(stat -c %a /var/lib/hypervisor/configuration/alerts.conf 2>/dev/null)
+    perms=$(stat -c %a /var/lib/hypervisor/configuration/alerts.conf 2>/dev/null)
     if [[ "$perms" =~ ^[0-7]00$ ]]; then
       check_pass "Alert config has restrictive permissions ($perms)"
     else
@@ -161,7 +161,7 @@ if [[ -f /etc/hypervisor/scripts/alert_manager.sh ]]; then
   # Check log file permissions
   if [[ -f /var/lib/hypervisor/logs/alerts.log ]]; then
     echo -n "Checking alert log permissions... "
-    local perms=$(stat -c %a /var/lib/hypervisor/logs/alerts.log 2>/dev/null)
+    perms=$(stat -c %a /var/lib/hypervisor/logs/alerts.log 2>/dev/null)
     if [[ "$perms" =~ ^[0-7][0-7]0$ ]]; then
       check_pass "Alert logs not world-readable"
     else
@@ -180,7 +180,7 @@ section "3. Test Framework Security"
 if [[ -d /etc/hypervisor/tests ]]; then
   # Check test scripts don't run as root unnecessarily
   echo -n "Checking test script permissions... "
-  local root_tests=$(grep -r "sudo\|EUID.*0" tests/ 2>/dev/null | wc -l)
+  root_tests=$(grep -r "sudo\|EUID.*0" tests/ 2>/dev/null | wc -l)
   if [[ $root_tests -gt 5 ]]; then
     check_warn "Many tests require root - verify necessity"
   else
@@ -233,7 +233,7 @@ if [[ -f /etc/hypervisor/scripts/automated_backup_verification.sh ]]; then
   # Check backup files aren't exposed
   echo -n "Checking backup directory permissions... "
   if [[ -d /var/lib/hypervisor/backups ]]; then
-    local perms=$(stat -c %a /var/lib/hypervisor/backups 2>/dev/null)
+    perms=$(stat -c %a /var/lib/hypervisor/backups 2>/dev/null)
     if [[ "$perms" =~ ^7[0-7]0$ ]]; then
       check_pass "Backup directory has restrictive permissions"
     else
@@ -266,7 +266,7 @@ fi
 # Check metrics file permissions
 if ls /var/lib/hypervisor/metrics*.json >/dev/null 2>&1; then
   echo -n "Checking metrics file permissions... "
-  local bad_perms=$(find /var/lib/hypervisor -name "metrics*.json" -perm /044 2>/dev/null | wc -l)
+  bad_perms=$(find /var/lib/hypervisor -name "metrics*.json" -perm /044 2>/dev/null | wc -l)
   if [[ $bad_perms -eq 0 ]]; then
     check_pass "Metrics files not world-readable"
   else
@@ -281,7 +281,7 @@ section "6. File Permissions"
 
 # Check script permissions
 echo -n "Checking new script permissions... "
-local world_writable=$(find scripts/ -type f -name "*.sh" -perm /022 2>/dev/null | wc -l)
+world_writable=$(find scripts/ -type f -name "*.sh" -perm /022 2>/dev/null | wc -l)
 if [[ $world_writable -eq 0 ]]; then
   check_pass "No world-writable scripts"
 else
@@ -290,7 +290,7 @@ fi
 
 # Check for setuid/setgid
 echo -n "Checking for setuid/setgid files... "
-local setuid_files=$(find scripts/ modules/ -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null | wc -l)
+setuid_files=$(find scripts/ modules/ -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null | wc -l)
 if [[ $setuid_files -eq 0 ]]; then
   check_pass "No setuid/setgid files"
 else
@@ -314,7 +314,7 @@ fi
 
 # Check for shell injection in bash scripts
 echo -n "Checking shell injection protection... "
-local unsafe_evals=$(grep -r "eval.*\$\|eval.*\`" scripts/*.sh 2>/dev/null | grep -v "test_" | wc -l)
+unsafe_evals=$(grep -r "eval.*\$\|eval.*\`" scripts/*.sh 2>/dev/null | grep -v "test_" | wc -l)
 if [[ $unsafe_evals -gt 3 ]]; then
   check_warn "$unsafe_evals uses of eval with variables"
 else
@@ -418,7 +418,7 @@ fi
 # Check log file permissions
 echo -n "Checking log file permissions... "
 if [[ -d /var/lib/hypervisor/logs ]]; then
-  local world_readable=$(find /var/lib/hypervisor/logs -type f -perm /044 2>/dev/null | wc -l)
+  world_readable=$(find /var/lib/hypervisor/logs -type f -perm /044 2>/dev/null | wc -l)
   if [[ $world_readable -eq 0 ]]; then
     check_pass "Log files not world-readable"
   else
@@ -443,7 +443,7 @@ fi
 
 # Check for dangerous bash constructs
 echo -n "Checking for dangerous bash patterns... "
-local dangerous=$(grep -rE "\$\(.*\$\{.*\}\)|\`.*\$" scripts/guided*.sh scripts/alert_manager.sh 2>/dev/null | wc -l)
+dangerous=$(grep -rE "\$\(.*\$\{.*\}\)|\`.*\$" scripts/guided*.sh scripts/alert_manager.sh 2>/dev/null | wc -l)
 if [[ $dangerous -gt 10 ]]; then
   check_warn "$dangerous instances of nested command substitution"
 else
@@ -478,7 +478,7 @@ section "14. Privilege Escalation Check"
 
 # Check for unnecessary sudo
 echo -n "Checking for unnecessary sudo calls... "
-local sudo_count=$(grep -r "sudo " scripts/guided*.sh scripts/alert*.sh 2>/dev/null | wc -l)
+sudo_count=$(grep -r "sudo " scripts/guided*.sh scripts/alert*.sh 2>/dev/null | wc -l)
 if [[ $sudo_count -gt 5 ]]; then
   check_warn "$sudo_count sudo calls in new scripts - verify necessity"
 else
@@ -504,7 +504,7 @@ section "15. Dependency Security"
 if [[ -f scripts/web_dashboard.py ]]; then
   echo -n "Checking Python dependencies... "
   # Extract imports
-  local imports=$(grep "^import\|^from.*import" scripts/web_dashboard.py 2>/dev/null | awk '{print $2}' | cut -d. -f1 | sort -u)
+  imports=$(grep "^import\|^from.*import" scripts/web_dashboard.py 2>/dev/null | awk '{print $2}' | cut -d. -f1 | sort -u)
   
   # Check for risky dependencies
   if echo "$imports" | grep -iE "pickle|yaml|xml"; then

@@ -230,7 +230,7 @@ is_feature_compatible() {
     # Check dependencies
     if [[ -n "${FEATURE_DEPS[$feature]:-}" ]]; then
         for dep in ${FEATURE_DEPS[$feature]}; do
-            if [[ ! " ${SELECTED_FEATURES[@]} " =~ " ${dep} " ]]; then
+            if [[ ! " ${SELECTED_FEATURES[*]} " =~ " ${dep} " ]]; then
                 reason="Missing dependency: $dep must be enabled first"
                 echo "$reason"
                 return 1
@@ -241,7 +241,7 @@ is_feature_compatible() {
     # Check conflicts
     if [[ -n "${FEATURE_CONFLICTS[$feature]:-}" ]]; then
         for conflict in ${FEATURE_CONFLICTS[$feature]}; do
-            if [[ " ${SELECTED_FEATURES[@]} " =~ " ${conflict} " ]]; then
+            if [[ " ${SELECTED_FEATURES[*]} " =~ " ${conflict} " ]]; then
                 reason="Conflicts with already selected: $conflict"
                 echo "$reason"
                 return 1
@@ -298,7 +298,7 @@ show_feature_toggle_v2() {
     local display_text=""
     
     # Check if feature is selected
-    if [[ " ${SELECTED_FEATURES[@]} " =~ " ${feature} " ]]; then
+    if [[ " ${SELECTED_FEATURES[*]} " =~ " ${feature} " ]]; then
         status="${GREEN}✓${NC}"
     fi
     

@@ -115,13 +115,11 @@ fi
 # Check 4: Scripts directory
 msg "Checking scripts..."
 if [[ -d /etc/hypervisor/src/scripts ]]; then
-  local script_count
   script_count=$(find /etc/hypervisor/src/scripts -type f -name "*.sh" | wc -l)
   if [[ $script_count -gt 0 ]]; then
     pass "Found $script_count shell scripts"
-    
+
     # Check if scripts are executable
-    local non_executable
     non_executable=$(find /etc/hypervisor/src/scripts -type f -name "*.sh" ! -perm -u+x | wc -l)
     if [[ $non_executable -gt 0 ]]; then
       warn "$non_executable scripts are not executable"
@@ -242,7 +240,6 @@ if ! $QUICK; then
   msg "Checking permissions..."
   
   if [[ -d /etc/hypervisor/src ]]; then
-    local owner
     owner=$(stat -c %U /etc/hypervisor/src 2>/dev/null || stat -f %Su /etc/hypervisor/src 2>/dev/null)
     if [[ "$owner" == "root" ]]; then
       pass "/etc/hypervisor/src owned by root"
@@ -258,7 +255,6 @@ fi
 
 # Check 13: Disk space
 msg "Checking disk space..."
-local available_gb
 if command -v df >/dev/null 2>&1; then
   available_gb=$(df -BG /etc/hypervisor | tail -1 | awk '{print $4}' | sed 's/G//')
   if [[ $available_gb -gt 10 ]]; then

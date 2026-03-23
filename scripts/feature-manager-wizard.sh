@@ -453,7 +453,7 @@ check_feature_compatibility() {
     # Check dependencies
     if [[ -n "${FEATURE_DEPS[$feature]:-}" ]]; then
         for dep in ${FEATURE_DEPS[$feature]}; do
-            if [[ ! " ${SELECTED_FEATURES[@]} " =~ " ${dep} " ]]; then
+            if [[ ! " ${SELECTED_FEATURES[*]} " =~ " ${dep} " ]]; then
                 echo "Requires: $dep"
                 return 1
             fi
@@ -463,13 +463,13 @@ check_feature_compatibility() {
     # Check conflicts (example for desktop environments)
     case $feature in
         "desktop-kde")
-            if [[ " ${SELECTED_FEATURES[@]} " =~ " desktop-gnome " ]]; then
+            if [[ " ${SELECTED_FEATURES[*]} " =~ " desktop-gnome " ]]; then
                 echo "Conflicts with: desktop-gnome"
                 return 1
             fi
             ;;
         "desktop-gnome")
-            if [[ " ${SELECTED_FEATURES[@]} " =~ " desktop-kde " ]]; then
+            if [[ " ${SELECTED_FEATURES[*]} " =~ " desktop-kde " ]]; then
                 echo "Conflicts with: desktop-kde"
                 return 1
             fi
@@ -489,7 +489,7 @@ show_feature_toggle() {
     local reason=""
     
     # Check if feature is selected
-    if [[ " ${SELECTED_FEATURES[@]} " =~ " ${feature} " ]]; then
+    if [[ " ${SELECTED_FEATURES[*]} " =~ " ${feature} " ]]; then
         status="${GREEN}✓${NC}"
     else
         # Check compatibility if not selected

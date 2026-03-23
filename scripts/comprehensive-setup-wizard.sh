@@ -188,7 +188,7 @@ select_features() {
         
         # Check if feature is enabled
         local status=" "
-        if [[ " ${SELECTED_FEATURES[@]} " =~ " ${id} " ]]; then
+        if [[ " ${SELECTED_FEATURES[*]} " =~ " ${id} " ]]; then
             status="✓"
         fi
         
@@ -212,7 +212,7 @@ select_features() {
             local idx=$((choice - 1))
             if [[ $idx -ge 0 && $idx -lt ${#DETECTED_FEATURES[@]} ]]; then
                 local feature_id="${feature_ids[$idx]}"
-                if [[ " ${SELECTED_FEATURES[@]} " =~ " ${feature_id} " ]]; then
+                if [[ " ${SELECTED_FEATURES[*]} " =~ " ${feature_id} " ]]; then
                     # Remove feature
                     SELECTED_FEATURES=("${SELECTED_FEATURES[@]/$feature_id}")
                 else
@@ -379,13 +379,13 @@ generate_configuration() {
     
     # Determine tier based on features
     local tier="minimal"
-    if [[ " ${SELECTED_FEATURES[@]} " =~ " clustering " ]]; then
+    if [[ " ${SELECTED_FEATURES[*]} " =~ " clustering " ]]; then
         tier="enterprise"
-    elif [[ " ${SELECTED_FEATURES[@]} " =~ " advanced-networking " ]]; then
+    elif [[ " ${SELECTED_FEATURES[*]} " =~ " advanced-networking " ]]; then
         tier="professional"
-    elif [[ " ${SELECTED_FEATURES[@]} " =~ " backups " ]]; then
+    elif [[ " ${SELECTED_FEATURES[*]} " =~ " backups " ]]; then
         tier="enhanced"
-    elif [[ " ${SELECTED_FEATURES[@]} " =~ " monitoring " ]]; then
+    elif [[ " ${SELECTED_FEATURES[*]} " =~ " monitoring " ]]; then
         tier="standard"
     fi
     

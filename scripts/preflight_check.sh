@@ -247,7 +247,7 @@ case "$OPERATION" in
         ok "VM '$VM_NAME': exists"
         
         # Check if already running
-        local state=$(virsh domstate "$VM_NAME" 2>/dev/null)
+        state=$(virsh domstate "$VM_NAME" 2>/dev/null)
         if [[ "$state" == "running" ]]; then
           warn "VM '$VM_NAME' is already running"
           CAN_PROCEED=false
@@ -278,18 +278,18 @@ case "$OPERATION" in
         CAN_PROCEED=false
       else
         # Estimate backup size (VM memory + disk)
-        local vm_mem_kb=$(virsh dominfo "$VM_NAME" | awk '/Max memory:/ {print $3}')
-        local vm_mem_gb=$((vm_mem_kb / 1024 / 1024 + 1))
-        
+        vm_mem_kb=$(virsh dominfo "$VM_NAME" | awk '/Max memory:/ {print $3}')
+        vm_mem_gb=$((vm_mem_kb / 1024 / 1024 + 1))
+
         # Get disk sizes
-        local disk_total_gb=0
-        while read disk_path; do
+        disk_total_gb=0
+        while read -r disk_path; do
           [[ -z "$disk_path" ]] && continue
-          local disk_size=$(qemu-img info "$disk_path" 2>/dev/null | awk '/virtual size:/ {print $3}' | tr -d 'G')
+          disk_size=$(qemu-img info "$disk_path" 2>/dev/null | awk '/virtual size:/ {print $3}' | tr -d 'G')
           disk_total_gb=$((disk_total_gb + ${disk_size%%.*}))
         done < <(virsh domblklist "$VM_NAME" --details 2>/dev/null | awk '/file/ {print $4}')
-        
-        local required_gb=$((vm_mem_gb + disk_total_gb + 1))
+
+        required_gb=$((vm_mem_gb + disk_total_gb + 1))
         check_disk_space "$required_gb" "$BACKUP_DIR"
       fi
     fi
@@ -306,17 +306,17 @@ case "$OPERATION" in
         CAN_PROCEED=false
       else
         # Check snapshot count
-        local snap_count=$(virsh snapshot-list "$VM_NAME" --name 2>/dev/null | wc -l)
+        snap_count=$(virsh snapshot-list "$VM_NAME" --name 2>/dev/null | wc -l)
         if [[ $snap_count -ge 10 ]]; then
           warn "VM has $snap_count snapshots (consider cleanup)"
           warn "Delete old snapshots with: virsh snapshot-delete $VM_NAME <snapshot>"
         fi
-        
+
         # Estimate snapshot size
-        local disk_gb=0
-        while read disk_path; do
+        disk_gb=0
+        while read -r disk_path; do
           [[ -z "$disk_path" ]] && continue
-          local size=$(qemu-img info "$disk_path" 2>/dev/null | awk '/virtual size:/ {print $3}' | tr -d 'G')
+          size=$(qemu-img info "$disk_path" 2>/dev/null | awk '/virtual size:/ {print $3}' | tr -d 'G')
           disk_gb=$((disk_gb + ${size%%.*}))
         done < <(virsh domblklist "$VM_NAME" --details 2>/dev/null | awk '/file/ {print $4}')
         
