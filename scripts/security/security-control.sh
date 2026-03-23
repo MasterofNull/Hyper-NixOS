@@ -47,7 +47,7 @@ run_validation() {
     echo -e "${YELLOW}Running security validation...${NC}"
     "$SCRIPT_DIR/defensive-validation.sh"
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Deploy security stack
@@ -59,7 +59,7 @@ deploy_stack() {
         echo -e "${RED}Deployment script not found${NC}"
     fi
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Run security scan
@@ -71,7 +71,7 @@ run_scan() {
         echo -e "${RED}Security scan script not found${NC}"
     fi
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Update security tools
@@ -98,7 +98,7 @@ update_tools() {
     done
     
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Monitor SSH logins
@@ -119,7 +119,7 @@ monitor_ssh() {
     who | grep -E 'pts/|tty'
     
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Check system status
@@ -148,7 +148,7 @@ check_status() {
     echo "  Firewall status: $(sudo ufw status 2>/dev/null | grep -o "Status: .*" || echo "Not configured")"
     
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Generate security report
@@ -185,7 +185,7 @@ generate_report() {
     
     echo -e "${GREEN}Report saved to: $REPORT_FILE${NC}"
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Run parallel updates
@@ -206,7 +206,7 @@ EOF
     fi
     
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Configure notifications
@@ -225,8 +225,8 @@ configure_notifications() {
         echo
     fi
     
-    read -p "Enter webhook URL (or press Enter to skip): " webhook_url
-    read -p "Enter security email (or press Enter to skip): " security_email
+    read -r -p "Enter webhook URL (or press Enter to skip): " webhook_url
+    read -r -p "Enter security email (or press Enter to skip): " security_email
     
     if [[ -n "$webhook_url" ]] || [[ -n "$security_email" ]]; then
         {
@@ -238,7 +238,7 @@ configure_notifications() {
     fi
     
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # View documentation
@@ -253,7 +253,7 @@ view_docs() {
     echo "0. Back to main menu"
     echo
     
-    read -p "Select document: " doc_choice
+    read -r -p "Select document: " doc_choice
     
     case $doc_choice in
         1) less "$SCRIPT_DIR/DEPLOYMENT-GUIDE.md" ;;
@@ -282,7 +282,7 @@ ir_status() {
     fi
     
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # View Security Events
@@ -293,7 +293,7 @@ ir_events() {
     local events_file="/var/log/security/events.json"
     if [[ -f "$events_file" ]]; then
         # Show last 20 events
-        tail -n 20 "$events_file" 2>/dev/null | while read line; do
+        tail -n 20 "$events_file" 2>/dev/null | while read -r line; do
             echo "$line" | jq -r '"\(.timestamp) [\(.type)] \(.source_ip // "N/A") -> \(.target_ip // "localhost")"' 2>/dev/null || echo "$line"
         done
     else
@@ -303,7 +303,7 @@ ir_events() {
     echo
     echo "Full event log: $events_file"
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Test Incident Response Menu
@@ -319,7 +319,7 @@ ir_test_menu() {
     echo "0. Back to main menu"
     echo
     
-    read -p "Select test: " test_choice
+    read -r -p "Select test: " test_choice
     
     case $test_choice in
         1) 
@@ -342,8 +342,8 @@ ir_test_menu() {
             sudo python3 "$SCRIPT_DIR/scripts/security/test-incident-response.py" container
             ;;
         6)
-            read -p "Event type (brute_force/port_scan/malware/container_compromise): " event_type
-            read -p "Source IP (default: 10.10.10.10): " source_ip
+            read -r -p "Event type (brute_force/port_scan/malware/container_compromise): " event_type
+            read -r -p "Source IP (default: 10.10.10.10): " source_ip
             source_ip=${source_ip:-"10.10.10.10"}
             
             python3 -c "
@@ -374,14 +374,14 @@ asyncio.run(trigger())
     esac
     
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Main loop
 main() {
     while true; do
         show_menu
-        read -p "Select option: " choice
+        read -r -p "Select option: " choice
         
         case $choice in
             1) run_validation ;;

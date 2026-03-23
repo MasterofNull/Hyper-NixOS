@@ -74,7 +74,7 @@ show_legal_warning() {
     echo -e "${BOLD}${RED}╚═══════════════════════════════════════════════════════════════╝${NC}"
     echo
     
-    read -p "$(echo -e "${BOLD}Do you accept these terms and conditions? [yes/NO]:${NC} ")" response
+    read -r -p "$(echo -e "${BOLD}Do you accept these terms and conditions? [yes/NO]:${NC} ")" response
     
     if [[ ! "$response" =~ ^[Yy][Ee][Ss]$ ]]; then
         echo -e "${YELLOW}Setup cancelled. No changes have been made.${NC}"
@@ -125,7 +125,7 @@ select_mode() {
     echo
     
     local choice
-    read -p "$(echo -e "${CYAN}Enter your choice [1-5]:${NC} ")" choice
+    read -r -p "$(echo -e "${CYAN}Enter your choice [1-5]:${NC} ")" choice
     
     case "$choice" in
         1) echo "alias" ;;
@@ -152,17 +152,19 @@ select_interfaces() {
     echo -e "${BOLD}Available network interfaces:${NC}"
     echo
     
-    local -a interfaces=($(get_interfaces))
+    local -a interfaces=()
     local i=1
+    mapfile -t interfaces < <(get_interfaces)
     
     for iface in "${interfaces[@]}"; do
-        local ips=$(get_current_ips "$iface")
+        local ips
+        ips=$(get_current_ips "$iface")
         echo -e "  ${GREEN}$i)${NC} ${BOLD}$iface${NC} - Current IPs: $ips"
         ((i++))
     done
     
     echo
-    read -p "$(echo -e "${CYAN}Enter interface numbers (space-separated, or 'all'):${NC} ")" selection
+    read -r -p "$(echo -e "${CYAN}Enter interface numbers (space-separated, or 'all'):${NC} ")" selection
     
     if [[ "$selection" == "all" ]]; then
         selected=("${interfaces[@]}")
@@ -189,7 +191,7 @@ configure_alias() {
     echo
     
     while true; do
-        read -p "$(echo -e "${CYAN}IP address (or 'done'):${NC} ")" ip
+        read -r -p "$(echo -e "${CYAN}IP address (or 'done'):${NC} ")" ip
         
         if [[ "$ip" == "done" ]]; then
             break
@@ -219,7 +221,7 @@ configure_rotation() {
     echo
     
     while true; do
-        read -p "$(echo -e "${CYAN}IP address (or 'done'):${NC} ")" ip
+        read -r -p "$(echo -e "${CYAN}IP address (or 'done'):${NC} ")" ip
         
         if [[ "$ip" == "done" ]]; then
             break
@@ -235,7 +237,7 @@ configure_rotation() {
     
     # Get rotation interval
     echo
-    read -p "$(echo -e "${CYAN}Rotation interval in seconds [default: 3600]:${NC} ")" interval
+    read -r -p "$(echo -e "${CYAN}Rotation interval in seconds [default: 3600]:${NC} ")" interval
     interval=${interval:-3600}
     
     echo "POOL:${pool[*]}:INTERVAL:$interval"
@@ -252,7 +254,7 @@ configure_dynamic() {
     echo
     
     local range
-    read -p "$(echo -e "${CYAN}CIDR range:${NC} ")" range
+    read -r -p "$(echo -e "${CYAN}CIDR range:${NC} ")" range
     
     echo "$range"
 }
@@ -273,7 +275,7 @@ configure_proxy() {
     while true; do
         echo
         echo -e "${BOLD}Proxy entry #$((${#proxies[@]} + 1)):${NC}"
-        read -p "$(echo -e "${CYAN}Proxy type (socks5/http/https) or 'done':${NC} ")" type
+        read -r -p "$(echo -e "${CYAN}Proxy type (socks5/http/https) or 'done':${NC} ")" type
         
         if [[ "$type" == "done" ]]; then
             break
@@ -284,12 +286,12 @@ configure_proxy() {
             continue
         fi
         
-        read -p "$(echo -e "${CYAN}Host:${NC} ")" host
-        read -p "$(echo -e "${CYAN}Port:${NC} ")" port
-        read -p "$(echo -e "${CYAN}Username (optional):${NC} ")" username
+        read -r -p "$(echo -e "${CYAN}Host:${NC} ")" host
+        read -r -p "$(echo -e "${CYAN}Port:${NC} ")" port
+        read -r -p "$(echo -e "${CYAN}Username (optional):${NC} ")" username
         
         if [ -n "$username" ]; then
-            read -sp "$(echo -e "${CYAN}Password:${NC} ")" password
+            read -r -s -p "$(echo -e "${CYAN}Password:${NC} ")" password
             echo
             proxies+=("$type:$host:$port:$username:$password")
         else
@@ -301,7 +303,7 @@ configure_proxy() {
     
     # Randomize order
     echo
-    read -p "$(echo -e "${CYAN}Randomize proxy chain order? [Y/n]:${NC} ")" randomize
+    read -r -p "$(echo -e "${CYAN}Randomize proxy chain order? [Y/n]:${NC} ")" randomize
     if [[ ! "$randomize" =~ ^[Nn]$ ]]; then
         echo "RANDOMIZE:true"
     else
@@ -358,15 +360,19 @@ EOF
                         fi
                         ;;
                     rotation)
-                        local config=$(configure_rotation "$iface")
-                        local pool_part=$(echo "$config" | grep "POOL:" | cut -d: -f2)
-                        local interval=$(echo "$config" | grep "INTERVAL:" | cut -d: -f4)
+                        local config
+                        local pool_part
+                        local interval
+                        config=$(configure_rotation "$iface")
+                        pool_part=$(echo "$config" | grep "POOL:" | cut -d: -f2)
+                        interval=$(echo "$config" | grep "INTERVAL:" | cut -d: -f4)
                         
                         echo "        ipPool = [ $(echo "$pool_part" | tr ' ' '\n' | sed 's/^/\"/' | sed 's/$/\"/' | tr '\n' ' ') ];" >> /tmp/ip-spoof-config.nix
                         echo "        rotationInterval = $interval;" >> /tmp/ip-spoof-config.nix
                         ;;
                     dynamic)
-                        local range=$(configure_dynamic "$iface")
+                        local range
+                        range=$(configure_dynamic "$iface")
                         echo "        dynamicRange = \"$range\";" >> /tmp/ip-spoof-config.nix
                         ;;
                 esac
@@ -380,9 +386,12 @@ EOF
             echo "    proxy = {" >> /tmp/ip-spoof-config.nix
             echo "      enable = true;" >> /tmp/ip-spoof-config.nix
             
-            local config=$(configure_proxy)
-            local randomize=$(echo "$config" | grep "RANDOMIZE:" | cut -d: -f2)
-            local -a proxies=($(echo "$config" | grep -v "RANDOMIZE:"))
+            local config
+            local randomize
+            local -a proxies=()
+            config=$(configure_proxy)
+            randomize=$(echo "$config" | grep "RANDOMIZE:" | cut -d: -f2)
+            mapfile -t proxies < <(echo "$config" | grep -v "RANDOMIZE:")
             
             echo "      randomizeOrder = $randomize;" >> /tmp/ip-spoof-config.nix
             echo "      proxies = [" >> /tmp/ip-spoof-config.nix
@@ -440,10 +449,10 @@ install_config() {
         echo -e "${CYAN}    ./ip-spoof.nix${NC}"
         echo -e "${CYAN}  ];${NC}"
         echo
-        read -p "$(echo -e "${CYAN}Add automatically? [Y/n]:${NC} ")" auto_add
+        read -r -p "$(echo -e "${CYAN}Add automatically? [Y/n]:${NC} ")" auto_add
         if [[ ! "$auto_add" =~ ^[Nn]$ ]]; then
             # Backup configuration.nix
-            cp /etc/nixos/configuration.nix /etc/nixos/configuration.nix.backup-$(date +%Y%m%d-%H%M%S)
+            cp /etc/nixos/configuration.nix "/etc/nixos/configuration.nix.backup-$(date +%Y%m%d-%H%M%S)"
             
             # Add import
             sed -i '/imports = \[/a\    ./ip-spoof.nix' /etc/nixos/configuration.nix
@@ -459,7 +468,7 @@ apply_config() {
     echo -e "${YELLOW}This will rebuild your NixOS configuration.${NC}"
     echo
     
-    read -p "$(echo -e "${CYAN}Apply now? [Y/n]:${NC} ")" apply
+    read -r -p "$(echo -e "${CYAN}Apply now? [Y/n]:${NC} ")" apply
     
     if [[ ! "$apply" =~ ^[Nn]$ ]]; then
         echo

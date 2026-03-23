@@ -32,8 +32,10 @@ is_complete() {
 # Show progress
 show_progress() {
   local total=10
-  local completed=$(wc -l < "$TUTORIAL_STATE" 2>/dev/null || echo 0)
+  local completed
   local percent=$((completed * 100 / total))
+  completed=$(wc -l < "$TUTORIAL_STATE" 2>/dev/null || echo 0)
+  percent=$((completed * 100 / total))
   
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "  Tutorial Progress: $completed/$total lessons ($percent%)"
@@ -96,7 +98,7 @@ lesson1_understand_system() {
   echo "  • How to read system diagnostics"
   echo "  • Resource planning for VMs"
   echo ""
-  read -p "Press Enter to begin..."
+  read -r -p "Press Enter to begin..."
   
   clear
   echo -e "${BOLD}Step 1: Let's Check Your Hardware${NC}"
@@ -108,7 +110,7 @@ lesson1_understand_system() {
   echo "Command to run:"
   echo -e "  ${GREEN}/etc/hypervisor/scripts/diagnose.sh | less${NC}"
   echo ""
-  read -p "Ready to run it? Press Enter..."
+  read -r -p "Ready to run it? Press Enter..."
   
   /etc/hypervisor/scripts/diagnose.sh | less
   
@@ -132,8 +134,10 @@ lesson1_understand_system() {
   echo ""
   
   echo -e "${BOLD}Section 2: Resources Available${NC}"
-  local total_cpus=$(nproc)
-  local total_ram=$(free -h | awk '/^Mem:/{print $2}')
+  local total_cpus
+  local total_ram
+  total_cpus=$(nproc)
+  total_ram=$(free -h | awk '/^Mem:/{print $2}')
   echo "  CPUs: $total_cpus cores"
   echo -e "  ${BLUE}→ For VMs:${NC} Recommended to use $(( total_cpus - 2 )) or fewer"
   echo -e "  ${BLUE}→ Why:${NC} Leave some for host system"
@@ -143,7 +147,7 @@ lesson1_understand_system() {
   echo -e "  ${BLUE}→ Why:${NC} Host needs memory too"
   echo ""
   
-  read -p "Press Enter to continue..."
+  read -r -p "Press Enter to continue..."
   
   clear
   echo -e "${BOLD}Step 3: Quiz - Test Your Understanding${NC}"
@@ -154,7 +158,7 @@ lesson1_understand_system() {
   echo "  a) Kernel Virtual Machine"
   echo "  b) KDE Virtual Manager"
   echo "  c) Key Virtual Memory"
-  read -p "Your answer (a/b/c): " q1
+  read -r -p "Your answer (a/b/c): " q1
   if [[ "$q1" == "a" || "$q1" == "A" ]]; then
     echo -e "  ${GREEN}✓ Correct!${NC} KVM is the Linux kernel module for virtualization."
   else
@@ -166,7 +170,7 @@ lesson1_understand_system() {
   echo "  a) 8 GB (all of it)"
   echo "  b) 4-6 GB (50-75%)"
   echo "  c) 1 GB (be conservative)"
-  read -p "Your answer (a/b/c): " q2
+  read -r -p "Your answer (a/b/c): " q2
   if [[ "$q2" == "b" || "$q2" == "B" ]]; then
     echo -e "  ${GREEN}✓ Correct!${NC} Leave some for the host system."
   else
@@ -178,7 +182,7 @@ lesson1_understand_system() {
   echo "  a) To find issues before they cause problems"
   echo "  b) Because it's fun"
   echo "  c) It's required"
-  read -p "Your answer (a/b/c): " q3
+  read -r -p "Your answer (a/b/c): " q3
   if [[ "$q3" == "a" || "$q3" == "A" ]]; then
     echo -e "  ${GREEN}✓ Correct!${NC} Proactive monitoring prevents surprises."
   else
@@ -186,7 +190,7 @@ lesson1_understand_system() {
   fi
   echo ""
   
-  read -p "Press Enter to finish lesson..."
+  read -r -p "Press Enter to finish lesson..."
   
   clear
   echo -e "${BOLD}═══════════════════════════════════════════════════════════════${NC}"
@@ -206,7 +210,7 @@ lesson1_understand_system() {
   echo ""
   echo "📚 Next lesson: Downloading Your First ISO"
   echo ""
-  read -p "Press Enter to return to menu..."
+  read -r -p "Press Enter to return to menu..."
   
   mark_complete "lesson1"
 }
@@ -240,7 +244,7 @@ lesson2_download_iso() {
   echo "  • VM mounting ISO = Plugging in USB to install"
   echo "  • After install = Remove USB (remove ISO from profile)"
   echo ""
-  read -p "Press Enter to continue..."
+  read -r -p "Press Enter to continue..."
   
   clear
   echo -e "${BOLD}Why Verification Matters${NC}"
@@ -264,7 +268,7 @@ lesson2_download_iso() {
   echo "  • Marks ISOs as verified (.sha256.verified file)"
   echo "  • Prevents using unverified ISOs (security!)"
   echo ""
-  read -p "Press Enter for hands-on exercise..."
+  read -r -p "Press Enter for hands-on exercise..."
   
   clear
   echo -e "${YELLOW}📝 Hands-On Exercise${NC}"
@@ -291,7 +295,7 @@ lesson2_download_iso() {
   echo "  5. Exit ISO Manager"
   echo ""
   
-  read -p "Ready? Press Enter to launch ISO Manager..."
+  read -r -p "Ready? Press Enter to launch ISO Manager..."
   
   # Launch ISO Manager
   /etc/hypervisor/scripts/iso_manager.sh || true
@@ -307,7 +311,7 @@ lesson2_download_iso() {
   echo ""
   ls -lh /var/lib/hypervisor/isos/*.iso 2>/dev/null || echo "No ISOs found"
   echo ""
-  read -p "Do you see your ISO? (y/n): " saw_iso
+  read -r -p "Do you see your ISO? (y/n): " saw_iso
   
   if [[ "$saw_iso" =~ ^[Yy]$ ]]; then
     echo -e "${GREEN}✓ Great! Your ISO is downloaded.${NC}"
@@ -321,7 +325,7 @@ lesson2_download_iso() {
   echo ""
   ls /var/lib/hypervisor/isos/*.verified 2>/dev/null || echo "No verification markers"
   echo ""
-  read -p "Do you see a .verified file? (y/n): " saw_verified
+  read -r -p "Do you see a .verified file? (y/n): " saw_verified
   
   if [[ "$saw_verified" =~ ^[Yy]$ ]]; then
     echo -e "${GREEN}✓ Excellent! Your ISO was verified.${NC}"
@@ -332,7 +336,7 @@ lesson2_download_iso() {
   fi
   echo ""
   
-  read -p "Press Enter to continue..."
+  read -r -p "Press Enter to continue..."
   
   clear
   echo -e "${BOLD}═══════════════════════════════════════════════════════════════${NC}"
@@ -354,7 +358,7 @@ lesson2_download_iso() {
   echo ""
   echo "📚 Next lesson: Creating Your First VM"
   echo ""
-  read -p "Press Enter to return to menu..."
+  read -r -p "Press Enter to return to menu..."
   
   mark_complete "lesson2"
 }
@@ -387,7 +391,7 @@ lesson3_create_vm() {
   echo ""
   echo "📍 Location: /var/lib/hypervisor/vm-profiles/"
   echo ""
-  read -p "Press Enter to see an example profile..."
+  read -r -p "Press Enter to see an example profile..."
   
   clear
   echo -e "${BOLD}Example VM Profile (JSON):${NC}"
@@ -413,7 +417,7 @@ EOF
   echo "  • iso_path: Which ISO to boot from"
   echo "  • network.bridge: Which network to use"
   echo ""
-  read -p "Makes sense? Press Enter..."
+  read -r -p "Makes sense? Press Enter..."
   
   clear
   echo -e "${BOLD}Choosing Resources - Guidelines${NC}"
@@ -438,7 +442,7 @@ EOF
   echo "  • Can always increase later if needed"
   echo "  • Better to start conservative"
   echo ""
-  read -p "Press Enter for hands-on exercise..."
+  read -r -p "Press Enter for hands-on exercise..."
   
   clear
   echo -e "${YELLOW}📝 Hands-On Exercise${NC}"
@@ -453,7 +457,7 @@ EOF
   echo -e "  ${GREEN}  /var/lib/hypervisor/vm-profiles \\${NC}"
   echo -e "  ${GREEN}  /var/lib/hypervisor/isos${NC}"
   echo ""
-  read -p "Ready? Press Enter to launch wizard..."
+  read -r -p "Ready? Press Enter to launch wizard..."
   
   /etc/hypervisor/scripts/create_vm_wizard.sh /var/lib/hypervisor/vm-profiles /var/lib/hypervisor/isos || true
   
@@ -463,12 +467,13 @@ EOF
   echo "Let's check that your VM profile was created."
   echo ""
   echo "Your VM profiles:"
-  ls -1 /var/lib/hypervisor/vm-profiles/*.json 2>/dev/null | while read -r profile; do
-    local name=$(jq -r '.name // empty' "$profile" 2>/dev/null || basename "$profile" .json)
+  find /var/lib/hypervisor/vm-profiles -maxdepth 1 -name '*.json' -print 2>/dev/null | while read -r profile; do
+    local name
+    name=$(jq -r '.name // empty' "$profile" 2>/dev/null || basename "$profile" .json)
     echo "  • $name"
   done
   echo ""
-  read -p "See your new VM? Press Enter..."
+  read -r -p "See your new VM? Press Enter..."
   
   clear
   echo -e "${BOLD}═══════════════════════════════════════════════════════════════${NC}"
@@ -489,7 +494,7 @@ EOF
   echo ""
   echo "📚 Next lesson: Starting and Connecting to VMs"
   echo ""
-  read -p "Press Enter to return to menu..."
+  read -r -p "Press Enter to return to menu..."
   
   mark_complete "lesson3"
 }
@@ -557,7 +562,7 @@ main() {
   echo "⏱️  Time: 10-20 minutes per lesson"
   echo "📊 Progress: Tracked automatically"
   echo ""
-  read -p "Ready to start learning? Press Enter..."
+  read -r -p "Ready to start learning? Press Enter..."
   
   tutorial_menu
 }
