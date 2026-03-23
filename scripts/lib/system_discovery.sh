@@ -107,7 +107,8 @@ detect_storage_type() {
     # Check rotation (0 = SSD, 1 = HDD)
     local rotation
     if [ -b "$device" ]; then
-        local dev_name=$(basename "$device")
+        local dev_name
+        dev_name=$(basename "$device")
         rotation=$(cat "/sys/block/${dev_name}/queue/rotational" 2>/dev/null || echo "1")
         if [ "$rotation" -eq 0 ]; then
             echo "ssd"
@@ -116,7 +117,8 @@ detect_storage_type() {
         fi
     else
         # Check primary storage device
-        local primary_device=$(df / | tail -1 | awk '{print $1}' | sed 's/[0-9]*$//')
+        local primary_device
+        primary_device=$(df / | tail -1 | awk '{print $1}' | sed 's/[0-9]*$//')
         detect_storage_type "$primary_device"
     fi
 }
@@ -192,7 +194,8 @@ check_default_bridge() {
 
 # Recommend network mode
 recommend_network_mode() {
-    local has_bridges=$(list_bridges)
+    local has_bridges
+    has_bridges=$(list_bridges)
     
     if [ -n "$has_bridges" ]; then
         # Bridges available, but NAT is more secure by default
@@ -204,7 +207,8 @@ recommend_network_mode() {
 
 # Get default network bridge
 get_default_bridge() {
-    local bridges=$(list_bridges | head -1)
+    local bridges
+    bridges=$(list_bridges | head -1)
     
     if [ -n "$bridges" ]; then
         echo "$bridges"
@@ -232,8 +236,10 @@ detect_gpu() {
 
 # Check if GPU passthrough is possible
 check_gpu_passthrough() {
-    local virt_support=$(check_virt_support)
-    local gpu=$(detect_gpu)
+    local virt_support
+    local gpu
+    virt_support=$(check_virt_support)
+    gpu=$(detect_gpu)
     
     if [ "$virt_support" = "yes" ] && [ "$gpu" != "none" ]; then
         if grep -q "IOMMU" /proc/cpuinfo 2>/dev/null || \
@@ -280,18 +286,30 @@ detect_init_system() {
 generate_system_report() {
     local format=${1:-text}  # text or json
     
-    local cpu_cores=$(get_cpu_cores)
-    local cpu_model=$(get_cpu_model)
-    local cpu_arch=$(get_cpu_arch)
-    local virt_support=$(check_virt_support)
-    local total_ram=$(get_total_ram_mb)
-    local available_ram=$(get_available_ram_mb)
-    local storage_type=$(detect_storage_type)
-    local available_storage=$(get_available_storage_gb)
-    local gpu=$(detect_gpu)
-    local gpu_passthrough=$(check_gpu_passthrough)
-    local default_bridge=$(get_default_bridge)
-    local nixos_version=$(get_nixos_version)
+    local cpu_cores
+    local cpu_model
+    local cpu_arch
+    local virt_support
+    local total_ram
+    local available_ram
+    local storage_type
+    local available_storage
+    local gpu
+    local gpu_passthrough
+    local default_bridge
+    local nixos_version
+    cpu_cores=$(get_cpu_cores)
+    cpu_model=$(get_cpu_model)
+    cpu_arch=$(get_cpu_arch)
+    virt_support=$(check_virt_support)
+    total_ram=$(get_total_ram_mb)
+    available_ram=$(get_available_ram_mb)
+    storage_type=$(detect_storage_type)
+    available_storage=$(get_available_storage_gb)
+    gpu=$(detect_gpu)
+    gpu_passthrough=$(check_gpu_passthrough)
+    default_bridge=$(get_default_bridge)
+    nixos_version=$(get_nixos_version)
     
     if [ "$format" = "json" ]; then
         cat <<EOF
@@ -369,17 +387,26 @@ generate_vm_defaults() {
     local format=${2:-bash}
     
     # Detect system
-    local cpu_cores=$(get_cpu_cores)
-    local total_ram=$(get_total_ram_mb)
-    local storage_type=$(detect_storage_type)
-    local default_bridge=$(get_default_bridge)
+    local cpu_cores
+    local total_ram
+    local storage_type
+    local default_bridge
+    cpu_cores=$(get_cpu_cores)
+    total_ram=$(get_total_ram_mb)
+    storage_type=$(detect_storage_type)
+    default_bridge=$(get_default_bridge)
     
     # Calculate recommendations
-    local rec_vcpus=$(calculate_recommended_vcpus "$cpu_cores" 25 2)
-    local rec_ram=$(calculate_recommended_ram "$total_ram" "$rec_vcpus" 2048)
-    local rec_disk=$(calculate_recommended_disk_gb "$os_type")
-    local rec_disk_format=$(recommend_disk_format "$storage_type")
-    local rec_network=$(recommend_network_mode)
+    local rec_vcpus
+    local rec_ram
+    local rec_disk
+    local rec_disk_format
+    local rec_network
+    rec_vcpus=$(calculate_recommended_vcpus "$cpu_cores" 25 2)
+    rec_ram=$(calculate_recommended_ram "$total_ram" "$rec_vcpus" 2048)
+    rec_disk=$(calculate_recommended_disk_gb "$os_type")
+    rec_disk_format=$(recommend_disk_format "$storage_type")
+    rec_network=$(recommend_network_mode)
     
     if [ "$format" = "json" ]; then
         cat <<EOF

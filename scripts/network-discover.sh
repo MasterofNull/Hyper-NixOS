@@ -64,20 +64,24 @@ select_interface() {
     echo -e "${CYAN}Available interfaces:${NC}"
     echo
     
-    local -a interfaces=($(get_physical_interfaces))
+    local -a interfaces=()
     local i=1
+    mapfile -t interfaces < <(get_physical_interfaces)
     
     for iface in "${interfaces[@]}"; do
-        local mac=$(ip link show "$iface" 2>/dev/null | grep link/ether | awk '{print $2}' || echo "N/A")
-        local ip=$(ip -4 addr show "$iface" 2>/dev/null | grep inet | awk '{print $2}' || echo "N/A")
-        local state=$(ip link show "$iface" 2>/dev/null | grep -o 'state [A-Z]*' | awk '{print $2}' || echo "UNKNOWN")
+        local mac
+        local ip
+        local state
+        mac=$(ip link show "$iface" 2>/dev/null | grep link/ether | awk '{print $2}' || echo "N/A")
+        ip=$(ip -4 addr show "$iface" 2>/dev/null | grep inet | awk '{print $2}' || echo "N/A")
+        state=$(ip link show "$iface" 2>/dev/null | grep -o 'state [A-Z]*' | awk '{print $2}' || echo "UNKNOWN")
         
         echo -e "  ${GREEN}$i)${NC} ${BOLD}$iface${NC} - $state - IP: $ip - MAC: $mac"
         ((i++))
     done
     
     echo
-    read -p "$(echo -e "${CYAN}Select interface (1-${#interfaces[@]}):${NC} ")" choice
+    read -r -p "$(echo -e "${CYAN}Select interface (1-${#interfaces[@]}):${NC} ")" choice
     
     if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#interfaces[@]}" ]; then
         echo "${interfaces[$((choice-1))]}"
@@ -97,9 +101,12 @@ quick_scan() {
     
     # Basic info
     echo -e "${YELLOW}Interface Information:${NC}"
-    local mac=$(ip link show "$interface" 2>/dev/null | grep link/ether | awk '{print $2}' || echo "N/A")
-    local ip=$(ip -4 addr show "$interface" 2>/dev/null | grep inet | awk '{print $2}' || echo "N/A")
-    local state=$(ip link show "$interface" 2>/dev/null | grep -o 'state [A-Z]*' | awk '{print $2}' || echo "UNKNOWN")
+    local mac
+    local ip
+    local state
+    mac=$(ip link show "$interface" 2>/dev/null | grep link/ether | awk '{print $2}' || echo "N/A")
+    ip=$(ip -4 addr show "$interface" 2>/dev/null | grep inet | awk '{print $2}' || echo "N/A")
+    state=$(ip link show "$interface" 2>/dev/null | grep -o 'state [A-Z]*' | awk '{print $2}' || echo "UNKNOWN")
     
     echo "  MAC:   $mac"
     echo "  IP:    $ip"
@@ -108,20 +115,24 @@ quick_scan() {
     
     # Network range
     echo -e "${YELLOW}Network Range:${NC}"
-    local range=$(detect_network_range "$interface" || echo "N/A")
+    local range
+    range=$(detect_network_range "$interface" || echo "N/A")
     echo "  $range"
     echo
     
     # Gateway
     echo -e "${YELLOW}Gateway:${NC}"
-    local gateway=$(detect_gateway "$interface" || echo "N/A")
+    local gateway
+    gateway=$(detect_gateway "$interface" || echo "N/A")
     echo "  $gateway"
     echo
     
     # Active hosts
     echo -e "${YELLOW}Scanning for active hosts (this may take a moment)...${NC}"
-    local hosts=$(scan_active_hosts "$interface" 2 2>/dev/null || echo "")
-    local count=$(echo "$hosts" | grep -c . || echo "0")
+    local hosts
+    local count
+    hosts=$(scan_active_hosts "$interface" 2 2>/dev/null || echo "")
+    count=$(echo "$hosts" | grep -c . || echo "0")
     echo "  Found $count active hosts"
     
     if [ "$count" -gt 0 ] && [ "$count" -lt 20 ]; then
@@ -168,7 +179,8 @@ interface_info() {
     echo
     
     # Get comprehensive info
-    local info_file=$(get_interface_info "$interface")
+    local info_file
+    info_file=$(get_interface_info "$interface")
     
     if [ -f "$info_file" ]; then
         echo -e "${YELLOW}Configuration:${NC}"
@@ -205,7 +217,8 @@ gateway_scan() {
     echo -e "${BLUE}════════════════════════════════════════${NC}"
     echo
     
-    local gateway=$(detect_gateway "$interface")
+    local gateway
+    gateway=$(detect_gateway "$interface")
     
     if [ -z "$gateway" ] || [ "$gateway" = "none" ]; then
         echo -e "${RED}No gateway detected${NC}"
@@ -243,7 +256,8 @@ vlan_discovery() {
     echo
     
     # Detect existing VLANs
-    local vlans=$(detect_vlans)
+    local vlans
+    vlans=$(detect_vlans)
     
     if [ -z "$vlans" ]; then
         echo "No VLANs currently configured"
@@ -253,9 +267,11 @@ vlan_discovery() {
             echo "  VLAN ID: $vlan"
             
             # Show VLAN interface details
-            local vlan_if=$(ip -d link show | grep "vlan id $vlan" | awk '{print $2}' | cut -d@ -f1)
+            local vlan_if
+            vlan_if=$(ip -d link show | grep "vlan id $vlan" | awk '{print $2}' | cut -d@ -f1)
             if [ -n "$vlan_if" ]; then
-                local ip=$(ip -4 addr show "$vlan_if" 2>/dev/null | grep inet | awk '{print $2}' || echo "N/A")
+                local ip
+                ip=$(ip -4 addr show "$vlan_if" 2>/dev/null | grep inet | awk '{print $2}' || echo "N/A")
                 echo "    Interface: $vlan_if"
                 echo "    IP: $ip"
             fi
@@ -279,7 +295,8 @@ wireless_scan() {
     echo
     
     # Check if wireless
-    local wireless_interfaces=$(get_wireless_interfaces)
+    local wireless_interfaces
+    wireless_interfaces=$(get_wireless_interfaces)
     
     if [ -z "$wireless_interfaces" ]; then
         echo -e "${YELLOW}No wireless interfaces detected${NC}"
@@ -319,14 +336,16 @@ arp_analysis() {
     
     echo -e "${YELLOW}ARP Cache Entries:${NC}"
     get_arp_cache | head -30 | while read -r ip mac; do
-        local vendor=$(lookup_mac_vendor "$mac" 2>/dev/null || echo "Unknown")
+        local vendor
+        vendor=$(lookup_mac_vendor "$mac" 2>/dev/null || echo "Unknown")
         echo "  $ip -> $mac ($vendor)"
     done
     echo
     
     # Check for conflicts
     echo -e "${YELLOW}Checking for MAC conflicts...${NC}"
-    local conflicts=$(detect_arp_conflicts)
+    local conflicts
+    conflicts=$(detect_arp_conflicts)
     if [ -z "$conflicts" ]; then
         echo "  No conflicts detected"
     else
@@ -346,13 +365,15 @@ safe_ip_recommendations() {
     echo
     
     # Show network info
-    local network_range=$(detect_network_range "$interface")
+    local network_range
+    network_range=$(detect_network_range "$interface")
     echo -e "${YELLOW}Network Range:${NC} $network_range"
     echo
     
     # Get used IPs
     echo "Scanning for used IPs (this may take a moment)..."
-    local used_count=$(get_used_ips "$interface" 2>/dev/null | wc -l || echo "0")
+    local used_count
+    used_count=$(get_used_ips "$interface" 2>/dev/null | wc -l || echo "0")
     echo "  Found $used_count IPs in use"
     echo
     
@@ -363,7 +384,8 @@ safe_ip_recommendations() {
     echo
     
     # Show usable range
-    local range=$(get_usable_ip_range "$network_range" 2>/dev/null || echo "N/A")
+    local range
+    range=$(get_usable_ip_range "$network_range" 2>/dev/null || echo "N/A")
     echo -e "${YELLOW}Usable IP Range:${NC} $range"
     echo
 }
@@ -375,7 +397,7 @@ mac_vendor_lookup() {
     echo -e "${BLUE}════════════════════════════════════════${NC}"
     echo
     
-    read -p "Enter MAC address (XX:XX:XX:XX:XX:XX): " mac
+    read -r -p "Enter MAC address (XX:XX:XX:XX:XX:XX): " mac
     
     if [ -z "$mac" ]; then
         echo "No MAC address provided"
@@ -384,7 +406,8 @@ mac_vendor_lookup() {
     
     echo
     echo -e "${YELLOW}Looking up vendor for: $mac${NC}"
-    local vendor=$(lookup_mac_vendor "$mac" 2>/dev/null || echo "Unknown")
+    local vendor
+    vendor=$(lookup_mac_vendor "$mac" 2>/dev/null || echo "Unknown")
     echo "  Vendor: $vendor"
     echo
     
@@ -399,14 +422,15 @@ interactive_mode() {
     while true; do
         show_menu
         
-        read -p "$(echo -e "${CYAN}Enter choice:${NC} ")" choice
+        read -r -p "$(echo -e "${CYAN}Enter choice:${NC} ")" choice
         
         case "$choice" in
             1|2|3|4|6|8)
-                local iface=$(select_interface)
+                local iface
+                iface=$(select_interface)
                 if [ -z "$iface" ]; then
                     echo -e "${RED}Invalid selection${NC}"
-                    read -p "Press Enter to continue..."
+                    read -r -p "Press Enter to continue..."
                     continue
                 fi
                 
@@ -427,7 +451,7 @@ interactive_mode() {
         esac
         
         echo
-        read -p "Press Enter to continue..."
+        read -r -p "Press Enter to continue..."
     done
 }
 
