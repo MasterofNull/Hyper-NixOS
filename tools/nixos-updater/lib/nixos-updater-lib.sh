@@ -85,11 +85,13 @@ nixos_get_previous_generation() {
 #############################################################################
 
 nixos_dry_run() {
-    local system_type=$(nixos_get_system_type)
+    local system_type
+    system_type=$(nixos_get_system_type)
     
     case "$system_type" in
         flake)
-            local config_path=$(nixos_get_config_path)
+            local config_path
+            config_path=$(nixos_get_config_path)
             cd "$config_path"
             nixos-rebuild dry-build --flake ".#$(nixos_get_hostname)"
             ;;
@@ -104,11 +106,13 @@ nixos_dry_run() {
 }
 
 nixos_update_channels() {
-    local system_type=$(nixos_get_system_type)
+    local system_type
+    system_type=$(nixos_get_system_type)
     
     case "$system_type" in
         flake)
-            local config_path=$(nixos_get_config_path)
+            local config_path
+            config_path=$(nixos_get_config_path)
             cd "$config_path"
             nix flake update
             ;;
@@ -119,11 +123,13 @@ nixos_update_channels() {
 }
 
 nixos_rebuild_switch() {
-    local system_type=$(nixos_get_system_type)
+    local system_type
+    system_type=$(nixos_get_system_type)
     
     case "$system_type" in
         flake)
-            local config_path=$(nixos_get_config_path)
+            local config_path
+            config_path=$(nixos_get_config_path)
             cd "$config_path"
             nixos-rebuild switch --flake ".#$(nixos_get_hostname)"
             ;;
@@ -134,11 +140,13 @@ nixos_rebuild_switch() {
 }
 
 nixos_rebuild_boot() {
-    local system_type=$(nixos_get_system_type)
+    local system_type
+    system_type=$(nixos_get_system_type)
     
     case "$system_type" in
         flake)
-            local config_path=$(nixos_get_config_path)
+            local config_path
+            config_path=$(nixos_get_config_path)
             cd "$config_path"
             nixos-rebuild boot --flake ".#$(nixos_get_hostname)"
             ;;
@@ -154,8 +162,10 @@ nixos_rebuild_boot() {
 
 nixos_create_backup_tag() {
     local tag_name=$1
-    local generation=$(nixos_get_current_generation)
+    local generation
     local backup_file="/var/lib/nixos-updater/backups/${tag_name}_${generation}"
+    generation=$(nixos_get_current_generation)
+    backup_file="/var/lib/nixos-updater/backups/${tag_name}_${generation}"
     
     mkdir -p "$(dirname "$backup_file")"
     echo "generation=$generation" > "$backup_file"
@@ -194,7 +204,8 @@ nixos_is_valid_channel() {
 
 nixos_change_channel() {
     local new_channel=$1
-    local system_type=$(nixos_get_system_type)
+    local system_type
+    system_type=$(nixos_get_system_type)
     
     case "$system_type" in
         flake)
@@ -236,11 +247,13 @@ nixos_check_store_health() {
 }
 
 nixos_check_for_updates() {
-    local system_type=$(nixos_get_system_type)
+    local system_type
+    system_type=$(nixos_get_system_type)
     
     case "$system_type" in
         flake)
-            local config_path=$(nixos_get_config_path)
+            local config_path
+            config_path=$(nixos_get_config_path)
             cd "$config_path"
             nix flake update --dry-run
             ;;

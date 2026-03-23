@@ -50,7 +50,8 @@ EOF
         cp "$source_config" "$target_path/configuration.nix"
         
         # Copy hardware config if available
-        local hw_config="$(dirname "$source_config")/hardware-configuration.nix"
+        local hw_config
+        hw_config="$(dirname "$source_config")/hardware-configuration.nix"
         if [[ -f "$hw_config" ]]; then
             cp "$hw_config" "$target_path/"
         fi
@@ -150,8 +151,10 @@ migrate_channels_to_flake() {
     echo "  → Converting channels to flake"
     
     # Get current channel
-    local current_channel=$(nix-channel --list | grep nixos | awk '{print $2}' | sed 's|.*nixos-||')
-    local hostname=$(hostname -s)
+    local current_channel
+    local hostname
+    current_channel=$(nix-channel --list | grep nixos | awk '{print $2}' | sed 's|.*nixos-||')
+    hostname=$(hostname -s)
     
     # Create flake.nix
     cat > "$config_path/flake.nix" << EOF
@@ -392,7 +395,8 @@ test_config_build() {
     # Detect config type and test build
     if [[ -f "flake.nix" ]]; then
         # Get first flake output
-        local output=$(nix flake show --json 2>/dev/null | jq -r '.nixosConfigurations | keys[0]' 2>/dev/null)
+        local output
+        output=$(nix flake show --json 2>/dev/null | jq -r '.nixosConfigurations | keys[0]' 2>/dev/null)
         if [[ -n "$output" && "$output" != "null" ]]; then
             nixos-rebuild build --flake ".#$output" --dry-run 2>&1 | tail -5
         else
@@ -461,13 +465,14 @@ switch_to_migrated_config() {
     
     if ! test_config_build "$migrated_config"; then
         echo "✗ Configuration build test failed"
-        read -p "Continue anyway? (y/n): " continue
+        read -r -p "Continue anyway? (y/n): " continue
         [[ "$continue" != "y" ]] && return 1
     fi
     
     # Backup original
     if [[ "$backup_original" == "true" ]]; then
-        local backup_path="/var/backups/nixos-pre-migration-$(date +%Y%m%d-%H%M%S)"
+        local backup_path
+        backup_path="/var/backups/nixos-pre-migration-$(date +%Y%m%d-%H%M%S)"
         echo "→ Backing up original to $backup_path"
         mkdir -p "$backup_path"
         cp -r /etc/nixos/* "$backup_path/"
@@ -485,7 +490,8 @@ switch_to_migrated_config() {
     cd /etc/nixos
     
     if [[ -f "flake.nix" ]]; then
-        local output=$(nix flake show --json 2>/dev/null | jq -r '.nixosConfigurations | keys[0]')
+        local output
+        output=$(nix flake show --json 2>/dev/null | jq -r '.nixosConfigurations | keys[0]')
         nixos-rebuild switch --flake ".#$output"
     else
         nixos-rebuild switch
@@ -517,18 +523,18 @@ migrate_wizard() {
     echo "Step 1: Select source configuration"
     echo "  1) /etc/nixos (current system)"
     echo "  2) Custom path"
-    read -p "Selection: " source_choice
+    read -r -p "Selection: " source_choice
     
     case "$source_choice" in
         1) local source="/etc/nixos" ;;
-        2) read -p "Enter path: " source ;;
+        2) read -r -p "Enter path: " source ;;
         *) echo "Invalid choice"; return 1 ;;
     esac
     
     # Step 2: Select target
     echo
     echo "Step 2: Enter target path for migrated config"
-    read -p "Target path: " target
+    read -r -p "Target path: " target
     
     # Step 3: Select migration type
     echo
@@ -537,7 +543,7 @@ migrate_wizard() {
     echo "  2) Convert to flakes"
     echo "  3) Full modernization"
     echo "  4) Custom rules"
-    read -p "Selection: " migration_type
+    read -r -p "Selection: " migration_type
     
     case "$migration_type" in
         1)
@@ -551,7 +557,7 @@ migrate_wizard() {
             ;;
         4)
             echo "Enter rules (space-separated):"
-            read -p "> " -a custom_rules
+            read -r -a custom_rules -p "> "
             migrate_config_incremental "$source" "$target" "${custom_rules[@]}"
             ;;
         *)
@@ -567,7 +573,7 @@ migrate_wizard() {
     echo "  2) Test build only"
     echo "  3) Switch to migrated config"
     echo "  4) Exit"
-    read -p "Selection: " action
+    read -r -p "Selection: " action
     
     case "$action" in
         1)
