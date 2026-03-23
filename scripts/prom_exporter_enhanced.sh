@@ -38,8 +38,10 @@ type_text() {
 
 # Collect metrics
 collect_metrics() {
-  local timestamp=$(date +%s%3N)
-  local buf=$(mktemp)
+  local timestamp
+  local buf
+  timestamp=$(date +%s%3N)
+  buf=$(mktemp)
   
   comment "Hypervisor Metrics - Generated $(date -Iseconds)" >> "$buf"
   echo "" >> "$buf"
@@ -54,7 +56,8 @@ collect_metrics() {
   # Uptime
   help_text "hypervisor_uptime_seconds" "System uptime in seconds" >> "$buf"
   type_text "hypervisor_uptime_seconds" "gauge" >> "$buf"
-  local uptime_s=$(awk '{print int($1)}' /proc/uptime)
+  local uptime_s
+  uptime_s=$(awk '{print int($1)}' /proc/uptime)
   plain "hypervisor_uptime_seconds" "$uptime_s" "$timestamp" >> "$buf"
   echo "" >> "$buf"
   
@@ -87,7 +90,8 @@ collect_metrics() {
   # CPU metrics
   help_text "hypervisor_cpu_count" "Number of CPU cores" >> "$buf"
   type_text "hypervisor_cpu_count" "gauge" >> "$buf"
-  local cpu_count=$(nproc)
+  local cpu_count
+  cpu_count=$(nproc)
   plain "hypervisor_cpu_count" "$cpu_count" "$timestamp" >> "$buf"
   echo "" >> "$buf"
   
@@ -104,11 +108,16 @@ collect_metrics() {
   help_text "hypervisor_disk_bytes" "Disk space statistics for hypervisor storage" >> "$buf"
   type_text "hypervisor_disk_bytes" "gauge" >> "$buf"
   if [[ -d /var/lib/hypervisor ]]; then
-    local disk_info=$(df -B1 /var/lib/hypervisor | tail -1)
-    local total=$(echo "$disk_info" | awk '{print $2}')
-    local used=$(echo "$disk_info" | awk '{print $3}')
-    local available=$(echo "$disk_info" | awk '{print $4}')
-    local mount=$(echo "$disk_info" | awk '{print $6}')
+    local disk_info
+    local total
+    local used
+    local available
+    local mount
+    disk_info=$(df -B1 /var/lib/hypervisor | tail -1)
+    total=$(echo "$disk_info" | awk '{print $2}')
+    used=$(echo "$disk_info" | awk '{print $3}')
+    available=$(echo "$disk_info" | awk '{print $4}')
+    mount=$(echo "$disk_info" | awk '{print $6}')
     
     metric "hypervisor_disk_bytes" "type=\"total\",mount=\"$mount\"" "$total" "$timestamp" >> "$buf"
     metric "hypervisor_disk_bytes" "type=\"used\",mount=\"$mount\"" "$used" "$timestamp" >> "$buf"
@@ -143,9 +152,12 @@ collect_metrics() {
   help_text "hypervisor_vms_total" "Total number of VMs by state" >> "$buf"
   type_text "hypervisor_vms_total" "gauge" >> "$buf"
   
-  local vms_running=$(virsh list --name 2>/dev/null | grep -v '^$' | wc -l || echo 0)
-  local vms_stopped=$(virsh list --inactive --name 2>/dev/null | grep -v '^$' | wc -l || echo 0)
+  local vms_running
+  local vms_stopped
   local vms_total=$(( vms_running + vms_stopped ))
+  vms_running=$(virsh list --name 2>/dev/null | grep -v '^$' | wc -l || echo 0)
+  vms_stopped=$(virsh list --inactive --name 2>/dev/null | grep -v '^$' | wc -l || echo 0)
+  vms_total=$(( vms_running + vms_stopped ))
   
   metric "hypervisor_vms_total" "state=\"running\"" "$vms_running" "$timestamp" >> "$buf"
   metric "hypervisor_vms_total" "state=\"stopped\"" "$vms_stopped" "$timestamp" >> "$buf"
@@ -182,41 +194,52 @@ collect_metrics() {
     [[ -z "$vm" ]] && continue
     
     # VM state
-    local state=$(virsh domstate "$vm" 2>/dev/null || echo "unknown")
+    local state
     local state_val=0
+    state=$(virsh domstate "$vm" 2>/dev/null || echo "unknown")
     [[ "$state" == "running" ]] && state_val=1
     metric "vm_state" "vm=\"$vm\",state=\"$state\"" "$state_val" "$timestamp" >> "$buf"
     
     # Only collect detailed stats for running VMs
     if [[ "$state" == "running" ]]; then
       # vCPU count
-      local vcpus=$(virsh dominfo "$vm" 2>/dev/null | awk '/CPU\(s\):/ {print $2}' || echo 0)
+      local vcpus
+      vcpus=$(virsh dominfo "$vm" 2>/dev/null | awk '/CPU\(s\):/ {print $2}' || echo 0)
       metric "vm_vcpu_count" "vm=\"$vm\"" "$vcpus" "$timestamp" >> "$buf"
       
       # Memory stats
-      local mem_total=$(virsh dominfo "$vm" 2>/dev/null | awk '/Max memory:/ {print $3}' || echo 0)
-      local mem_used=$(virsh dominfo "$vm" 2>/dev/null | awk '/Used memory:/ {print $3}' || echo 0)
+      local mem_total
+      local mem_used
+      mem_total=$(virsh dominfo "$vm" 2>/dev/null | awk '/Max memory:/ {print $3}' || echo 0)
+      mem_used=$(virsh dominfo "$vm" 2>/dev/null | awk '/Used memory:/ {print $3}' || echo 0)
       metric "vm_memory_bytes" "vm=\"$vm\",type=\"total\"" "$((mem_total * 1024))" "$timestamp" >> "$buf"
       metric "vm_memory_bytes" "vm=\"$vm\",type=\"used\"" "$((mem_used * 1024))" "$timestamp" >> "$buf"
       
       # CPU time
-      local cpu_time=$(virsh dominfo "$vm" 2>/dev/null | awk '/CPU time:/ {print $3}' | tr -d 's' || echo 0)
+      local cpu_time
+      cpu_time=$(virsh dominfo "$vm" 2>/dev/null | awk '/CPU time:/ {print $3}' | tr -d 's' || echo 0)
       metric "vm_cpu_time_seconds_total" "vm=\"$vm\"" "$cpu_time" "$timestamp" >> "$buf"
       
       # Disk I/O stats
-      local disk_stats=$(virsh domstats "$vm" --block 2>/dev/null || true)
+      local disk_stats
+      disk_stats=$(virsh domstats "$vm" --block 2>/dev/null || true)
       if [[ -n "$disk_stats" ]]; then
-        local read_bytes=$(echo "$disk_stats" | awk '/block.*rd.bytes=/ {sum+=$2} END {print sum+0}' FS='=')
-        local write_bytes=$(echo "$disk_stats" | awk '/block.*wr.bytes=/ {sum+=$2} END {print sum+0}' FS='=')
+        local read_bytes
+        local write_bytes
+        read_bytes=$(echo "$disk_stats" | awk '/block.*rd.bytes=/ {sum+=$2} END {print sum+0}' FS='=')
+        write_bytes=$(echo "$disk_stats" | awk '/block.*wr.bytes=/ {sum+=$2} END {print sum+0}' FS='=')
         metric "vm_disk_read_bytes_total" "vm=\"$vm\"" "${read_bytes:-0}" "$timestamp" >> "$buf"
         metric "vm_disk_write_bytes_total" "vm=\"$vm\"" "${write_bytes:-0}" "$timestamp" >> "$buf"
       fi
       
       # Network I/O stats
-      local net_stats=$(virsh domstats "$vm" --interface 2>/dev/null || true)
+      local net_stats
+      net_stats=$(virsh domstats "$vm" --interface 2>/dev/null || true)
       if [[ -n "$net_stats" ]]; then
-        local rx_bytes=$(echo "$net_stats" | awk '/net.*rx.bytes=/ {sum+=$2} END {print sum+0}' FS='=')
-        local tx_bytes=$(echo "$net_stats" | awk '/net.*tx.bytes=/ {sum+=$2} END {print sum+0}' FS='=')
+        local rx_bytes
+        local tx_bytes
+        rx_bytes=$(echo "$net_stats" | awk '/net.*rx.bytes=/ {sum+=$2} END {print sum+0}' FS='=')
+        tx_bytes=$(echo "$net_stats" | awk '/net.*tx.bytes=/ {sum+=$2} END {print sum+0}' FS='=')
         metric "vm_network_rx_bytes_total" "vm=\"$vm\"" "${rx_bytes:-0}" "$timestamp" >> "$buf"
         metric "vm_network_tx_bytes_total" "vm=\"$vm\"" "${tx_bytes:-0}" "$timestamp" >> "$buf"
       fi
@@ -236,7 +259,8 @@ collect_metrics() {
   
   while IFS= read -r network; do
     [[ -z "$network" ]] && continue
-    local active=$(virsh net-info "$network" 2>/dev/null | awk '/Active:/ {print ($2=="yes")?1:0}')
+    local active
+    active=$(virsh net-info "$network" 2>/dev/null | awk '/Active:/ {print ($2=="yes")?1:0}')
     metric "hypervisor_network_up" "network=\"$network\"" "${active:-0}" "$timestamp" >> "$buf"
   done < <(virsh net-list --all --name 2>/dev/null || true)
   echo "" >> "$buf"
@@ -259,11 +283,15 @@ collect_metrics() {
   
   while IFS= read -r pool; do
     [[ -z "$pool" ]] && continue
-    local pool_info=$(virsh pool-info "$pool" 2>/dev/null || true)
+    local pool_info
+    pool_info=$(virsh pool-info "$pool" 2>/dev/null || true)
     if [[ -n "$pool_info" ]]; then
-      local capacity=$(echo "$pool_info" | awk '/Capacity:/ {print $2}')
-      local allocation=$(echo "$pool_info" | awk '/Allocation:/ {print $2}')
-      local available=$(echo "$pool_info" | awk '/Available:/ {print $2}')
+      local capacity
+      local allocation
+      local available
+      capacity=$(echo "$pool_info" | awk '/Capacity:/ {print $2}')
+      allocation=$(echo "$pool_info" | awk '/Allocation:/ {print $2}')
+      available=$(echo "$pool_info" | awk '/Available:/ {print $2}')
       
       # Convert to bytes (assuming GiB)
       [[ -n "$capacity" ]] && metric "hypervisor_pool_capacity_bytes" "pool=\"$pool\"" "$(echo "$capacity * 1073741824" | bc 2>/dev/null || echo 0)" "$timestamp" >> "$buf"

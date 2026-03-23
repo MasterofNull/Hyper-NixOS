@@ -59,14 +59,18 @@ get_interface_info() {
     local info_file="${DISCOVERY_CACHE}/${interface}_info.json"
     
     # Get MAC address
-    local mac=$(ip link show "$interface" 2>/dev/null | grep link/ether | awk '{print $2}' || echo "unknown")
+    local mac
+    mac=$(ip link show "$interface" 2>/dev/null | grep link/ether | awk '{print $2}' || echo "unknown")
     
     # Get IP addresses
-    local ipv4=$(ip -4 addr show "$interface" 2>/dev/null | grep inet | awk '{print $2}' | head -1 || echo "none")
-    local ipv6=$(ip -6 addr show "$interface" 2>/dev/null | grep inet6 | grep -v fe80 | awk '{print $2}' | head -1 || echo "none")
+    local ipv4
+    local ipv6
+    ipv4=$(ip -4 addr show "$interface" 2>/dev/null | grep inet | awk '{print $2}' | head -1 || echo "none")
+    ipv6=$(ip -6 addr show "$interface" 2>/dev/null | grep inet6 | grep -v fe80 | awk '{print $2}' | head -1 || echo "none")
     
     # Get link state
-    local state=$(ip link show "$interface" 2>/dev/null | grep -o 'state [A-Z]*' | awk '{print $2}' || echo "UNKNOWN")
+    local state
+    state=$(ip link show "$interface" 2>/dev/null | grep -o 'state [A-Z]*' | awk '{print $2}' || echo "UNKNOWN")
     
     # Get speed if available
     local speed="unknown"
@@ -75,7 +79,8 @@ get_interface_info() {
     fi
     
     # Get MTU
-    local mtu=$(ip link show "$interface" 2>/dev/null | grep -o 'mtu [0-9]*' | awk '{print $2}' || echo "1500")
+    local mtu
+    mtu=$(ip link show "$interface" 2>/dev/null | grep -o 'mtu [0-9]*' | awk '{print $2}' || echo "1500")
     
     # Check if wireless
     local wireless="false"
@@ -109,7 +114,8 @@ detect_network_range() {
     local interface="$1"
     
     # Get IP and netmask
-    local ip_cidr=$(ip -4 addr show "$interface" 2>/dev/null | grep inet | awk '{print $2}' | head -1)
+    local ip_cidr
+    ip_cidr=$(ip -4 addr show "$interface" 2>/dev/null | grep inet | awk '{print $2}' | head -1)
     
     if [ -z "$ip_cidr" ] || [ "$ip_cidr" = "none" ]; then
         echo ""
@@ -117,8 +123,10 @@ detect_network_range() {
     fi
     
     # Extract network address
-    local network=$(ipcalc -n "$ip_cidr" 2>/dev/null | cut -d= -f2)
-    local prefix=$(echo "$ip_cidr" | cut -d/ -f2)
+    local network
+    local prefix
+    network=$(ipcalc -n "$ip_cidr" 2>/dev/null | cut -d= -f2)
+    prefix=$(echo "$ip_cidr" | cut -d/ -f2)
     
     echo "${network}/${prefix}"
 }
@@ -132,8 +140,10 @@ get_usable_ip_range() {
         return 1
     fi
     
-    local first=$(ipcalc -n "$cidr" 2>/dev/null | grep HostMin | awk '{print $2}')
-    local last=$(ipcalc -n "$cidr" 2>/dev/null | grep HostMax | awk '{print $2}')
+    local first
+    local last
+    first=$(ipcalc -n "$cidr" 2>/dev/null | grep HostMin | awk '{print $2}')
+    last=$(ipcalc -n "$cidr" 2>/dev/null | grep HostMax | awk '{print $2}')
     
     echo "${first}-${last}"
 }
@@ -148,7 +158,8 @@ scan_active_hosts() {
     local timeout="${2:-2}"
     local cache_file="${DISCOVERY_CACHE}/${interface}_active_hosts.txt"
     
-    local network_range=$(detect_network_range "$interface")
+    local network_range
+    network_range=$(detect_network_range "$interface")
     
     if [ -z "$network_range" ]; then
         echo "Error: Could not detect network range for $interface" >&2
@@ -165,10 +176,12 @@ scan_active_hosts() {
             tr -d '()' > "$cache_file"
     else
         # Fallback to ping sweep
-        local network=$(echo "$network_range" | cut -d/ -f1 | cut -d. -f1-3)
-        local prefix=$(echo "$network_range" | cut -d/ -f2)
+        local network
+        local prefix
+        network=$(echo "$network_range" | cut -d/ -f1 | cut -d. -f1-3)
+        prefix=$(echo "$network_range" | cut -d/ -f2)
         
-        > "$cache_file"
+        : > "$cache_file"
         
         # Determine host range based on prefix
         local start=1
@@ -200,16 +213,20 @@ recommend_safe_ips() {
     local interface="$1"
     local count="${2:-3}"
     
-    local network_range=$(detect_network_range "$interface")
-    local used_ips=$(get_used_ips "$interface")
+    local network_range
+    local used_ips
+    network_range=$(detect_network_range "$interface")
+    used_ips=$(get_used_ips "$interface")
     
     if [ -z "$network_range" ]; then
         echo "Error: Could not detect network range" >&2
         return 1
     fi
     
-    local network=$(echo "$network_range" | cut -d/ -f1 | cut -d. -f1-3)
-    local prefix=$(echo "$network_range" | cut -d/ -f2)
+    local network
+    local prefix
+    network=$(echo "$network_range" | cut -d/ -f1 | cut -d. -f1-3)
+    prefix=$(echo "$network_range" | cut -d/ -f2)
     
     # Start from .100 to avoid common DHCP ranges
     local recommended=()
@@ -283,7 +300,8 @@ detect_dhcp_server() {
     
     # Try to get DHCP lease info
     if [ -d /var/lib/dhcp ]; then
-        local lease_file="/var/lib/dhcp/dhclient.${interface}.leases"
+        local lease_file
+        lease_file="/var/lib/dhcp/dhclient.${interface}.leases"
         if [ -f "$lease_file" ]; then
             grep "dhcp-server-identifier" "$lease_file" | tail -1 | awk '{print $3}' | tr -d ';'
             return 0
@@ -318,7 +336,8 @@ detect_vlans() {
 # Recommend VLAN IDs (unused)
 recommend_vlan_ids() {
     local count="${1:-3}"
-    local existing_vlans=($(detect_vlans))
+    local -a existing_vlans=()
+    mapfile -t existing_vlans < <(detect_vlans)
     
     local recommended=()
     
@@ -343,11 +362,13 @@ recommend_vlan_ids() {
 # Lookup MAC vendor (using OUI database)
 lookup_mac_vendor() {
     local mac="$1"
-    local oui=$(echo "$mac" | cut -d: -f1-3 | tr '[:lower:]' '[:upper:]' | tr -d ':')
+    local oui
+    oui=$(echo "$mac" | cut -d: -f1-3 | tr '[:lower:]' '[:upper:]' | tr -d ':')
     
     # Use online lookup if available
     if command -v curl >/dev/null 2>&1; then
-        local vendor=$(curl -s "https://api.macvendors.com/${mac}" 2>/dev/null)
+        local vendor
+        vendor=$(curl -s "https://api.macvendors.com/${mac}" 2>/dev/null)
         if [ -n "$vendor" ] && [ "$vendor" != "Not Found" ]; then
             echo "$vendor"
             return 0
@@ -387,7 +408,8 @@ EOF
 # Test network speed to gateway
 test_network_speed() {
     local interface="$1"
-    local gateway=$(detect_gateway "$interface")
+    local gateway
+    gateway=$(detect_gateway "$interface")
     
     if [ -z "$gateway" ]; then
         echo "No gateway detected" >&2
@@ -397,7 +419,8 @@ test_network_speed() {
     echo "Testing network latency to $gateway..." >&2
     
     # Ping test
-    local avg_latency=$(ping -c 10 -W 2 "$gateway" 2>/dev/null | \
+    local avg_latency
+    avg_latency=$(ping -c 10 -W 2 "$gateway" 2>/dev/null | \
         grep 'avg' | \
         awk -F'/' '{print $5}' || echo "N/A")
     
@@ -474,19 +497,28 @@ discover_network() {
     echo >&2
     
     # Get basic info
-    local mac=$(ip link show "$interface" 2>/dev/null | grep link/ether | awk '{print $2}' || echo "unknown")
-    local ipv4=$(ip -4 addr show "$interface" 2>/dev/null | grep inet | awk '{print $2}' | head -1 || echo "none")
-    local network_range=$(detect_network_range "$interface" || echo "none")
-    local gateway=$(detect_gateway "$interface" || echo "none")
-    local dns_servers=$(detect_dns_servers | tr '\n' ',' | sed 's/,$//')
-    local dhcp_server=$(detect_dhcp_server "$interface" || echo "none")
+    local mac
+    local ipv4
+    local network_range
+    local gateway
+    local dns_servers
+    local dhcp_server
+    mac=$(ip link show "$interface" 2>/dev/null | grep link/ether | awk '{print $2}' || echo "unknown")
+    ipv4=$(ip -4 addr show "$interface" 2>/dev/null | grep inet | awk '{print $2}' | head -1 || echo "none")
+    network_range=$(detect_network_range "$interface" || echo "none")
+    gateway=$(detect_gateway "$interface" || echo "none")
+    dns_servers=$(detect_dns_servers | tr '\n' ',' | sed 's/,$//')
+    dhcp_server=$(detect_dhcp_server "$interface" || echo "none")
     
     # Scan network
-    local active_hosts=$(scan_active_hosts "$interface" 2 2>/dev/null | wc -l || echo "0")
-    local recommended_ips=$(recommend_safe_ips "$interface" 3 2>/dev/null | tr '\n' ',' | sed 's/,$//' || echo "none")
+    local active_hosts
+    local recommended_ips
+    active_hosts=$(scan_active_hosts "$interface" 2 2>/dev/null | wc -l || echo "0")
+    recommended_ips=$(recommend_safe_ips "$interface" 3 2>/dev/null | tr '\n' ',' | sed 's/,$//' || echo "none")
     
     # Performance
-    local bandwidth=$(detect_bandwidth "$interface" || echo "unknown")
+    local bandwidth
+    bandwidth=$(detect_bandwidth "$interface" || echo "unknown")
     
     # Create summary JSON
     cat > "$output_file" <<EOF

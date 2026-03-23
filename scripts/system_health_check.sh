@@ -89,7 +89,8 @@ check_hardware() {
   check_start "Hardware Checks"
   
   # CPU Check
-  local cpu_count=$(nproc 2>/dev/null || echo 0)
+  local cpu_count
+  cpu_count=$(nproc 2>/dev/null || echo 0)
   if [[ $cpu_count -ge 4 ]]; then
     check_result "cpu_count" "OK" "CPU cores: $cpu_count (sufficient)"
   elif [[ $cpu_count -ge 2 ]]; then
@@ -100,17 +101,22 @@ check_hardware() {
   
   # Check CPU virtualization support
   if grep -qE 'vmx|svm' /proc/cpuinfo; then
-    local virt_type=$(grep -oE 'vmx|svm' /proc/cpuinfo | head -1)
+    local virt_type
+    virt_type=$(grep -oE 'vmx|svm' /proc/cpuinfo | head -1)
     check_result "cpu_virt" "OK" "CPU virtualization: $virt_type (enabled)"
   else
     check_result "cpu_virt" "ERROR" "CPU virtualization: NOT supported or disabled in BIOS"
   fi
   
   # Memory Check
-  local total_mem_kb=$(awk '/MemTotal:/ {print $2}' /proc/meminfo)
+  local total_mem_kb
   local total_mem_gb=$((total_mem_kb / 1024 / 1024))
-  local avail_mem_kb=$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)
+  local avail_mem_kb
   local avail_mem_gb=$((avail_mem_kb / 1024 / 1024))
+  total_mem_kb=$(awk '/MemTotal:/ {print $2}' /proc/meminfo)
+  avail_mem_kb=$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)
+  total_mem_gb=$((total_mem_kb / 1024 / 1024))
+  avail_mem_gb=$((avail_mem_kb / 1024 / 1024))
   
   if [[ $total_mem_gb -ge 32 ]]; then
     check_result "memory_total" "OK" "Total memory: ${total_mem_gb}GB (excellent)"
@@ -125,9 +131,12 @@ check_hardware() {
   check_result "memory_available" "INFO" "Available memory: ${avail_mem_gb}GB"
   
   # Disk Space Check
-  local disk_total=$(df -BG /var/lib/hypervisor 2>/dev/null | awk 'NR==2 {print $2}' | tr -d 'G')
-  local disk_avail=$(df -BG /var/lib/hypervisor 2>/dev/null | awk 'NR==2 {print $4}' | tr -d 'G')
-  local disk_used_pct=$(df /var/lib/hypervisor 2>/dev/null | awk 'NR==2 {print $5}' | tr -d '%')
+  local disk_total
+  local disk_avail
+  local disk_used_pct
+  disk_total=$(df -BG /var/lib/hypervisor 2>/dev/null | awk 'NR==2 {print $2}' | tr -d 'G')
+  disk_avail=$(df -BG /var/lib/hypervisor 2>/dev/null | awk 'NR==2 {print $4}' | tr -d 'G')
+  disk_used_pct=$(df /var/lib/hypervisor 2>/dev/null | awk 'NR==2 {print $5}' | tr -d '%')
   
   if [[ $disk_avail -ge 100 ]]; then
     check_result "disk_space" "OK" "Disk space: ${disk_avail}GB available (${disk_used_pct}% used)"
@@ -224,7 +233,8 @@ check_network() {
   
   # Check default bridge
   if ip link show br0 >/dev/null 2>&1; then
-    local br_status=$(ip link show br0 | grep -oP 'state \K\w+')
+    local br_status
+    br_status=$(ip link show br0 | grep -oP 'state \K\w+')
     if [[ "$br_status" == "UP" ]]; then
       check_result "bridge" "OK" "Network bridge br0: UP"
     else
@@ -268,7 +278,8 @@ check_storage() {
   
   # Check storage pool
   if virsh pool-list --all 2>/dev/null | grep -q "default"; then
-    local pool_state=$(virsh pool-info default 2>/dev/null | awk '/State:/ {print $2}')
+    local pool_state
+    pool_state=$(virsh pool-info default 2>/dev/null | awk '/State:/ {print $2}')
     if [[ "$pool_state" == "running" ]]; then
       check_result "storage_pool" "OK" "Storage pool 'default': active"
     else
@@ -280,11 +291,13 @@ check_storage() {
   
   # Check disk I/O performance (simple test)
   local io_test_file="/var/lib/hypervisor/.io-test-$$"
-  local io_speed=$(dd if=/dev/zero of="$io_test_file" bs=1M count=100 2>&1 | grep -oP '\d+\.?\d* MB/s' || echo "unknown")
+  local io_speed
+  io_speed=$(dd if=/dev/zero of="$io_test_file" bs=1M count=100 2>&1 | grep -oP '\d+\.?\d* MB/s' || echo "unknown")
   rm -f "$io_test_file"
   
   if [[ "$io_speed" != "unknown" ]]; then
-    local speed_num=$(echo "$io_speed" | grep -oP '^\d+')
+    local speed_num
+    speed_num=$(echo "$io_speed" | grep -oP '^\d+')
     if [[ $speed_num -ge 500 ]]; then
       check_result "disk_io" "OK" "Disk I/O: ${io_speed} (excellent)"
     elif [[ $speed_num -ge 100 ]]; then
@@ -305,16 +318,20 @@ check_vms() {
   check_start "VM Status"
   
   # Count VMs
-  local total_vms=$(virsh list --all --name 2>/dev/null | grep -v '^$' | wc -l)
-  local running_vms=$(virsh list --state-running --name 2>/dev/null | grep -v '^$' | wc -l)
+  local total_vms
+  local running_vms
+  total_vms=$(virsh list --all --name 2>/dev/null | grep -v '^$' | wc -l)
+  running_vms=$(virsh list --state-running --name 2>/dev/null | grep -v '^$' | wc -l)
   
   check_result "vm_count" "INFO" "Total VMs: $total_vms (running: $running_vms)"
   
   # Check for VMs with issues
   if [[ $total_vms -gt 0 ]]; then
-    local crashed_vms=$(virsh list --all --name 2>/dev/null | while read vm; do
+    local crashed_vms
+    crashed_vms=$(virsh list --all --name 2>/dev/null | while read -r vm; do
       [[ -z "$vm" ]] && continue
-      local state=$(virsh domstate "$vm" 2>/dev/null)
+      local state
+      state=$(virsh domstate "$vm" 2>/dev/null)
       if [[ "$state" == "crashed" ]]; then
         echo "$vm"
       fi
@@ -330,15 +347,18 @@ check_vms() {
     local total_vm_mem=0
     local total_vm_cpus=0
     
-    while read vm; do
+    while read -r vm; do
       [[ -z "$vm" ]] && continue
-      local mem=$(virsh dominfo "$vm" 2>/dev/null | awk '/Max memory:/ {print $3}')
-      local cpus=$(virsh dominfo "$vm" 2>/dev/null | awk '/CPU\(s\):/ {print $2}')
+      local mem
+      local cpus
+      mem=$(virsh dominfo "$vm" 2>/dev/null | awk '/Max memory:/ {print $3}')
+      cpus=$(virsh dominfo "$vm" 2>/dev/null | awk '/CPU\(s\):/ {print $2}')
       total_vm_mem=$((total_vm_mem + mem))
       total_vm_cpus=$((total_vm_cpus + cpus))
     done < <(virsh list --state-running --name 2>/dev/null)
     
-    local total_vm_mem_gb=$((total_vm_mem / 1024 / 1024))
+    local total_vm_mem_gb
+    total_vm_mem_gb=$((total_vm_mem / 1024 / 1024))
     check_result "vm_resources" "INFO" "VM resources: ${total_vm_cpus} vCPUs, ${total_vm_mem_gb}GB memory"
   fi
 }
@@ -369,7 +389,8 @@ check_security() {
   # Check if passwordless sudo is disabled for security
   if sudo -n -l 2>/dev/null | grep -q "NOPASSWD"; then
     # Check if it's only for specific commands
-    local nopasswd_cmds=$(sudo -l 2>/dev/null | grep NOPASSWD | wc -l)
+    local nopasswd_cmds
+    nopasswd_cmds=$(sudo -l 2>/dev/null | grep NOPASSWD | wc -l)
     if [[ $nopasswd_cmds -gt 0 ]]; then
       check_result "sudo_config" "OK" "Sudo: granular NOPASSWD rules ($nopasswd_cmds commands)"
     fi
@@ -393,7 +414,8 @@ check_security() {
   fi
   
   # Check for unencrypted VM disks
-  local vm_disks=$(find /var/lib/hypervisor/disks -name "*.qcow2" 2>/dev/null | wc -l)
+  local vm_disks
+  vm_disks=$(find /var/lib/hypervisor/disks -name "*.qcow2" 2>/dev/null | wc -l)
   if [[ $vm_disks -gt 0 ]]; then
     check_result "disk_encryption" "WARN" "VM disk encryption: not configured (consider enabling)"
   fi
@@ -431,8 +453,10 @@ check_configuration() {
   done
   
   # Check NixOS generation
-  local current_gen=$(readlink /run/current-system | grep -oP 'system-\K\d+')
-  local latest_gen=$(ls -d /nix/var/nix/profiles/system-*-link 2>/dev/null | grep -oP 'system-\K\d+' | sort -n | tail -1)
+  local current_gen
+  local latest_gen
+  current_gen=$(readlink /run/current-system | grep -oP 'system-\K\d+')
+  latest_gen=$(ls -d /nix/var/nix/profiles/system-*-link 2>/dev/null | grep -oP 'system-\K\d+' | sort -n | tail -1)
   
   if [[ "$current_gen" == "$latest_gen" ]]; then
     check_result "nixos_gen" "OK" "NixOS generation: current (gen-$current_gen)"
@@ -449,7 +473,8 @@ check_optimization() {
   check_start "Optimization Checks"
   
   # Check if hugepages are enabled
-  local hugepages=$(cat /proc/sys/vm/nr_hugepages 2>/dev/null || echo 0)
+  local hugepages
+  hugepages=$(cat /proc/sys/vm/nr_hugepages 2>/dev/null || echo 0)
   if [[ $hugepages -gt 0 ]]; then
     check_result "hugepages" "OK" "Hugepages: enabled ($hugepages pages)"
   else
@@ -457,7 +482,8 @@ check_optimization() {
   fi
   
   # Check CPU governor
-  local cpu_gov=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")
+  local cpu_gov
+  cpu_gov=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")
   if [[ "$cpu_gov" == "performance" ]]; then
     check_result "cpu_governor" "OK" "CPU governor: performance"
   elif [[ "$cpu_gov" == "powersave" ]]; then
@@ -467,7 +493,8 @@ check_optimization() {
   fi
   
   # Check swappiness
-  local swappiness=$(cat /proc/sys/vm/swappiness 2>/dev/null || echo 60)
+  local swappiness
+  swappiness=$(cat /proc/sys/vm/swappiness 2>/dev/null || echo 60)
   if [[ $swappiness -le 10 ]]; then
     check_result "swappiness" "OK" "Swappiness: $swappiness (optimal for hypervisor)"
   elif [[ $swappiness -le 60 ]]; then
@@ -477,7 +504,8 @@ check_optimization() {
   fi
   
   # Check transparent hugepages
-  local thp_status=$(cat /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null | grep -oP '\[\K\w+' || echo "unknown")
+  local thp_status
+  thp_status=$(cat /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null | grep -oP '\[\K\w+' || echo "unknown")
   if [[ "$thp_status" == "always" || "$thp_status" == "madvise" ]]; then
     check_result "thp" "OK" "Transparent Hugepages: $thp_status"
   else
@@ -532,9 +560,12 @@ EOF
     fi
     first=false
     
-    local status_msg="${RESULTS[$check]}"
-    local status="${status_msg%%:*}"
-    local message="${status_msg#*:}"
+    local status_msg
+    local status
+    local message
+    status_msg="${RESULTS[$check]}"
+    status="${status_msg%%:*}"
+    message="${status_msg#*:}"
     
     echo -n "    \"$check\": {\"status\": \"$status\", \"message\": \"$message\"}" >> "$HEALTH_STATUS"
   done
@@ -564,8 +595,10 @@ show_recommendations() {
   # Hardware recommendations
   if [[ $CRITICAL_ERRORS -gt 0 ]] || [[ $WARNINGS -gt 0 ]]; then
     for check in "${!RESULTS[@]}"; do
-      local status_msg="${RESULTS[$check]}"
-      local status="${status_msg%%:*}"
+      local status_msg
+      local status
+      status_msg="${RESULTS[$check]}"
+      status="${status_msg%%:*}"
       
       if [[ "$status" == "ERROR" ]] || [[ "$status" == "WARN" ]]; then
         case "$check" in
@@ -651,7 +684,8 @@ main() {
   
   # Send alerts if critical errors found
   if [[ $CRITICAL_ERRORS -gt 0 ]] && [[ -x /etc/hypervisor/scripts/alert_manager.sh ]]; then
-    local alert_msg="Health check found $CRITICAL_ERRORS critical error(s)"
+    local alert_msg
+    alert_msg="Health check found $CRITICAL_ERRORS critical error(s)"
     /etc/hypervisor/scripts/alert_manager.sh critical \
       "System Health Check Failed" \
       "$alert_msg - Check $HEALTH_LOG for details" \

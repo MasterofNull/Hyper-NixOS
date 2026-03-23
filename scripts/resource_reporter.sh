@@ -119,12 +119,14 @@ EOF
     fi
     
     # Get disk usage
-    local disks=$(virsh domblklist "$vm" 2>/dev/null | awk 'NR>2 {print $2}' | grep -v "^$")
+    local disks
     local total_disk=0
+    disks=$(virsh domblklist "$vm" 2>/dev/null | awk 'NR>2 {print $2}' | grep -v "^$")
     
     for disk_path in $disks; do
       if [[ -f "$disk_path" ]]; then
-        local disk_mb=$(du -m "$disk_path" | cut -f1)
+        local disk_mb
+        disk_mb=$(du -m "$disk_path" | cut -f1)
         total_disk=$((total_disk + disk_mb))
       fi
     done
@@ -157,7 +159,8 @@ calculate_cpu_hours() {
   local total=0
   
   for vm in $(virsh list --name | grep -v "^$"); do
-    local cpu=$(virsh vcpucount "$vm" --current 2>/dev/null || echo 0)
+    local cpu
+    cpu=$(virsh vcpucount "$vm" --current 2>/dev/null || echo 0)
     total=$((total + cpu))
   done
   
@@ -170,12 +173,14 @@ calculate_memory_hours() {
   local total=0
   
   for vm in $(virsh list --name | grep -v "^$"); do
-    local memory=$(virsh dominfo "$vm" 2>/dev/null | grep "Used memory" | awk '{print $3}' || echo 0)
+    local memory
+    memory=$(virsh dominfo "$vm" 2>/dev/null | grep "Used memory" | awk '{print $3}' || echo 0)
     total=$((total + memory))
   done
   
   # Convert KB to GB and multiply by 24 hours
-  local gb=$((total / 1024 / 1024))
+  local gb
+  gb=$((total / 1024 / 1024))
   echo $((gb * 24))
 }
 
@@ -184,11 +189,13 @@ calculate_storage_days() {
   local total=0
   
   for vm in $(virsh list --all --name | grep -v "^$"); do
-    local disks=$(virsh domblklist "$vm" 2>/dev/null | awk 'NR>2 {print $2}' | grep -v "^$")
+    local disks
+    disks=$(virsh domblklist "$vm" 2>/dev/null | awk 'NR>2 {print $2}' | grep -v "^$")
     
     for disk in $disks; do
       if [[ -f "$disk" ]]; then
-        local disk_gb=$(du -m "$disk" | cut -f1)
+        local disk_gb
+        disk_gb=$(du -m "$disk" | cut -f1)
         disk_gb=$((disk_gb / 1024))
         total=$((total + disk_gb))
       fi
@@ -215,13 +222,19 @@ billing_report() {
   local storage_rate=0.10  # per GB-month
   local network_rate=0.09  # per GB transferred
   
-  local cpu_hours=$(calculate_cpu_hours)
-  local memory_hours=$(calculate_memory_hours)
-  local storage_gb=$(calculate_storage_days)
+  local cpu_hours
+  local memory_hours
+  local storage_gb
+  cpu_hours=$(calculate_cpu_hours)
+  memory_hours=$(calculate_memory_hours)
+  storage_gb=$(calculate_storage_days)
   
-  local cpu_cost=$(echo "$cpu_hours * $cpu_rate * 30" | bc)
-  local memory_cost=$(echo "$memory_hours * $memory_rate * 30" | bc)
-  local storage_cost=$(echo "$storage_gb * $storage_rate" | bc)
+  local cpu_cost
+  local memory_cost
+  local storage_cost
+  cpu_cost=$(echo "$cpu_hours * $cpu_rate * 30" | bc)
+  memory_cost=$(echo "$memory_hours * $memory_rate * 30" | bc)
+  storage_cost=$(echo "$storage_gb * $storage_rate" | bc)
   
   cat <<EOF
 ╔════════════════════════════════════════════════════════════════╗
@@ -256,12 +269,16 @@ EOF
     echo "VM: $vm"
     
     # Calculate VM-specific costs
-    local vm_cpu=$(virsh vcpucount "$vm" --config --maximum 2>/dev/null || echo 1)
-    local vm_memory=$(virsh dominfo "$vm" 2>/dev/null | grep "Max memory" | awk '{print $3}' || echo 0)
+    local vm_cpu
+    local vm_memory
+    vm_cpu=$(virsh vcpucount "$vm" --config --maximum 2>/dev/null || echo 1)
+    vm_memory=$(virsh dominfo "$vm" 2>/dev/null | grep "Max memory" | awk '{print $3}' || echo 0)
     vm_memory=$((vm_memory / 1024 / 1024))  # Convert to GB
     
-    local vm_cpu_cost=$(echo "$vm_cpu * 24 * 30 * $cpu_rate" | bc)
-    local vm_memory_cost=$(echo "$vm_memory * 24 * 30 * $memory_rate" | bc)
+    local vm_cpu_cost
+    local vm_memory_cost
+    vm_cpu_cost=$(echo "$vm_cpu * 24 * 30 * $cpu_rate" | bc)
+    vm_memory_cost=$(echo "$vm_memory * 24 * 30 * $memory_rate" | bc)
     
     echo "  CPU:    $vm_cpu cores × 720 hours = \$$vm_cpu_cost"
     echo "  Memory: $vm_memory GB × 720 hours = \$$vm_memory_cost"
@@ -302,8 +319,10 @@ vm_report() {
   echo ""
   
   # Get VM configuration
-  local cpu=$(virsh vcpucount "$vm" --config --maximum 2>/dev/null || echo "?")
-  local memory=$(virsh dominfo "$vm" 2>/dev/null | grep "Max memory" | awk '{print $3}' || echo "?")
+  local cpu
+  local memory
+  cpu=$(virsh vcpucount "$vm" --config --maximum 2>/dev/null || echo "?")
+  memory=$(virsh dominfo "$vm" 2>/dev/null | grep "Max memory" | awk '{print $3}' || echo "?")
   memory="$((memory / 1024)) MB"
   
   echo "Configuration:"
@@ -313,15 +332,18 @@ vm_report() {
   
   # Get disk usage
   echo "Storage:"
-  local disks=$(virsh domblklist "$vm" 2>/dev/null | awk 'NR>2 {print $2}' | grep -v "^$")
+  local disks
   local total_disk=0
+  disks=$(virsh domblklist "$vm" 2>/dev/null | awk 'NR>2 {print $2}' | grep -v "^$")
   
   for disk in $disks; do
     if [[ -f "$disk" ]]; then
-      local disk_size=$(du -h "$disk" | cut -f1)
+      local disk_size
+      disk_size=$(du -h "$disk" | cut -f1)
       echo "  $(basename "$disk"): $disk_size"
       
-      local disk_mb=$(du -m "$disk" | cut -f1)
+      local disk_mb
+      disk_mb=$(du -m "$disk" | cut -f1)
       total_disk=$((total_disk + disk_mb))
     fi
   done
@@ -330,7 +352,8 @@ vm_report() {
   echo ""
   
   # Uptime
-  local uptime_info=$(virsh dominfo "$vm" 2>/dev/null | grep -i "state\|cpu time")
+  local uptime_info
+  uptime_info=$(virsh dominfo "$vm" 2>/dev/null | grep -i "state\|cpu time")
   echo "Status:"
   echo "$uptime_info" | sed 's/^/  /'
   echo ""
@@ -393,7 +416,8 @@ EOF
 calculate_allocated_cpu() {
   local total=0
   for vm in $(virsh list --all --name | grep -v "^$"); do
-    local cpu=$(virsh vcpucount "$vm" --config --maximum 2>/dev/null || echo 0)
+    local cpu
+    cpu=$(virsh vcpucount "$vm" --config --maximum 2>/dev/null || echo 0)
     total=$((total + cpu))
   done
   echo $total
@@ -402,21 +426,26 @@ calculate_allocated_cpu() {
 calculate_allocated_memory() {
   local total=0
   for vm in $(virsh list --all --name | grep -v "^$"); do
-    local memory=$(virsh dominfo "$vm" 2>/dev/null | grep "Max memory" | awk '{print $3}' || echo 0)
+    local memory
+    memory=$(virsh dominfo "$vm" 2>/dev/null | grep "Max memory" | awk '{print $3}' || echo 0)
     total=$((total + memory))
   done
   echo $((total / 1024 / 1024))
 }
 
 calculate_cpu_utilization() {
-  local allocated=$(calculate_allocated_cpu)
-  local available=$(nproc)
+  local allocated
+  local available
+  allocated=$(calculate_allocated_cpu)
+  available=$(nproc)
   echo $((allocated * 100 / available))
 }
 
 calculate_memory_utilization() {
-  local allocated=$(calculate_allocated_memory)
-  local available=$(free -g | awk 'NR==2{print $2}')
+  local allocated
+  local available
+  allocated=$(calculate_allocated_memory)
+  available=$(free -g | awk 'NR==2{print $2}')
   if [[ $available -gt 0 ]]; then
     echo $((allocated * 100 / available))
   else
@@ -425,8 +454,10 @@ calculate_memory_utilization() {
 }
 
 generate_recommendations() {
-  local cpu_util=$(calculate_cpu_utilization)
-  local mem_util=$(calculate_memory_utilization)
+  local cpu_util
+  local mem_util
+  cpu_util=$(calculate_cpu_utilization)
+  mem_util=$(calculate_memory_utilization)
   
   if [[ $cpu_util -gt 80 ]]; then
     echo "⚠ CPU over-allocated ($cpu_util%) - Consider:"

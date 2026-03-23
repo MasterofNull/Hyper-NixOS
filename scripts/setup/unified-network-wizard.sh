@@ -96,7 +96,7 @@ configure_ipv6() {
     echo -e "${BOLD}${CYAN}IPv6 Configuration${NC}"
     echo
     
-    read -p "Enable IPv6? [Y/n]: " enable
+    read -r -p "Enable IPv6? [Y/n]: " enable
     if [[ ! "$enable" =~ ^[Nn]$ ]]; then
         CONFIG[ipv6_enable]="true"
         
@@ -105,7 +105,7 @@ configure_ipv6() {
         echo "  1) Disabled - No privacy"
         echo "  2) Stable - RFC 7217 (Recommended)"
         echo "  3) Temporary - RFC 4941 (Maximum Privacy)"
-        read -p "Select [2]: " privacy
+        read -r -p "Select [2]: " privacy
         privacy=${privacy:-2}
         
         case "$privacy" in
@@ -114,7 +114,7 @@ configure_ipv6() {
             3) CONFIG[ipv6_privacy]="temporary" ;;
         esac
         
-        read -p "Enable IPv6 spoofing? [y/N]: " spoof
+        read -r -p "Enable IPv6 spoofing? [y/N]: " spoof
         if [[ "$spoof" =~ ^[Yy]$ ]]; then
             CONFIG[ipv6_spoof]="true"
         fi
@@ -122,7 +122,7 @@ configure_ipv6() {
         echo -e "${GREEN}✓ IPv6 configured${NC}"
     fi
     
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Traffic Shaping
@@ -131,20 +131,20 @@ configure_qos() {
     echo -e "${BOLD}${CYAN}Traffic Shaping (QoS)${NC}"
     echo
     
-    read -p "Enable QoS? [Y/n]: " enable
+    read -r -p "Enable QoS? [Y/n]: " enable
     if [[ ! "$enable" =~ ^[Nn]$ ]]; then
         CONFIG[qos_enable]="true"
         
-        read -p "Default upload limit (e.g., 1gbit, 100mbit) [1gbit]: " upload
+        read -r -p "Default upload limit (e.g., 1gbit, 100mbit) [1gbit]: " upload
         CONFIG[qos_upload]=${upload:-1gbit}
         
-        read -p "Default download limit [1gbit]: " download
+        read -r -p "Default download limit [1gbit]: " download
         CONFIG[qos_download]=${download:-1gbit}
         
         echo -e "${GREEN}✓ QoS configured${NC}"
     fi
     
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Quick configuration for all features
@@ -155,7 +155,7 @@ configure_all() {
     echo "This will enable recommended features with sensible defaults."
     echo
     
-    read -p "Continue? [Y/n]: " confirm
+    read -r -p "Continue? [Y/n]: " confirm
     if [[ "$confirm" =~ ^[Nn]$ ]]; then
         return
     fi
@@ -163,7 +163,8 @@ configure_all() {
     # Run network discovery
     echo
     echo -e "${YELLOW}Running network discovery...${NC}"
-    local primary_if=$(get_physical_interfaces | head -1)
+    local primary_if
+    primary_if=$(get_physical_interfaces | head -1)
     
     # Enable core features with defaults
     CONFIG[ipv6_enable]="true"
@@ -178,7 +179,7 @@ configure_all() {
     echo
     echo -e "${GREEN}✓ All features configured with recommended defaults${NC}"
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Network discovery
@@ -187,7 +188,8 @@ run_discovery() {
     echo -e "${BOLD}${CYAN}Network Discovery${NC}"
     echo
     
-    local -a interfaces=($(get_physical_interfaces))
+    local -a interfaces=()
+    mapfile -t interfaces < <(get_physical_interfaces)
     
     echo "Available interfaces:"
     local i=1
@@ -197,7 +199,7 @@ run_discovery() {
     done
     echo
     
-    read -p "Select interface to scan [1]: " choice
+    read -r -p "Select interface to scan [1]: " choice
     choice=${choice:-1}
     
     if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#interfaces[@]}" ]; then
@@ -209,7 +211,7 @@ run_discovery() {
     fi
     
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Generate NixOS configuration
@@ -327,7 +329,7 @@ apply_config() {
     if [[ ! -f "$CONFIG_FILE" ]]; then
         echo -e "${RED}No configuration generated yet!${NC}"
         echo "Please generate configuration first (option 18)"
-        read -p "Press Enter to continue..."
+        read -r -p "Press Enter to continue..."
         return
     fi
     
@@ -341,9 +343,9 @@ apply_config() {
     # Add to configuration.nix if not already present
     if ! grep -q "unified-network.nix" /etc/nixos/configuration.nix 2>/dev/null; then
         echo
-        read -p "Add to configuration.nix? [Y/n]: " add
+        read -r -p "Add to configuration.nix? [Y/n]: " add
         if [[ ! "$add" =~ ^[Nn]$ ]]; then
-            cp /etc/nixos/configuration.nix /etc/nixos/configuration.nix.backup-$(date +%Y%m%d-%H%M%S)
+            cp /etc/nixos/configuration.nix "/etc/nixos/configuration.nix.backup-$(date +%Y%m%d-%H%M%S)"
             sed -i '/imports = \[/a\    ./unified-network.nix' /etc/nixos/configuration.nix
             echo -e "${GREEN}✓ Added to configuration.nix${NC}"
         fi
@@ -353,7 +355,7 @@ apply_config() {
     echo -e "${YELLOW}Apply changes now?${NC}"
     echo "This will run: nixos-rebuild switch"
     echo
-    read -p "Proceed? [Y/n]: " rebuild
+    read -r -p "Proceed? [Y/n]: " rebuild
     
     if [[ ! "$rebuild" =~ ^[Nn]$ ]]; then
         echo
@@ -376,7 +378,7 @@ apply_config() {
     fi
     
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Phase switching
@@ -400,7 +402,7 @@ switch_phase() {
         echo "This action is reversible but requires authentication."
         echo
         
-        read -p "Proceed with hardening? [y/N]: " confirm
+        read -r -p "Proceed with hardening? [y/N]: " confirm
         if [[ "$confirm" =~ ^[Yy]$ ]]; then
             if [[ -f /etc/hypervisor/scripts/transition_phase.sh ]]; then
                 /etc/hypervisor/scripts/transition_phase.sh harden
@@ -421,7 +423,7 @@ switch_phase() {
         echo "Requires authentication."
         echo
         
-        read -p "Proceed with rollback? [y/N]: " confirm
+        read -r -p "Proceed with rollback? [y/N]: " confirm
         if [[ "$confirm" =~ ^[Yy]$ ]]; then
             if [[ -f /etc/hypervisor/scripts/transition_phase.sh ]]; then
                 /etc/hypervisor/scripts/transition_phase.sh setup
@@ -437,7 +439,7 @@ switch_phase() {
     fi
     
     echo
-    read -p "Press Enter to continue..."
+    read -r -p "Press Enter to continue..."
 }
 
 # Main loop
@@ -445,24 +447,24 @@ main() {
     while true; do
         show_main_menu
         
-        read -p "$(echo -e "${CYAN}Select option:${NC} ")" choice
+        read -r -p "$(echo -e "${CYAN}Select option:${NC} ")" choice
         
         case "$choice" in
             1) configure_ipv6 ;;
             2) configure_qos ;;
-            3) echo "Bonding configuration..." ; read -p "Press Enter..." ;;
-            4) echo "DHCP configuration..." ; read -p "Press Enter..." ;;
-            5) echo "VPN configuration..." ; read -p "Press Enter..." ;;
-            6) echo "Firewall zones..." ; read -p "Press Enter..." ;;
-            7) CONFIG[dns_enable]="true" ; echo "DNS enabled" ; read -p "Press Enter..." ;;
-            8) CONFIG[monitoring_enable]="true" ; echo "Monitoring enabled" ; read -p "Press Enter..." ;;
-            9) echo "Bridge management..." ; read -p "Press Enter..." ;;
-            10) CONFIG[performance_enable]="true" ; echo "Performance tuning enabled" ; read -p "Press Enter..." ;;
-            11) CONFIG[tor_enable]="true" ; echo "Tor enabled" ; read -p "Press Enter..." ;;
-            12) CONFIG[pcap_enable]="true" ; echo "Packet capture enabled" ; read -p "Press Enter..." ;;
-            13) CONFIG[ids_enable]="true" ; echo "IDS enabled" ; read -p "Press Enter..." ;;
-            14) CONFIG[lb_enable]="true" ; echo "Load balancer enabled" ; read -p "Press Enter..." ;;
-            15) CONFIG[automation_enable]="true" ; echo "Automation enabled" ; read -p "Press Enter..." ;;
+            3) echo "Bonding configuration..." ; read -r -p "Press Enter..." ;;
+            4) echo "DHCP configuration..." ; read -r -p "Press Enter..." ;;
+            5) echo "VPN configuration..." ; read -r -p "Press Enter..." ;;
+            6) echo "Firewall zones..." ; read -r -p "Press Enter..." ;;
+            7) CONFIG[dns_enable]="true" ; echo "DNS enabled" ; read -r -p "Press Enter..." ;;
+            8) CONFIG[monitoring_enable]="true" ; echo "Monitoring enabled" ; read -r -p "Press Enter..." ;;
+            9) echo "Bridge management..." ; read -r -p "Press Enter..." ;;
+            10) CONFIG[performance_enable]="true" ; echo "Performance tuning enabled" ; read -r -p "Press Enter..." ;;
+            11) CONFIG[tor_enable]="true" ; echo "Tor enabled" ; read -r -p "Press Enter..." ;;
+            12) CONFIG[pcap_enable]="true" ; echo "Packet capture enabled" ; read -r -p "Press Enter..." ;;
+            13) CONFIG[ids_enable]="true" ; echo "IDS enabled" ; read -r -p "Press Enter..." ;;
+            14) CONFIG[lb_enable]="true" ; echo "Load balancer enabled" ; read -r -p "Press Enter..." ;;
+            15) CONFIG[automation_enable]="true" ; echo "Automation enabled" ; read -r -p "Press Enter..." ;;
             16) configure_all ;;
             17) run_discovery ;;
             18) generate_config ; apply_config ;;
