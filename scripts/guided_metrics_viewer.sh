@@ -139,9 +139,12 @@ show_current_metrics() {
   # CPU
   echo -e "${BOLD}CPU Usage:${NC}"
   echo -n "• Current load: "
-  local load=$(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//')
-  local cpus=$(nproc)
-  local load_pct=$(echo "scale=0; $load * 100 / $cpus" | bc 2>/dev/null || echo "0")
+  local load
+  local cpus
+  local load_pct
+  load=$(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//')
+  cpus=$(nproc)
+  load_pct=$(echo "scale=0; $load * 100 / $cpus" | bc 2>/dev/null || echo "0")
   
   if [[ $load_pct -lt 70 ]]; then
     echo -e "${GREEN}$load_pct%${NC} (healthy)"
@@ -186,8 +189,10 @@ show_current_metrics() {
   # Running VMs
   echo ""
   echo -e "${BOLD}Virtual Machines:${NC}"
-  local vm_count=$(virsh list --name 2>/dev/null | grep -v '^$' | wc -l)
-  local vm_total=$(virsh list --all --name 2>/dev/null | grep -v '^$' | wc -l)
+  local vm_count
+  local vm_total
+  vm_count=$(virsh list --name 2>/dev/null | grep -v '^$' | wc -l)
+  vm_total=$(virsh list --all --name 2>/dev/null | grep -v '^$' | wc -l)
   echo "• Running: $vm_count / $vm_total total"
   
   echo ""
@@ -315,7 +320,8 @@ Press OK to exit..." 28 78
     return 1
   fi
   
-  local metric_files=$(find "$METRICS_DIR" -name "*.json" 2>/dev/null | wc -l)
+  local metric_files
+  metric_files=$(find "$METRICS_DIR" -name "*.json" 2>/dev/null | wc -l)
   
   if [[ $metric_files -eq 0 ]]; then
     $DIALOG --title "No Metrics Yet" --msgbox "\
@@ -378,7 +384,8 @@ generate_simple_report() {
   echo "Analyzing metrics..."
   
   # Get latest metric files
-  local recent_metrics=$(find "$METRICS_DIR" -name "*.json" -mtime -7 2>/dev/null | sort | tail -168)  # Last 7 days (hourly)
+  local recent_metrics
+  recent_metrics=$(find "$METRICS_DIR" -name "*.json" -mtime -7 2>/dev/null | sort | tail -168)  # Last 7 days (hourly)
   
   if [[ -z "$recent_metrics" ]]; then
     echo "No recent metrics found"
@@ -389,14 +396,18 @@ generate_simple_report() {
   echo -n "• Analyzing CPU usage... "
   local cpu_values=()
   while IFS= read -r file; do
-    local cpu=$(jq -r '.cpu.usage_percent // 0' "$file" 2>/dev/null)
+    local cpu
+    cpu=$(jq -r '.cpu.usage_percent // 0' "$file" 2>/dev/null)
     [[ "$cpu" != "null" && "$cpu" != "0" ]] && cpu_values+=("$cpu")
   done <<< "$recent_metrics"
   
   if [[ ${#cpu_values[@]} -gt 0 ]]; then
-    local cpu_avg=$(printf '%s\n' "${cpu_values[@]}" | awk '{sum+=$1; count++} END {printf "%.1f", sum/count}')
-    local cpu_max=$(printf '%s\n' "${cpu_values[@]}" | sort -n | tail -1)
-    local cpu_min=$(printf '%s\n' "${cpu_values[@]}" | sort -n | head -1)
+    local cpu_avg
+    local cpu_max
+    local cpu_min
+    cpu_avg=$(printf '%s\n' "${cpu_values[@]}" | awk '{sum+=$1; count++} END {printf "%.1f", sum/count}')
+    cpu_max=$(printf '%s\n' "${cpu_values[@]}" | sort -n | tail -1)
+    cpu_min=$(printf '%s\n' "${cpu_values[@]}" | sort -n | head -1)
     echo -e "${GREEN}✓${NC}"
   else
     echo -e "${YELLOW}⚠ No data${NC}"
@@ -409,14 +420,18 @@ generate_simple_report() {
   echo -n "• Analyzing memory usage... "
   local mem_values=()
   while IFS= read -r file; do
-    local mem=$(jq -r '.memory.used_percent // 0' "$file" 2>/dev/null)
+    local mem
+    mem=$(jq -r '.memory.used_percent // 0' "$file" 2>/dev/null)
     [[ "$mem" != "null" && "$mem" != "0" ]] && mem_values+=("$mem")
   done <<< "$recent_metrics"
   
   if [[ ${#mem_values[@]} -gt 0 ]]; then
-    local mem_avg=$(printf '%s\n' "${mem_values[@]}" | awk '{sum+=$1; count++} END {printf "%.1f", sum/count}')
-    local mem_max=$(printf '%s\n' "${mem_values[@]}" | sort -n | tail -1)
-    local mem_min=$(printf '%s\n' "${mem_values[@]}" | sort -n | head -1)
+    local mem_avg
+    local mem_max
+    local mem_min
+    mem_avg=$(printf '%s\n' "${mem_values[@]}" | awk '{sum+=$1; count++} END {printf "%.1f", sum/count}')
+    mem_max=$(printf '%s\n' "${mem_values[@]}" | sort -n | tail -1)
+    mem_min=$(printf '%s\n' "${mem_values[@]}" | sort -n | head -1)
     echo -e "${GREEN}✓${NC}"
   else
     echo -e "${YELLOW}⚠ No data${NC}"
@@ -426,7 +441,8 @@ generate_simple_report() {
   fi
   
   # Generate report
-  local report_file="/var/lib/hypervisor/performance-report-$(date +%Y%m%d-%H%M%S).txt"
+  local report_file
+  report_file="/var/lib/hypervisor/performance-report-$(date +%Y%m%d-%H%M%S).txt"
   
   cat > "$report_file" << EOF
 ╔════════════════════════════════════════════════════════════════╗
@@ -631,17 +647,20 @@ Press OK to generate graph..." 42 78
   echo ""
   
   # Get last 24 data points
-  local recent=$(find "$METRICS_DIR" -name "*.json" -mtime -1 2>/dev/null | sort | tail -24)
+  local recent
   local values=()
+  recent=$(find "$METRICS_DIR" -name "*.json" -mtime -1 2>/dev/null | sort | tail -24)
   
   if [[ "$metric_name" == "CPU" ]]; then
     while IFS= read -r file; do
-      local val=$(jq -r '.cpu.usage_percent // 0' "$file" 2>/dev/null)
+      local val
+      val=$(jq -r '.cpu.usage_percent // 0' "$file" 2>/dev/null)
       values+=("$val")
     done <<< "$recent"
   elif [[ "$metric_name" == "Memory" ]]; then
     while IFS= read -r file; do
-      local val=$(jq -r '.memory.used_percent // 0' "$file" 2>/dev/null)
+      local val
+      val=$(jq -r '.memory.used_percent // 0' "$file" 2>/dev/null)
       values+=("$val")
     done <<< "$recent"
   fi
@@ -653,8 +672,10 @@ Press OK to generate graph..." 42 78
   fi
   
   # Simple ASCII graph (10 rows)
-  local max_val=$(printf '%s\n' "${values[@]}" | sort -n | tail -1)
-  local max=${max_val%.*}
+  local max_val
+  local max
+  max_val=$(printf '%s\n' "${values[@]}" | sort -n | tail -1)
+  max=${max_val%.*}
   [[ $max -lt 10 ]] && max=10
   
   for row in $(seq 10 -1 0); do
@@ -820,16 +841,21 @@ Choose a topic:" 20 78 10 \
 }
 
 export_metrics_csv() {
-  local output="/var/lib/hypervisor/metrics-export-$(date +%Y%m%d).csv"
+  local output
+  output="/var/lib/hypervisor/metrics-export-$(date +%Y%m%d).csv"
   
   echo "Exporting metrics to CSV..."
   echo "timestamp,cpu_percent,memory_percent,disk_percent" > "$output"
   
   find "$METRICS_DIR" -name "*.json" -mtime -30 2>/dev/null | sort | while read -r file; do
-    local ts=$(jq -r '.timestamp // ""' "$file" 2>/dev/null)
-    local cpu=$(jq -r '.cpu.usage_percent // 0' "$file" 2>/dev/null)
-    local mem=$(jq -r '.memory.used_percent // 0' "$file" 2>/dev/null)
-    local disk=$(jq -r '.disk.used_percent // 0' "$file" 2>/dev/null)
+    local ts
+    local cpu
+    local mem
+    local disk
+    ts=$(jq -r '.timestamp // ""' "$file" 2>/dev/null)
+    cpu=$(jq -r '.cpu.usage_percent // 0' "$file" 2>/dev/null)
+    mem=$(jq -r '.memory.used_percent // 0' "$file" 2>/dev/null)
+    disk=$(jq -r '.disk.used_percent // 0' "$file" 2>/dev/null)
     echo "$ts,$cpu,$mem,$disk" >> "$output"
   done
   

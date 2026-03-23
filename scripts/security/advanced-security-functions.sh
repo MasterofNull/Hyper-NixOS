@@ -77,7 +77,8 @@ EOF
 docker-safe-run() {
     # Security check - prevent running in sensitive directories
     local FORBIDDEN_DIRS=("$HOME" "/" "/etc" "/root" "$HOME/.ssh" "$HOME/.aws")
-    local CURRENT_DIR=$(pwd)
+    local CURRENT_DIR
+    CURRENT_DIR=$(pwd)
     
     for dir in "${FORBIDDEN_DIRS[@]}"; do
         if [[ "$CURRENT_DIR" == "$dir" ]]; then
@@ -120,10 +121,13 @@ docker-clean() {
         return 1
     fi
     
-    local CONTAINERS=$(docker ps -a -q -f "name=$PATTERN")
+    local CONTAINERS
+    CONTAINERS=$(docker ps -a -q -f "name=$PATTERN")
     if [[ -n "$CONTAINERS" ]]; then
         echo -e "${YELLOW}Stopping and removing containers matching '$PATTERN'${NC}"
+        # shellcheck disable=SC2086
         docker stop $CONTAINERS
+        # shellcheck disable=SC2086
         docker rm $CONTAINERS
         echo -e "${GREEN}Cleaned up containers${NC}"
     else
@@ -148,7 +152,7 @@ expose-service() {
     echo -e "${YELLOW}Exposing $SERVICE_NAME on port $PORT via localhost.run${NC}"
     echo -e "${BLUE}Press Ctrl+C to stop${NC}"
     
-    ssh -R 80:localhost:$PORT nokey@localhost.run
+    ssh -R "80:localhost:$PORT" nokey@localhost.run
 }
 
 # Quick SMB server in current directory
@@ -159,7 +163,8 @@ smb-serve() {
     fi
     
     local SHARE_NAME=${1:-"share"}
-    local PASSWORD=$(openssl rand -base64 12)
+    local PASSWORD
+    PASSWORD=$(openssl rand -base64 12)
     
     echo -e "${YELLOW}Starting SMB server...${NC}"
     echo -e "${BLUE}Share: //${SHARE_NAME}${NC}"
@@ -178,7 +183,7 @@ tor-array() {
     
     echo -e "${YELLOW}Deploying $COUNT Tor instances...${NC}"
     
-    for i in $(seq 1 $COUNT); do
+    for i in $(seq 1 "$COUNT"); do
         local PORT=$((BASE_PORT + i - 1))
         docker run -d --name "tor-proxy-$i" \
             -p "127.0.0.1:$PORT:9050" \
@@ -202,9 +207,12 @@ git-smart-update() {
     
     # Check if recently updated (within 24 hours)
     if [[ -d "$TARGET_DIR/.git" ]] && [[ $FORCE -eq 0 ]]; then
-        local LAST_FETCH=$(stat -c %Y "$TARGET_DIR/.git/FETCH_HEAD" 2>/dev/null || echo 0)
-        local CURRENT_TIME=$(date +%s)
-        local TIME_DIFF=$((CURRENT_TIME - LAST_FETCH))
+        local LAST_FETCH
+        local CURRENT_TIME
+        local TIME_DIFF
+        LAST_FETCH=$(stat -c %Y "$TARGET_DIR/.git/FETCH_HEAD" 2>/dev/null || echo 0)
+        CURRENT_TIME=$(date +%s)
+        TIME_DIFF=$((CURRENT_TIME - LAST_FETCH))
         
         if [[ $TIME_DIFF -lt 86400 ]]; then
             echo -e "${BLUE}Repository updated within 24 hours, skipping...${NC}"
@@ -218,10 +226,11 @@ git-smart-update() {
         git clone --depth 1 "$REPO_URL" "$TARGET_DIR"
     else
         echo -e "${YELLOW}Updating $TARGET_DIR...${NC}"
-        cd "$TARGET_DIR"
-        git fetch --depth 1
-        git reset --hard origin/$(git symbolic-ref --short HEAD)
-        cd - > /dev/null
+        (
+            cd "$TARGET_DIR" || exit 1
+            git fetch --depth 1
+            git reset --hard "origin/$(git symbolic-ref --short HEAD)"
+        )
     fi
 }
 
@@ -229,17 +238,19 @@ git-smart-update() {
 run-with-notify() {
     local TASK_NAME=$1
     shift
-    local COMMAND="$@"
+    local COMMAND=("$@")
     
-    local TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    local LOG_FILE="/tmp/${TASK_NAME}_${TIMESTAMP}.log"
+    local TIMESTAMP
+    local LOG_FILE
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    LOG_FILE="/tmp/${TASK_NAME}_${TIMESTAMP}.log"
     
     echo -e "${YELLOW}Starting $TASK_NAME in background...${NC}"
     echo -e "${BLUE}Log: $LOG_FILE${NC}"
     
     # Run in background
     (
-        $COMMAND > "$LOG_FILE" 2>&1
+        "${COMMAND[@]}" > "$LOG_FILE" 2>&1
         EXIT_CODE=$?
         
         if [[ $EXIT_CODE -eq 0 ]]; then
@@ -269,12 +280,16 @@ detect-404-size() {
     echo -e "${YELLOW}Detecting 404 page size for $TARGET${NC}"
     
     # Generate random paths
-    local UUID1=$(uuidgen)
-    local UUID2=$(uuidgen)
+    local UUID1
+    local UUID2
+    UUID1=$(uuidgen)
+    UUID2=$(uuidgen)
     
     echo -e "\n${BLUE}Testing random paths:${NC}"
-    local SIZE1=$(curl -sI "$TARGET/404test$UUID1" | grep -i "content-length" | awk '{print $2}' | tr -d '\r')
-    local SIZE2=$(curl -sI "$TARGET/test404$UUID2" | grep -i "content-length" | awk '{print $2}' | tr -d '\r')
+    local SIZE1
+    local SIZE2
+    SIZE1=$(curl -sI "$TARGET/404test$UUID1" | grep -i "content-length" | awk '{print $2}' | tr -d '\r')
+    SIZE2=$(curl -sI "$TARGET/test404$UUID2" | grep -i "content-length" | awk '{print $2}' | tr -d '\r')
     
     echo "Path 1: $SIZE1 bytes"
     echo "Path 2: $SIZE2 bytes"
@@ -290,7 +305,8 @@ detect-404-size() {
 # Parallel scanning orchestrator
 parallel-scan() {
     local TARGET=$1
-    local SCAN_DIR="$HOME/scans/$(date +%Y%m%d_%H%M%S)_$(echo $TARGET | sed 's|[/:.]|_|g')"
+    local SCAN_DIR
+    SCAN_DIR="$HOME/scans/$(date +%Y%m%d_%H%M%S)_$(echo "$TARGET" | sed 's|[/:.]|_|g')"
     
     mkdir -p "$SCAN_DIR"
     echo -e "${YELLOW}Scan directory: $SCAN_DIR${NC}"
@@ -326,7 +342,8 @@ parallel-scan() {
 # Create secure temporary file
 secure-temp() {
     local PREFIX=${1:-"security"}
-    local TEMP_FILE="/tmp/${PREFIX}_$(uuidgen | cut -d'-' -f1)_$(date +%s)"
+    local TEMP_FILE
+    TEMP_FILE="/tmp/${PREFIX}_$(uuidgen | cut -d'-' -f1)_$(date +%s)"
     
     # Create with restricted permissions
     touch "$TEMP_FILE"
@@ -357,6 +374,7 @@ notify-action() {
     local ACTION_URL=$3
     
     if command -v dunstify &> /dev/null; then
+        local ACTION
         ACTION=$(dunstify --action="default,Open" "$TITLE" "$MESSAGE")
         if [[ "$ACTION" == "default" ]] && [[ -n "$ACTION_URL" ]]; then
             xdg-open "$ACTION_URL"
@@ -375,7 +393,8 @@ notify-action() {
 # Generate password with QR code
 pass-gen-qr() {
     local LENGTH=${1:-16}
-    local PASSWORD=$(openssl rand -base64 48 | tr -d "=+/" | cut -c1-$LENGTH)
+    local PASSWORD
+    PASSWORD=$(openssl rand -base64 48 | tr -d "=+/" | cut -c1-"$LENGTH")
     
     echo -e "${BLUE}Generated Password:${NC} $PASSWORD"
     

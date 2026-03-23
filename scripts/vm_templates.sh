@@ -150,11 +150,16 @@ list_templates() {
     echo ""
     echo "Custom Templates:"
     for template in "$TEMPLATE_DIR"/*.json; do
-      local name=$(jq -r '.name' "$template" 2>/dev/null || basename "$template" .json)
-      local desc=$(jq -r '.description // "Custom template"' "$template" 2>/dev/null)
-      local cpu=$(jq -r '.cpu // "?"' "$template" 2>/dev/null)
-      local mem=$(jq -r '.memory // "?"' "$template" 2>/dev/null)
-      local disk=$(jq -r '.disk // "?"' "$template" 2>/dev/null)
+      local name
+      local desc
+      local cpu
+      local mem
+      local disk
+      name=$(jq -r '.name' "$template" 2>/dev/null || basename "$template" .json)
+      desc=$(jq -r '.description // "Custom template"' "$template" 2>/dev/null)
+      cpu=$(jq -r '.cpu // "?"' "$template" 2>/dev/null)
+      mem=$(jq -r '.memory // "?"' "$template" 2>/dev/null)
+      disk=$(jq -r '.disk // "?"' "$template" 2>/dev/null)
       
       printf "%-20s %-40s %8s %8s %8s\n" "$name" "$desc" "$cpu" "${mem}MB" "${disk}GB"
     done
@@ -222,11 +227,16 @@ create_from_template() {
   esac
   
   # Extract template values
-  local cpu=$(echo "$template_json" | jq -r '.cpu // 2')
-  local memory=$(echo "$template_json" | jq -r '.memory // 2048')
-  local disk=$(echo "$template_json" | jq -r '.disk // 20')
-  local os=$(echo "$template_json" | jq -r '.os // "linux"')
-  local iso_url=$(echo "$template_json" | jq -r '.iso_url // ""')
+  local cpu
+  local memory
+  local disk
+  local os
+  local iso_url
+  cpu=$(echo "$template_json" | jq -r '.cpu // 2')
+  memory=$(echo "$template_json" | jq -r '.memory // 2048')
+  disk=$(echo "$template_json" | jq -r '.disk // 20')
+  os=$(echo "$template_json" | jq -r '.os // "linux"')
+  iso_url=$(echo "$template_json" | jq -r '.iso_url // ""')
   
   echo "  CPU: $cpu cores"
   echo "  Memory: $memory MB"
@@ -326,17 +336,21 @@ export_as_template() {
   echo "Exporting VM as template: $vm_name -> $template_name"
   
   # Get VM info
-  local cpu=$(virsh vcpucount "$vm_name" --maximum)
-  local memory=$(virsh dommemstat "$vm_name" 2>/dev/null | grep "actual" | awk '{print $2}' || echo "2048000")
+  local cpu
+  local memory
+  cpu=$(virsh vcpucount "$vm_name" --maximum)
+  memory=$(virsh dommemstat "$vm_name" 2>/dev/null | grep "actual" | awk '{print $2}' || echo "2048000")
   memory=$((memory / 1024))
   
   # Get disk info
-  local disks=$(virsh domblklist "$vm_name" | awk 'NR>2 {print $2}' | grep -v "^$")
+  local disks
   local disk_size=0
+  disks=$(virsh domblklist "$vm_name" | awk 'NR>2 {print $2}' | grep -v "^$")
   
   for disk in $disks; do
     if [[ -f "$disk" ]]; then
-      local size=$(qemu-img info "$disk" | grep "virtual size" | awk '{print $3}' | sed 's/G//')
+      local size
+      size=$(qemu-img info "$disk" | grep "virtual size" | awk '{print $3}' | sed 's/G//')
       disk_size=$((disk_size + ${size%.*}))
     fi
   done
@@ -372,14 +386,16 @@ import_template() {
   
   echo "Importing template from: $url"
   
-  local template_file="$TEMPLATE_DIR/$(basename "$url")"
+  local template_file
+  template_file="$TEMPLATE_DIR/$(basename "$url")"
   
   if wget -q "$url" -O "$template_file"; then
     echo "✓ Template imported: $template_file"
     
     # Validate JSON
     if jq . "$template_file" >/dev/null 2>&1; then
-      local name=$(jq -r '.name' "$template_file")
+      local name
+      name=$(jq -r '.name' "$template_file")
       echo "  Template name: $name"
     else
       echo "⚠ Warning: Template is not valid JSON"
