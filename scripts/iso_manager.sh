@@ -21,6 +21,14 @@ require() {
 }
 require "$DIALOG" curl sha256sum jq awk sed gpg
 
+split_tab_list() {
+  local raw="${1:-}"
+  local -n output_ref=$2
+  output_ref=()
+  [[ -z "$raw" ]] && return 0
+  IFS=$'\t' read -r -a output_ref <<< "$raw"
+}
+
 mkdir -p "$ISOS_DIR" "$USER_PROFILES_DIR"
 
 # Import a GPG key URL into the hypervisor keyring (non-interactive)
@@ -110,14 +118,17 @@ try_fetch_checksum() {
 download_iso() {
   local url checksum filename tmp auto
   local preset_choice
+  local preset_checksum_list="" preset_signature_list="" preset_gpg_key_list=""
+  local preset_checksum_url preset_signature_url kurl
+  local preset_checksum_urls_list=() preset_signature_urls_list=() preset_gpg_key_urls_list=()
   if [[ -f "$CONFIG_JSON" ]]; then
     # Build preset menu
     mapfile -t names < <(jq -r '.iso_presets[]?.name' "$CONFIG_JSON")
     mapfile -t urls < <(jq -r '.iso_presets[]?.url' "$CONFIG_JSON")
     mapfile -t chans < <(jq -r '.iso_presets[]? | (.channel // "stable")' "$CONFIG_JSON")
-    mapfile -t preset_checksum_urls < <(jq -r '.iso_presets[]? | (.checksum_urls // [.checksum_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
-    mapfile -t preset_signature_urls < <(jq -r '.iso_presets[]? | (.signature_urls // [.signature_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
-    mapfile -t preset_gpg_keys < <(jq -r '.iso_presets[]? | (.gpg_key_urls // [.gpg_key_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
+    mapfile -t preset_checksum_urls < <(jq -r '.iso_presets[]? | (.checksum_urls // [.checksum_url]) | map(select(. != null and . != "")) | join("\t")' "$CONFIG_JSON")
+    mapfile -t preset_signature_urls < <(jq -r '.iso_presets[]? | (.signature_urls // [.signature_url]) | map(select(. != null and . != "")) | join("\t")' "$CONFIG_JSON")
+    mapfile -t preset_gpg_keys < <(jq -r '.iso_presets[]? | (.gpg_key_urls // [.gpg_key_url]) | map(select(. != null and . != "")) | join("\t")' "$CONFIG_JSON")
     if (( ${#names[@]} > 0 )); then
       # Choose channel first when both exist
       local have_stable=false have_unstable=false; for c in "${chans[@]}"; do [[ "$c" == stable ]] && have_stable=true; [[ "$c" == unstable ]] && have_unstable=true; done
@@ -140,9 +151,12 @@ download_iso() {
       preset_choice=$($DIALOG --menu "ISO presets (${chan_sel}) (or Cancel for manual URL)" 20 72 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
       if [[ -n "${preset_choice:-}" ]]; then
         url="${urls[$preset_choice]}"
-        preset_checksum_list=$(eval echo ${preset_checksum_urls[$preset_choice]:-})
-        preset_signature_list=$(eval echo ${preset_signature_urls[$preset_choice]:-})
-        preset_gpg_key_list=$(eval echo ${preset_gpg_keys[$preset_choice]:-})
+        preset_checksum_list="${preset_checksum_urls[$preset_choice]:-}"
+        preset_signature_list="${preset_signature_urls[$preset_choice]:-}"
+        preset_gpg_key_list="${preset_gpg_keys[$preset_choice]:-}"
+        split_tab_list "$preset_checksum_list" preset_checksum_urls_list
+        split_tab_list "$preset_signature_list" preset_signature_urls_list
+        split_tab_list "$preset_gpg_key_list" preset_gpg_key_urls_list
       fi
     fi
   fi
@@ -154,20 +168,20 @@ download_iso() {
   filename=$(basename "$url")
   tmpdir=$(mktemp -d)
   # Try a list of checksum/signature/key URLs (first one that works)
-  if [[ -n "${preset_checksum_list:-}" ]]; then
-    for preset_checksum_url in $preset_checksum_list; do
+  if (( ${#preset_checksum_urls_list[@]} > 0 )); then
+    for preset_checksum_url in "${preset_checksum_urls_list[@]}"; do
       checks_file="$tmpdir/checksums.txt"
       curl -fsSL "$preset_checksum_url" -o "$checks_file" || { rm -f "$checks_file"; continue; }
       if [[ -s "$checks_file" ]]; then
         # Try signatures for the checksum file if any
-        if [[ -n "${preset_signature_list:-}" ]]; then
-          for preset_signature_url in $preset_signature_list; do
+        if (( ${#preset_signature_urls_list[@]} > 0 )); then
+          for preset_signature_url in "${preset_signature_urls_list[@]}"; do
             sig_file="$tmpdir/checksums.sig"
             curl -fsSL "$preset_signature_url" -o "$sig_file" || { rm -f "$sig_file"; continue; }
             if [[ -s "$sig_file" ]]; then
               # Attempt to import vendor keys before verify
-              if [[ -n "${preset_gpg_key_list:-}" ]]; then
-                for kurl in $preset_gpg_key_list; do auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "$kurl" || true; done
+              if (( ${#preset_gpg_key_urls_list[@]} > 0 )); then
+                for kurl in "${preset_gpg_key_urls_list[@]}"; do auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "$kurl" || true; done
               else
                 auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "" || true
               fi
@@ -415,6 +429,9 @@ if [[ "${1:-}" == "--cli" ]]; then
       # Usage: iso_manager.sh --cli download --url <URL> [--checksum <SHA256>] [--preset <index|name>]
       shift || true
       url=""; checksum=""; preset=""
+      preset_checksum_urls_list=()
+      preset_signature_urls_list=()
+      preset_gpg_key_urls_list=()
       while [[ $# -gt 0 ]]; do
         case "$1" in
           --url) url="$2"; shift 2 ;;
@@ -428,18 +445,21 @@ if [[ "${1:-}" == "--cli" ]]; then
         if [[ -f "$CONFIG_JSON" ]]; then
           mapfile -t names < <(jq -r '.iso_presets[]?.name' "$CONFIG_JSON")
           mapfile -t urls < <(jq -r '.iso_presets[]?.url' "$CONFIG_JSON")
-          mapfile -t preset_checksum_urls < <(jq -r '.iso_presets[]? | (.checksum_urls // [.checksum_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
-          mapfile -t preset_signature_urls < <(jq -r '.iso_presets[]? | (.signature_urls // [.signature_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
-          mapfile -t preset_gpg_keys < <(jq -r '.iso_presets[]? | (.gpg_key_urls // [.gpg_key_url]) | map(select(. != null and . != "")) | @sh' "$CONFIG_JSON")
+          mapfile -t preset_checksum_urls < <(jq -r '.iso_presets[]? | (.checksum_urls // [.checksum_url]) | map(select(. != null and . != "")) | join("\t")' "$CONFIG_JSON")
+          mapfile -t preset_signature_urls < <(jq -r '.iso_presets[]? | (.signature_urls // [.signature_url]) | map(select(. != null and . != "")) | join("\t")' "$CONFIG_JSON")
+          mapfile -t preset_gpg_keys < <(jq -r '.iso_presets[]? | (.gpg_key_urls // [.gpg_key_url]) | map(select(. != null and . != "")) | join("\t")' "$CONFIG_JSON")
           idx=-1
           if [[ "$preset" =~ ^[0-9]+$ ]]; then idx="$preset"; else
             for i in "${!names[@]}"; do [[ "${names[$i]}" == "$preset" ]] && idx="$i" && break; done
           fi
           if (( idx >= 0 )) && [[ -n "${urls[$idx]:-}" ]]; then
             url="${urls[$idx]}"
-            preset_checksum_list=$(eval echo ${preset_checksum_urls[$idx]:-})
-            preset_signature_list=$(eval echo ${preset_signature_urls[$idx]:-})
-            preset_gpg_key_list=$(eval echo ${preset_gpg_keys[$idx]:-})
+            preset_checksum_list="${preset_checksum_urls[$idx]:-}"
+            preset_signature_list="${preset_signature_urls[$idx]:-}"
+            preset_gpg_key_list="${preset_gpg_keys[$idx]:-}"
+            split_tab_list "$preset_checksum_list" preset_checksum_urls_list
+            split_tab_list "$preset_signature_list" preset_signature_urls_list
+            split_tab_list "$preset_gpg_key_list" preset_gpg_key_urls_list
           else
             echo "Invalid preset: $preset" >&2; exit 2
           fi
@@ -448,8 +468,8 @@ if [[ "${1:-}" == "--cli" ]]; then
         fi
       fi
       # Try lists; pass first that works, handled inside download_iso_cli too
-      if [[ -z "${checksum:-}" && -n "${preset_checksum_list:-}" ]]; then
-        for preset_checksum_url in $preset_checksum_list; do
+      if [[ -z "${checksum:-}" && ${#preset_checksum_urls_list[@]} -gt 0 ]]; then
+        for preset_checksum_url in "${preset_checksum_urls_list[@]}"; do
           if download_iso_cli "$url" "${checksum:-}" "$preset_checksum_url" "${preset_signature_list:-}" "${preset_gpg_key_list:-}"; then exit 0; fi
         done
         exit 1

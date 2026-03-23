@@ -14,8 +14,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
 
 # Terminal setup
-readonly TERM_COLS=$(tput cols)
-readonly TERM_LINES=$(tput lines)
+TERM_COLS=$(tput cols)
+readonly TERM_COLS
+TERM_LINES=$(tput lines)
+readonly TERM_LINES
 
 # Colors
 readonly RED='\033[0;31m'
@@ -60,7 +62,8 @@ trap cleanup EXIT
 
 # Draw header
 draw_header() {
-    local time=$(date '+%Y-%m-%d %H:%M:%S')
+    local time
+    time=$(date '+%Y-%m-%d %H:%M:%S')
     tput cup 0 0
     echo -ne "${BOLD}${WHITE}"
     printf "%-*s" "$TERM_COLS" "Hyper-NixOS Threat Monitor - $time"
@@ -202,30 +205,31 @@ draw_metrics() {
     row=$((row + 1))
     
     # Network traffic
-    local net_in=$(cat /proc/net/dev | grep -E "eth0|ens" | awk '{print $2}' | head -1)
-    local net_out=$(cat /proc/net/dev | grep -E "eth0|ens" | awk '{print $10}' | head -1)
+    local net_in net_out load connections vm_count
+    net_in=$(grep -E "eth0|ens" /proc/net/dev | awk '{print $2}' | head -1)
+    net_out=$(grep -E "eth0|ens" /proc/net/dev | awk '{print $10}' | head -1)
     tput cup $row $col
-    echo -e "Network In:  ${CYAN}$(numfmt --to=iec $net_in)/s${NC}"
+    echo -e "Network In:  ${CYAN}$(numfmt --to=iec "$net_in")/s${NC}"
     row=$((row + 1))
     
     tput cup $row $col
-    echo -e "Network Out: ${CYAN}$(numfmt --to=iec $net_out)/s${NC}"
+    echo -e "Network Out: ${CYAN}$(numfmt --to=iec "$net_out")/s${NC}"
     row=$((row + 1))
     
     # System load
-    local load=$(uptime | awk -F'load average:' '{print $2}')
+    load=$(uptime | awk -F'load average:' '{print $2}')
     tput cup $row $col
     echo -e "Load Average:${YELLOW}$load${NC}"
     row=$((row + 1))
     
     # Active connections
-    local connections=$(ss -s | grep estab | awk '{print $2}')
+    connections=$(ss -s | grep estab | awk '{print $2}')
     tput cup $row $col
     echo -e "Connections: ${GREEN}$connections${NC}"
     row=$((row + 1))
     
     # VM count
-    local vm_count=$(virsh list --name 2>/dev/null | grep -v '^$' | wc -l)
+    vm_count=$(virsh list --name 2>/dev/null | grep -c -v '^$')
     tput cup $row $col
     echo -e "Active VMs:  ${BLUE}$vm_count${NC}"
 }
@@ -275,37 +279,43 @@ draw_threat_indicators() {
 # Check functions for threat indicators
 check_port_scan() {
     # Check for port scanning in logs
-    local scan_count=$(journalctl -u hypervisor-threat-detector --since "5 minutes ago" 2>/dev/null | grep -c "PORT-SCAN" || echo "0")
+    local scan_count
+    scan_count=$(journalctl -u hypervisor-threat-detector --since "5 minutes ago" 2>/dev/null | grep -c "PORT-SCAN" || echo "0")
     [[ $scan_count -gt 5 ]] && echo "true" || echo "false"
 }
 
 check_brute_force() {
     # Check for failed auth attempts
-    local failed_auth=$(journalctl -u sshd --since "5 minutes ago" 2>/dev/null | grep -c "Failed password" || echo "0")
+    local failed_auth
+    failed_auth=$(journalctl -u sshd --since "5 minutes ago" 2>/dev/null | grep -c "Failed password" || echo "0")
     [[ $failed_auth -gt 10 ]] && echo "true" || echo "false"
 }
 
 check_vm_escape() {
     # Check for VM escape attempts
-    local escape_attempts=$(journalctl -u libvirtd --since "5 minutes ago" 2>/dev/null | grep -c -E "VMEXIT|hypervisor.*violation" || echo "0")
+    local escape_attempts
+    escape_attempts=$(journalctl -u libvirtd --since "5 minutes ago" 2>/dev/null | grep -c -E "VMEXIT|hypervisor.*violation" || echo "0")
     [[ $escape_attempts -gt 0 ]] && echo "true" || echo "false"
 }
 
 check_crypto_mining() {
     # Check for crypto mining indicators
-    local high_cpu_vms=$(virsh list --name 2>/dev/null | xargs -I {} sh -c 'virsh domstats {} --cpu-total 2>/dev/null | grep cpu.time' | awk '{if($2>90) print}' | wc -l)
+    local high_cpu_vms
+    high_cpu_vms=$(virsh list --name 2>/dev/null | xargs -I {} sh -c 'virsh domstats {} --cpu-total 2>/dev/null | grep cpu.time' | awk '{if($2>90) print}' | wc -l)
     [[ $high_cpu_vms -gt 2 ]] && echo "true" || echo "false"
 }
 
 check_data_exfil() {
     # Check for unusual data transfer
-    local high_transfer=$(netstat -i 2>/dev/null | awk '{if(NR>2 && $4>1000000000) print}' | wc -l)
+    local high_transfer
+    high_transfer=$(netstat -i 2>/dev/null | awk '{if(NR>2 && $4>1000000000) print}' | wc -l)
     [[ $high_transfer -gt 0 ]] && echo "true" || echo "false"
 }
 
 check_priv_esc() {
     # Check for privilege escalation
-    local sudo_abuse=$(journalctl --since "5 minutes ago" 2>/dev/null | grep -c "sudo.*COMMAND" || echo "0")
+    local sudo_abuse
+    sudo_abuse=$(journalctl --since "5 minutes ago" 2>/dev/null | grep -c "sudo.*COMMAND" || echo "0")
     [[ $sudo_abuse -gt 20 ]] && echo "true" || echo "false"
 }
 
@@ -325,7 +335,8 @@ generate_mock_alert() {
     
     local severity="${severities[$((RANDOM % ${#severities[@]}))]}"
     local message="${messages[$((RANDOM % ${#messages[@]}))]}"
-    local time=$(date '+%H:%M:%S')
+    local time
+    time=$(date '+%H:%M:%S')
     
     ALERTS_QUEUE+=("$time|$severity|$message")
     
@@ -353,7 +364,7 @@ draw_footer() {
 
 # Handle user input
 handle_input() {
-    read -t 0.1 -n 1 key || true
+    read -r -t 0.1 -n 1 key || true
     
     case "$key" in
         q|Q)
@@ -361,7 +372,7 @@ handle_input() {
             exit 0
             ;;
         p|P)
-            read -p "Paused. Press Enter to continue..." -n 1
+            read -r -p "Paused. Press Enter to continue..." -n 1
             ;;
         c|C)
             ALERTS_QUEUE=()
@@ -389,7 +400,8 @@ show_threat_details() {
         echo "No threats to display"
     else
         # Show last 20 alerts with details
-        local start=$((${#ALERTS_QUEUE[@]} - 20))
+        local start
+        start=$((${#ALERTS_QUEUE[@]} - 20))
         [[ $start -lt 0 ]] && start=0
         
         for ((i=start; i<${#ALERTS_QUEUE[@]}; i++)); do
@@ -403,7 +415,7 @@ show_threat_details() {
     fi
     
     echo
-    read -p "Press Enter to return to monitor..." -n 1
+    read -r -p "Press Enter to return to monitor..." -n 1
 }
 
 # Show response options
@@ -419,7 +431,7 @@ show_response_options() {
     echo "5) Generate forensic report"
     echo "6) Return to monitor"
     echo
-    read -p "Select option (1-6): " option
+    read -r -p "Select option (1-6): " option
     
     case "$option" in
         1) echo "Isolating VM..." ;;
@@ -429,7 +441,7 @@ show_response_options() {
         5) echo "Generating report..." ;;
     esac
     
-    [[ "$option" != "6" ]] && read -p "Press Enter to continue..." -n 1
+    [[ "$option" != "6" ]] && read -r -p "Press Enter to continue..." -n 1
 }
 
 # Show help
@@ -454,7 +466,7 @@ show_help() {
     echo "  R - Response options"
     echo "  H - This help screen"
     echo
-    read -p "Press Enter to return to monitor..." -n 1
+    read -r -p "Press Enter to return to monitor..." -n 1
 }
 
 # Main monitoring loop
@@ -500,7 +512,7 @@ main() {
         echo -e "${YELLOW}Warning: Threat detection service is not running${NC}"
         echo "Start it with: sudo systemctl start hypervisor-threat-detector"
         echo
-        read -p "Continue anyway? (y/N): " continue
+        read -r -p "Continue anyway? (y/N): " continue
         [[ "$continue" != "y" ]] && exit 0
     fi
     

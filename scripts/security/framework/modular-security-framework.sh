@@ -147,17 +147,18 @@ get_profile_modules() {
             ;;
     esac
     
-    echo "${modules[@]}"
+    printf '%s\n' "${modules[@]}"
 }
 
 # Calculate installation size
 calculate_size() {
-    local modules=($@)
+    local modules=("$@")
     local total_size=0
     
     for module in "${modules[@]}"; do
         local module_info="${MODULES[$module]}"
-        local size=$(echo "$module_info" | cut -d'|' -f2 | sed 's/MB//')
+        local size
+        size=$(echo "$module_info" | cut -d'|' -f2 | sed 's/MB//')
         total_size=$((total_size + size))
     done
     
@@ -168,7 +169,8 @@ calculate_size() {
 install_module() {
     local module=$1
     local module_info="${MODULES[$module]}"
-    local description=$(echo "$module_info" | cut -d'|' -f1)
+    local description
+    description=$(echo "$module_info" | cut -d'|' -f1)
     
     echo -e "${YELLOW}Installing: ${description}${NC}"
     
@@ -451,7 +453,7 @@ interactive_install() {
     echo "4) Enterprise"
     echo "5) Custom"
     echo
-    read -p "Enter choice [1-5]: " choice
+    read -r -p "Enter choice [1-5]: " choice
     
     case $choice in
         1) install_profile "minimal" ;;
@@ -466,8 +468,10 @@ interactive_install() {
 # Install profile
 install_profile() {
     local profile=$1
-    local modules=($(get_profile_modules $profile))
-    local total_size=$(calculate_size "${modules[@]}")
+    local modules=()
+    local total_size
+    mapfile -t modules < <(get_profile_modules "$profile")
+    total_size=$(calculate_size "${modules[@]}")
     
     echo
     echo -e "${BOLD}Installing $profile profile${NC}"
@@ -522,8 +526,9 @@ custom_install() {
     for module in "${!MODULES[@]}"; do
         if [[ "$module" != "core" && "$module" != "cli" ]]; then
             local module_info="${MODULES[$module]}"
-            local description=$(echo "$module_info" | cut -d'|' -f1)
-            local size=$(echo "$module_info" | cut -d'|' -f2)
+            local description size
+            description=$(echo "$module_info" | cut -d'|' -f1)
+            size=$(echo "$module_info" | cut -d'|' -f2)
             
             echo "$index) $module - $description ($size)"
             ((index++))
@@ -532,7 +537,7 @@ custom_install() {
     
     echo
     echo "Enter module numbers separated by spaces (e.g., 1 3 5):"
-    read -a choices
+    read -r -a choices
     
     # Process selections
     for choice in "${choices[@]}"; do
@@ -541,7 +546,8 @@ custom_install() {
     done
     
     # Install selected modules
-    local total_size=$(calculate_size "${selected_modules[@]}")
+    local total_size
+    total_size=$(calculate_size "${selected_modules[@]}")
     echo
     echo -e "Total installation size: ~$total_size"
     read -p "Continue? [y/N] " -n 1 -r

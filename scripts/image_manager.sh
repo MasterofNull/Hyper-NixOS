@@ -15,6 +15,14 @@ mkdir -p "$IMAGES_DIR"
 require() { for b in "$@"; do command -v "$b" >/dev/null 2>&1 || { echo "Missing $b" >&2; exit 1; }; done; }
 require "$DIALOG" curl sha256sum jq gpg
 
+split_tab_list() {
+  local raw="${1:-}"
+  local -n output_ref=$2
+  output_ref=()
+  [[ -z "$raw" ]] && return 0
+  IFS=$'\t' read -r -a output_ref <<< "$raw"
+}
+
 store_sidecar_checksum() { sha256sum "$1" > "$1.sha256"; }
 
 import_key_url() {
@@ -49,20 +57,25 @@ choose_image() {
 
 download_image() {
   local names urls checksum_lists signature_lists gpg_lists preset_choice url filename tmpdir auto checks_file sig_file
+  local preset_checksum_list preset_signature_list preset_gpg_key_list
+  local preset_checksum_urls=() preset_signature_urls=() preset_gpg_key_urls=()
   if [[ -f "$CONFIG_JSON" ]]; then
     mapfile -t names < <(jq -r '.cloud_image_presets[]?.name' "$CONFIG_JSON")
     mapfile -t urls < <(jq -r '.cloud_image_presets[]?.url' "$CONFIG_JSON")
-    mapfile -t checksum_lists < <(jq -r '.cloud_image_presets[]? | (.checksum_urls // []) | @sh' "$CONFIG_JSON")
-    mapfile -t signature_lists < <(jq -r '.cloud_image_presets[]? | (.signature_urls // []) | @sh' "$CONFIG_JSON")
-    mapfile -t gpg_lists < <(jq -r '.cloud_image_presets[]? | (.gpg_key_urls // []) | @sh' "$CONFIG_JSON")
+    mapfile -t checksum_lists < <(jq -r '.cloud_image_presets[]? | (.checksum_urls // []) | map(select(. != null and . != "")) | join("\t")' "$CONFIG_JSON")
+    mapfile -t signature_lists < <(jq -r '.cloud_image_presets[]? | (.signature_urls // []) | map(select(. != null and . != "")) | join("\t")' "$CONFIG_JSON")
+    mapfile -t gpg_lists < <(jq -r '.cloud_image_presets[]? | (.gpg_key_urls // []) | map(select(. != null and . != "")) | join("\t")' "$CONFIG_JSON")
     if (( ${#names[@]} > 0 )); then
       local items=(); for i in "${!names[@]}"; do items+=("$i" "${names[$i]}"); done
       preset_choice=$($DIALOG --menu "Cloud image presets (or Cancel for manual URL)" 20 70 12 "${items[@]}" 3>&1 1>&2 2>&3 || true)
       if [[ -n "$preset_choice" ]]; then
         url="${urls[$preset_choice]}"
-        preset_checksum_list=$(eval echo ${checksum_lists[$preset_choice]:-})
-        preset_signature_list=$(eval echo ${signature_lists[$preset_choice]:-})
-        preset_gpg_key_list=$(eval echo ${gpg_lists[$preset_choice]:-})
+        preset_checksum_list="${checksum_lists[$preset_choice]:-}"
+        preset_signature_list="${signature_lists[$preset_choice]:-}"
+        preset_gpg_key_list="${gpg_lists[$preset_choice]:-}"
+        split_tab_list "$preset_checksum_list" preset_checksum_urls
+        split_tab_list "$preset_signature_list" preset_signature_urls
+        split_tab_list "$preset_gpg_key_list" preset_gpg_key_urls
       fi
     fi
   fi
@@ -71,18 +84,18 @@ download_image() {
   fi
   filename=$(basename "$url"); tmpdir=$(mktemp -d)
   auto=""
-  if [[ -n "${preset_checksum_list:-}" ]]; then
-    for preset_checksum_url in $preset_checksum_list; do
+  if (( ${#preset_checksum_urls[@]} > 0 )); then
+    for preset_checksum_url in "${preset_checksum_urls[@]}"; do
       checks_file="$tmpdir/checksums.txt"
       curl -fsSL "$preset_checksum_url" -o "$checks_file" || { rm -f "$checks_file"; continue; }
       if [[ -s "$checks_file" ]]; then
-        if [[ -n "${preset_signature_list:-}" ]]; then
-          for preset_signature_url in $preset_signature_list; do
+        if (( ${#preset_signature_urls[@]} > 0 )); then
+          for preset_signature_url in "${preset_signature_urls[@]}"; do
             sig_file="$tmpdir/checksums.sig"
             curl -fsSL "$preset_signature_url" -o "$sig_file" || { rm -f "$sig_file"; continue; }
             if [[ -s "$sig_file" ]]; then
-              if [[ -n "${preset_gpg_key_list:-}" ]]; then
-                for kurl in $preset_gpg_key_list; do auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "$kurl" || true; done
+              if (( ${#preset_gpg_key_urls[@]} > 0 )); then
+                for kurl in "${preset_gpg_key_urls[@]}"; do auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "$kurl" || true; done
               else
                 auto_import_vendor_key "$preset_signature_url" "$preset_checksum_url" "$url" "" || true
               fi
